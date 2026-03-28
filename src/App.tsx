@@ -20,8 +20,15 @@ import {
 } from 'lucide-react';
 import { units, Unit, Question, Vocab } from './data';
 
-type AppMode = 'splash' | 'dashboard' | 'quiz' | 'quiz-select' | 'revision' | 'vocab' | 'result';
+type AppMode = 'splash' | 'dashboard' | 'quiz' | 'quiz-select' | 'revision' | 'vocab' | 'result' | 'user-stats';
 type QuizSubMode = 'quick' | 'time-attack' | 'marathon';
+
+interface SessionStats {
+  [unitId: number]: {
+    attemptedQuestions: string[];
+    masteredVocab: string[];
+  }
+}
 
 export default function App() {
   const [mode, setMode] = useState<AppMode>('splash');
@@ -35,8 +42,8 @@ export default function App() {
   const [hearts, setHearts] = useState(5);
   const [quizSubMode, setQuizSubMode] = useState<QuizSubMode>('quick');
   const [timeLeft, setTimeLeft] = useState(30);
-  const [isMedalOpen, setIsMedalOpen] = useState(false);
-  const [medalRotation, setMedalRotation] = useState(0);
+  const [isY8Open, setIsY8Open] = useState(false);
+  const [sessionStats, setSessionStats] = useState<SessionStats>({});
 
   const allConcepts = useMemo(() => units.flatMap(unit => unit.concepts), []);
   const [randomConcept, setRandomConcept] = useState(() => 
@@ -120,8 +127,25 @@ export default function App() {
   };
 
   const checkAnswer = () => {
-    if (selectedOption) {
+    if (selectedOption && selectedUnit) {
       setIsAnswerChecked(true);
+      
+      // Track attempted question
+      const qId = quizQuestions[currentQuestionIndex].id;
+      setSessionStats(prev => {
+        const unitStats = prev[selectedUnit.id] || { attemptedQuestions: [], masteredVocab: [] };
+        if (!unitStats.attemptedQuestions.includes(qId)) {
+          return {
+            ...prev,
+            [selectedUnit.id]: {
+              ...unitStats,
+              attemptedQuestions: [...unitStats.attemptedQuestions, qId]
+            }
+          };
+        }
+        return prev;
+      });
+
       if (selectedOption === quizQuestions[currentQuestionIndex].correctAnswer) {
         setScore(prev => prev + 1);
       } else {
@@ -182,106 +206,124 @@ export default function App() {
     </div>
   );
 
+  const Y8Splash = ({ onClose }: { onClose: () => void }) => {
+    const [activeEmojis, setActiveEmojis] = useState<{ id: number; emoji: string; x: number; y: number; size: number }[]>([]);
+    
+    const spawnEmoji = () => {
+      const facialEmojis = ["😀", "😃", "😄", "😁", "😆", "😅", "😂", "🤣", "😊", "😇", "🙂", "🙃", "😉", "😌", "😍", "🥰", "😘", "😗", "😙", "😚", "😋", "😛", "😝", "😜", "🤪", "🤨", "🧐", "🤓", "😎", "🤩", "🥳", "😏", "😒", "😞", "😔", "😟", "😕", "🙁", "☹️", "😣", "😖", "😫", "😩", "🥺", "😢", "😭", "😤", "😠", "😡", "🤬", "🤯", "😳", "🥵", "🥶", "😱", "😨", "😰", "😥", "😓", "🤗", "🤔", "🤭", "🤫", "🤥", "😶", "😐", "😑", "😬", "🙄", "😯", "😦", "😧", "😮", "😲", "🥱", "😴", "🤤", "😪", "😵", "🤐", "🥴", "🤢", "🤮", "🤧", "😷", "🤒", "🤕", "🤑", "🤠", "😈", "👿", "👹", "👺", "🤡", "💩", "👻", "💀", "☠️", "👽", "👾", "🤖", "🎃", "😺", "😸", "😻", "😼", "😽", "🙀", "😿", "😾"];
+      const id = Date.now();
+      const newEmoji = {
+        id,
+        emoji: facialEmojis[Math.floor(Math.random() * facialEmojis.length)],
+        x: Math.random() * 80 + 10,
+        y: Math.random() * 80 + 10,
+        size: Math.random() * 60 + 40,
+      };
+      setActiveEmojis(prev => [...prev, newEmoji]);
+      setTimeout(() => {
+        setActiveEmojis(prev => prev.filter(e => e.id !== id));
+      }, 1000);
+    };
+
+    const containerVariants = {
+      hidden: { opacity: 0 },
+      visible: {
+        opacity: 1,
+        transition: {
+          staggerChildren: 0.05
+        }
+      }
+    };
+
+    const itemVariants = {
+      hidden: { opacity: 0, x: -20 },
+      visible: { opacity: 1, x: 0 }
+    };
+
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-[100] bg-orange-500 flex flex-col items-center justify-center p-8 overflow-y-auto"
+      >
+        <button 
+          onClick={onClose}
+          className="absolute top-6 right-6 text-white/60 hover:text-white transition-colors z-[120]"
+        >
+          <XCircle size={40} />
+        </button>
+
+        <motion.h2 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-white text-4xl font-black uppercase tracking-tighter mb-12 text-center"
+        >
+          Class of 2025-26
+        </motion.h2>
+
+        <motion.div 
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 max-w-4xl w-full"
+        >
+          {[
+            "Edith", "Demi", "Hanson", "Dickson", "Helen", "Kiki", "Felix", "Hanna", 
+            "Ariel", "Alex", "Silvio", "Tony", "Anka", "Kiyo", "Billy", "Samuel", 
+            "Lawrence", "Xosox", "Chandler", "Mori", "Marli", "Hiro"
+          ].map((name) => (
+            <motion.button
+              key={name}
+              variants={itemVariants}
+              onClick={(e) => {
+                e.stopPropagation();
+                spawnEmoji();
+              }}
+              className="text-white text-2xl font-bold uppercase tracking-wide hover:scale-110 transition-transform text-center outline-none"
+            >
+              {name}
+            </motion.button>
+          ))}
+        </motion.div>
+
+        <AnimatePresence>
+          {activeEmojis.map(emoji => (
+            <motion.div
+              key={emoji.id}
+              initial={{ opacity: 0, scale: 0, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 1.5, y: -50 }}
+              className="fixed pointer-events-none z-[110]"
+              style={{ 
+                left: `${emoji.x}%`, 
+                top: `${emoji.y}%`, 
+                fontSize: `${emoji.size}px` 
+              }}
+            >
+              {emoji.emoji}
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </motion.div>
+    );
+  };
+
   const Dashboard = () => (
     <div className="min-h-screen bg-gray-50 pb-20">
       <AnimatePresence>
-        {isMedalOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
-            onClick={() => {
-              setIsMedalOpen(false);
-              setMedalRotation(0);
-            }}
-          >
-            <motion.div
-              layoutId="medal-button"
-              className="relative w-64 h-64 cursor-grab active:cursor-grabbing"
-              style={{ perspective: 1000 }}
-              onClick={(e) => e.stopPropagation()}
-              drag="x"
-              dragConstraints={{ left: 0, right: 0 }}
-              onDrag={(_, info) => {
-                setMedalRotation(prev => prev + info.delta.x);
-              }}
-            >
-              <button 
-                onClick={() => setIsMedalOpen(false)}
-                className="absolute -top-12 -right-12 p-2 text-white/60 hover:text-white transition-colors"
-              >
-                <XCircle size={32} />
-              </button>
-              <motion.div
-                className="w-full h-full relative"
-                style={{ 
-                  rotateY: medalRotation,
-                  transformStyle: "preserve-3d"
-                }}
-              >
-                {/* Front */}
-                <div 
-                  className="absolute inset-0 bg-gradient-to-br from-orange-50 via-orange-100 to-orange-200 border-8 border-orange-200 rounded-full flex flex-col items-center justify-center shadow-2xl overflow-hidden"
-                  style={{ backfaceVisibility: "hidden" }}
-                >
-                  {/* Shine effect */}
-                  <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/40 to-transparent -rotate-45 translate-x-[-100%] animate-[shine_3s_infinite]" />
-                  
-                  {/* Trophy Handles */}
-                  <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-8 h-16 border-4 border-orange-200 rounded-l-full -z-10" />
-                  <div className="absolute -right-3 top-1/2 -translate-y-1/2 w-8 h-16 border-4 border-orange-200 rounded-r-full -z-10" />
-                  
-                  <Trophy size={100} className="text-orange-600 mb-2 drop-shadow-md" />
-                  <span className="text-4xl font-black text-orange-600 drop-shadow-sm">Y8</span>
-                </div>
-
-                {/* Back */}
-                <div 
-                  className="absolute inset-0 bg-gradient-to-br from-orange-50 via-orange-100 to-orange-200 border-8 border-orange-200 rounded-full flex flex-col items-center justify-center p-8 text-center shadow-2xl overflow-hidden"
-                  style={{ 
-                    backfaceVisibility: "hidden",
-                    transform: "rotateY(180deg)"
-                  }}
-                >
-                  {/* Shine effect */}
-                  <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/40 to-transparent -rotate-45 translate-x-[-100%] animate-[shine_3s_infinite_1.5s]" />
-
-                  {/* Trophy Handles (Back) */}
-                  <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-8 h-16 border-4 border-orange-200 rounded-l-full -z-10" />
-                  <div className="absolute -right-3 top-1/2 -translate-y-1/2 w-8 h-16 border-4 border-orange-200 rounded-r-full -z-10" />
-
-                  <p className="text-orange-600 font-bold text-xl leading-tight mb-3">
-                    Made with love for the Y8 class
-                  </p>
-                  <div className="h-px w-12 bg-orange-300 mb-3" />
-                  <p className="text-orange-600 font-black text-2xl tracking-tight">
-                    Mr. LAM
-                  </p>
-                </div>
-              </motion.div>
-              
-              <div className="absolute -bottom-12 left-0 right-0 text-center text-white font-bold text-sm bg-black/20 py-1 rounded-full">
-                Drag sideways to rotate
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
+        {isY8Open && <Y8Splash onClose={() => setIsY8Open(false)} />}
       </AnimatePresence>
 
       <header className="bg-white border-b-2 border-gray-200 p-4 sticky top-0 z-10">
         <div className="max-w-2xl mx-auto flex justify-between items-center">
           <h1 className="text-2xl font-black text-emerald-500 tracking-tight">SCIENCE QUEST</h1>
-          <div className="flex gap-2">
-            <motion.button 
-              layoutId="medal-button"
-              onClick={() => setIsMedalOpen(true)}
-              className="flex items-center gap-1 bg-orange-100 text-orange-600 px-3 py-1 rounded-full font-bold hover:bg-orange-200 transition-colors"
-            >
-              <Trophy size={18} />
-              <span>Y8</span>
-            </motion.button>
-          </div>
+          <button 
+            onClick={() => setIsY8Open(true)}
+            className="bg-orange-500 text-white px-4 py-1.5 rounded-full font-black text-sm uppercase tracking-widest shadow-[0_4px_0_0_#c2410c] active:shadow-none active:translate-y-1 transition-all"
+          >
+            Y8
+          </button>
         </div>
       </header>
 
@@ -664,11 +706,27 @@ export default function App() {
 
     const handleSwipe = (direction: 'left' | 'right') => {
       const currentVocabIdx = remainingIndices[currentIndex];
+      const currentVocab = selectedUnit?.vocab[currentVocabIdx];
       
-      if (direction === 'right') {
+      if (direction === 'right' && currentVocab) {
         // Mastered
         const newMastered = [...masteredIndices, currentVocabIdx];
         setMasteredIndices(newMastered);
+
+        // Track mastered vocab in session stats
+        setSessionStats(prev => {
+          const unitStats = prev[selectedUnit!.id] || { attemptedQuestions: [], masteredVocab: [] };
+          if (!unitStats.masteredVocab.includes(currentVocab.term)) {
+            return {
+              ...prev,
+              [selectedUnit!.id]: {
+                ...unitStats,
+                masteredVocab: [...unitStats.masteredVocab, currentVocab.term]
+              }
+            };
+          }
+          return prev;
+        });
         
         const newRemaining = remainingIndices.filter(idx => idx !== currentVocabIdx);
         setRemainingIndices(newRemaining);
@@ -870,6 +928,88 @@ export default function App() {
     );
   };
 
+  const UserDashboardView = () => {
+    return (
+      <div className="min-h-screen bg-gray-50 pb-24">
+        <header className="bg-white border-b-2 border-gray-200 p-6 sticky top-0 z-10">
+          <div className="max-w-2xl mx-auto">
+            <h1 className="text-3xl font-black text-gray-800 uppercase tracking-tight">Dashboard</h1>
+            <p className="text-gray-400 font-bold uppercase tracking-widest text-xs mt-1">Session Statistics</p>
+          </div>
+        </header>
+
+        <main className="max-w-2xl mx-auto p-4 space-y-6 mt-4">
+          {units.map((unit) => {
+            const stats = sessionStats[unit.id] || { attemptedQuestions: [], masteredVocab: [] };
+            const attemptedCount = stats.attemptedQuestions.length;
+            const totalQuestions = unit.questions.length;
+            const notAttemptedCount = totalQuestions - attemptedCount;
+            const masteredCount = stats.masteredVocab.length;
+            const totalVocab = unit.vocab.length;
+            const totalNotes = unit.concepts.length;
+
+            return (
+              <motion.div
+                key={unit.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white border-2 border-gray-200 rounded-3xl overflow-hidden shadow-[0_4px_0_0_rgba(0,0,0,0.05)]"
+              >
+                <div className={`${unit.color} p-4 text-white flex items-center justify-between`}>
+                  <div className="flex items-center gap-3">
+                    <div className="bg-white/20 p-2 rounded-xl backdrop-blur-sm">
+                      <BookOpen size={20} />
+                    </div>
+                    <h3 className="font-black uppercase tracking-wide">{unit.title}</h3>
+                  </div>
+                  <span className="text-xs font-black bg-black/10 px-3 py-1 rounded-full uppercase tracking-widest">Unit {unit.id}</span>
+                </div>
+
+                <div className="p-6 grid grid-cols-2 gap-4">
+                  <div className="bg-blue-50 border-2 border-blue-100 rounded-2xl p-4">
+                    <div className="flex items-center gap-2 text-blue-500 mb-1">
+                      <CheckCircle2 size={16} />
+                      <span className="text-[10px] font-black uppercase tracking-widest">Quiz Attempted</span>
+                    </div>
+                    <p className="text-2xl font-black text-blue-700">{attemptedCount}</p>
+                    <p className="text-[10px] text-blue-400 font-bold uppercase">Questions</p>
+                  </div>
+
+                  <div className="bg-orange-50 border-2 border-orange-100 rounded-2xl p-4">
+                    <div className="flex items-center gap-2 text-orange-500 mb-1">
+                      <XCircle size={16} />
+                      <span className="text-[10px] font-black uppercase tracking-widest">Not Attempted</span>
+                    </div>
+                    <p className="text-2xl font-black text-orange-700">{notAttemptedCount}</p>
+                    <p className="text-[10px] text-orange-400 font-bold uppercase">Questions</p>
+                  </div>
+
+                  <div className="bg-emerald-50 border-2 border-emerald-100 rounded-2xl p-4">
+                    <div className="flex items-center gap-2 text-emerald-500 mb-1">
+                      <GraduationCap size={16} />
+                      <span className="text-[10px] font-black uppercase tracking-widest">Vocab Mastered</span>
+                    </div>
+                    <p className="text-2xl font-black text-emerald-700">{masteredCount} / {totalVocab}</p>
+                    <p className="text-[10px] text-emerald-400 font-bold uppercase">Items</p>
+                  </div>
+
+                  <div className="bg-purple-50 border-2 border-purple-100 rounded-2xl p-4">
+                    <div className="flex items-center gap-2 text-purple-500 mb-1">
+                      <Languages size={16} />
+                      <span className="text-[10px] font-black uppercase tracking-widest">Total Notes</span>
+                    </div>
+                    <p className="text-2xl font-black text-purple-700">{totalNotes}</p>
+                    <p className="text-[10px] text-purple-400 font-bold uppercase">Concepts</p>
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
+        </main>
+      </div>
+    );
+  };
+
   return (
     <div className="font-sans selection:bg-emerald-200">
       <AnimatePresence mode="wait">
@@ -880,19 +1020,26 @@ export default function App() {
         {mode === 'result' && <ResultView key="result" />}
         {mode === 'revision' && <RevisionView key="revision" />}
         {mode === 'vocab' && <VocabView key="vocab" />}
+        {mode === 'user-stats' && <UserDashboardView key="user-stats" />}
       </AnimatePresence>
 
-      {/* Bottom Nav for Dashboard */}
-      {mode === 'dashboard' && (
+      {/* Bottom Nav for Dashboard and User Stats */}
+      {['dashboard', 'user-stats'].includes(mode) && (
         <nav className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-200 p-4 z-20">
           <div className="max-w-2xl mx-auto flex justify-around items-center">
-            <button className="flex flex-col items-center gap-1 text-emerald-500">
-              <Home size={28} />
+            <button 
+              onClick={() => setMode('dashboard')}
+              className={`flex flex-col items-center gap-1 transition-colors ${mode === 'dashboard' ? 'text-emerald-500' : 'text-gray-400 hover:text-emerald-400'}`}
+            >
+              <Home size={28} fill={mode === 'dashboard' ? "currentColor" : "none"} />
               <span className="text-[10px] font-black uppercase">Home</span>
             </button>
-            <button className="flex flex-col items-center gap-1 text-gray-400 hover:text-emerald-400 transition-colors">
-              <Trophy size={28} />
-              <span className="text-[10px] font-black uppercase">Leaderboard</span>
+            <button 
+              onClick={() => setMode('user-stats')}
+              className={`flex flex-col items-center gap-1 transition-colors ${mode === 'user-stats' ? 'text-emerald-500' : 'text-gray-400 hover:text-emerald-400'}`}
+            >
+              <Trophy size={28} fill={mode === 'user-stats' ? "currentColor" : "none"} />
+              <span className="text-[10px] font-black uppercase">Dashboard</span>
             </button>
             <button className="flex flex-col items-center gap-1 text-gray-400 hover:text-emerald-400 transition-colors">
               <GraduationCap size={28} />

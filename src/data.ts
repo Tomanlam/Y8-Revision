@@ -25,7 +25,7 @@ export interface Unit {
 export const units: Unit[] = [
   {
     id: 1,
-    title: "The Circulatory and Respiratory Systems",
+    title: "Respiration",
     description: "Understanding how the body transports nutrients and performs gas exchange.",
     color: "bg-emerald-500",
     concepts: [
@@ -165,7 +165,7 @@ export const units: Unit[] = [
   },
   {
     id: 2,
-    title: "Dissolving, Solutions, and Chromatography",
+    title: "Properties of materials",
     description: "Understanding solutes, solvents, solubility, and separation techniques.",
     color: "bg-blue-500",
     concepts: [
@@ -282,7 +282,7 @@ export const units: Unit[] = [
   },
   {
     id: 3,
-    title: "Forces and Energy",
+    title: "Forces and energy",
     description: "Understanding motion, energy transfer, and balance.",
     color: "bg-orange-500",
     concepts: [
@@ -607,7 +607,7 @@ export const units: Unit[] = [
   },
   {
     id: 5,
-    title: "Materials and Cycles",
+    title: "Materials and cycles on Earth",
     description: "Atomic structure, purity, and Earth's climate cycles.",
     color: "bg-amber-700",
     concepts: [
@@ -736,7 +736,7 @@ export const units: Unit[] = [
   },
   {
     id: 6,
-    title: "Light and Space",
+    title: "Light",
     description: "Behavior of light, color theory, and celestial bodies.",
     color: "bg-yellow-400",
     concepts: [
@@ -894,7 +894,7 @@ export const units: Unit[] = [
   },
   {
     id: 7,
-    title: "Growth, Development and Health",
+    title: "Diet and growth",
     description: "Nutrition, human development, and the skeletal system.",
     color: "bg-pink-500",
     concepts: [
@@ -1052,7 +1052,7 @@ export const units: Unit[] = [
   },
   {
     id: 8,
-    title: "Chemical Reactions",
+    title: "Chemical reactions",
     description: "Fundamentals of chemical changes.",
     color: "bg-purple-600",
     concepts: [
