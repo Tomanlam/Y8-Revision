@@ -8,6 +8,8 @@ export interface Question {
 export interface Vocab {
   term: string;
   definition: string;
+  traditional: string;
+  simplified: string;
 }
 
 export interface Unit {
@@ -49,14 +51,14 @@ export const units: Unit[] = [
       "Exhalation: Diaphragm relaxes/domes, volume decreases, pressure increases, air exits."
     ],
     vocab: [
-      { term: "Circulatory System", definition: "The system that transports nutrients and oxygen to cells and removes waste." },
-      { term: "Respiration", definition: "A chemical reaction in cells that releases energy from glucose and oxygen." },
-      { term: "Mitochondria", definition: "The site of respiration within a cell, known as the powerhouse." },
-      { term: "Haemoglobin", definition: "A red pigment in red blood cells that binds to and transports oxygen." },
-      { term: "Pathogens", definition: "Microorganisms that cause diseases, such as bacteria and viruses." },
-      { term: "Alveoli", definition: "Tiny air sacs in the lungs where gas exchange takes place." },
-      { term: "Diffusion", definition: "The movement of particles from an area of high concentration to low concentration." },
-      { term: "Diaphragm", definition: "A muscle that controls breathing by changing the volume of the chest cavity." }
+      { term: "Circulatory System", definition: "The system that transports nutrients and oxygen to cells and removes waste.", traditional: "循環系統", simplified: "循环系统" },
+      { term: "Respiration", definition: "A chemical reaction in cells that releases energy from glucose and oxygen.", traditional: "呼吸作用", simplified: "呼吸作用" },
+      { term: "Mitochondria", definition: "The site of respiration within a cell, known as the powerhouse.", traditional: "線粒體", simplified: "线粒体" },
+      { term: "Haemoglobin", definition: "A red pigment in red blood cells that binds to and transports oxygen.", traditional: "血紅蛋白", simplified: "血红蛋白" },
+      { term: "Pathogens", definition: "Microorganisms that cause diseases, such as bacteria and viruses.", traditional: "病原體", simplified: "病原体" },
+      { term: "Alveoli", definition: "Tiny air sacs in the lungs where gas exchange takes place.", traditional: "肺泡", simplified: "肺泡" },
+      { term: "Diffusion", definition: "The movement of particles from an area of high concentration to low concentration.", traditional: "擴散", simplified: "扩散" },
+      { term: "Diaphragm", definition: "A muscle that controls breathing by changing the volume of the chest cavity.", traditional: "橫膈膜", simplified: "横膈膜" }
     ],
     questions: [
       { id: "1-1", text: "What best describes respiration?", options: ["A physical process that moves air in and out of lungs", "A chemical reaction in cells that releases energy", "A process that pumps blood around the body", "A process that breaks food into smaller pieces"], correctAnswer: "A chemical reaction in cells that releases energy" },
@@ -117,36 +119,36 @@ export const units: Unit[] = [
     description: "Understanding solutes, solvents, solubility, and separation techniques.",
     color: "bg-blue-500",
     concepts: [
-      "**Solutes, Solvents, and Solutions**: A solution is formed when a solute dissolves into a solvent. The solute is the substance that breaks down into smaller pieces, while the solvent is typically the liquid doing the dissolving. For example, when making salt water, salt is the solute and water is the solvent.",
-      "**The Process of Dissolving**: When a solid like salt is added to water, the water particles rapidly slide past each other and smash into the vibrating salt particles. This action causes the salt particles to break off and spread out in the water. Eventually, they become so far apart that they are no longer visible, meaning the salt has dissolved.",
-      "**Soluble vs. Insoluble Substances**: Not all substances can dissolve in a given solvent to form a solution. Substances that can dissolve, such as table sugar or salt in water, are described as soluble. Conversely, substances that cannot dissolve, such as oil or sand in water, are classified as insoluble.",
-      "**Characteristics of a Solution**: Solutions are always mixtures, meaning they are not pure substances. One defining characteristic of a liquid solution is that it must be transparent, allowing light to pass through it. Although solutions are clear and you can see through them, they are not always colorless and can take on the color of the dissolved solute.",
-      "**Dissolving vs. Melting**: People often confuse dissolving with melting, but they are fundamentally different physical processes. Dissolving always involves at least two substances, namely the solute and the solvent. Melting, on the other hand, involves only one single substance changing its state from a solid to a liquid, such as ice turning into liquid water.",
-      "**Physical Changes**: Dissolving is classified as a physical change rather than a chemical change. This is because no new chemical substances are formed during the dissolving process. Additionally, physical changes like dissolving are usually reversible, meaning the original solute and solvent can often be recovered.",
-      "**Conservation of Mass**: An important principle to remember during the dissolving process is the conservation of mass. If mass is conserved, the total mass before the process must be exactly equal to the total mass after the process. For example, dissolving 10 grams of salt into 100 grams of water will result in exactly 110 grams of salt water solution.",
-      "**Concentrated vs. Dilute Solutions**: The concentration of a solution depends on exactly how much solute is dissolved within the solvent. A concentrated solution contains a large amount of dissolved solute relative to the volume of solvent. In contrast, a dilute solution has very little solute dissolved in it, making it much weaker.",
-      "**Saturated Solutions**: There is a limit to how much of a soluble substance can dissolve in a given amount of water. When a large amount of solute is added and no more solid can dissolve, the mixture has reached its maximum capacity. This resulting mixture is formally known as a saturated solution, and any extra solid will simply sink to the bottom.",
-      "**Defining Solubility**: Different solutes require different amounts to be added to water before reaching the saturation point. Solubility is specifically defined as the amount in grams of a solute that can dissolve in 100 grams of a solvent before it becomes saturated at a given temperature. The more solute that can be added before saturation, the more soluble that substance is considered to be.",
-      "**Temperature and Solubility**: Temperature plays a critical role in how well substances can dissolve in a solvent. Most solid solutes will dissolve much more quickly and easily in hot water compared to cold water. As the temperature of the solvent increases, the overall solubility of the solute typically increases as well.",
-      "**Using Solubility Curves**: A solubility curve is a highly useful graph that visually represents the solubility of a solute at various different temperatures. Each unique solute has its own specific curve plotted on the graph. By placing multiple curves on the same graph, scientists can easily compare the solubilities of different salts under identical temperature conditions.",
-      "**Universal Solvents**: Water is an incredibly versatile liquid in chemistry and everyday life. Because it has the ability to dissolve so many different types of solutes, it is frequently referred to as a universal solvent. However, it is important to remember that water cannot dissolve absolutely everything, as seen with oil or sand.",
-      "**Alternative Solvents**: When certain solutes completely fail to dissolve in water, scientists must try using other liquid solvents instead. For instance, oil paint is insoluble in water but can be effectively dissolved using methanol, also known as methylated spirit. Similarly, nail polish won't dissolve in water but easily dissolves in propanone, commonly referred to as acetone.",
-      "**Pure vs. Impure Substances**: In chemistry, a pure substance is defined as containing only one single type of particle. Because of this uniformity, pure substances cannot be separated into any simpler substances through physical means. On the other hand, an impure substance contains more than one type of particle physically mixed together and can be separated into simpler components.",
-      "**Examples of Pure and Impure Liquids**: Distilled water is a classic example of a pure substance because it contains absolutely nothing but water molecules. In contrast, salt water is an impure substance because it contains both salt and water particles physically mixed together. Even if water looks completely clear, it might still contain dissolved minerals or chemicals, making it an impure mixture.",
-      "**Separation Techniques**: Different mixtures require different scientific techniques to separate their various components. Insoluble substances like sand can be easily separated from water using a process called filtration. To separate a soluble solid from a liquid solution, you can use evaporation to boil off the water and leave the solid crystals behind.",
-      "**Paper Chromatography Basics**: Ink in a pen is a common example of an impure mixture of different colored dyes. Paper chromatography is a specific laboratory technique used to separate a mixture of dyes or pigments. During this process, a special paper is suspended with one end touching a solvent, allowing the solvent to slowly soak up into the paper.",
-      "**Interpreting Chromatograms**: As the solvent travels up the chromatography paper, it carries the different dyes along with it. The dyes separate from each other because they have different solubilities within the chosen solvent. The final distinct pattern of colored spots left on the paper is officially called a chromatogram.",
-      "**Analyzing Dye Purity**: We can learn a lot about a dye's purity and solubility just by looking at its chromatogram. If a dye is pure, it will only produce one single colored spot on the paper. Furthermore, the distance a spot travels indicates its solubility; the more soluble a dye is, the further up the paper it will travel."
+      "A solution forms when a solute breaks down into smaller pieces and dissolves into a solvent, like salt in water.",
+      "Dissolving occurs when moving solvent particles smash into solid solute particles, breaking them apart until they are no longer visible.",
+      "Substances that can dissolve in a solvent are called soluble, while those that cannot, like oil or sand in water, are insoluble.",
+      "Solutions are mixtures that are always transparent, allowing light to pass through, though they can be colored.",
+      "Dissolving involves mixing two or more substances, whereas melting involves a single substance changing from solid to liquid.",
+      "Dissolving is a reversible physical change because no new chemical substances are formed during the process.",
+      "Mass is conserved during dissolving, meaning the total mass of the solute and solvent equals the mass of the final solution.",
+      "A concentrated solution contains a large amount of dissolved solute, while a dilute solution contains very little.",
+      "A saturated solution is reached when a solvent cannot dissolve any more solute, causing extra solid to sink to the bottom.",
+      "Solubility is measured as the maximum grams of a solute that can dissolve in 100 grams of a solvent at a specific temperature.",
+      "Heating a solvent generally increases the solubility of solid solutes, allowing them to dissolve faster and in larger amounts.",
+      "A solubility curve is a graph showing how a solute's solubility changes at different temperatures, allowing for easy comparisons between substances.",
+      "Water is considered a universal solvent because it can dissolve many different substances, though not everything.",
+      "When water cannot dissolve a substance, alternative solvents like methanol (for oil paint) or propanone (for nail polish) can be used.",
+      "A pure substance contains only one type of particle and cannot be physically separated into simpler substances.",
+      "An impure substance is a mixture of different particles, like salt water, which can be separated into simpler components.",
+      "Insoluble solids can be separated from liquids using filtration, while soluble solids can be recovered through evaporation.",
+      "Paper chromatography is a technique used to separate mixtures of dyes, like pen ink, using a special paper and a rising solvent.",
+      "As the solvent travels up the paper, dyes separate based on their different solubilities, creating a pattern called a chromatogram.",
+      "A pure dye produces a single spot on a chromatogram, while an impure dye creates multiple spots that travel different distances depending on their solubility."
     ],
     vocab: [
-      { term: "Solute", definition: "The substance that dissolves in a solvent to form a solution." },
-      { term: "Solvent", definition: "The liquid in which a solute dissolves." },
-      { term: "Solution", definition: "A transparent mixture formed by a solute dissolved in a solvent." },
-      { term: "Solubility", definition: "The maximum amount of solute that can dissolve in 100g of solvent at a specific temperature." },
-      { term: "Saturated", definition: "A solution that contains the maximum amount of dissolved solute." },
-      { term: "Chromatography", definition: "A technique used to separate mixtures of colored dyes or pigments." },
-      { term: "Filtration", definition: "A method used to separate an insoluble solid from a liquid." },
-      { term: "Evaporation", definition: "A method used to separate a soluble solid from a liquid by boiling off the liquid." }
+      { term: "Solute", definition: "The substance that dissolves in a solvent to form a solution.", traditional: "溶質", simplified: "溶质" },
+      { term: "Solvent", definition: "The liquid in which a solute dissolves.", traditional: "溶劑", simplified: "溶剂" },
+      { term: "Solution", definition: "A transparent mixture formed by a solute dissolved in a solvent.", traditional: "溶液", simplified: "溶液" },
+      { term: "Solubility", definition: "The maximum amount of solute that can dissolve in 100g of solvent at a specific temperature.", traditional: "溶解度", simplified: "溶解度" },
+      { term: "Saturated", definition: "A solution that contains the maximum amount of dissolved solute.", traditional: "飽和", simplified: "饱和" },
+      { term: "Chromatography", definition: "A technique used to separate mixtures of colored dyes or pigments.", traditional: "色譜法", simplified: "色谱法" },
+      { term: "Filtration", definition: "A method used to separate an insoluble solid from a liquid.", traditional: "過濾", simplified: "过滤" },
+      { term: "Evaporation", definition: "A method used to separate a soluble solid from a liquid by boiling off the liquid.", traditional: "蒸發", simplified: "蒸发" }
     ],
     questions: [
       { id: "2-1", text: "When table salt “disappears” in water, the process is called:", options: ["Evaporation", "Dissolving", "Melting", "Condensation"], correctAnswer: "Dissolving" },
@@ -214,11 +216,11 @@ export const units: Unit[] = [
       "Diffusion is the movement of particles from high to low concentration."
     ],
     vocab: [
-      { term: "Speed", definition: "How fast an object travels (Distance ÷ Time)." },
-      { term: "Moment", definition: "The turning effect of a force around a pivot." },
-      { term: "Pressure", definition: "The amount of force acting on a certain area." },
-      { term: "Diffusion", definition: "The random movement of particles from high to low concentration." },
-      { term: "Pascal", definition: "The standard unit of pressure (1 N/m²)." }
+      { term: "Speed", definition: "How fast an object travels (Distance ÷ Time).", traditional: "速度", simplified: "速度" },
+      { term: "Moment", definition: "The turning effect of a force around a pivot.", traditional: "力矩", simplified: "力矩" },
+      { term: "Pressure", definition: "The amount of force acting on a certain area.", traditional: "壓力", simplified: "压力" },
+      { term: "Diffusion", definition: "The random movement of particles from high to low concentration.", traditional: "擴散", simplified: "扩散" },
+      { term: "Pascal", definition: "The standard unit of pressure (1 N/m²).", traditional: "帕斯卡", simplified: "帕斯卡" }
     ],
     questions: [
       { id: "3-1", text: "What is speed?", options: ["How heavy something is", "How fast something travels", "How loud something is", "How hot something is"], correctAnswer: "How fast something travels" },
@@ -338,14 +340,14 @@ export const units: Unit[] = [
       "Biomagnification is the increase in toxin concentration along a food chain."
     ],
     vocab: [
-      { term: "Ecology", definition: "The study of ecosystems and the interaction of organisms." },
-      { term: "Nocturnal", definition: "Animals that are active at night." },
-      { term: "Diurnal", definition: "Animals that are active during the day." },
-      { term: "Chlorophyll", definition: "The green pigment in plants used for photosynthesis." },
-      { term: "Habitat", definition: "The natural home or environment of an organism." },
-      { term: "Apex Predator", definition: "The highest predator at the top of a food chain." },
-      { term: "Invasive Species", definition: "Species from other places that harm a natural ecosystem." },
-      { term: "Biomagnification", definition: "The buildup of toxins (like DDT) in a food chain." }
+      { term: "Ecology", definition: "The study of ecosystems and the interaction of organisms.", traditional: "生態學", simplified: "生态学" },
+      { term: "Nocturnal", definition: "Animals that are active at night.", traditional: "夜行性", simplified: "夜行性" },
+      { term: "Diurnal", definition: "Animals that are active during the day.", traditional: "晝行性", simplified: "昼行性" },
+      { term: "Chlorophyll", definition: "The green pigment in plants used for photosynthesis.", traditional: "葉綠素", simplified: "叶绿素" },
+      { term: "Habitat", definition: "The natural home or environment of an organism.", traditional: "棲息地", simplified: "栖息地" },
+      { term: "Apex Predator", definition: "The highest predator at the top of a food chain.", traditional: "頂級掠食者", simplified: "顶级掠食者" },
+      { term: "Invasive Species", definition: "Species from other places that harm a natural ecosystem.", traditional: "入侵物種", simplified: "入侵物种" },
+      { term: "Biomagnification", definition: "The buildup of toxins (like DDT) in a food chain.", traditional: "生物放大作用", simplified: "生物放大作用" }
     ],
     questions: [
       { id: "4-1", text: "The Sonoran Desert is considered a hostile environment mainly because it is:", options: ["always rainy and cold", "very dry with extreme temperatures", "full of deep oceans", "covered with thick ice sheets"], correctAnswer: "very dry with extreme temperatures" },
@@ -415,13 +417,13 @@ export const units: Unit[] = [
       "Glaciers and peat bogs provide evidence of past climate changes."
     ],
     vocab: [
-      { term: "Atom", definition: "The smallest part of an element that keeps its properties." },
-      { term: "Nucleus", definition: "The dense, positive center of an atom containing protons and neutrons." },
-      { term: "Purity", definition: "The percentage of a specific substance in a sample." },
-      { term: "Meteorology", definition: "The scientific study of weather patterns." },
-      { term: "Climatology", definition: "The study of long-term climate trends (30+ years)." },
-      { term: "Glacier", definition: "A slow-moving river of ice formed from snow." },
-      { term: "Atmosphere", definition: "The layer of gas mixture wrapping around Earth." }
+      { term: "Atom", definition: "The smallest part of an element that keeps its properties.", traditional: "原子", simplified: "原子" },
+      { term: "Nucleus", definition: "The dense, positive center of an atom containing protons and neutrons.", traditional: "原子核", simplified: "原子核" },
+      { term: "Purity", definition: "The percentage of a specific substance in a sample.", traditional: "純度", simplified: "纯度" },
+      { term: "Meteorology", definition: "The scientific study of weather patterns.", traditional: "氣象學", simplified: "气象学" },
+      { term: "Climatology", definition: "The study of long-term climate trends (30+ years).", traditional: "氣候學", simplified: "气候学" },
+      { term: "Glacier", definition: "A slow-moving river of ice formed from snow.", traditional: "冰川", simplified: "冰川" },
+      { term: "Atmosphere", definition: "The layer of gas mixture wrapping around Earth.", traditional: "大氣層", simplified: "大气层" }
     ],
     questions: [
       { id: "5-1", text: "Which statement best describes an element?", options: ["Two or more types of atoms chemically bonded", "A pure substance made of only one type of atom", "Two or more substances physically mixed", "A substance that always contains water"], correctAnswer: "A pure substance made of only one type of atom" },
@@ -491,14 +493,14 @@ export const units: Unit[] = [
       "Asteroids, comets, and meteors are smaller celestial bodies in our Solar System."
     ],
     vocab: [
-      { term: "Ray", definition: "A straight line representing the path of light." },
-      { term: "Normal", definition: "A line perpendicular to a reflective or refractive surface." },
-      { term: "Medium", definition: "A material that light travels through (e.g., air, water, glass)." },
-      { term: "Dispersion", definition: "The splitting of white light into its constituent colors." },
-      { term: "Luminous", definition: "An object that produces its own light." },
-      { term: "Galaxy", definition: "A massive system of stars, gas, and dust held by gravity." },
-      { term: "Asteroid", definition: "A rocky object orbiting the Sun, mostly in the asteroid belt." },
-      { term: "Comet", definition: "An object made of ice and dust that develops a tail near the Sun." }
+      { term: "Ray", definition: "A straight line representing the path of light.", traditional: "光線", simplified: "光线" },
+      { term: "Normal", definition: "A line perpendicular to a reflective or refractive surface.", traditional: "法線", simplified: "法线" },
+      { term: "Medium", definition: "A material that light travels through (e.g., air, water, glass).", traditional: "介質", simplified: "介质" },
+      { term: "Dispersion", definition: "The splitting of white light into its constituent colors.", traditional: "色散", simplified: "色散" },
+      { term: "Luminous", definition: "An object that produces its own light.", traditional: "發光的", simplified: "发光的" },
+      { term: "Galaxy", definition: "A massive system of stars, gas, and dust held by gravity.", traditional: "星系", simplified: "星系" },
+      { term: "Asteroid", definition: "A rocky object orbiting the Sun, mostly in the asteroid belt.", traditional: "小行星", simplified: "小行星" },
+      { term: "Comet", definition: "An object made of ice and dust that develops a tail near the Sun.", traditional: "彗星", simplified: "彗星" }
     ],
     questions: [
       { id: "6-1", text: "When light bounces off a reflective surface like a mirror, what occurs?", options: ["Refraction", "Reflection", "Dispersion", "Absorption"], correctAnswer: "Reflection" },
@@ -618,14 +620,14 @@ export const units: Unit[] = [
       "Muscles work in antagonistic pairs (like biceps and triceps) to move bones at joints."
     ],
     vocab: [
-      { term: "Malnutrition", definition: "A condition caused by an unbalanced diet with too much or too little nutrients." },
-      { term: "Zygote", definition: "The single cell formed when a sperm fertilizes an egg." },
-      { term: "Endorphin", definition: "A chemical produced by the brain during exercise that makes people feel cheerful." },
-      { term: "Haemoglobin", definition: "A red pigment in blood cells that transports oxygen." },
-      { term: "Exoskeleton", definition: "A skeleton found on the outside of an organism (e.g., crabs)." },
-      { term: "Ligament", definition: "A tissue that connects two bones together." },
-      { term: "Tendon", definition: "A tissue that connects a muscle to a bone." },
-      { term: "Antagonistic Pair", definition: "A pair of muscles that produce opposite movements (e.g., biceps and triceps)." }
+      { term: "Malnutrition", definition: "A condition caused by an unbalanced diet with too much or too little nutrients.", traditional: "營養不良", simplified: "营养不良" },
+      { term: "Zygote", definition: "The single cell formed when a sperm fertilizes an egg.", traditional: "受精卵", simplified: "受精卵" },
+      { term: "Endorphin", definition: "A chemical produced by the brain during exercise that makes people feel cheerful.", traditional: "內啡肽", simplified: "内啡肽" },
+      { term: "Haemoglobin", definition: "A red pigment in blood cells that transports oxygen.", traditional: "血紅蛋白", simplified: "血红蛋白" },
+      { term: "Exoskeleton", definition: "A skeleton found on the outside of an organism (e.g., crabs).", traditional: "外骨骼", simplified: "外骨骼" },
+      { term: "Ligament", definition: "A tissue that connects two bones together.", traditional: "韌帶", simplified: "韧带" },
+      { term: "Tendon", definition: "A tissue that connects a muscle to a bone.", traditional: "肌腱", simplified: "肌腱" },
+      { term: "Antagonistic Pair", definition: "A pair of muscles that produce opposite movements (e.g., biceps and triceps).", traditional: "對抗肌對", simplified: "对抗肌对" }
     ],
     questions: [
       { id: "7-1", text: "What is a diet?", options: ["A plan to lose weight", "The sum of all food consumed by a living organism", "A type of medicine", "A disease"], correctAnswer: "The sum of all food consumed by a living organism" },
@@ -692,10 +694,10 @@ export const units: Unit[] = [
       "Acids have a pH less than 7; bases have a pH greater than 7."
     ],
     vocab: [
-      { term: "Reactant", definition: "A substance that takes part in and undergoes change during a reaction." },
-      { term: "Product", definition: "A substance that is formed as the result of a chemical reaction." },
-      { term: "Catalyst", definition: "A substance that speeds up a reaction without being used up." },
-      { term: "Neutralization", definition: "A reaction between an acid and a base to produce salt and water." }
+      { term: "Reactant", traditional: "反應物", simplified: "反应物", definition: "A substance that takes part in and undergoes change during a reaction." },
+      { term: "Product", traditional: "生成物", simplified: "生成物", definition: "A substance that is formed as the result of a chemical reaction." },
+      { term: "Catalyst", traditional: "催化劑", simplified: "催化剂", definition: "A substance that speeds up a reaction without being used up." },
+      { term: "Neutralization", traditional: "中和反應", simplified: "中和反应", definition: "A reaction between an acid and a base to produce salt and water." }
     ],
     questions: [
       { id: "8-1", text: "What is the pH of a neutral substance?", options: ["1", "14", "7", "0"], correctAnswer: "7" },
@@ -717,10 +719,10 @@ export const units: Unit[] = [
       "The Moon orbits the Earth once every 27.3 days."
     ],
     vocab: [
-      { term: "Orbit", definition: "The curved path of a celestial object around a star, planet, or moon." },
-      { term: "Axis", definition: "An imaginary line about which a body rotates." },
-      { term: "Galaxy", definition: "A system of millions or billions of stars, together with gas and dust." },
-      { term: "Satellite", definition: "An object that orbits a planet." }
+      { term: "Orbit", traditional: "軌道", simplified: "轨道", definition: "The curved path of a celestial object around a star, planet, or moon." },
+      { term: "Axis", traditional: "軸", simplified: "轴", definition: "An imaginary line about which a body rotates." },
+      { term: "Galaxy", traditional: "星系", simplified: "星系", definition: "A system of millions or billions of stars, together with gas and dust." },
+      { term: "Satellite", traditional: "衛星", simplified: "卫星", definition: "An object that orbits a planet." }
     ],
     questions: [
       { id: "9-1", text: "How long does it take Earth to rotate once?", options: ["1 year", "1 month", "24 hours", "12 hours"], correctAnswer: "24 hours" },

@@ -371,48 +371,247 @@ export default function App() {
     </div>
   );
 
-  const VocabView = () => (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b-2 border-gray-200 p-4 sticky top-0 z-10">
-        <div className="max-w-2xl mx-auto flex items-center gap-4">
-          <button onClick={() => setMode('dashboard')} className="text-gray-400 hover:text-gray-600">
-            <ChevronLeft size={32} />
-          </button>
-          <h1 className="text-xl font-black text-gray-800 uppercase tracking-tight">{selectedUnit?.title} Vocab</h1>
-        </div>
-      </header>
+  const VocabView = () => {
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const [isFlipped, setIsFlipped] = useState(false);
+    const [masteredIndices, setMasteredIndices] = useState<number[]>([]);
+    const [remainingIndices, setRemainingIndices] = useState<number[]>([]);
+    const [isSimplified, setIsSimplified] = useState(false);
+    const [isCompleted, setIsCompleted] = useState(false);
+    const [colorIndex, setColorIndex] = useState(0);
 
-      <main className="max-w-2xl mx-auto p-6 space-y-6">
-        <div className="bg-purple-600 rounded-3xl p-8 text-white shadow-lg">
-          <h2 className="text-3xl font-black mb-2">Vocabulary</h2>
-          <p className="text-white/90 text-lg">Master the key terms for this unit.</p>
-        </div>
+    const duolingoColors = [
+      'bg-[#58cc02]', // Green
+      'bg-[#1cb0f6]', // Blue
+      'bg-[#ff9600]', // Orange
+      'bg-[#ff4b4b]', // Red
+      'bg-[#ce82ff]', // Purple
+    ];
 
-        <div className="grid gap-4">
-          {selectedUnit?.vocab.map((item, i) => (
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1 }}
-              key={i} 
-              className="bg-white border-2 border-gray-200 rounded-2xl p-6 shadow-[0_4px_0_0_rgba(0,0,0,0.05)]"
-            >
-              <h3 className="text-xl font-black text-purple-600 mb-2 uppercase tracking-wide">{item.term}</h3>
-              <div className="h-0.5 bg-gray-100 w-12 mb-3" />
-              <p className="text-gray-600 text-lg leading-relaxed">{item.definition}</p>
-            </motion.div>
-          ))}
-        </div>
+    const duolingoShadows = [
+      'shadow-[0_8px_0_0_#46a302]',
+      'shadow-[0_8px_0_0_#1899d6]',
+      'shadow-[0_8px_0_0_#e68700]',
+      'shadow-[0_8px_0_0_#e64444]',
+      'shadow-[0_8px_0_0_#b975e6]',
+    ];
 
-        <button
-          onClick={() => startQuiz(selectedUnit!)}
-          className="w-full bg-emerald-500 text-white py-4 rounded-2xl font-black text-xl uppercase tracking-widest shadow-[0_6px_0_0_#059669] active:shadow-none active:translate-y-1 transition-all flex items-center justify-center gap-3"
-        >
-          Test your Vocab <ArrowRight size={24} />
-        </button>
-      </main>
-    </div>
-  );
+    useEffect(() => {
+      if (selectedUnit) {
+        setRemainingIndices(selectedUnit.vocab.map((_, i) => i));
+        setMasteredIndices([]);
+        setCurrentIndex(0);
+        setIsCompleted(false);
+      }
+    }, [selectedUnit]);
+
+    const handleSwipe = (direction: 'left' | 'right') => {
+      const currentVocabIdx = remainingIndices[currentIndex];
+      
+      if (direction === 'right') {
+        // Mastered
+        const newMastered = [...masteredIndices, currentVocabIdx];
+        setMasteredIndices(newMastered);
+        
+        const newRemaining = remainingIndices.filter(idx => idx !== currentVocabIdx);
+        setRemainingIndices(newRemaining);
+        
+        if (newRemaining.length === 0) {
+          setIsCompleted(true);
+          return;
+        }
+      }
+
+      // Cycle to next
+      setIsFlipped(false);
+      setColorIndex((prev) => (prev + 1) % duolingoColors.length);
+      
+      // If we swiped left, the item stays in remainingIndices, so we just move to next index
+      // If we swiped right, the item was removed, so the "next" item is now at the same index
+      // unless we were at the end of the list.
+      if (direction === 'left') {
+        setCurrentIndex((prev) => (prev + 1) % remainingIndices.length);
+      } else {
+        // After removal, if we were at the last item, go back to 0
+        if (currentIndex >= remainingIndices.length - 1) {
+          setCurrentIndex(0);
+        }
+        // Otherwise currentIndex stays the same but points to a new item
+      }
+    };
+
+    if (isCompleted) {
+      return (
+        <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6 text-center">
+          <motion.div
+            initial={{ scale: 0, rotate: -180 }}
+            animate={{ scale: 1, rotate: 0 }}
+            className="bg-white p-12 rounded-full shadow-2xl mb-8"
+          >
+            <Trophy size={120} className="text-yellow-400" />
+          </motion.div>
+          <motion.h1
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.3 }}
+            className="text-4xl font-black text-gray-800 mb-4 uppercase tracking-tight"
+          >
+            All mastered! Good job!
+          </motion.h1>
+          <motion.p
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.4 }}
+            className="text-gray-500 text-xl mb-12"
+          >
+            You've learned all the key terms for this unit.
+          </motion.p>
+          <motion.button
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            onClick={() => setMode('dashboard')}
+            className="bg-emerald-500 text-white px-12 py-4 rounded-2xl font-black text-xl uppercase tracking-widest shadow-[0_6px_0_0_#059669] active:shadow-none active:translate-y-1 transition-all"
+          >
+            Back to Dashboard
+          </motion.button>
+        </div>
+      );
+    }
+
+    const currentVocab = selectedUnit?.vocab[remainingIndices[currentIndex]];
+
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col overflow-hidden">
+        <header className="bg-white border-b-2 border-gray-200 p-4 sticky top-0 z-10">
+          <div className="max-w-2xl mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <button onClick={() => setMode('dashboard')} className="text-gray-400 hover:text-gray-600">
+                <ChevronLeft size={32} />
+              </button>
+              <div>
+                <h1 className="text-lg font-black text-gray-800 uppercase tracking-tight leading-none">Vocab</h1>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">{selectedUnit?.title}</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <div className="text-right mr-2">
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Progress</p>
+                <p className="text-sm font-black text-emerald-500">
+                  {masteredIndices.length} / {selectedUnit?.vocab.length}
+                </p>
+              </div>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setIsSimplified(!isSimplified)}
+                className="bg-purple-100 text-purple-600 px-3 py-1.5 rounded-xl font-black text-xs uppercase tracking-wider border-2 border-purple-200 flex items-center gap-2"
+              >
+                <Languages size={16} />
+                {isSimplified ? 'Simplified' : 'Traditional'}
+              </motion.button>
+            </div>
+          </div>
+        </header>
+
+        <main className="flex-1 flex flex-col items-center justify-center p-6 relative">
+          <div className="w-full max-w-sm aspect-[3/4] relative perspective-1000">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={remainingIndices[currentIndex]}
+                drag="x"
+                dragConstraints={{ left: 0, right: 0 }}
+                onDragEnd={(_, info) => {
+                  if (info.offset.x > 100) handleSwipe('right');
+                  else if (info.offset.x < -100) handleSwipe('left');
+                }}
+                animate={{ 
+                  rotateY: isFlipped ? 180 : 0,
+                  x: 0,
+                  opacity: 1,
+                  scale: 1
+                }}
+                exit={{ 
+                  x: 0, // We handle exit animation manually via swipe if needed, but AnimatePresence needs a key change
+                  opacity: 0,
+                  scale: 0.8
+                }}
+                transition={{ type: 'spring', damping: 20, stiffness: 300 }}
+                onClick={() => setIsFlipped(!isFlipped)}
+                className={`w-full h-full cursor-pointer preserve-3d relative transition-shadow duration-300 ${!isFlipped ? duolingoShadows[colorIndex] : 'shadow-xl'}`}
+              >
+                {/* Front */}
+                <div 
+                  className={`absolute inset-0 backface-hidden rounded-3xl flex flex-col items-center justify-center p-8 text-center ${duolingoColors[colorIndex]}`}
+                >
+                  <span className="text-white/50 text-xs font-black uppercase tracking-[0.2em] mb-4">English Term</span>
+                  <h2 className="text-white text-4xl font-black uppercase tracking-tight leading-tight">
+                    {currentVocab?.term}
+                  </h2>
+                  <div className="absolute bottom-8 flex items-center gap-2 text-white/60 font-bold text-sm uppercase tracking-widest">
+                    <ArrowRight size={16} className="animate-pulse" /> Tap to flip
+                  </div>
+                </div>
+
+                {/* Back */}
+                <div 
+                  className="absolute inset-0 backface-hidden rounded-3xl bg-white flex flex-col items-center justify-center p-8 text-center rotate-y-180 border-4 border-gray-100"
+                >
+                  <div className="space-y-8 w-full">
+                    <div>
+                      <span className="text-gray-300 text-[10px] font-black uppercase tracking-[0.2em] block mb-2">Translation</span>
+                      <h3 className="text-gray-800 text-3xl font-black">
+                        {isSimplified ? currentVocab?.simplified : currentVocab?.traditional}
+                      </h3>
+                    </div>
+                    
+                    <div className="h-px bg-gray-100 w-full" />
+                    
+                    <div>
+                      <span className="text-gray-300 text-[10px] font-black uppercase tracking-[0.2em] block mb-2">Definition</span>
+                      <p className="text-gray-600 text-lg font-medium leading-relaxed">
+                        {currentVocab?.definition}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </AnimatePresence>
+
+            {/* Swipe Indicators */}
+            <div className="absolute -bottom-20 left-0 right-0 flex justify-between px-4">
+              <div className="flex flex-col items-center gap-2">
+                <div className="w-14 h-14 rounded-full bg-red-100 border-2 border-red-200 flex items-center justify-center text-red-500 shadow-[0_4px_0_0_#fecaca]">
+                  <XCircle size={28} />
+                </div>
+                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Revise Later</span>
+              </div>
+              <div className="flex flex-col items-center gap-2">
+                <div className="w-14 h-14 rounded-full bg-emerald-100 border-2 border-emerald-200 flex items-center justify-center text-emerald-500 shadow-[0_4px_0_0_#a7f3d0]">
+                  <CheckCircle2 size={28} />
+                </div>
+                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mastered</span>
+              </div>
+            </div>
+          </div>
+        </main>
+
+        <footer className="p-6 text-center">
+          <p className="text-gray-400 text-xs font-bold uppercase tracking-widest">
+            Swipe left to revise • Swipe right to master
+          </p>
+        </footer>
+
+        <style>{`
+          .perspective-1000 { perspective: 1000px; }
+          .preserve-3d { transform-style: preserve-3d; }
+          .backface-hidden { backface-visibility: hidden; }
+          .rotate-y-180 { transform: rotateY(180deg); }
+        `}</style>
+      </div>
+    );
+  };
 
   return (
     <div className="font-sans selection:bg-emerald-200">
