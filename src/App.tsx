@@ -15,11 +15,13 @@ import {
   XCircle, 
   Trophy,
   ArrowRight,
-  Home
+  Home,
+  RefreshCw
 } from 'lucide-react';
 import { units, Unit, Question, Vocab } from './data';
 
-type AppMode = 'splash' | 'dashboard' | 'quiz' | 'revision' | 'vocab' | 'result';
+type AppMode = 'splash' | 'dashboard' | 'quiz' | 'quiz-select' | 'revision' | 'vocab' | 'result';
+type QuizSubMode = 'quick' | 'time-attack' | 'marathon';
 
 export default function App() {
   const [mode, setMode] = useState<AppMode>('splash');
@@ -31,6 +33,23 @@ export default function App() {
   const [isAnswerChecked, setIsAnswerChecked] = useState(false);
   const [quizQuestions, setQuizQuestions] = useState<Question[]>([]);
   const [hearts, setHearts] = useState(5);
+  const [quizSubMode, setQuizSubMode] = useState<QuizSubMode>('quick');
+  const [timeLeft, setTimeLeft] = useState(30);
+  const [isMedalOpen, setIsMedalOpen] = useState(false);
+  const [medalRotation, setMedalRotation] = useState(0);
+
+  const allConcepts = useMemo(() => units.flatMap(unit => unit.concepts), []);
+  const [randomConcept, setRandomConcept] = useState(() => 
+    allConcepts[Math.floor(Math.random() * allConcepts.length)]
+  );
+
+  const refreshConcept = () => {
+    let nextConcept;
+    do {
+      nextConcept = allConcepts[Math.floor(Math.random() * allConcepts.length)];
+    } while (nextConcept === randomConcept && allConcepts.length > 1);
+    setRandomConcept(nextConcept);
+  };
 
   // Splash screen timeout
   useEffect(() => {
@@ -40,11 +59,41 @@ export default function App() {
     }
   }, [mode]);
 
+  // Time Attack timer
+  useEffect(() => {
+    if (mode === 'quiz' && quizSubMode === 'time-attack' && timeLeft > 0 && !isAnswerChecked) {
+      const timer = setInterval(() => {
+        setTimeLeft(prev => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            setMode('result');
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [mode, quizSubMode, timeLeft, isAnswerChecked]);
+
   const startQuiz = (unit: Unit) => {
     setSelectedUnit(unit);
-    // Shuffle and pick 5 questions
+    setMode('quiz-select');
+  };
+
+  const startQuizWithMode = (unit: Unit, subMode: QuizSubMode) => {
+    setQuizSubMode(subMode);
     const shuffled = [...unit.questions].sort(() => 0.5 - Math.random());
-    setQuizQuestions(shuffled.slice(0, 5));
+    
+    if (subMode === 'quick') {
+      setQuizQuestions(shuffled.slice(0, 10));
+    } else if (subMode === 'time-attack') {
+      setQuizQuestions(shuffled);
+      setTimeLeft(30);
+    } else {
+      setQuizQuestions(shuffled);
+    }
+
     setCurrentQuestionIndex(0);
     setScore(0);
     setQuizProgress(0);
@@ -93,8 +142,17 @@ export default function App() {
       setIsAnswerChecked(false);
       setQuizProgress(((nextIndex) / quizQuestions.length) * 100);
     } else {
-      setQuizProgress(100);
-      setMode('result');
+      if (quizSubMode === 'time-attack' || quizSubMode === 'marathon') {
+        // Shuffle again and continue for time-attack or marathon if we run out of questions
+        const reshuffled = [...selectedUnit!.questions].sort(() => 0.5 - Math.random());
+        setQuizQuestions(prev => [...prev, ...reshuffled]);
+        setCurrentQuestionIndex(nextIndex);
+        setSelectedOption(null);
+        setIsAnswerChecked(false);
+      } else {
+        setQuizProgress(100);
+        setMode('result');
+      }
     }
   };
 
@@ -126,14 +184,103 @@ export default function App() {
 
   const Dashboard = () => (
     <div className="min-h-screen bg-gray-50 pb-20">
+      <AnimatePresence>
+        {isMedalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+            onClick={() => {
+              setIsMedalOpen(false);
+              setMedalRotation(0);
+            }}
+          >
+            <motion.div
+              layoutId="medal-button"
+              className="relative w-64 h-64 cursor-grab active:cursor-grabbing"
+              style={{ perspective: 1000 }}
+              onClick={(e) => e.stopPropagation()}
+              drag="x"
+              dragConstraints={{ left: 0, right: 0 }}
+              onDrag={(_, info) => {
+                setMedalRotation(prev => prev + info.delta.x);
+              }}
+            >
+              <button 
+                onClick={() => setIsMedalOpen(false)}
+                className="absolute -top-12 -right-12 p-2 text-white/60 hover:text-white transition-colors"
+              >
+                <XCircle size={32} />
+              </button>
+              <motion.div
+                className="w-full h-full relative"
+                style={{ 
+                  rotateY: medalRotation,
+                  transformStyle: "preserve-3d"
+                }}
+              >
+                {/* Front */}
+                <div 
+                  className="absolute inset-0 bg-gradient-to-br from-orange-50 via-orange-100 to-orange-200 border-8 border-orange-200 rounded-full flex flex-col items-center justify-center shadow-2xl overflow-hidden"
+                  style={{ backfaceVisibility: "hidden" }}
+                >
+                  {/* Shine effect */}
+                  <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/40 to-transparent -rotate-45 translate-x-[-100%] animate-[shine_3s_infinite]" />
+                  
+                  {/* Trophy Handles */}
+                  <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-8 h-16 border-4 border-orange-200 rounded-l-full -z-10" />
+                  <div className="absolute -right-3 top-1/2 -translate-y-1/2 w-8 h-16 border-4 border-orange-200 rounded-r-full -z-10" />
+                  
+                  <Trophy size={100} className="text-orange-600 mb-2 drop-shadow-md" />
+                  <span className="text-4xl font-black text-orange-600 drop-shadow-sm">Y8</span>
+                </div>
+
+                {/* Back */}
+                <div 
+                  className="absolute inset-0 bg-gradient-to-br from-orange-50 via-orange-100 to-orange-200 border-8 border-orange-200 rounded-full flex flex-col items-center justify-center p-8 text-center shadow-2xl overflow-hidden"
+                  style={{ 
+                    backfaceVisibility: "hidden",
+                    transform: "rotateY(180deg)"
+                  }}
+                >
+                  {/* Shine effect */}
+                  <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/40 to-transparent -rotate-45 translate-x-[-100%] animate-[shine_3s_infinite_1.5s]" />
+
+                  {/* Trophy Handles (Back) */}
+                  <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-8 h-16 border-4 border-orange-200 rounded-l-full -z-10" />
+                  <div className="absolute -right-3 top-1/2 -translate-y-1/2 w-8 h-16 border-4 border-orange-200 rounded-r-full -z-10" />
+
+                  <p className="text-orange-600 font-bold text-xl leading-tight mb-3">
+                    Made with love for the Y8 class
+                  </p>
+                  <div className="h-px w-12 bg-orange-300 mb-3" />
+                  <p className="text-orange-600 font-black text-2xl tracking-tight">
+                    Mr. LAM
+                  </p>
+                </div>
+              </motion.div>
+              
+              <div className="absolute -bottom-12 left-0 right-0 text-center text-white font-bold text-sm bg-black/20 py-1 rounded-full">
+                Drag sideways to rotate
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <header className="bg-white border-b-2 border-gray-200 p-4 sticky top-0 z-10">
         <div className="max-w-2xl mx-auto flex justify-between items-center">
           <h1 className="text-2xl font-black text-emerald-500 tracking-tight">SCIENCE QUEST</h1>
           <div className="flex gap-2">
-            <div className="flex items-center gap-1 bg-orange-100 text-orange-600 px-3 py-1 rounded-full font-bold">
+            <motion.button 
+              layoutId="medal-button"
+              onClick={() => setIsMedalOpen(true)}
+              className="flex items-center gap-1 bg-orange-100 text-orange-600 px-3 py-1 rounded-full font-bold hover:bg-orange-200 transition-colors"
+            >
               <Trophy size={18} />
               <span>Y8</span>
-            </div>
+            </motion.button>
           </div>
         </div>
       </header>
@@ -143,9 +290,28 @@ export default function App() {
           <div className="bg-emerald-500 p-4 rounded-full text-white">
             <GraduationCap size={40} />
           </div>
-          <div>
-            <h2 className="text-xl font-bold text-emerald-900">Ready for Unit 1-9?</h2>
-            <p className="text-emerald-700">Master your science revision with daily quests!</p>
+          <div className="flex-1">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-black text-emerald-900 uppercase tracking-tight">Did you know?</h2>
+              <motion.button
+                whileHover={{ rotate: 180 }}
+                whileTap={{ scale: 0.8 }}
+                onClick={refreshConcept}
+                className="text-emerald-600 hover:text-emerald-800 p-1 rounded-full hover:bg-emerald-200 transition-colors"
+              >
+                <RefreshCw size={20} />
+              </motion.button>
+            </div>
+            <p className="text-emerald-700 font-medium leading-tight mt-1">
+              {randomConcept.includes(': ') ? (
+                <>
+                  <span className="font-bold">{randomConcept.split(': ')[0]}:</span>
+                  {randomConcept.substring(randomConcept.indexOf(': ') + 1)}
+                </>
+              ) : (
+                randomConcept
+              )}
+            </p>
           </div>
         </div>
 
@@ -199,6 +365,65 @@ export default function App() {
     </div>
   );
 
+  const QuizSelectView = () => (
+    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6">
+      <div className="max-w-md w-full space-y-6">
+        <div className="text-center mb-8">
+          <h2 className="text-3xl font-black text-gray-800 uppercase tracking-tight mb-2">Choose Your Challenge</h2>
+          <p className="text-gray-500 font-medium">{selectedUnit?.title}</p>
+        </div>
+
+        <div className="grid gap-4">
+          <button
+            onClick={() => startQuizWithMode(selectedUnit!, 'quick')}
+            className="bg-white border-2 border-gray-200 p-6 rounded-3xl flex items-center gap-6 hover:border-emerald-400 transition-all group shadow-[0_4px_0_0_#e5e7eb] hover:shadow-[0_4px_0_0_#34d399]"
+          >
+            <div className="bg-emerald-100 text-emerald-600 p-4 rounded-2xl group-hover:bg-emerald-500 group-hover:text-white transition-colors">
+              <CheckCircle2 size={32} />
+            </div>
+            <div className="text-left">
+              <h3 className="font-black text-xl text-gray-800 uppercase">Quick Mode</h3>
+              <p className="text-gray-500 text-sm">10 random questions to test your knowledge.</p>
+            </div>
+          </button>
+
+          <button
+            onClick={() => startQuizWithMode(selectedUnit!, 'time-attack')}
+            className="bg-white border-2 border-gray-200 p-6 rounded-3xl flex items-center gap-6 hover:border-orange-400 transition-all group shadow-[0_4px_0_0_#e5e7eb] hover:shadow-[0_4px_0_0_#fb923c]"
+          >
+            <div className="bg-orange-100 text-orange-600 p-4 rounded-2xl group-hover:bg-orange-500 group-hover:text-white transition-colors">
+              <Trophy size={32} />
+            </div>
+            <div className="text-left">
+              <h3 className="font-black text-xl text-gray-800 uppercase">Time Attack</h3>
+              <p className="text-gray-500 text-sm">Race against the clock! 30 seconds to answer as many as you can.</p>
+            </div>
+          </button>
+
+          <button
+            onClick={() => startQuizWithMode(selectedUnit!, 'marathon')}
+            className="bg-white border-2 border-gray-200 p-6 rounded-3xl flex items-center gap-6 hover:border-blue-400 transition-all group shadow-[0_4px_0_0_#e5e7eb] hover:shadow-[0_4px_0_0_#60a5fa]"
+          >
+            <div className="bg-blue-100 text-blue-600 p-4 rounded-2xl group-hover:bg-blue-500 group-hover:text-white transition-colors">
+              <BookOpen size={32} />
+            </div>
+            <div className="text-left">
+              <h3 className="font-black text-xl text-gray-800 uppercase">Marathon</h3>
+              <p className="text-gray-500 text-sm">All questions in random order. No time limit.</p>
+            </div>
+          </button>
+        </div>
+
+        <button
+          onClick={() => setMode('dashboard')}
+          className="w-full mt-8 text-gray-400 font-bold uppercase tracking-widest hover:text-gray-600 transition-colors"
+        >
+          Go Back
+        </button>
+      </div>
+    </div>
+  );
+
   const QuizView = () => {
     const currentQuestion = quizQuestions[currentQuestionIndex];
     const isCorrect = selectedOption === currentQuestion.correctAnswer;
@@ -209,13 +434,32 @@ export default function App() {
           <button onClick={() => setMode('dashboard')} className="text-gray-400 hover:text-gray-600">
             <XCircle size={32} />
           </button>
-          <div className="flex-1 h-4 bg-gray-100 rounded-full overflow-hidden">
-            <motion.div 
-              initial={{ width: 0 }}
-              animate={{ width: `${quizProgress}%` }}
-              className="h-full bg-emerald-500 rounded-full"
-            />
+          
+          <div className="flex-1 flex flex-col gap-1">
+            <div className="flex justify-between items-center px-1">
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                {quizSubMode === 'time-attack' ? 'Time Attack' : quizSubMode === 'marathon' ? 'Marathon' : 'Quick Mode'}
+              </span>
+              {(quizSubMode === 'quick' || quizSubMode === 'marathon') && (
+                <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">
+                  Question {currentQuestionIndex + 1}
+                </span>
+              )}
+              {quizSubMode === 'time-attack' && (
+                <span className={`text-sm font-black uppercase tracking-widest ${timeLeft <= 5 ? 'text-red-500 animate-pulse' : 'text-orange-500'}`}>
+                  {timeLeft}s
+                </span>
+              )}
+            </div>
+            <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+              <motion.div 
+                initial={{ width: 0 }}
+                animate={{ width: quizSubMode === 'time-attack' ? `${(timeLeft / 30) * 100}%` : `${quizProgress}%` }}
+                className={`h-full rounded-full transition-all ${quizSubMode === 'time-attack' ? (timeLeft <= 5 ? 'bg-red-500' : 'bg-orange-500') : 'bg-emerald-500'}`}
+              />
+            </div>
           </div>
+
           <div className="flex items-center gap-1 text-red-500 font-bold">
             <Heart size={20} fill={hearts > 0 ? "currentColor" : "none"} />
             <span>{hearts}</span>
@@ -298,22 +542,26 @@ export default function App() {
         <Trophy size={100} />
       </motion.div>
       <h2 className="text-4xl font-black text-gray-800 mb-2">
-        {hearts > 0 ? 'Unit Complete!' : 'Out of Hearts!'}
+        {hearts > 0 ? (quizSubMode === 'time-attack' ? 'Time Up!' : 'Unit Complete!') : 'Out of Hearts!'}
       </h2>
       <p className="text-gray-500 text-xl mb-8">
         {hearts > 0 
-          ? `You've mastered some ${selectedUnit?.title} concepts!` 
+          ? (quizSubMode === 'time-attack' ? `Great effort in Time Attack!` : `You've mastered some ${selectedUnit?.title} concepts!`)
           : `Don't give up! Review the notes and try again.`}
       </p>
       
       <div className="grid grid-cols-2 gap-4 w-full max-w-sm mb-12">
         <div className="bg-orange-50 border-2 border-orange-200 rounded-2xl p-4">
           <p className="text-orange-400 font-bold uppercase text-xs">Score</p>
-          <p className="text-orange-600 font-black text-2xl">{score} / 5</p>
+          <p className="text-orange-600 font-black text-2xl">
+            {quizSubMode === 'time-attack' ? score : `${score} / ${quizQuestions.length}`}
+          </p>
         </div>
         <div className="bg-blue-50 border-2 border-blue-200 rounded-2xl p-4">
           <p className="text-blue-400 font-bold uppercase text-xs">Accuracy</p>
-          <p className="text-blue-600 font-black text-2xl">{(score / 5) * 100}%</p>
+          <p className="text-blue-600 font-black text-2xl">
+            {score > 0 ? Math.round((score / (currentQuestionIndex + (isAnswerChecked ? 1 : 0))) * 100) : 0}%
+          </p>
         </div>
       </div>
 
@@ -356,7 +604,16 @@ export default function App() {
               <div className="bg-blue-100 text-blue-600 p-2 rounded-lg mt-1">
                 <CheckCircle2 size={20} />
               </div>
-              <p className="text-gray-700 text-lg font-medium leading-relaxed">{concept}</p>
+              <p className="text-gray-700 text-lg font-medium leading-relaxed">
+                {concept.includes(': ') ? (
+                  <>
+                    <span className="font-black text-gray-900">{concept.split(': ')[0]}:</span>
+                    {concept.substring(concept.indexOf(': ') + 1)}
+                  </>
+                ) : (
+                  concept
+                )}
+              </p>
             </motion.div>
           ))}
         </div>
@@ -618,6 +875,7 @@ export default function App() {
       <AnimatePresence mode="wait">
         {mode === 'splash' && <SplashScreen key="splash" />}
         {mode === 'dashboard' && <Dashboard key="dashboard" />}
+        {mode === 'quiz-select' && <QuizSelectView key="quiz-select" />}
         {mode === 'quiz' && <QuizView key="quiz" />}
         {mode === 'result' && <ResultView key="result" />}
         {mode === 'revision' && <RevisionView key="revision" />}

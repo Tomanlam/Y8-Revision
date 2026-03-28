@@ -3,6 +3,12 @@
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --animate-shine: shine 3s infinite;
+  
+  @keyframes shine {
+    0% { transform: translateX(-100%) rotate(-45deg); }
+    20%, 100% { transform: translateX(200%) rotate(-45deg); }
+  }
 }
 
 body {
