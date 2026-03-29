@@ -19,7 +19,8 @@ import {
   RefreshCw,
   Github,
   ExternalLink,
-  Info
+  Info,
+  Zap
 } from 'lucide-react';
 import { units, Unit, Question, Vocab } from './data';
 
@@ -1114,6 +1115,25 @@ export default function App() {
               <span className="font-bold text-sm truncate mr-2">github.com/Tomanlam/Y8-Revision</span>
               <ExternalLink size={18} className="flex-shrink-0 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
             </a>
+          </motion.div>
+
+          {/* Tech Stack Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+            className="bg-white border-2 border-gray-200 rounded-3xl p-6 shadow-[0_4px_0_0_rgba(0,0,0,0.05)]"
+          >
+            <div className="flex items-center gap-4 mb-4">
+              <div className="bg-orange-100 p-3 rounded-2xl text-orange-600">
+                <Zap size={24} />
+              </div>
+              <h3 className="text-xl font-black text-gray-800 uppercase tracking-tight">Tech Stack</h3>
+            </div>
+            <div className="bg-orange-50 border-2 border-orange-100 p-4 rounded-2xl text-center">
+              <p className="text-xl font-black text-orange-700">Powered by React + Vite</p>
+              <p className="text-orange-400 font-bold text-[10px] uppercase tracking-[0.2em] mt-1">Modern Web Technologies</p>
+            </div>
           </motion.div>
 
           {/* Revision Card */}
