@@ -674,7 +674,6 @@ export default function App() {
   );
 
   const VocabView = () => {
-    const [currentIndex, setCurrentIndex] = useState(0);
     const [isFlipped, setIsFlipped] = useState(false);
     const [masteredIndices, setMasteredIndices] = useState<number[]>([]);
     const [remainingIndices, setRemainingIndices] = useState<number[]>([]);
@@ -700,21 +699,42 @@ export default function App() {
 
     useEffect(() => {
       if (selectedUnit) {
-        setRemainingIndices(selectedUnit.vocab.map((_, i) => i));
-        setMasteredIndices([]);
-        setCurrentIndex(0);
-        setIsCompleted(false);
+        const stats = sessionStats[selectedUnit.id] || { attemptedQuestions: [], masteredVocab: [] };
+        const alreadyMasteredIndices = selectedUnit.vocab
+          .map((v, i) => stats.masteredVocab.includes(v.term) ? i : -1)
+          .filter(i => i !== -1);
+        
+        setMasteredIndices(alreadyMasteredIndices);
+
+        // Only show cards NOT yet mastered in this session's initial queue
+        const indices = selectedUnit.vocab
+          .map((_, i) => i)
+          .filter(i => !alreadyMasteredIndices.includes(i));
+
+        // Shuffle indices for random order
+        for (let i = indices.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [indices[i], indices[j]] = [indices[j], indices[i]];
+        }
+        setRemainingIndices(indices);
+        setIsCompleted(indices.length === 0);
       }
     }, [selectedUnit]);
 
     const handleSwipe = (direction: 'left' | 'right') => {
-      const currentVocabIdx = remainingIndices[currentIndex];
+      if (remainingIndices.length === 0) return;
+      
+      const currentVocabIdx = remainingIndices[0];
       const currentVocab = selectedUnit?.vocab[currentVocabIdx];
       
-      if (direction === 'right' && currentVocab) {
+      if (!currentVocab) return;
+
+      setIsFlipped(false);
+      setColorIndex((prev) => (prev + 1) % duolingoColors.length);
+
+      if (direction === 'right') {
         // Mastered
-        const newMastered = [...masteredIndices, currentVocabIdx];
-        setMasteredIndices(newMastered);
+        setMasteredIndices(prev => [...prev, currentVocabIdx]);
 
         // Track mastered vocab in session stats
         setSessionStats(prev => {
@@ -731,30 +751,19 @@ export default function App() {
           return prev;
         });
         
-        const newRemaining = remainingIndices.filter(idx => idx !== currentVocabIdx);
-        setRemainingIndices(newRemaining);
-        
-        if (newRemaining.length === 0) {
-          setIsCompleted(true);
-          return;
-        }
-      }
-
-      // Cycle to next
-      setIsFlipped(false);
-      setColorIndex((prev) => (prev + 1) % duolingoColors.length);
-      
-      // If we swiped left, the item stays in remainingIndices, so we just move to next index
-      // If we swiped right, the item was removed, so the "next" item is now at the same index
-      // unless we were at the end of the list.
-      if (direction === 'left') {
-        setCurrentIndex((prev) => (prev + 1) % remainingIndices.length);
+        setRemainingIndices(prev => {
+          const next = prev.slice(1);
+          if (next.length === 0) {
+            setIsCompleted(true);
+          }
+          return next;
+        });
       } else {
-        // After removal, if we were at the last item, go back to 0
-        if (currentIndex >= remainingIndices.length - 1) {
-          setCurrentIndex(0);
-        }
-        // Otherwise currentIndex stays the same but points to a new item
+        // Revise Later (Left) - Move to end of queue
+        setRemainingIndices(prev => {
+          if (prev.length <= 1) return prev;
+          return [...prev.slice(1), prev[0]];
+        });
       }
     };
 
@@ -797,7 +806,7 @@ export default function App() {
       );
     }
 
-    const currentVocab = selectedUnit?.vocab[remainingIndices[currentIndex]];
+    const currentVocab = selectedUnit?.vocab[remainingIndices[0]];
 
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col overflow-hidden">
@@ -834,10 +843,10 @@ export default function App() {
         </header>
 
         <main className="flex-1 flex flex-col items-center justify-center p-6 relative">
-          <div className="w-full max-w-sm aspect-[3/4] relative perspective-1000">
+          <div className="w-full max-w-sm aspect-[3/4] relative perspective-1000 mb-16">
             <AnimatePresence mode="wait">
               <motion.div
-                key={remainingIndices[currentIndex]}
+                key={remainingIndices[0]}
                 drag="x"
                 dragConstraints={{ left: 0, right: 0 }}
                 onDragEnd={(_, info) => {
@@ -851,17 +860,17 @@ export default function App() {
                   scale: 1
                 }}
                 exit={{ 
-                  x: 0, // We handle exit animation manually via swipe if needed, but AnimatePresence needs a key change
+                  x: 0,
                   opacity: 0,
                   scale: 0.8
                 }}
                 transition={{ type: 'spring', damping: 20, stiffness: 300 }}
                 onClick={() => setIsFlipped(!isFlipped)}
-                className={`w-full h-full cursor-pointer preserve-3d relative transition-shadow duration-300 ${!isFlipped ? duolingoShadows[colorIndex] : 'shadow-xl'}`}
+                className="w-full h-full cursor-pointer preserve-3d relative transition-shadow duration-300"
               >
                 {/* Front */}
                 <div 
-                  className={`absolute inset-0 backface-hidden rounded-3xl flex flex-col items-center justify-center p-8 text-center ${duolingoColors[colorIndex]}`}
+                  className={`absolute inset-0 backface-hidden rounded-3xl flex flex-col items-center justify-center p-8 text-center ${duolingoColors[colorIndex]} ${duolingoShadows[colorIndex]}`}
                 >
                   <span className="text-white/50 text-xs font-black uppercase tracking-[0.2em] mb-4">English Term</span>
                   <h2 className="text-white text-4xl font-black uppercase tracking-tight leading-tight">
@@ -874,7 +883,7 @@ export default function App() {
 
                 {/* Back */}
                 <div 
-                  className="absolute inset-0 backface-hidden rounded-3xl bg-white flex flex-col items-center justify-center p-8 text-center rotate-y-180 border-4 border-gray-100"
+                  className="absolute inset-0 backface-hidden rounded-3xl bg-white flex flex-col items-center justify-center p-8 text-center rotate-y-180 border-4 border-gray-100 shadow-[0_8px_0_0_#e5e5e5]"
                 >
                   <div className="space-y-8 w-full">
                     <div>
@@ -896,21 +905,21 @@ export default function App() {
                 </div>
               </motion.div>
             </AnimatePresence>
+          </div>
 
-            {/* Swipe Indicators */}
-            <div className="absolute -bottom-20 left-0 right-0 flex justify-between px-4">
-              <div className="flex flex-col items-center gap-2">
-                <div className="w-14 h-14 rounded-full bg-red-100 border-2 border-red-200 flex items-center justify-center text-red-500 shadow-[0_4px_0_0_#fecaca]">
-                  <XCircle size={28} />
-                </div>
-                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Revise Later</span>
+          {/* Swipe Indicators - Moved to normal flow to avoid overlapping */}
+          <div className="w-full max-w-sm flex justify-between px-4">
+            <div className="flex flex-col items-center gap-2">
+              <div className="w-14 h-14 rounded-full bg-red-100 border-2 border-red-200 flex items-center justify-center text-red-500 shadow-[0_4px_0_0_#fecaca]">
+                <XCircle size={28} />
               </div>
-              <div className="flex flex-col items-center gap-2">
-                <div className="w-14 h-14 rounded-full bg-emerald-100 border-2 border-emerald-200 flex items-center justify-center text-emerald-500 shadow-[0_4px_0_0_#a7f3d0]">
-                  <CheckCircle2 size={28} />
-                </div>
-                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mastered</span>
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Revise Later</span>
+            </div>
+            <div className="flex flex-col items-center gap-2">
+              <div className="w-14 h-14 rounded-full bg-emerald-100 border-2 border-emerald-200 flex items-center justify-center text-emerald-500 shadow-[0_4px_0_0_#a7f3d0]">
+                <CheckCircle2 size={28} />
               </div>
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mastered</span>
             </div>
           </div>
         </main>
@@ -1014,7 +1023,7 @@ export default function App() {
   };
 
   const AboutView = () => {
-    const revisionNumber = "1.2.0";
+    const revisionNumber = "1.5.0";
     
     return (
       <div className="min-h-screen bg-gray-50 pb-24">
@@ -1067,6 +1076,9 @@ export default function App() {
                 <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-emerald-500 border-4 border-white shadow-sm" />
                 <p className="text-gray-800 font-black text-sm uppercase tracking-tight">
                   Post Graduate Certificate in Education
+                </p>
+                <p className="text-gray-500 font-bold text-xs uppercase tracking-wider">
+                  Secondary Education
                 </p>
                 <div className="flex items-center gap-2 mt-2">
                   <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-widest">
