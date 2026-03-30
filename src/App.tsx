@@ -3,8 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { QRCodeSVG } from 'qrcode.react';
 import { 
   Heart, 
   BookOpen, 
@@ -15,6 +16,7 @@ import {
   XCircle, 
   Trophy,
   ArrowRight,
+  ArrowRightLeft,
   Home,
   RefreshCw,
   Github,
@@ -24,11 +26,23 @@ import {
   LayoutGrid,
   List,
   Eye,
-  EyeOff
+  EyeOff,
+  FlaskConical,
+  Calculator,
+  Atom,
+  Variable,
+  Dna,
+  Beaker,
+  Wind,
+  Droplets,
+  Flame,
+  TrendingUp,
+  QrCode
 } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { units, Unit, Question, Vocab } from './data';
 
-type AppMode = 'splash' | 'dashboard' | 'quiz' | 'quiz-select' | 'revision' | 'vocab' | 'result' | 'user-stats' | 'about';
+type AppMode = 'splash' | 'dashboard' | 'quiz' | 'quiz-select' | 'revision' | 'vocab' | 'result' | 'user-stats' | 'about' | 'playground';
 type QuizSubMode = 'quick' | 'time-attack' | 'marathon';
 
 interface SessionStats {
@@ -51,6 +65,7 @@ export default function App() {
   const [quizSubMode, setQuizSubMode] = useState<QuizSubMode>('quick');
   const [timeLeft, setTimeLeft] = useState(30);
   const [isY8Open, setIsY8Open] = useState(false);
+  const [isQRModalOpen, setIsQRModalOpen] = useState(false);
   const [sessionStats, setSessionStats] = useState<SessionStats>({});
 
   const allConcepts = useMemo(() => units.flatMap(unit => unit.concepts), []);
@@ -326,14 +341,49 @@ export default function App() {
       <header className="bg-white border-b-2 border-gray-200 p-4 sticky top-0 z-10">
         <div className="max-w-2xl mx-auto flex justify-between items-center">
           <h1 className="text-2xl font-black text-emerald-500 tracking-tight">SCIENCE QUEST</h1>
-          <button 
-            onClick={() => setIsY8Open(true)}
-            className="bg-orange-500 text-white px-4 py-1.5 rounded-full font-black text-sm uppercase tracking-widest shadow-[0_4px_0_0_#c2410c] active:shadow-none active:translate-y-1 transition-all"
-          >
-            Y8
-          </button>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => setIsQRModalOpen(true)}
+              className="bg-gray-100 text-gray-600 p-2 rounded-full hover:bg-gray-200 transition-all"
+              title="App QR Code"
+            >
+              <QrCode size={20} />
+            </button>
+            <button 
+              onClick={() => setIsY8Open(true)}
+              className="bg-orange-500 text-white px-4 py-1.5 rounded-full font-black text-sm uppercase tracking-widest shadow-[0_4px_0_0_#c2410c] active:shadow-none active:translate-y-1 transition-all"
+            >
+              Y8
+            </button>
+          </div>
         </div>
       </header>
+
+      <AnimatePresence>
+        {isQRModalOpen && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl text-center relative"
+            >
+              <button 
+                onClick={() => setIsQRModalOpen(false)}
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+              >
+                <XCircle size={24} />
+              </button>
+              <h3 className="text-2xl font-black text-gray-800 uppercase tracking-tight mb-2">App QR Code</h3>
+              <p className="text-gray-500 font-medium mb-6">Scan to open the revision app on your mobile device!</p>
+              <div className="bg-gray-50 p-6 rounded-2xl border-2 border-gray-100 flex justify-center mb-6">
+                <QRCodeSVG value="https://y8rev.vercel.app" size={200} level="H" includeMargin={true} />
+              </div>
+              <p className="text-emerald-500 font-black text-sm uppercase tracking-widest">y8rev.vercel.app</p>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       <main className="max-w-2xl mx-auto p-4 space-y-6 mt-4">
         <div className="bg-emerald-100 border-2 border-emerald-200 rounded-2xl p-6 flex items-center gap-6">
@@ -1048,6 +1098,1147 @@ export default function App() {
   );
 };
 
+  const PlaygroundView = () => {
+    const [subMode, setSubMode] = useState<'select' | 'equations' | 'chemicals' | 'graphs' | 'simulations'>('select');
+    const [selectedEquation, setSelectedEquation] = useState<any>(null);
+    const [equationSubject, setEquationSubject] = useState<string>('');
+    const [isPracticeMode, setIsPracticeMode] = useState(false);
+    const [practiceQuestion, setPracticeQuestion] = useState<any>(null);
+    const [practiceAnswer, setPracticeAnswer] = useState<string | null>(null);
+    const [isPracticeChecked, setIsPracticeChecked] = useState(false);
+    const [selectedChemical, setSelectedChemical] = useState<any>(null);
+    const [selectedGraph, setSelectedGraph] = useState<string | null>(null);
+    const [graphSpeed1, setGraphSpeed1] = useState(5);
+    const [graphSpeed2, setGraphSpeed2] = useState(10);
+
+    const equations = [
+      {
+        id: 'speed',
+        name: 'Speed',
+        formula: 'v = d / t',
+        unit: 'm/s',
+        variables: [
+          { symbol: 'v', name: 'Speed', unit: 'm/s' },
+          { symbol: 'd', name: 'Distance', unit: 'm' },
+          { symbol: 't', name: 'Time', unit: 's' }
+        ]
+      },
+      {
+        id: 'pressure',
+        name: 'Pressure',
+        formula: 'P = F / A',
+        unit: 'N/m²',
+        variables: [
+          { symbol: 'P', name: 'Pressure', unit: 'N/m²' },
+          { symbol: 'F', name: 'Force', unit: 'N' },
+          { symbol: 'A', name: 'Area', unit: 'm²' }
+        ]
+      },
+      {
+        id: 'moment',
+        name: 'Moment',
+        formula: 'M = F × d',
+        unit: 'Nm',
+        variables: [
+          { symbol: 'M', name: 'Moment', unit: 'Nm' },
+          { symbol: 'F', name: 'Force', unit: 'N' },
+          { symbol: 'd', name: 'Distance', unit: 'm' }
+        ]
+      },
+      {
+        id: 'density',
+        name: 'Density',
+        formula: 'ρ = m / V',
+        unit: 'g/cm³',
+        variables: [
+          { symbol: 'ρ', name: 'Density', unit: 'g/cm³' },
+          { symbol: 'm', name: 'Mass', unit: 'g' },
+          { symbol: 'V', name: 'Volume', unit: 'cm³' }
+        ]
+      },
+      {
+        id: 'concentration',
+        name: 'Concentration',
+        formula: 'C = n / V',
+        unit: 'particles/unit volume',
+        variables: [
+          { symbol: 'C', name: 'Concentration', unit: '' },
+          { symbol: 'n', name: 'Number of particles', unit: '' },
+          { symbol: 'V', name: 'Volume', unit: '' }
+        ]
+      },
+      {
+        id: 'percentage',
+        name: 'Percentage',
+        formula: '% = (Part / Whole) × 100',
+        unit: '%',
+        variables: [
+          { symbol: '%', name: 'Percentage', unit: '%' },
+          { symbol: 'Part', name: 'Part', unit: '' },
+          { symbol: 'Whole', name: 'Whole', unit: '' }
+        ]
+      }
+    ];
+
+    const equationRearrangements: Record<string, Record<string, string>> = {
+      speed: { v: 'v = d / t', d: 'd = v × t', t: 't = d / v' },
+      pressure: { P: 'P = F / A', F: 'F = P × A', A: 'A = F / P' },
+      moment: { M: 'M = F × d', F: 'F = M / d', d: 'd = M / F' },
+      density: { ρ: 'ρ = m / V', m: 'm = ρ × V', V: 'V = m / ρ' },
+      concentration: { C: 'C = n / V', n: 'n = C × V', V: 'V = n / C' },
+      percentage: { '%': '% = (Part / Whole) × 100', 'Part': 'Part = (% × Whole) / 100', 'Whole': 'Whole = (Part / %) × 100' }
+    };
+
+    const chemicals = [
+      { 
+        name: 'Water', 
+        formula: 'H₂O', 
+        details: 'A vital compound for all known forms of life.', 
+        icon: <Droplets size={32} />, 
+        color: 'bg-blue-500',
+        state: 'liquid',
+        composition: [
+          { type: 'H', count: 2, color: 'bg-white border-blue-200 text-blue-500' },
+          { type: 'O', count: 1, color: 'bg-red-500 text-white' }
+        ]
+      },
+      { 
+        name: 'Methane', 
+        formula: 'CH₄', 
+        details: 'A potent greenhouse gas and the primary component of natural gas.', 
+        icon: <Flame size={32} />, 
+        color: 'bg-orange-500',
+        state: 'gas',
+        composition: [
+          { type: 'C', count: 1, color: 'bg-gray-800 text-white' },
+          { type: 'H', count: 4, color: 'bg-white border-blue-200 text-blue-500' }
+        ]
+      },
+      { 
+        name: 'Carbon Dioxide', 
+        formula: 'CO₂', 
+        details: 'A greenhouse gas found in the atmosphere, essential for photosynthesis.', 
+        icon: <Wind size={32} />, 
+        color: 'bg-gray-500',
+        state: 'gas',
+        composition: [
+          { type: 'C', count: 1, color: 'bg-gray-800 text-white' },
+          { type: 'O', count: 2, color: 'bg-red-500 text-white' }
+        ]
+      },
+      { 
+        name: 'Nitrogen', 
+        formula: 'N₂', 
+        details: 'Makes up about 78% of Earth\'s atmosphere.', 
+        icon: <Wind size={32} />, 
+        color: 'bg-blue-300',
+        state: 'gas',
+        composition: [
+          { type: 'N', count: 2, color: 'bg-blue-600 text-white' }
+        ]
+      },
+      { 
+        name: 'Ammonia', 
+        formula: 'NH₃', 
+        details: 'A colorless gas with a characteristic pungent smell, used in fertilizers.', 
+        icon: <Atom size={32} />, 
+        color: 'bg-purple-500',
+        state: 'gas',
+        composition: [
+          { type: 'N', count: 1, color: 'bg-blue-600 text-white' },
+          { type: 'H', count: 3, color: 'bg-white border-blue-200 text-blue-500' }
+        ]
+      },
+      { 
+        name: 'Oxygen', 
+        formula: 'O₂', 
+        details: 'Essential for respiration in most living organisms.', 
+        icon: <Wind size={32} />, 
+        color: 'bg-blue-400',
+        state: 'gas',
+        composition: [
+          { type: 'O', count: 2, color: 'bg-red-500 text-white' }
+        ]
+      }
+    ];
+
+    const MolecularAnimation = ({ state, formula, color }: { state: 'gas' | 'liquid' | 'solid', formula: string, color: string }) => {
+      const moleculeCount = state === 'gas' ? 6 : 15;
+      const molecules = Array.from({ length: moleculeCount });
+
+      return (
+        <div className="relative w-full h-48 bg-gray-900 rounded-2xl overflow-hidden border-2 border-gray-800">
+          <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white/10 to-transparent" />
+          {molecules.map((_, i) => (
+            <motion.div
+              key={i}
+              className={`absolute flex items-center justify-center rounded-full text-[10px] font-bold text-white shadow-lg ${color}`}
+              style={{
+                width: 32,
+                height: 32,
+                left: `${Math.random() * 80 + 10}%`,
+                top: `${Math.random() * 80 + 10}%`,
+              }}
+              animate={state === 'gas' ? {
+                x: [0, Math.random() * 100 - 50, Math.random() * 100 - 50, 0],
+                y: [0, Math.random() * 100 - 50, Math.random() * 100 - 50, 0],
+                rotate: [0, 360],
+              } : {
+                x: [0, Math.random() * 20 - 10, Math.random() * 20 - 10, 0],
+                y: [0, Math.random() * 10 - 5, Math.random() * 10 - 5, 0],
+              }}
+              transition={{
+                duration: state === 'gas' ? 2 + Math.random() * 2 : 4 + Math.random() * 2,
+                repeat: Infinity,
+                ease: "linear"
+              }}
+            >
+              {formula}
+            </motion.div>
+          ))}
+          <div className="absolute bottom-2 right-3">
+            <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">
+              State: {state === 'gas' ? 'Gas (g)' : 'Liquid (l)'}
+            </span>
+          </div>
+        </div>
+      );
+    };
+
+    const SimulationPlayground = () => {
+      const [selectedSim, setSelectedSim] = useState<string | null>(null);
+      
+      // Diffusion State
+      const [redLeft, setRedLeft] = useState(20);
+      const [blueLeft, setBlueLeft] = useState(5);
+      const [redRight, setRedRight] = useState(5);
+      const [blueRight, setBlueRight] = useState(20);
+      const [isPartitionRemoved, setIsPartitionRemoved] = useState(false);
+      const [particles, setParticles] = useState<any[]>([]);
+      
+      const simRef = useRef<HTMLDivElement>(null);
+
+      const initParticles = () => {
+        const newParticles = [];
+        // Left side
+        for (let i = 0; i < redLeft; i++) newParticles.push({ id: `rl-${i}`, type: 'red', x: Math.random() * 45, y: Math.random() * 90, vx: (Math.random() - 0.5) * 2, vy: (Math.random() - 0.5) * 2 });
+        for (let i = 0; i < blueLeft; i++) newParticles.push({ id: `bl-${i}`, type: 'blue', x: Math.random() * 45, y: Math.random() * 90, vx: (Math.random() - 0.5) * 2, vy: (Math.random() - 0.5) * 2 });
+        // Right side
+        for (let i = 0; i < redRight; i++) newParticles.push({ id: `rr-${i}`, type: 'red', x: 55 + Math.random() * 40, y: Math.random() * 90, vx: (Math.random() - 0.5) * 2, vy: (Math.random() - 0.5) * 2 });
+        for (let i = 0; i < blueRight; i++) newParticles.push({ id: `br-${i}`, type: 'blue', x: 55 + Math.random() * 40, y: Math.random() * 90, vx: (Math.random() - 0.5) * 2, vy: (Math.random() - 0.5) * 2 });
+        setParticles(newParticles);
+      };
+
+      useEffect(() => {
+        if (selectedSim === 'diffusion') initParticles();
+      }, [selectedSim, redLeft, blueLeft, redRight, blueRight]);
+
+      useEffect(() => {
+        if (!isPartitionRemoved || selectedSim !== 'diffusion') return;
+
+        const interval = setInterval(() => {
+          setParticles(prev => prev.map(p => {
+            let nx = p.x + p.vx;
+            let ny = p.y + p.vy;
+            let nvx = p.vx;
+            let nvy = p.vy;
+
+            if (nx < 0 || nx > 98) nvx *= -1;
+            if (ny < 0 || ny > 98) nvy *= -1;
+
+            return { ...p, x: nx, y: ny, vx: nvx, vy: nvy };
+          }));
+        }, 30);
+
+        return () => clearInterval(interval);
+      }, [isPartitionRemoved, selectedSim]);
+
+      const counts = useMemo(() => {
+        const left = particles.filter(p => p.x < 50);
+        const right = particles.filter(p => p.x >= 50);
+        return {
+          leftRed: left.filter(p => p.type === 'red').length,
+          leftBlue: left.filter(p => p.type === 'blue').length,
+          rightRed: right.filter(p => p.type === 'red').length,
+          rightBlue: right.filter(p => p.type === 'blue').length,
+        };
+      }, [particles]);
+
+      const netDiffusion = useMemo(() => {
+        if (!isPartitionRemoved) return null;
+        const redDiff = counts.leftRed - counts.rightRed;
+        const blueDiff = counts.leftBlue - counts.rightBlue;
+        
+        if (Math.abs(redDiff) < 2 && Math.abs(blueDiff) < 2) return 'equilibrium';
+        
+        let msg = '';
+        if (Math.abs(redDiff) >= 2) msg += `Red diffusing ${redDiff > 0 ? 'Right' : 'Left'}. `;
+        if (Math.abs(blueDiff) >= 2) msg += `Blue diffusing ${blueDiff > 0 ? 'Right' : 'Left'}.`;
+        return msg;
+      }, [counts, isPartitionRemoved]);
+
+      return (
+        <div className="space-y-8">
+          {!selectedSim ? (
+            <div className="grid grid-cols-1 gap-6">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setSelectedSim('diffusion')}
+                className="bg-white border-2 border-gray-200 p-8 rounded-3xl flex items-center gap-6 shadow-[0_6px_0_0_#e5e7eb] hover:border-orange-400 transition-all group"
+              >
+                <div className="bg-orange-100 text-orange-600 p-5 rounded-2xl group-hover:bg-orange-500 group-hover:text-white transition-colors">
+                  <ArrowRightLeft size={40} />
+                </div>
+                <div className="text-left">
+                  <h3 className="text-2xl font-black text-gray-800 uppercase tracking-tight">Diffusion Simulation</h3>
+                  <p className="text-gray-500 font-medium">Observe how particles move from high to low concentration.</p>
+                </div>
+              </motion.button>
+
+
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {selectedSim === 'diffusion' && (
+                <div className="bg-white border-2 border-gray-200 p-8 rounded-3xl shadow-[0_6px_0_0_#e5e7eb]">
+                  <div className="flex justify-between items-center mb-8">
+                    <div>
+                      <h3 className="text-2xl font-black text-gray-800 uppercase tracking-tight">Diffusion Chamber</h3>
+                      <p className="text-orange-500 font-black text-xl uppercase tracking-widest text-xs">Concentration Gradient</p>
+                    </div>
+                    <div className="bg-orange-100 text-orange-600 p-4 rounded-2xl">
+                      <ArrowRightLeft size={32} />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-8 mb-8">
+                    <div className="space-y-4">
+                      <h4 className="text-sm font-black text-gray-400 uppercase tracking-widest">Left Side Setup</h4>
+                      <div className="space-y-2">
+                        <label className="block text-xs font-bold text-red-500 uppercase">Red Particles: {redLeft}</label>
+                        <input type="range" min="0" max="50" value={redLeft} onChange={e => setRedLeft(parseInt(e.target.value))} disabled={isPartitionRemoved} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-red-500" />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="block text-xs font-bold text-blue-500 uppercase">Blue Particles: {blueLeft}</label>
+                        <input type="range" min="0" max="50" value={blueLeft} onChange={e => setBlueLeft(parseInt(e.target.value))} disabled={isPartitionRemoved} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500" />
+                      </div>
+                    </div>
+                    <div className="space-y-4">
+                      <h4 className="text-sm font-black text-gray-400 uppercase tracking-widest">Right Side Setup</h4>
+                      <div className="space-y-2">
+                        <label className="block text-xs font-bold text-red-500 uppercase">Red Particles: {redRight}</label>
+                        <input type="range" min="0" max="50" value={redRight} onChange={e => setRedRight(parseInt(e.target.value))} disabled={isPartitionRemoved} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-red-500" />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="block text-xs font-bold text-blue-500 uppercase">Blue Particles: {blueRight}</label>
+                        <input type="range" min="0" max="50" value={blueRight} onChange={e => setBlueRight(parseInt(e.target.value))} disabled={isPartitionRemoved} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="relative h-64 bg-gray-900 rounded-2xl overflow-hidden border-4 border-gray-200 mb-8" ref={simRef}>
+                    {particles.map(p => (
+                      <motion.div
+                        key={p.id}
+                        className={`absolute w-3 h-3 rounded-full ${p.type === 'red' ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]' : 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)]'}`}
+                        style={{ left: `${p.x}%`, top: `${p.y}%` }}
+                      />
+                    ))}
+                    {!isPartitionRemoved && (
+                      <div className="absolute inset-y-0 left-1/2 w-1 bg-white/30 backdrop-blur-sm -translate-x-1/2 z-10" />
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 mb-8">
+                    <div className="bg-gray-50 p-4 rounded-xl border-2 border-gray-100 text-center">
+                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Left Side</p>
+                      <div className="flex justify-center gap-4">
+                        <span className="text-red-500 font-black">R: {counts.leftRed}</span>
+                        <span className="text-blue-500 font-black">B: {counts.leftBlue}</span>
+                      </div>
+                    </div>
+                    <div className="bg-gray-50 p-4 rounded-xl border-2 border-gray-100 text-center">
+                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Right Side</p>
+                      <div className="flex justify-center gap-4">
+                        <span className="text-red-500 font-black">R: {counts.rightRed}</span>
+                        <span className="text-blue-500 font-black">B: {counts.rightBlue}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {isPartitionRemoved && (
+                    <div className={`p-4 rounded-xl mb-8 text-center font-black uppercase tracking-tight ${netDiffusion === 'equilibrium' ? 'bg-emerald-100 text-emerald-700' : 'bg-orange-100 text-orange-700'}`}>
+                      {netDiffusion === 'equilibrium' ? (
+                        <div className="flex items-center justify-center gap-2">
+                          <CheckCircle2 size={20} />
+                          Dynamic Equilibrium Reached: No Net Diffusion
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center gap-2">
+                          <RefreshCw size={20} className="animate-spin" />
+                          {netDiffusion}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="flex gap-4">
+                    {!isPartitionRemoved ? (
+                      <button
+                        onClick={() => setIsPartitionRemoved(true)}
+                        className="flex-1 bg-orange-500 text-white py-4 rounded-2xl font-black text-xl uppercase tracking-widest shadow-[0_6px_0_0_#c2410c] active:shadow-none active:translate-y-1 transition-all"
+                      >
+                        Remove Partition
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          setIsPartitionRemoved(false);
+                          initParticles();
+                        }}
+                        className="flex-1 bg-gray-200 text-gray-500 py-4 rounded-2xl font-black text-xl uppercase tracking-widest hover:bg-gray-300 transition-all"
+                      >
+                        Reset Simulation
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <button
+                onClick={() => setSelectedSim(null)}
+                className="w-full bg-gray-200 text-gray-500 py-4 rounded-2xl font-black text-xl uppercase tracking-widest hover:bg-gray-300 transition-all"
+              >
+                Back to Simulations
+              </button>
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    const GraphPlayground = () => {
+      const [isPractice, setIsPractice] = useState(false);
+      const [practiceData, setPracticeData] = useState<any>(null);
+      const [userAnswer, setUserAnswer] = useState('');
+      const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null);
+
+      const generatePractice = () => {
+        const speed = Math.floor(Math.random() * 10) + 1;
+        const data = [];
+        for (let t = 0; t <= 10; t++) {
+          data.push({ time: t, distance: speed * t });
+        }
+        setPracticeData({ speed, data });
+        setUserAnswer('');
+        setFeedback(null);
+      };
+
+      const checkAnswer = () => {
+        if (parseInt(userAnswer) === practiceData.speed) {
+          setFeedback('correct');
+        } else {
+          setFeedback('incorrect');
+        }
+      };
+
+      const generateData = () => {
+        const data = [];
+        for (let t = 0; t <= 10; t++) {
+          data.push({
+            time: t,
+            obj1: graphSpeed1 * t,
+            obj2: graphSpeed2 * t
+          });
+        }
+        return data;
+      };
+
+      const data = generateData();
+
+      const ObjectAnimation = ({ speed, color }: { speed: number; color: string }) => {
+        const duration = 10 / speed;
+        return (
+          <div className="relative h-12 bg-gray-100 rounded-xl overflow-hidden border border-gray-200 mt-2">
+            <motion.div
+              key={speed}
+              animate={{ left: ['0%', '100%'], x: ['0%', '-100%'] }}
+              transition={{ duration, repeat: Infinity, ease: 'linear' }}
+              className={`absolute top-1/2 -translate-y-1/2 w-6 h-6 rounded-full ${color} shadow-lg`}
+            />
+            <div className="absolute inset-0 flex items-center justify-between px-4 pointer-events-none opacity-20">
+              {[...Array(10)].map((_, i) => (
+                <div key={i} className="w-px h-4 bg-gray-400" />
+              ))}
+            </div>
+          </div>
+        );
+      };
+
+      return (
+        <div className="space-y-8">
+          {!selectedGraph ? (
+            <div className="grid grid-cols-1 gap-6">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setSelectedGraph('speed')}
+                className="bg-white border-2 border-gray-200 p-8 rounded-3xl flex items-center gap-6 shadow-[0_6px_0_0_#e5e7eb] hover:border-indigo-400 transition-all group"
+              >
+                <div className="bg-indigo-100 text-indigo-600 p-5 rounded-2xl group-hover:bg-indigo-500 group-hover:text-white transition-colors">
+                  <TrendingUp size={40} />
+                </div>
+                <div className="text-left">
+                  <h3 className="text-2xl font-black text-gray-800 uppercase tracking-tight">Speed: Distance-time graph</h3>
+                  <p className="text-gray-500 font-medium">Visualize how speed affects distance over time.</p>
+                </div>
+              </motion.button>
+            </div>
+          ) : isPractice ? (
+            <div className="space-y-6">
+              <div className="bg-white border-2 border-gray-200 p-8 rounded-3xl shadow-[0_6px_0_0_#e5e7eb]">
+                <div className="flex justify-between items-center mb-8">
+                  <div>
+                    <h3 className="text-2xl font-black text-gray-800 uppercase tracking-tight">Practice: Calculate Speed</h3>
+                    <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Find the slope (v = d / t)</p>
+                  </div>
+                  <button 
+                    onClick={() => setIsPractice(false)}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <XCircle size={32} />
+                  </button>
+                </div>
+
+                {!practiceData ? (
+                  <div className="text-center py-12">
+                    <button
+                      onClick={generatePractice}
+                      className="bg-indigo-500 text-white px-8 py-4 rounded-2xl font-black text-xl uppercase tracking-widest shadow-[0_6px_0_0_#4338ca] active:shadow-none active:translate-y-1 transition-all"
+                    >
+                      Start Practice
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-8">
+                    <div className="h-64 w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={practiceData.data}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                          <XAxis 
+                            dataKey="time" 
+                            label={{ value: 'Time (s)', position: 'insideBottom', offset: -5, fontSize: 10, fontWeight: 'bold' }} 
+                            tick={{ fontSize: 10, fontWeight: 'bold' }}
+                          />
+                          <YAxis 
+                            label={{ value: 'Distance (m)', angle: -90, position: 'insideLeft', fontSize: 10, fontWeight: 'bold' }} 
+                            tick={{ fontSize: 10, fontWeight: 'bold' }}
+                          />
+                          <Tooltip 
+                            contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
+                          />
+                          <Line 
+                            type="monotone" 
+                            dataKey="distance" 
+                            stroke="#6366f1" 
+                            strokeWidth={4} 
+                            dot={{ r: 4, fill: '#6366f1', strokeWidth: 2, stroke: '#fff' }}
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+
+                    <div className="bg-gray-50 p-6 rounded-2xl border-2 border-gray-100">
+                      <p className="text-sm font-black text-gray-500 uppercase tracking-widest mb-4">What is the speed of this object?</p>
+                      <div className="flex gap-4">
+                        <input
+                          type="number"
+                          value={userAnswer}
+                          onChange={(e) => setUserAnswer(e.target.value)}
+                          placeholder="Enter speed..."
+                          className="flex-1 bg-white border-2 border-gray-200 p-4 rounded-xl font-black text-xl focus:border-indigo-500 outline-none transition-all"
+                        />
+                        <div className="flex items-center text-gray-400 font-black text-xl">m/s</div>
+                      </div>
+
+                      {feedback && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className={`mt-4 p-4 rounded-xl flex items-center gap-3 ${
+                            feedback === 'correct' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
+                          }`}
+                        >
+                          {feedback === 'correct' ? <CheckCircle2 size={24} /> : <XCircle size={24} />}
+                          <span className="font-black uppercase tracking-tight">
+                            {feedback === 'correct' ? 'Correct! Well done!' : 'Not quite. Try again!'}
+                          </span>
+                        </motion.div>
+                      )}
+
+                      <div className="grid grid-cols-2 gap-4 mt-6">
+                        <button
+                          onClick={checkAnswer}
+                          className="bg-indigo-500 text-white py-4 rounded-xl font-black uppercase tracking-widest shadow-[0_4px_0_0_#4338ca] active:shadow-none active:translate-y-1 transition-all"
+                        >
+                          Check
+                        </button>
+                        <button
+                          onClick={generatePractice}
+                          className="bg-white border-2 border-gray-200 text-gray-500 py-4 rounded-xl font-black uppercase tracking-widest hover:bg-gray-50 transition-all"
+                        >
+                          Next Graph
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              <div className="bg-white border-2 border-gray-200 p-8 rounded-3xl shadow-[0_6px_0_0_#e5e7eb]">
+                <div className="flex justify-between items-center mb-8">
+                  <div>
+                    <h3 className="text-2xl font-black text-gray-800 uppercase tracking-tight">Distance-Time Graph</h3>
+                    <p className="text-indigo-500 font-black text-xl">v = d / t</p>
+                  </div>
+                  <div className="bg-indigo-100 text-indigo-600 p-4 rounded-2xl">
+                    <TrendingUp size={32} />
+                  </div>
+                </div>
+
+                <div className="h-64 w-full mb-8">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={data}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                      <XAxis 
+                        dataKey="time" 
+                        label={{ value: 'Time (s)', position: 'insideBottom', offset: -5, fontSize: 10, fontWeight: 'bold' }} 
+                        tick={{ fontSize: 10, fontWeight: 'bold' }}
+                      />
+                      <YAxis 
+                        label={{ value: 'Distance (m)', angle: -90, position: 'insideLeft', fontSize: 10, fontWeight: 'bold' }} 
+                        tick={{ fontSize: 10, fontWeight: 'bold' }}
+                      />
+                      <Tooltip 
+                        contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
+                        labelStyle={{ fontWeight: 'bold' }}
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="obj1" 
+                        name="Object 1"
+                        stroke="#3b82f6" 
+                        strokeWidth={4} 
+                        dot={{ r: 4, fill: '#3b82f6', strokeWidth: 2, stroke: '#fff' }}
+                        activeDot={{ r: 8 }}
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="obj2" 
+                        name="Object 2"
+                        stroke="#ef4444" 
+                        strokeWidth={4} 
+                        dot={{ r: 4, fill: '#ef4444', strokeWidth: 2, stroke: '#fff' }}
+                        activeDot={{ r: 8 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <label className="text-sm font-black text-blue-500 uppercase tracking-widest">Object 1 Speed: {graphSpeed1} m/s</label>
+                    </div>
+                    <input 
+                      type="range" 
+                      min="1" 
+                      max="20" 
+                      value={graphSpeed1} 
+                      onChange={(e) => setGraphSpeed1(parseInt(e.target.value))}
+                      className="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                    />
+                    <ObjectAnimation speed={graphSpeed1} color="bg-blue-500" />
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <label className="text-sm font-black text-red-500 uppercase tracking-widest">Object 2 Speed: {graphSpeed2} m/s</label>
+                    </div>
+                    <input 
+                      type="range" 
+                      min="1" 
+                      max="20" 
+                      value={graphSpeed2} 
+                      onChange={(e) => setGraphSpeed2(parseInt(e.target.value))}
+                      className="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-red-500"
+                    />
+                    <ObjectAnimation speed={graphSpeed2} color="bg-red-500" />
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => {
+                    setIsPractice(true);
+                    generatePractice();
+                  }}
+                  className="w-full mt-8 bg-emerald-500 text-white py-4 rounded-2xl font-black text-xl uppercase tracking-widest shadow-[0_6px_0_0_#059669] active:shadow-none active:translate-y-1 transition-all flex items-center justify-center gap-3"
+                >
+                  <Zap size={24} />
+                  Practice Mode
+                </button>
+              </div>
+
+              <button
+                onClick={() => setSelectedGraph(null)}
+                className="w-full bg-gray-200 text-gray-500 py-4 rounded-2xl font-black text-xl uppercase tracking-widest hover:bg-gray-300 transition-all"
+              >
+                Back to Graphs
+              </button>
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    const generatePracticeQuestion = (equation: any) => {
+      const v1 = Math.floor(Math.random() * 10) + 1;
+      const v2 = Math.floor(Math.random() * 10) + 1;
+      let questionText = '';
+      let correctAnswer = 0;
+      let unit = '';
+
+      if (equation.id === 'speed') {
+        const type = Math.random() > 0.5 ? 'v' : 'd';
+        if (type === 'v') {
+          questionText = `If Distance is ${v1 * v2}m and Time is ${v2}s, what is the Speed?`;
+          correctAnswer = v1;
+          unit = 'm/s';
+        } else {
+          questionText = `If Speed is ${v1}m/s and Time is ${v2}s, what is the Distance?`;
+          correctAnswer = v1 * v2;
+          unit = 'm';
+        }
+      } else if (equation.id === 'pressure') {
+        questionText = `If Force is ${v1 * v2}N and Area is ${v2}m², what is the Pressure?`;
+        correctAnswer = v1;
+        unit = 'N/m²';
+      } else if (equation.id === 'moment') {
+        questionText = `If Force is ${v1}N and Distance is ${v2}m, what is the Moment?`;
+        correctAnswer = v1 * v2;
+        unit = 'Nm';
+      } else if (equation.id === 'density') {
+        questionText = `If Mass is ${v1 * v2}g and Volume is ${v2}cm³, what is the Density?`;
+        correctAnswer = v1;
+        unit = 'g/cm³';
+      } else if (equation.id === 'concentration') {
+        questionText = `If Number of particles is ${v1 * v2} and Volume is ${v2}L, what is the Concentration?`;
+        correctAnswer = v1;
+        unit = 'particles/L';
+      } else {
+        questionText = `If Part is ${v1} and Whole is ${v1 * 10}, what is the Percentage?`;
+        correctAnswer = 10;
+        unit = '%';
+      }
+
+      const options = [
+        correctAnswer.toString(),
+        (correctAnswer + 2).toString(),
+        (correctAnswer * 2).toString(),
+        (Math.max(1, correctAnswer - 1)).toString()
+      ].sort(() => Math.random() - 0.5);
+
+      setPracticeQuestion({ text: questionText, correctAnswer: correctAnswer.toString(), options, unit });
+      setPracticeAnswer(null);
+      setIsPracticeChecked(false);
+    };
+
+    if (subMode === 'select') {
+      return (
+        <div className="min-h-screen bg-gray-50 pb-24">
+          <header className="bg-white border-b-2 border-gray-200 p-6 sticky top-0 z-10">
+            <h1 className="text-3xl font-black text-gray-800 uppercase tracking-tight">Playground</h1>
+            <p className="text-gray-400 font-bold uppercase tracking-widest text-xs mt-1">Interactive Learning</p>
+          </header>
+          <main className="max-w-2xl mx-auto p-6 space-y-6">
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setSubMode('equations')}
+              className="w-full bg-white border-2 border-gray-200 p-8 rounded-3xl flex items-center gap-6 shadow-[0_6px_0_0_#e5e7eb] hover:border-blue-400 hover:shadow-[0_6px_0_0_#60a5fa] transition-all group"
+            >
+              <div className="bg-blue-100 text-blue-600 p-5 rounded-2xl group-hover:bg-blue-500 group-hover:text-white transition-colors">
+                <Calculator size={40} />
+              </div>
+              <div className="text-left">
+                <h2 className="text-2xl font-black text-gray-800 uppercase tracking-tight">Equation Playground</h2>
+                <p className="text-gray-500 font-medium">Rearrange and practice key scientific formulas.</p>
+              </div>
+            </motion.button>
+
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setSubMode('chemicals')}
+              className="w-full bg-white border-2 border-gray-200 p-8 rounded-3xl flex items-center gap-6 shadow-[0_6px_0_0_#e5e7eb] hover:border-emerald-400 hover:shadow-[0_6px_0_0_#34d399] transition-all group"
+            >
+              <div className="bg-emerald-100 text-emerald-600 p-5 rounded-2xl group-hover:bg-emerald-500 group-hover:text-white transition-colors">
+                <Atom size={40} />
+              </div>
+              <div className="text-left">
+                <h2 className="text-2xl font-black text-gray-800 uppercase tracking-tight">Chemical Playground</h2>
+                <p className="text-gray-500 font-medium">Explore common chemicals and their properties.</p>
+              </div>
+            </motion.button>
+
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setSubMode('graphs')}
+              className="w-full bg-white border-2 border-gray-200 p-8 rounded-3xl flex items-center gap-6 shadow-[0_6px_0_0_#e5e7eb] hover:border-indigo-400 hover:shadow-[0_6px_0_0_#818cf8] transition-all group"
+            >
+              <div className="bg-indigo-100 text-indigo-600 p-5 rounded-2xl group-hover:bg-indigo-500 group-hover:text-white transition-colors">
+                <TrendingUp size={40} />
+              </div>
+              <div className="text-left">
+                <h2 className="text-2xl font-black text-gray-800 uppercase tracking-tight">Graph Playground</h2>
+                <p className="text-gray-500 font-medium">Experiment with dynamic scientific graphs.</p>
+              </div>
+            </motion.button>
+
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setSubMode('simulations')}
+              className="w-full bg-white border-2 border-gray-200 p-8 rounded-3xl flex items-center gap-6 shadow-[0_6px_0_0_#e5e7eb] hover:border-orange-400 hover:shadow-[0_6px_0_0_#fb923c] transition-all group"
+            >
+              <div className="bg-orange-100 text-orange-600 p-5 rounded-2xl group-hover:bg-orange-500 group-hover:text-white transition-colors">
+                <ArrowRightLeft size={40} />
+              </div>
+              <div className="text-left">
+                <h2 className="text-2xl font-black text-gray-800 uppercase tracking-tight">Simulation Playground</h2>
+                <p className="text-gray-500 font-medium">Interactive simulations for complex scientific concepts.</p>
+              </div>
+            </motion.button>
+          </main>
+        </div>
+      );
+    }
+
+    if (subMode === 'simulations') {
+      return (
+        <div className="min-h-screen bg-gray-50 pb-24">
+          <header className="bg-white border-b-2 border-gray-200 p-4 sticky top-0 z-10">
+            <div className="max-w-2xl mx-auto flex items-center gap-4">
+              <button onClick={() => setSubMode('select')} className="text-gray-400 hover:text-gray-600">
+                <ChevronLeft size={32} />
+              </button>
+              <div>
+                <h1 className="text-lg font-black text-gray-800 uppercase tracking-tight leading-none">Simulation Playground</h1>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Interactive Simulations</p>
+              </div>
+            </div>
+          </header>
+
+          <main className="max-w-2xl mx-auto p-6">
+            <SimulationPlayground />
+          </main>
+        </div>
+      );
+    }
+
+    if (subMode === 'equations') {
+      return (
+        <div className="min-h-screen bg-gray-50 pb-24">
+          <header className="bg-white border-b-2 border-gray-200 p-4 sticky top-0 z-10">
+            <div className="max-w-2xl mx-auto flex items-center gap-4">
+              <button onClick={() => {
+                if (isPracticeMode) setIsPracticeMode(false);
+                else if (selectedEquation) setSelectedEquation(null);
+                else setSubMode('select');
+              }} className="text-gray-400 hover:text-gray-600">
+                <ChevronLeft size={32} />
+              </button>
+              <div>
+                <h1 className="text-lg font-black text-gray-800 uppercase tracking-tight leading-none">Equations</h1>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                  {selectedEquation ? selectedEquation.name : 'Select a formula'}
+                </p>
+              </div>
+            </div>
+          </header>
+
+          <main className="max-w-2xl mx-auto p-6">
+            {isPracticeMode ? (
+              <div className="space-y-8">
+                <div className="bg-white border-2 border-gray-200 p-8 rounded-3xl shadow-[0_6px_0_0_#e5e7eb]">
+                  <h2 className="text-2xl font-black text-gray-800 mb-6">{practiceQuestion.text}</h2>
+                  <div className="grid gap-4">
+                    {practiceQuestion.options.map((option: string) => (
+                      <button
+                        key={option}
+                        disabled={isPracticeChecked}
+                        onClick={() => setPracticeAnswer(option)}
+                        className={`w-full p-4 text-left rounded-2xl border-2 transition-all font-bold text-lg
+                          ${practiceAnswer === option 
+                            ? 'border-blue-400 bg-blue-50 text-blue-600 shadow-[0_4px_0_0_#60a5fa]' 
+                            : 'border-gray-200 hover:bg-gray-50 text-gray-700 shadow-[0_4px_0_0_#e5e7eb]'
+                          }
+                          ${isPracticeChecked && option === practiceQuestion.correctAnswer ? 'border-emerald-400 bg-emerald-50 text-emerald-600 shadow-[0_4px_0_0_#34d399]' : ''}
+                          ${isPracticeChecked && practiceAnswer === option && practiceAnswer !== practiceQuestion.correctAnswer ? 'border-red-400 bg-red-50 text-red-600 shadow-[0_4px_0_0_#f87171]' : ''}
+                        `}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span>{option} {practiceQuestion.unit}</span>
+                          {isPracticeChecked && option === practiceQuestion.correctAnswer && <CheckCircle2 size={24} />}
+                          {isPracticeChecked && practiceAnswer === option && practiceAnswer !== practiceQuestion.correctAnswer && <XCircle size={24} />}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    if (isPracticeChecked) generatePracticeQuestion(selectedEquation);
+                    else setIsPracticeChecked(true);
+                  }}
+                  disabled={!practiceAnswer}
+                  className={`w-full py-4 rounded-2xl font-black text-xl uppercase tracking-widest transition-all
+                    ${!practiceAnswer ? 'bg-gray-200 text-gray-400' : 'bg-emerald-500 text-white shadow-[0_6px_0_0_#059669] active:shadow-none active:translate-y-1'}
+                  `}
+                >
+                  {isPracticeChecked ? 'Next Question' : 'Check Answer'}
+                </button>
+              </div>
+            ) : selectedEquation ? (
+              <div className="space-y-8">
+                <div className="bg-white border-2 border-gray-200 p-12 rounded-3xl shadow-[0_8px_0_0_#e5e7eb] text-center">
+                  <span className="text-gray-400 text-xs font-black uppercase tracking-[0.2em] block mb-4">Rearrange the formula</span>
+                  <div className="text-5xl font-black text-gray-800 mb-8 flex items-center justify-center gap-4 flex-wrap">
+                    {equationRearrangements[selectedEquation.id][equationSubject || selectedEquation.variables[0].symbol].split(' ').map((part, i) => (
+                      <span key={i} className={selectedEquation.variables.some((v: any) => v.symbol === part) ? 'text-blue-500' : ''}>
+                        {part}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-3 gap-4">
+                    {selectedEquation.variables.map((v: any) => (
+                      <button
+                        key={v.symbol}
+                        onClick={() => setEquationSubject(v.symbol)}
+                        className={`p-4 rounded-2xl border-2 font-black text-xl transition-all
+                          ${(equationSubject || selectedEquation.variables[0].symbol) === v.symbol 
+                            ? 'bg-blue-500 text-white border-blue-600 shadow-[0_4px_0_0_#1e40af]' 
+                            : 'bg-white text-gray-400 border-gray-200 hover:border-blue-300 shadow-[0_4px_0_0_#e5e7eb]'
+                          }
+                        `}
+                      >
+                        {v.symbol}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="mt-8 text-gray-400 font-bold text-sm uppercase tracking-widest">Click a variable to make it the subject</p>
+                </div>
+
+                <div className="grid gap-4">
+                  {selectedEquation.variables.map((v: any) => (
+                    <div key={v.symbol} className="bg-white border-2 border-gray-200 p-4 rounded-2xl flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="bg-blue-100 text-blue-600 w-10 h-10 rounded-xl flex items-center justify-center font-black">
+                          {v.symbol}
+                        </div>
+                        <div>
+                          <p className="font-black text-gray-800 uppercase text-sm">{v.name}</p>
+                          <p className="text-gray-400 text-xs font-bold uppercase tracking-widest">Unit: {v.unit || 'N/A'}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => {
+                    setIsPracticeMode(true);
+                    generatePracticeQuestion(selectedEquation);
+                  }}
+                  className="w-full bg-emerald-500 text-white py-4 rounded-2xl font-black text-xl uppercase tracking-widest shadow-[0_6px_0_0_#059669] active:shadow-none active:translate-y-1 transition-all flex items-center justify-center gap-3"
+                >
+                  <Zap size={24} />
+                  Practice Mode
+                </button>
+              </div>
+            ) : (
+              <div className="grid gap-4">
+                {equations.map((eq) => (
+                  <motion.button
+                    key={eq.id}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => {
+                      setSelectedEquation(eq);
+                      setEquationSubject(eq.variables[0].symbol);
+                    }}
+                    className="w-full bg-white border-2 border-gray-200 p-6 rounded-3xl flex items-center justify-between shadow-[0_4px_0_0_#e5e7eb] hover:border-blue-400 transition-all"
+                  >
+                    <div className="text-left">
+                      <h3 className="text-xl font-black text-gray-800 uppercase tracking-tight">{eq.name}</h3>
+                      <p className="text-blue-500 font-black text-lg">{eq.formula}</p>
+                    </div>
+                    <div className="bg-gray-100 text-gray-400 p-2 rounded-xl">
+                      <ArrowRight size={24} />
+                    </div>
+                  </motion.button>
+                ))}
+              </div>
+            )}
+          </main>
+        </div>
+      );
+    }
+
+    if (subMode === 'chemicals') {
+      return (
+        <div className="min-h-screen bg-gray-50 pb-24">
+          <header className="bg-white border-b-2 border-gray-200 p-4 sticky top-0 z-10">
+            <div className="max-w-2xl mx-auto flex items-center gap-4">
+              <button onClick={() => {
+                if (selectedChemical) setSelectedChemical(null);
+                else setSubMode('select');
+              }} className="text-gray-400 hover:text-gray-600">
+                <ChevronLeft size={32} />
+              </button>
+              <div className="flex-1">
+                <h1 className="text-lg font-black text-gray-800 uppercase tracking-tight leading-none">Chemicals</h1>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                  {selectedChemical ? selectedChemical.name : 'Explore common compounds'}
+                </p>
+              </div>
+            </div>
+          </header>
+
+          <main className="max-w-2xl mx-auto p-6">
+            {selectedChemical ? (
+              <div className="space-y-8">
+                <div className="bg-white border-2 border-gray-200 p-8 rounded-3xl shadow-[0_6px_0_0_#e5e7eb]">
+                  <div className="flex items-start justify-between mb-8">
+                    <div>
+                      <h2 className="text-4xl font-black text-gray-800 uppercase tracking-tight">{selectedChemical.name}</h2>
+                      <p className="text-emerald-500 font-black text-2xl">{selectedChemical.formula}</p>
+                    </div>
+                    <div className={`${selectedChemical.color} text-white p-6 rounded-3xl shadow-xl`}>
+                      {selectedChemical.icon}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-4">
+                      <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest">Composition</h3>
+                      <div className="flex flex-wrap gap-4">
+                        {selectedChemical.composition.map((comp: any, i: number) => (
+                          <div key={i} className="flex items-center gap-3 bg-gray-50 p-3 rounded-2xl border-2 border-gray-100">
+                            <div className={`w-12 h-12 rounded-full flex items-center justify-center font-black border-2 ${comp.color}`}>
+                              {comp.type}
+                            </div>
+                            <div>
+                              <p className="font-black text-gray-800 text-xl">× {comp.count}</p>
+                              <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Atoms</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="pt-4">
+                        <p className="text-gray-600 font-medium leading-relaxed">
+                          {selectedChemical.details}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest">Molecular View</h3>
+                      <MolecularAnimation 
+                        state={selectedChemical.state} 
+                        formula={selectedChemical.formula} 
+                        color={selectedChemical.color} 
+                      />
+                      <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest text-center">
+                        {selectedChemical.state === 'gas' 
+                          ? 'Molecules move rapidly and are far apart' 
+                          : 'Molecules slide past each other and are close together'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setSelectedChemical(null)}
+                  className="w-full bg-gray-200 text-gray-500 py-4 rounded-2xl font-black text-xl uppercase tracking-widest hover:bg-gray-300 transition-all"
+                >
+                  Back to List
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {chemicals.map((chem, idx) => (
+                  <motion.div
+                    key={chem.name}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.1 }}
+                    onClick={() => setSelectedChemical(chem)}
+                    className={`cursor-pointer bg-white border-2 border-gray-200 rounded-3xl p-6 shadow-[0_6px_0_0_#e5e7eb] transition-all relative overflow-hidden group hover:border-emerald-400`}
+                  >
+                    <div className={`absolute top-0 right-0 w-24 h-24 -mr-8 -mt-8 rounded-full opacity-10 transition-transform group-hover:scale-150 ${chem.color}`} />
+                    
+                    <div className="relative z-10">
+                      <div className={`${chem.color} text-white p-4 rounded-2xl w-fit mb-4 shadow-lg`}>
+                        {chem.icon}
+                      </div>
+                      <h3 className="text-2xl font-black text-gray-800 uppercase tracking-tight leading-none mb-1">{chem.name}</h3>
+                      <p className="text-emerald-500 font-black text-xl">{chem.formula}</p>
+                      <p className="text-gray-300 text-[10px] font-black uppercase tracking-widest mt-4">Tap to explore</p>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </main>
+        </div>
+      );
+    }
+
+    if (subMode === 'graphs') {
+      return (
+        <div className="min-h-screen bg-gray-50 pb-24">
+          <header className="bg-white border-b-2 border-gray-200 p-4 sticky top-0 z-10">
+            <div className="max-w-2xl mx-auto flex items-center gap-4">
+              <button onClick={() => {
+                if (selectedGraph) setSelectedGraph(null);
+                else setSubMode('select');
+              }} className="text-gray-400 hover:text-gray-600">
+                <ChevronLeft size={32} />
+              </button>
+              <div>
+                <h1 className="text-lg font-black text-gray-800 uppercase tracking-tight leading-none">Graph Playground</h1>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                  {selectedGraph ? 'Speed: Distance-time' : 'Experiment with parameters'}
+                </p>
+              </div>
+            </div>
+          </header>
+
+          <main className="max-w-2xl mx-auto p-6">
+            <GraphPlayground />
+          </main>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
   const UserDashboardView = () => {
     return (
       <div className="min-h-screen bg-gray-50 pb-24">
@@ -1131,7 +2322,7 @@ export default function App() {
   };
 
   const AboutView = () => {
-    const revisionNumber = "1.5.0";
+    const revisionNumber = "1.7.0";
     
     return (
       <div className="min-h-screen bg-gray-50 pb-24">
@@ -1278,10 +2469,11 @@ export default function App() {
         {mode === 'vocab' && <VocabView key="vocab" />}
         {mode === 'user-stats' && <UserDashboardView key="user-stats" />}
         {mode === 'about' && <AboutView key="about" />}
+        {mode === 'playground' && <PlaygroundView key="playground" />}
       </AnimatePresence>
 
       {/* Bottom Nav for Dashboard, User Stats, and About */}
-      {['dashboard', 'user-stats', 'about'].includes(mode) && (
+      {['dashboard', 'playground', 'user-stats', 'about'].includes(mode) && (
         <nav className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-200 p-4 z-20">
           <div className="max-w-2xl mx-auto flex justify-around items-center">
             <button 
@@ -1290,6 +2482,13 @@ export default function App() {
             >
               <Home size={28} fill={mode === 'dashboard' ? "currentColor" : "none"} />
               <span className="text-[10px] font-black uppercase">Home</span>
+            </button>
+            <button 
+              onClick={() => setMode('playground')}
+              className={`flex flex-col items-center gap-1 transition-colors ${mode === 'playground' ? 'text-emerald-500' : 'text-gray-400 hover:text-emerald-400'}`}
+            >
+              <FlaskConical size={28} fill={mode === 'playground' ? "currentColor" : "none"} />
+              <span className="text-[10px] font-black uppercase">Playground</span>
             </button>
             <button 
               onClick={() => setMode('user-stats')}
