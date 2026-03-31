@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence, Reorder } from 'motion/react';
 import { QRCodeSVG } from 'qrcode.react';
 import { 
   Heart, 
@@ -1315,6 +1315,73 @@ export default function App() {
       const [blueRight, setBlueRight] = useState(20);
       const [isPartitionRemoved, setIsPartitionRemoved] = useState(false);
       const [particles, setParticles] = useState<any[]>([]);
+
+      // Energy Change State
+      const [reactionType, setReactionType] = useState<'exothermic' | 'endothermic'>('exothermic');
+      const [temp, setTemp] = useState(25);
+      const [isEnergySimulating, setIsEnergySimulating] = useState(false);
+      const [energyLabMode, setEnergyLabMode] = useState(false);
+      const [selectedLabReaction, setSelectedLabReaction] = useState<string | null>(null);
+
+      // Metal Reactivity State
+      const [metalSimMode, setMetalSimMode] = useState<'compare' | 'experiment'>('compare');
+      const [metalSimReagent, setMetalSimReagent] = useState<'oxygen' | 'water' | 'acid'>('oxygen');
+      const [metalSimSelected, setMetalSimSelected] = useState<string[]>(['K', 'Mg']);
+      const [metalSimWaterTemp, setMetalSimWaterTemp] = useState<'cold' | 'hot' | 'steam'>('cold');
+      const [metalSimAcidType, setMetalSimAcidType] = useState<'HCl' | 'H2SO4' | 'CH3COOH'>('HCl');
+      const [metalSimIsActive, setMetalSimIsActive] = useState(false);
+      const [metalSimProgress, setMetalSimProgress] = useState(0);
+      const [experimentMetals, setExperimentMetals] = useState<{id: string, name: string, reactivity: number}[]>([]);
+      const [experimentResults, setExperimentResults] = useState<Record<string, any>>({});
+      const [userGuessOrder, setUserGuessOrder] = useState<string[]>(['A', 'B', 'C']);
+
+      const metals = [
+        { id: 'K', name: 'Potassium', reactivity: 10, color: 'bg-yellow-400' },
+        { id: 'Na', name: 'Sodium', reactivity: 9, color: 'bg-yellow-400' },
+        { id: 'Ca', name: 'Calcium', reactivity: 8, color: 'bg-yellow-400' },
+        { id: 'Mg', name: 'Magnesium', reactivity: 7, color: 'bg-yellow-400' },
+        { id: 'Zn', name: 'Zinc', reactivity: 5, color: 'bg-yellow-400' },
+        { id: 'Fe', name: 'Iron', reactivity: 4, color: 'bg-yellow-400' },
+        { id: 'Cu', name: 'Copper', reactivity: 1, color: 'bg-yellow-400' }
+      ];
+
+      const initExperiment = () => {
+        const shuffled = [...metals].sort(() => 0.5 - Math.random()).slice(0, 3);
+        setExperimentMetals(shuffled.map((m, i) => ({ ...m, label: String.fromCharCode(65 + i) })));
+        setExperimentResults({});
+        setUserGuessOrder(['A', 'B', 'C']);
+        setMetalSimProgress(0);
+        setMetalSimIsActive(false);
+      };
+
+      useEffect(() => {
+        if (selectedSim === 'metal-reactivity' && metalSimMode === 'experiment' && experimentMetals.length === 0) {
+          initExperiment();
+        }
+      }, [selectedSim, metalSimMode]);
+
+      useEffect(() => {
+        if (!metalSimIsActive || selectedSim !== 'metal-reactivity') return;
+
+        const interval = setInterval(() => {
+          setMetalSimProgress(prev => {
+            if (prev >= 100) {
+              setMetalSimIsActive(false);
+              return 100;
+            }
+            return prev + 1;
+          });
+        }, 50);
+
+        return () => clearInterval(interval);
+      }, [metalSimIsActive, selectedSim]);
+
+      const labReactions = [
+        { id: 'ammonium-nitrate', name: 'Ammonium Nitrate + Water', type: 'endothermic', targetTemp: 12, description: 'Dissolving ammonium nitrate in water absorbs heat.', icon: <Droplets size={20} className="text-blue-500" /> },
+        { id: 'neutralization', name: 'Neutralization (Acid + Base)', type: 'exothermic', targetTemp: 45, description: 'The reaction between HCl and NaOH releases heat.', icon: <Flame size={20} className="text-orange-500" /> },
+        { id: 'magnesium-acid', name: 'Magnesium + Hydrochloric Acid', type: 'exothermic', targetTemp: 55, description: 'Metal reacting with acid is typically exothermic.', icon: <Zap size={20} className="text-yellow-500" /> },
+        { id: 'citric-bicarb', name: 'Citric Acid + Sodium Bicarbonate', type: 'endothermic', targetTemp: 15, description: 'This reaction absorbs heat from the surroundings.', icon: <Wind size={20} className="text-blue-300" /> }
+      ];
       
       const simRef = useRef<HTMLDivElement>(null);
 
@@ -1352,6 +1419,31 @@ export default function App() {
 
         return () => clearInterval(interval);
       }, [isPartitionRemoved, selectedSim]);
+
+      useEffect(() => {
+        if (!isEnergySimulating || selectedSim !== 'energy-change') return;
+
+        let targetTemp = reactionType === 'exothermic' ? 60 : 10;
+        if (energyLabMode && selectedLabReaction) {
+          const reaction = labReactions.find(r => r.id === selectedLabReaction);
+          if (reaction) targetTemp = reaction.targetTemp;
+        }
+
+        const interval = setInterval(() => {
+          setTemp(prev => {
+            if (prev < targetTemp) {
+              const next = +(prev + 0.2).toFixed(1);
+              return next > targetTemp ? targetTemp : next;
+            } else if (prev > targetTemp) {
+              const next = +(prev - 0.2).toFixed(1);
+              return next < targetTemp ? targetTemp : next;
+            }
+            return prev;
+          });
+        }, 50);
+
+        return () => clearInterval(interval);
+      }, [isEnergySimulating, reactionType, selectedSim, energyLabMode, selectedLabReaction]);
 
       const counts = useMemo(() => {
         const left = particles.filter(p => p.x < 50);
@@ -1393,6 +1485,36 @@ export default function App() {
                 <div className="text-left">
                   <h3 className="text-2xl font-black text-gray-800 uppercase tracking-tight">Diffusion Simulation</h3>
                   <p className="text-gray-500 font-medium">Observe how particles move from high to low concentration.</p>
+                </div>
+              </motion.button>
+
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setSelectedSim('energy-change')}
+                className="bg-white border-2 border-gray-200 p-8 rounded-3xl flex items-center gap-6 shadow-[0_6px_0_0_#e5e7eb] hover:border-red-400 transition-all group"
+              >
+                <div className="bg-red-100 text-red-600 p-5 rounded-2xl group-hover:bg-red-500 group-hover:text-white transition-colors">
+                  <Flame size={40} />
+                </div>
+                <div className="text-left">
+                  <h3 className="text-2xl font-black text-gray-800 uppercase tracking-tight">Energy Change</h3>
+                  <p className="text-gray-500 font-medium">Investigate exothermic and endothermic reactions.</p>
+                </div>
+              </motion.button>
+
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setSelectedSim('metal-reactivity')}
+                className="bg-white border-2 border-gray-200 p-8 rounded-3xl flex items-center gap-6 shadow-[0_6px_0_0_#e5e7eb] hover:border-yellow-400 transition-all group"
+              >
+                <div className="bg-yellow-100 text-yellow-600 p-5 rounded-2xl group-hover:bg-yellow-500 group-hover:text-white transition-colors">
+                  <Zap size={40} />
+                </div>
+                <div className="text-left">
+                  <h3 className="text-2xl font-black text-gray-800 uppercase tracking-tight">Metal Reactivity</h3>
+                  <p className="text-gray-500 font-medium">Compare how different metals react with oxygen, water, and acids.</p>
                 </div>
               </motion.button>
 
@@ -1500,6 +1622,469 @@ export default function App() {
                         className="flex-1 bg-gray-200 text-gray-500 py-4 rounded-2xl font-black text-xl uppercase tracking-widest hover:bg-gray-300 transition-all"
                       >
                         Reset Simulation
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {selectedSim === 'energy-change' && (
+                <div className="bg-white border-2 border-gray-200 p-8 rounded-3xl shadow-[0_6px_0_0_#e5e7eb]">
+                  <div className="flex justify-between items-center mb-8">
+                    <div>
+                      <h3 className="text-2xl font-black text-gray-800 uppercase tracking-tight">Energy Change Simulation</h3>
+                      <p className="text-red-500 font-black text-xl uppercase tracking-widest text-xs">Thermodynamics</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={() => {
+                          setEnergyLabMode(!energyLabMode);
+                          setIsEnergySimulating(false);
+                          setTemp(25);
+                          setSelectedLabReaction(null);
+                        }}
+                        className={`px-4 py-2 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${energyLabMode ? 'bg-purple-500 text-white shadow-[0_4px_0_0_#7e22ce]' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                      >
+                        {energyLabMode ? 'Exit Lab' : 'Lab Mode'}
+                      </button>
+                      <div className="bg-red-100 text-red-600 p-4 rounded-2xl">
+                        <Flame size={32} />
+                      </div>
+                    </div>
+                  </div>
+
+                  {!energyLabMode ? (
+                    <div className="grid grid-cols-2 gap-4 mb-8">
+                      <button
+                        onClick={() => {
+                          setReactionType('exothermic');
+                          setIsEnergySimulating(false);
+                          setTemp(25);
+                        }}
+                        className={`p-4 rounded-2xl border-2 font-black uppercase transition-all ${reactionType === 'exothermic' ? 'border-red-500 bg-red-50 text-red-600 shadow-[0_4px_0_0_#ef4444]' : 'border-gray-100 text-gray-400'}`}
+                      >
+                        Exothermic
+                      </button>
+                      <button
+                        onClick={() => {
+                          setReactionType('endothermic');
+                          setIsEnergySimulating(false);
+                          setTemp(25);
+                        }}
+                        className={`p-4 rounded-2xl border-2 font-black uppercase transition-all ${reactionType === 'endothermic' ? 'border-blue-500 bg-blue-50 text-blue-600 shadow-[0_4px_0_0_#3b82f6]' : 'border-gray-100 text-gray-400'}`}
+                      >
+                        Endothermic
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="mb-8">
+                      <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-3">Select Lab Experiment</label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {labReactions.map(r => (
+                          <button
+                            key={r.id}
+                            onClick={() => {
+                              setSelectedLabReaction(r.id);
+                              setReactionType(r.type as any);
+                              setIsEnergySimulating(false);
+                              setTemp(25);
+                            }}
+                            className={`p-4 text-left rounded-2xl border-2 transition-all flex items-center gap-4 ${selectedLabReaction === r.id ? 'border-purple-500 bg-purple-50 text-purple-700 shadow-[0_4px_0_0_#a855f7]' : 'border-gray-100 text-gray-500 hover:bg-gray-50 shadow-[0_4px_0_0_#f3f4f6]'}`}
+                          >
+                            <div className={`p-2.5 rounded-xl ${selectedLabReaction === r.id ? 'bg-white shadow-sm' : 'bg-gray-50'}`}>
+                              {r.icon}
+                            </div>
+                            <div className="flex-1">
+                              <h4 className="font-black text-sm uppercase leading-tight">{r.name}</h4>
+                              <span className={`text-[10px] font-black uppercase tracking-widest ${r.type === 'exothermic' ? 'text-red-400' : 'text-blue-400'}`}>{r.type}</span>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                      {selectedLabReaction && (
+                        <motion.div 
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="mt-4 p-4 bg-purple-50 border-2 border-purple-100 rounded-2xl"
+                        >
+                          <div className="flex items-start gap-3">
+                            <Info size={18} className="text-purple-500 mt-0.5" />
+                            <p className="text-sm text-purple-700 font-medium">
+                              {labReactions.find(r => r.id === selectedLabReaction)?.description}
+                            </p>
+                          </div>
+                        </motion.div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="relative h-80 bg-gray-50 rounded-3xl border-4 border-gray-200 overflow-hidden mb-8 flex items-center justify-center">
+                    {/* Beaker */}
+                    <div className="relative w-64 h-64 border-x-4 border-b-4 border-gray-300 rounded-b-3xl bg-white/50 flex flex-col items-center justify-end pb-8">
+                      <div className={`absolute inset-x-0 bottom-0 rounded-b-2xl transition-all duration-1000 ${reactionType === 'exothermic' ? 'bg-red-100 h-4/5' : 'bg-blue-100 h-4/5'}`} />
+                      
+                      <div className="z-10 text-center">
+                        <h4 className={`text-2xl font-black uppercase tracking-tighter ${reactionType === 'exothermic' ? 'text-red-500' : 'text-blue-500'}`}>
+                          {reactionType} reaction
+                        </h4>
+                      </div>
+
+                      {/* Thermometer */}
+                      <div className="absolute left-6 top-4 w-8 h-48 bg-gray-200 rounded-full border-2 border-gray-300 z-20 flex flex-col items-center justify-end p-1">
+                        <div className="w-full bg-white rounded-full flex-1 mb-1 relative overflow-hidden">
+                          <motion.div 
+                            className={`absolute bottom-0 w-full ${reactionType === 'exothermic' ? 'bg-red-500' : 'bg-blue-500'}`}
+                            animate={{ height: `${(temp / 100) * 100}%` }}
+                            transition={{ type: 'spring', stiffness: 50 }}
+                          />
+                        </div>
+                        <div className={`w-6 h-6 rounded-full ${reactionType === 'exothermic' ? 'bg-red-500' : 'bg-blue-500'} border-2 border-gray-300`} />
+                      </div>
+
+                      {/* Temperature Readout */}
+                      <div className="absolute top-4 right-4 bg-white border-2 border-gray-200 px-3 py-1 rounded-xl shadow-sm z-30">
+                        <span className="text-xl font-black text-gray-800">{temp}°C</span>
+                      </div>
+
+                      {/* Heat Transfer Arrows */}
+                      <AnimatePresence>
+                        {isEnergySimulating && (
+                          <>
+                            {reactionType === 'exothermic' ? (
+                              // Outward arrows
+                              [0, 45, 135, 180, 225, 315].map(angle => (
+                                <motion.div
+                                  key={`exo-${angle}`}
+                                  initial={{ opacity: 0, scale: 0.5, x: 0, y: 0 }}
+                                  animate={{ 
+                                    opacity: [0, 1, 0],
+                                    x: Math.cos(angle * Math.PI / 180) * 100,
+                                    y: Math.sin(angle * Math.PI / 180) * 100
+                                  }}
+                                  transition={{ duration: 1.5, repeat: Infinity, delay: angle / 360 }}
+                                  className="absolute text-orange-500 z-30"
+                                >
+                                  <ArrowRight style={{ transform: `rotate(${angle}deg)` }} />
+                                </motion.div>
+                              ))
+                            ) : (
+                              // Inward arrows
+                              [0, 45, 135, 180, 225, 315].map(angle => (
+                                <motion.div
+                                  key={`endo-${angle}`}
+                                  initial={{ 
+                                    opacity: 0,
+                                    x: Math.cos(angle * Math.PI / 180) * 120,
+                                    y: Math.sin(angle * Math.PI / 180) * 120
+                                  }}
+                                  animate={{ 
+                                    opacity: [0, 1, 0],
+                                    x: 0,
+                                    y: 0
+                                  }}
+                                  transition={{ duration: 1.5, repeat: Infinity, delay: angle / 360 }}
+                                  className="absolute text-orange-500 z-30"
+                                >
+                                  <ArrowRight style={{ transform: `rotate(${angle + 180}deg)` }} />
+                                </motion.div>
+                              ))
+                            )}
+                          </>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-4">
+                    {!isEnergySimulating ? (
+                      <button
+                        onClick={() => setIsEnergySimulating(true)}
+                        disabled={energyLabMode && !selectedLabReaction}
+                        className={`flex-1 py-4 rounded-2xl font-black text-xl uppercase tracking-widest transition-all ${energyLabMode && !selectedLabReaction ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-emerald-500 text-white shadow-[0_6px_0_0_#059669] active:shadow-none active:translate-y-1'}`}
+                      >
+                        {energyLabMode ? 'Start Reaction' : 'Start Simulation'}
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          setIsEnergySimulating(false);
+                          setTemp(25);
+                        }}
+                        className="flex-1 bg-gray-200 text-gray-500 py-4 rounded-2xl font-black text-xl uppercase tracking-widest hover:bg-gray-300 transition-all"
+                      >
+                        Reset
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {selectedSim === 'metal-reactivity' && (
+                <div className="bg-white border-2 border-gray-200 p-8 rounded-3xl shadow-[0_6px_0_0_#e5e7eb]">
+                  <div className="flex justify-between items-center mb-8">
+                    <div>
+                      <h3 className="text-2xl font-black text-gray-800 uppercase tracking-tight">Metal Reactivity Simulation</h3>
+                      <p className="text-yellow-500 font-black text-xl uppercase tracking-widest text-xs">Reactivity Series</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={() => {
+                          setMetalSimMode(metalSimMode === 'compare' ? 'experiment' : 'compare');
+                          setMetalSimIsActive(false);
+                          setMetalSimProgress(0);
+                        }}
+                        className={`px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center gap-2 ${
+                          metalSimMode === 'experiment' 
+                            ? 'bg-purple-600 text-white shadow-[0_4px_0_0_#4c1d95] active:shadow-none active:translate-y-1' 
+                            : 'bg-white border-2 border-purple-100 text-purple-600 hover:bg-purple-50 shadow-[0_4px_0_0_#f3e8ff]'
+                        }`}
+                      >
+                        <FlaskConical size={16} />
+                        {metalSimMode === 'experiment' ? 'Exit Lab' : 'Virtual Lab'}
+                      </button>
+                      <div className="bg-yellow-100 text-yellow-600 p-4 rounded-2xl">
+                        <Zap size={32} />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 mb-8">
+                    {['oxygen', 'water', 'acid'].map(r => (
+                      <button
+                        key={r}
+                        onClick={() => {
+                          setMetalSimReagent(r as any);
+                          setMetalSimIsActive(false);
+                          setMetalSimProgress(0);
+                        }}
+                        className={`p-3 rounded-xl border-2 font-black uppercase text-xs transition-all ${metalSimReagent === r ? 'border-yellow-500 bg-yellow-50 text-yellow-600 shadow-[0_4px_0_0_#eab308]' : 'border-gray-100 text-gray-400'}`}
+                      >
+                        {r}
+                      </button>
+                    ))}
+                  </div>
+
+                  {metalSimReagent === 'water' && (
+                    <div className="flex gap-2 mb-8">
+                      {['cold', 'hot', 'steam'].map(t => (
+                        <button
+                          key={t}
+                          onClick={() => {
+                            setMetalSimWaterTemp(t as any);
+                            setMetalSimIsActive(false);
+                            setMetalSimProgress(0);
+                          }}
+                          className={`flex-1 p-2 rounded-lg border-2 font-bold text-[10px] uppercase transition-all ${metalSimWaterTemp === t ? 'border-blue-400 bg-blue-50 text-blue-600' : 'border-gray-100 text-gray-400'}`}
+                        >
+                          {t}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {metalSimReagent === 'acid' && (
+                    <div className="flex gap-2 mb-8">
+                      {['HCl', 'H2SO4', 'CH3COOH'].map(a => (
+                        <button
+                          key={a}
+                          onClick={() => {
+                            setMetalSimAcidType(a as any);
+                            setMetalSimIsActive(false);
+                            setMetalSimProgress(0);
+                          }}
+                          className={`flex-1 p-2 rounded-lg border-2 font-bold text-[10px] uppercase transition-all ${metalSimAcidType === a ? 'border-emerald-400 bg-emerald-50 text-emerald-600' : 'border-gray-100 text-gray-400'}`}
+                        >
+                          {a === 'HCl' ? 'Hydrochloric' : a === 'H2SO4' ? 'Sulfuric' : 'Ethanoic'}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {metalSimMode === 'compare' ? (
+                    <div className="grid grid-cols-2 gap-4 mb-8">
+                      {[0, 1].map(i => (
+                        <div key={i} className="space-y-2">
+                          <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest">Metal {i + 1}</label>
+                          <select 
+                            value={metalSimSelected[i]}
+                            onChange={e => {
+                              const newSelected = [...metalSimSelected];
+                              newSelected[i] = e.target.value;
+                              setMetalSimSelected(newSelected);
+                              setMetalSimIsActive(false);
+                              setMetalSimProgress(0);
+                            }}
+                            className="w-full p-3 rounded-xl border-2 border-gray-100 font-bold text-sm bg-white outline-none focus:border-yellow-400"
+                          >
+                            {metals.map(m => (
+                              <option key={m.id} value={m.id}>{m.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="mb-8 p-4 bg-purple-50 rounded-2xl border-2 border-purple-100 text-center">
+                      <h4 className="font-black text-purple-700 uppercase mb-1">Virtual Lab</h4>
+                      <p className="text-xs text-purple-600 font-medium">Test metals A, B, and C to find their reactivity order!</p>
+                      <button 
+                        onClick={initExperiment}
+                        className="mt-3 text-[10px] font-black text-purple-500 uppercase hover:text-purple-700 flex items-center justify-center gap-1 mx-auto"
+                      >
+                        <RefreshCw size={12} /> New Metals
+                      </button>
+                    </div>
+                  )}
+
+                  <div className="relative h-64 bg-gray-50 rounded-3xl border-4 border-gray-200 overflow-hidden mb-8 flex items-center justify-around p-4">
+                    {(metalSimMode === 'compare' ? metalSimSelected : experimentMetals).map((mIdOrObj, idx) => {
+                      const metal = typeof mIdOrObj === 'string' ? metals.find(m => m.id === mIdOrObj)! : mIdOrObj;
+                      const label = typeof mIdOrObj === 'string' ? metal.name : (mIdOrObj as any).label;
+                      
+                      // Calculate reaction intensity
+                      let intensity = 0;
+                      if (metalSimReagent === 'oxygen') {
+                        intensity = metal.reactivity * 0.1;
+                      } else if (metalSimReagent === 'water') {
+                        if (metalSimWaterTemp === 'cold') {
+                          intensity = metal.reactivity >= 7 ? (metal.reactivity - 6) * 0.3 : 0;
+                        } else if (metalSimWaterTemp === 'hot') {
+                          intensity = metal.reactivity >= 4 ? (metal.reactivity - 3) * 0.25 : 0;
+                        } else { // steam
+                          intensity = metal.reactivity >= 4 ? (metal.reactivity - 3) * 0.4 : 0;
+                        }
+                      } else { // acid
+                        const acidStrength = metalSimAcidType === 'CH3COOH' ? 0.4 : 1;
+                        intensity = metal.reactivity > 1 ? (metal.reactivity - 1) * 0.2 * acidStrength : 0;
+                      }
+
+                      const currentProgress = metalSimIsActive ? Math.min(100, metalSimProgress * intensity * 2) : 0;
+
+                      return (
+                        <div key={idx} className="flex flex-col items-center gap-4 flex-1">
+                          <span className="text-xs font-black text-gray-400 uppercase">{label}</span>
+                          
+                          <div className="relative w-24 h-32 flex flex-col items-center justify-end">
+                            {/* Reagent Container */}
+                            {(metalSimReagent === 'water' || metalSimReagent === 'acid') && (
+                              <div className={`absolute inset-0 border-x-2 border-b-2 border-gray-300 rounded-b-xl ${metalSimReagent === 'water' ? 'bg-blue-50/50' : 'bg-emerald-50/50'}`}>
+                                <div className={`absolute inset-x-0 bottom-0 h-4/5 ${metalSimReagent === 'water' ? 'bg-blue-100/60' : 'bg-emerald-100/60'} rounded-b-lg`} />
+                                
+                                {/* Bubbles */}
+                                {metalSimIsActive && intensity > 0 && (
+                                  <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                                    {[...Array(Math.floor(intensity * 15))].map((_, bi) => (
+                                      <motion.div
+                                        key={bi}
+                                        initial={{ y: 100, opacity: 0, x: Math.random() * 80 + 10 }}
+                                        animate={{ y: -20, opacity: [0, 1, 0] }}
+                                        transition={{ 
+                                          duration: 1 / (intensity + 0.1), 
+                                          repeat: Infinity, 
+                                          delay: Math.random() * 2,
+                                          ease: "linear"
+                                        }}
+                                        className="absolute w-1.5 h-1.5 bg-white rounded-full border border-blue-200"
+                                      />
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Metal Block */}
+                            <div className="relative w-16 h-16 bg-yellow-400 border-2 border-yellow-500 rounded-lg z-10 overflow-hidden">
+                              {metalSimReagent === 'oxygen' && (
+                                <motion.div 
+                                  className="absolute inset-0 bg-gray-400"
+                                  animate={{ opacity: currentProgress / 100 }}
+                                />
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Word Equation */}
+                  <div className="bg-gray-900 p-4 rounded-2xl mb-8 text-center">
+                    <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-2">Word Equation</p>
+                    <p className="text-white font-bold text-sm">
+                      {metalSimReagent === 'oxygen' && "Metal + Oxygen → Metal Oxide"}
+                      {metalSimReagent === 'water' && (
+                        metalSimWaterTemp === 'steam' 
+                          ? "Metal + Steam → Metal Oxide + Hydrogen"
+                          : "Metal + Water → Metal Hydroxide + Hydrogen"
+                      )}
+                      {metalSimReagent === 'acid' && `Metal + ${metalSimAcidType === 'HCl' ? 'Hydrochloric' : metalSimAcidType === 'H2SO4' ? 'Sulfuric' : 'Ethanoic'} Acid → Metal ${metalSimAcidType === 'HCl' ? 'Chloride' : metalSimAcidType === 'H2SO4' ? 'Sulfate' : 'Ethanoate'} + Hydrogen`}
+                    </p>
+                  </div>
+
+                  {metalSimMode === 'experiment' && (
+                    <div className="mb-8 p-6 bg-white border-2 border-purple-100 rounded-3xl relative overflow-hidden">
+                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-purple-500 via-purple-300 to-purple-100" />
+                      <h4 className="text-sm font-black text-purple-700 uppercase mb-6 text-center tracking-widest">Deduce the Order</h4>
+                      
+                      <div className="flex flex-col gap-3 max-w-xs mx-auto">
+                        <div className="flex items-center justify-center gap-2 mb-2">
+                          <div className="h-px flex-1 bg-purple-100" />
+                          <span className="text-[10px] font-black text-purple-400 uppercase tracking-widest">Most Reactive</span>
+                          <div className="h-px flex-1 bg-purple-100" />
+                        </div>
+
+                        <Reorder.Group axis="y" values={userGuessOrder} onReorder={setUserGuessOrder} className="space-y-2">
+                          {userGuessOrder.map((metalLabel) => (
+                            <Reorder.Item
+                              key={metalLabel}
+                              value={metalLabel}
+                              className="bg-white border-2 border-purple-100 p-4 rounded-2xl cursor-grab active:cursor-grabbing flex items-center justify-between group hover:border-purple-400 hover:shadow-md transition-all"
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-purple-600 text-white rounded-xl flex items-center justify-center font-black text-sm shadow-lg shadow-purple-200">
+                                  {metalLabel}
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="font-black text-purple-900 text-sm uppercase">Metal {metalLabel}</span>
+                                  <span className="text-[9px] text-purple-400 font-bold uppercase tracking-tighter">Drag to reorder</span>
+                                </div>
+                              </div>
+                              <List size={18} className="text-purple-200 group-hover:text-purple-500 transition-colors" />
+                            </Reorder.Item>
+                          ))}
+                        </Reorder.Group>
+
+                        <div className="flex items-center justify-center gap-2 mt-2">
+                          <div className="h-px flex-1 bg-purple-100" />
+                          <span className="text-[10px] font-black text-purple-400 uppercase tracking-widest">Least Reactive</span>
+                          <div className="h-px flex-1 bg-purple-100" />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex gap-4">
+                    {!metalSimIsActive ? (
+                      <button
+                        onClick={() => {
+                          setMetalSimIsActive(true);
+                          setMetalSimProgress(0);
+                        }}
+                        className="flex-1 bg-gradient-to-r from-yellow-400 to-orange-500 text-white py-5 rounded-3xl font-black text-xl uppercase tracking-widest shadow-[0_8px_0_0_#ca8a04] active:shadow-none active:translate-y-1 transition-all flex items-center justify-center gap-3 group"
+                      >
+                        <Zap size={24} className="group-hover:animate-pulse" />
+                        Start Reaction
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          setMetalSimIsActive(false);
+                          setMetalSimProgress(0);
+                        }}
+                        className="flex-1 bg-white border-4 border-gray-200 text-gray-400 py-5 rounded-3xl font-black text-xl uppercase tracking-widest hover:bg-gray-50 hover:text-gray-600 transition-all flex items-center justify-center gap-3 shadow-[0_8px_0_0_#e5e7eb] active:shadow-none active:translate-y-1"
+                      >
+                        <RefreshCw size={24} />
+                        Reset Lab
                       </button>
                     )}
                   </div>
