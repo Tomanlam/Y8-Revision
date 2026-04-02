@@ -19,7 +19,7 @@ import {
   orderBy,
   getDocFromServer
 } from 'firebase/firestore';
-import { onAuthStateChanged, signInAnonymously } from 'firebase/auth';
+import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
 import { db, auth } from './firebase';
 
 // Error Boundary Component
@@ -363,10 +363,11 @@ function AppContent() {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setIsAuthReady(true);
+      setIsAuthReady(true);
+      if (user && user.email === 'tomanlam@gmail.com') {
+        setIsAdminLoggedIn(true);
       } else {
-        signInAnonymously(auth).catch(err => console.error("Auth error", err));
+        setIsAdminLoggedIn(false);
       }
     });
     return () => unsubscribe();
@@ -578,13 +579,28 @@ function AppContent() {
   const [adminError, setAdminError] = useState("");
   const [editingRecord, setEditingRecord] = useState<ChallengeRecord | null>(null);
 
-  const handleAdminLogin = (e: React.FormEvent) => {
+  const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Keep legacy login for convenience if needed, or switch entirely to Google
     if (adminUsername === 'admin' && adminPassword === '1069') {
       setIsAdminLoggedIn(true);
       setAdminError("");
-    } else {
-      setAdminError("Invalid credentials");
+      return;
+    }
+
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      if (result.user.email === 'tomanlam@gmail.com') {
+        setIsAdminLoggedIn(true);
+        setAdminError("");
+      } else {
+        setAdminError("Access denied: Not an authorized admin email.");
+        await signOut(auth);
+      }
+    } catch (error) {
+      console.error("Login error", error);
+      setAdminError("Login failed. Please try again.");
     }
   };
 
@@ -1275,6 +1291,24 @@ function AppContent() {
                       {adminError && <p className="text-red-500 text-sm font-bold text-center">{adminError}</p>}
                       <button className="w-full bg-emerald-500 text-white py-3 rounded-xl font-black uppercase tracking-widest shadow-[0_4px_0_0_#059669] active:shadow-none active:translate-y-1 transition-all">
                         Login
+                      </button>
+                      
+                      <div className="relative my-6">
+                        <div className="absolute inset-0 flex items-center">
+                          <div className="w-full border-t-2 border-gray-100"></div>
+                        </div>
+                        <div className="relative flex justify-center text-xs uppercase font-black text-gray-400">
+                          <span className="bg-white px-2">Or</span>
+                        </div>
+                      </div>
+
+                      <button 
+                        type="button"
+                        onClick={handleAdminLogin}
+                        className="w-full bg-white border-2 border-gray-200 text-gray-700 py-3 rounded-xl font-black uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-gray-50 transition-all"
+                      >
+                        <Chrome size={20} />
+                        Sign in with Google
                       </button>
                     </form>
                   </div>

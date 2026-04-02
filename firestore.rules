@@ -49,16 +49,17 @@ service cloud.firestore {
     // ===============================================================
 
     match /challengeRecords/{recordId} {
-      // Students can create their records (anonymous auth allowed)
-      allow create: if isAuthenticated() && isValidChallengeRecord(request.resource.data);
+      // Students can create their records without authentication
+      // We rely on strict schema validation to prevent junk data
+      allow create: if isValidChallengeRecord(request.resource.data);
       
       // Only admins can read, update, or delete records
       allow read, update, delete: if isAdmin();
     }
     
-    // Connection test document
+    // Connection test document - requires auth (admin test)
     match /test/connection {
-      allow read: if isAuthenticated();
+      allow read: if isAdmin();
     }
   }
 }
