@@ -6,15 +6,163 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence, Reorder } from 'motion/react';
 import { QRCodeSVG } from 'qrcode.react';
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
+
+// Add these interfaces
+interface ChallengeResponse {
+  questionId: string;
+  questionText: string;
+  userAnswer: string;
+  correctAnswer: string;
+  isCorrect: boolean;
+}
+
+interface ChallengeRecord {
+  id: string;
+  studentName: string;
+  score: number;
+  totalQuestions: number;
+  selectedUnits: number[];
+  responses: ChallengeResponse[];
+  timestamp: string;
+}
 import { 
   Heart, 
   BookOpen, 
   GraduationCap, 
   Languages, 
   ChevronLeft, 
-  CheckCircle2,
-  XCircle,
+  CheckCircle2, 
+  XCircle, 
   Trophy,
+  Trash2,
+  User,
+  Lock,
+  FileText,
+  Download,
+  ChevronRight,
+  X,
+  Menu,
+  Settings,
+  LogOut,
+  Plus,
+  Minus,
+  Save,
+  Edit,
+  Trash,
+  Search,
+  Filter,
+  ArrowLeft,
+  Play,
+  Pause,
+  RotateCcw,
+  Clock,
+  Award,
+  Star,
+  Thermometer,
+  TestTube,
+  Microscope,
+  Magnet,
+  Lightbulb,
+  Sun,
+  Moon,
+  Cloud,
+  CloudRain,
+  CloudLightning,
+  CloudSnow,
+  Waves,
+  Mountain,
+  Trees,
+  Leaf,
+  Flower,
+  Bug,
+  Bird,
+  Fish,
+  Dog,
+  Cat,
+  Rabbit,
+  Turtle,
+  Skull,
+  Ghost,
+  Activity,
+  Stethoscope,
+  Syringe,
+  Pill,
+  Brain,
+  Hand,
+  Footprints,
+  Baby,
+  Users,
+  Briefcase,
+  School,
+  Library,
+  Book,
+  Pencil,
+  Eraser,
+  Ruler,
+  Globe,
+  Map,
+  MapPin,
+  Navigation,
+  Flag,
+  Calendar,
+  Bell,
+  Mail,
+  Phone,
+  MessageCircle,
+  Share2,
+  Link,
+  Twitter,
+  Facebook,
+  Instagram,
+  Youtube,
+  Linkedin,
+  Chrome,
+  Terminal,
+  Cpu,
+  Database,
+  Server,
+  Wifi,
+  Bluetooth,
+  Nfc,
+  Battery,
+  BatteryCharging,
+  BatteryFull,
+  BatteryLow,
+  BatteryMedium,
+  BatteryWarning,
+  HardDrive,
+  Mouse,
+  Keyboard,
+  Monitor,
+  Smartphone,
+  Tablet,
+  Laptop,
+  Tv,
+  Speaker,
+  Headphones,
+  Mic,
+  Video,
+  Camera,
+  Image,
+  Music,
+  Film,
+  Gamepad,
+  Joystick,
+  Dices,
+  Puzzle,
+  Medal,
+  Target,
+  Dumbbell,
+  Car,
+  Plane,
+  Ship,
+  Train,
+  Truck,
+  Bus,
+  Rocket,
+  Anchor,
   ArrowRight,
   ArrowRightLeft,
   Home,
@@ -37,26 +185,12 @@ import {
   Droplets,
   Flame,
   TrendingUp,
-  QrCode,
-  ClipboardList,
-  LogOut,
-  FileText,
-  Download,
-  Users,
-  Calendar,
-  ArrowLeft,
-  AlertCircle,
-  Lock,
-  User
+  QrCode
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { units, Unit, Question, Vocab } from './data';
-import { db, auth, signInAnonymously } from './firebase';
-import { collection, doc, getDoc, getDocs, setDoc, query, where, onSnapshot, serverTimestamp } from 'firebase/firestore';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
 
-type AppMode = 'splash' | 'dashboard' | 'quiz' | 'quiz-select' | 'revision' | 'vocab' | 'result' | 'user-stats' | 'about' | 'playground' | 'task';
+type AppMode = 'splash' | 'dashboard' | 'quiz' | 'quiz-select' | 'revision' | 'vocab' | 'result' | 'user-stats' | 'about' | 'playground';
 type QuizSubMode = 'quick' | 'time-attack' | 'marathon';
 
 interface SessionStats {
@@ -79,20 +213,197 @@ export default function App() {
   const [quizSubMode, setQuizSubMode] = useState<QuizSubMode>('quick');
   const [timeLeft, setTimeLeft] = useState(30);
   const [isY8Open, setIsY8Open] = useState(false);
+  const [isChallengeModeOpen, setIsChallengeModeOpen] = useState(false);
+  const [challengeSelectedUnits, setChallengeSelectedUnits] = useState<number[]>([]);
+  const [challengeQuestionCount, setChallengeQuestionCount] = useState<number>(20);
+  const [isChallengeQuizActive, setIsChallengeQuizActive] = useState(false);
+  const [challengeQuestions, setChallengeQuestions] = useState<Question[]>([]);
+  const [challengeCurrentIndex, setChallengeCurrentIndex] = useState(0);
+  const [challengeResponses, setChallengeResponses] = useState<ChallengeResponse[]>([]);
+  const [challengeStudentName, setChallengeStudentName] = useState("");
+  const [showChallengeResult, setShowChallengeResult] = useState(false);
+  const [isAdminOpen, setIsAdminOpen] = useState(false);
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
+  const [challengeRecords, setChallengeRecords] = useState<ChallengeRecord[]>([]);
+
+  useEffect(() => {
+    const savedRecords = localStorage.getItem('challengeRecords');
+    if (savedRecords) {
+      setChallengeRecords(JSON.parse(savedRecords));
+    }
+  }, []);
+
+  const saveChallengeRecord = (record: ChallengeRecord) => {
+    const updatedRecords = [...challengeRecords, record];
+    setChallengeRecords(updatedRecords);
+    localStorage.setItem('challengeRecords', JSON.stringify(updatedRecords));
+  };
+
+  const deleteChallengeRecord = (id: string) => {
+    const updatedRecords = challengeRecords.filter(r => r.id !== id);
+    setChallengeRecords(updatedRecords);
+    localStorage.setItem('challengeRecords', JSON.stringify(updatedRecords));
+  };
+
+  const updateChallengeRecord = (updatedRecord: ChallengeRecord) => {
+    const updatedRecords = challengeRecords.map(r => r.id === updatedRecord.id ? updatedRecord : r);
+    setChallengeRecords(updatedRecords);
+    localStorage.setItem('challengeRecords', JSON.stringify(updatedRecords));
+  };
+
+  const generateChallengeQuiz = () => {
+    let allQuestions: Question[] = [];
+    challengeSelectedUnits.forEach(unitId => {
+      const unit = units.find(u => u.id === unitId);
+      if (unit) {
+        allQuestions = [...allQuestions, ...unit.questions];
+      }
+    });
+
+    // Shuffle and pick N questions
+    const shuffled = [...allQuestions].sort(() => 0.5 - Math.random());
+    const selected = shuffled.slice(0, challengeQuestionCount);
+
+    setChallengeQuestions(selected);
+    setChallengeCurrentIndex(0);
+    setChallengeResponses([]);
+    setIsChallengeQuizActive(true);
+    setIsChallengeModeOpen(false);
+    setShowChallengeResult(false);
+    setIsEventMode(false);
+  };
+
+  const handleChallengeAnswer = (answer: string) => {
+    const currentQuestion = challengeQuestions[challengeCurrentIndex];
+    const newResponse: ChallengeResponse = {
+      questionId: currentQuestion.id,
+      questionText: currentQuestion.text,
+      userAnswer: answer,
+      correctAnswer: currentQuestion.correctAnswer,
+      isCorrect: answer === currentQuestion.correctAnswer
+    };
+
+    const updatedResponses = [...challengeResponses, newResponse];
+    setChallengeResponses(updatedResponses);
+
+    if (challengeCurrentIndex < challengeQuestions.length - 1) {
+      setChallengeCurrentIndex(challengeCurrentIndex + 1);
+    } else {
+      setIsChallengeQuizActive(false);
+      setShowChallengeResult(true);
+    }
+  };
+
+  const finalizeChallenge = () => {
+    if (!challengeStudentName.trim()) return;
+
+    const score = challengeResponses.filter(r => r.isCorrect).length;
+    const record: ChallengeRecord = {
+      id: Math.random().toString(36).substr(2, 9),
+      studentName: challengeStudentName,
+      score,
+      totalQuestions: challengeQuestions.length,
+      selectedUnits: challengeSelectedUnits,
+      responses: challengeResponses,
+      timestamp: new Date().toISOString()
+    };
+
+    saveChallengeRecord(record);
+    setShowChallengeResult(false);
+    setChallengeStudentName("");
+    setChallengeSelectedUnits([]);
+    setChallengeQuestionCount(20);
+  };
+  const [isEventMode, setIsEventMode] = useState(false);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
+  const [eventMessages] = useState(["Easter assignment due 20th April"]);
+  const [currentEventMessageIndex, setCurrentEventMessageIndex] = useState(0);
+
+  useEffect(() => {
+    if (eventMessages.length > 1) {
+      const interval = setInterval(() => {
+        setCurrentEventMessageIndex(prev => (prev + 1) % eventMessages.length);
+      }, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [eventMessages]);
+
+  const startEasterAssignment = () => {
+    const eventUnits = [1, 2, 3, 4, 5, 6, 7];
+    const eventCount = 60;
+    
+    let allQuestions: Question[] = [];
+    eventUnits.forEach(unitId => {
+      const unit = units.find(u => u.id === unitId);
+      if (unit) {
+        allQuestions = [...allQuestions, ...unit.questions];
+      }
+    });
+
+    const shuffled = [...allQuestions].sort(() => 0.5 - Math.random());
+    const selected = shuffled.slice(0, eventCount);
+
+    setChallengeQuestions(selected);
+    setChallengeCurrentIndex(0);
+    setChallengeResponses([]);
+    setChallengeSelectedUnits(eventUnits);
+    setChallengeQuestionCount(eventCount);
+    setIsChallengeQuizActive(true);
+    setIsChallengeModeOpen(false);
+    setIsEventMode(true);
+  };
+
   const [isQRModalOpen, setIsQRModalOpen] = useState(false);
+  const [adminUsername, setAdminUsername] = useState("");
+  const [adminPassword, setAdminPassword] = useState("");
+  const [adminError, setAdminError] = useState("");
+  const [editingRecord, setEditingRecord] = useState<ChallengeRecord | null>(null);
+
+  const handleAdminLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (adminUsername === 'admin' && adminPassword === '1069') {
+      setIsAdminLoggedIn(true);
+      setAdminError("");
+    } else {
+      setAdminError("Invalid credentials");
+    }
+  };
+
+  const generatePDF = (records: ChallengeRecord[]) => {
+    const doc = new jsPDF();
+    
+    records.forEach((record, index) => {
+      if (index > 0) doc.addPage();
+      
+      doc.setFontSize(20);
+      doc.text("Quiz Challenge Report", 14, 22);
+      
+      doc.setFontSize(12);
+      doc.text(`Student: ${record.studentName}`, 14, 32);
+      doc.text(`Score: ${record.score} / ${record.totalQuestions}`, 14, 40);
+      doc.text(`Date: ${new Date(record.timestamp).toLocaleString()}`, 14, 48);
+      doc.text(`Units: ${record.selectedUnits.join(", ")}`, 14, 56);
+
+      const tableData = record.responses.map((r, i) => [
+        i + 1,
+        r.questionText,
+        r.userAnswer,
+        r.correctAnswer,
+        r.isCorrect ? "Yes" : "No"
+      ]);
+
+      autoTable(doc, {
+        startY: 64,
+        head: [['#', 'Question', 'Your Answer', 'Correct Answer', 'Correct']],
+        body: tableData,
+        theme: 'striped',
+        headStyles: { fillColor: [16, 185, 129] }
+      });
+    });
+
+    doc.save(`Quiz_Report_${new Date().getTime()}.pdf`);
+  };
   const [sessionStats, setSessionStats] = useState<SessionStats>({});
-  
-  // Task Mode State
-  const [taskUser, setTaskUser] = useState<any>(null);
-  const [taskLoginError, setTaskLoginError] = useState<string | null>(null);
-  const [taskMode, setTaskMode] = useState<'login' | 'dashboard' | 'assignment' | 'complete' | 'admin'>('login');
-  const [taskCurrentQuestionIndex, setTaskCurrentQuestionIndex] = useState(0);
-  const [taskAnswers, setTaskAnswers] = useState<any[]>([]);
-  const [taskQuestions, setTaskQuestions] = useState<any[]>([]);
-  const [taskScore, setTaskScore] = useState(0);
-  const [taskPercentage, setTaskPercentage] = useState(0);
-  const [taskSubmissions, setTaskSubmissions] = useState<any[]>([]);
-  const [taskAdminSelectedUser, setTaskAdminSelectedUser] = useState<any>(null);
 
   const allConcepts = useMemo(() => units.flatMap(unit => unit.concepts), []);
   const [randomConcept, setRandomConcept] = useState(() => 
@@ -386,6 +697,185 @@ export default function App() {
       </header>
 
       <AnimatePresence>
+        {isChallengeModeOpen && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6 overflow-y-auto">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl relative my-auto"
+            >
+              <button 
+                onClick={() => setIsChallengeModeOpen(false)}
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+              >
+                <XCircle size={24} />
+              </button>
+              <h3 className="text-2xl font-black text-gray-800 uppercase tracking-tight mb-6 flex items-center gap-2">
+                <Trophy className="text-amber-500" /> Challenge Setup
+              </h3>
+              
+              <div className="space-y-6">
+                {/* Easter Assignment Button */}
+                <button
+                  onClick={startEasterAssignment}
+                  className="w-full p-4 rounded-2xl bg-cyan-500 text-white font-black text-lg uppercase tracking-widest shadow-[0_6px_0_0_#0891b2] active:shadow-none active:translate-y-1 transition-all flex items-center justify-center gap-3"
+                >
+                  <Star className="animate-pulse" /> Easter Assignment
+                </button>
+
+                <div className="relative flex items-center gap-4 py-2">
+                  <div className="flex-1 h-px bg-gray-200"></div>
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">OR CUSTOM</span>
+                  <div className="flex-1 h-px bg-gray-200"></div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-black text-gray-400 uppercase tracking-widest mb-3">Select Topics</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar">
+                    {units.map(unit => (
+                      <button
+                        key={unit.id}
+                        onClick={() => {
+                          setChallengeSelectedUnits(prev => 
+                            prev.includes(unit.id) 
+                              ? prev.filter(id => id !== unit.id)
+                              : [...prev, unit.id]
+                          );
+                        }}
+                        className={`p-3 rounded-2xl border-2 font-bold text-sm transition-all flex items-center gap-3 text-left ${
+                          challengeSelectedUnits.includes(unit.id)
+                            ? `${unit.color} border-transparent text-white shadow-[0_4px_0_0_rgba(0,0,0,0.2)]`
+                            : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'
+                        }`}
+                      >
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                          challengeSelectedUnits.includes(unit.id) ? 'bg-white/20' : unit.color + ' text-white'
+                        }`}>
+                          {unit.id}
+                        </div>
+                        <span className="truncate">{unit.title}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-black text-gray-400 uppercase tracking-widest mb-3">Number of Questions</label>
+                  <div className="flex flex-wrap gap-2">
+                    {[20, 40, 60, 80, 100].map(count => (
+                      <button
+                        key={count}
+                        onClick={() => setChallengeQuestionCount(count)}
+                        className={`flex-1 min-w-[60px] p-2 rounded-xl border-2 font-bold text-sm transition-all ${
+                          challengeQuestionCount === count
+                            ? 'bg-orange-500 border-orange-500 text-white shadow-[0_4px_0_0_#c2410c]'
+                            : 'bg-gray-50 border-gray-200 text-gray-500 hover:border-gray-300'
+                        }`}
+                      >
+                        {count}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <button
+                  disabled={challengeSelectedUnits.length === 0}
+                  onClick={generateChallengeQuiz}
+                  className={`w-full py-4 rounded-2xl font-black text-xl uppercase tracking-widest transition-all ${
+                    challengeSelectedUnits.length > 0
+                      ? 'bg-emerald-500 text-white shadow-[0_6px_0_0_#059669] active:shadow-none active:translate-y-1'
+                      : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  }`}
+                >
+                  Generate
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {isChallengeQuizActive && (
+          <div className="fixed inset-0 bg-white z-[150] flex flex-col">
+            <header className="p-4 border-b-2 border-gray-100 flex items-center gap-4">
+              <button 
+                onClick={() => {
+                  if (isEventMode) {
+                    setShowExitConfirm(true);
+                  } else if (confirm("Are you sure you want to quit the challenge? Progress will be lost.")) {
+                    setIsChallengeQuizActive(false);
+                  }
+                }} 
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <XCircle size={32} />
+              </button>
+              <div className="flex-1">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-[10px] font-black text-orange-500 uppercase tracking-widest">
+                    {isEventMode ? "Event Mode" : "Challenge Mode"}
+                  </span>
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                    Question {challengeCurrentIndex + 1} of {challengeQuestions.length}
+                  </span>
+                </div>
+                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${((challengeCurrentIndex + 1) / challengeQuestions.length) * 100}%` }}
+                    className={`h-full ${isEventMode ? 'bg-cyan-500' : 'bg-orange-500'} rounded-full`}
+                  />
+                </div>
+              </div>
+            </header>
+
+            <main className="flex-1 max-w-2xl mx-auto w-full p-6 flex flex-col overflow-y-auto">
+              <h2 className="text-2xl font-black text-gray-800 mb-8">{challengeQuestions[challengeCurrentIndex].text}</h2>
+              <div className="space-y-4">
+                {challengeQuestions[challengeCurrentIndex].options.map((option) => (
+                  <button
+                    key={option}
+                    onClick={() => handleChallengeAnswer(option)}
+                    className="w-full p-4 text-left rounded-2xl border-2 border-gray-200 hover:bg-gray-50 text-gray-700 shadow-[0_4px_0_0_#e5e7eb] active:shadow-none active:translate-y-1 transition-all font-bold text-lg"
+                  >
+                    {option}
+                  </button>
+                ))}
+              </div>
+            </main>
+
+            {showExitConfirm && (
+              <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-6">
+                <motion.div 
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl text-center"
+                >
+                  <h3 className="text-xl font-black text-gray-800 mb-4">Progress will not be saved. Continue?</h3>
+                  <div className="flex gap-4">
+                    <button 
+                      onClick={() => {
+                        setShowExitConfirm(false);
+                        setIsChallengeQuizActive(false);
+                        setIsEventMode(false);
+                      }}
+                      className="flex-1 bg-red-500 text-white py-3 rounded-xl font-black uppercase tracking-widest shadow-[0_4px_0_0_#b91c1c] active:shadow-none active:translate-y-1 transition-all"
+                    >
+                      No, exit
+                    </button>
+                    <button 
+                      onClick={() => setShowExitConfirm(false)}
+                      className="flex-1 bg-emerald-500 text-white py-3 rounded-xl font-black uppercase tracking-widest shadow-[0_4px_0_0_#059669] active:shadow-none active:translate-y-1 transition-all"
+                    >
+                      yes, continue
+                    </button>
+                  </div>
+                </motion.div>
+              </div>
+            )}
+          </div>
+        )}
+
         {isQRModalOpen && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
             <motion.div 
@@ -409,9 +899,283 @@ export default function App() {
             </motion.div>
           </div>
         )}
+
+        {isAdminOpen && (
+          <div className="fixed inset-0 bg-gray-50 z-[300] flex flex-col overflow-hidden">
+            <header className="bg-white border-b-2 border-gray-200 p-4 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <button onClick={() => setIsAdminOpen(false)} className="text-gray-400 hover:text-gray-600">
+                  <ChevronLeft size={32} />
+                </button>
+                <h1 className="text-xl font-black text-gray-800 uppercase tracking-tight">Admin Dashboard</h1>
+              </div>
+              {isAdminLoggedIn && (
+                <button 
+                  onClick={() => setIsAdminLoggedIn(false)}
+                  className="text-red-500 font-bold flex items-center gap-2 hover:bg-red-50 px-3 py-1 rounded-lg transition-colors"
+                >
+                  <LogOut size={20} /> Logout
+                </button>
+              )}
+            </header>
+
+            <main className="flex-1 overflow-y-auto p-6">
+              {!isAdminLoggedIn ? (
+                <div className="max-w-sm mx-auto mt-20">
+                  <div className="bg-white rounded-3xl p-8 shadow-xl border-2 border-gray-100">
+                    <div className="bg-emerald-100 w-16 h-16 rounded-2xl flex items-center justify-center text-emerald-600 mx-auto mb-6">
+                      <Lock size={32} />
+                    </div>
+                    <h2 className="text-2xl font-black text-center text-gray-800 uppercase mb-6">Admin Login</h2>
+                    <form onSubmit={handleAdminLogin} className="space-y-4">
+                      <div>
+                        <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Username</label>
+                        <input 
+                          type="text" 
+                          value={adminUsername}
+                          onChange={(e) => setAdminUsername(e.target.value)}
+                          className="w-full p-3 rounded-xl border-2 border-gray-200 font-bold focus:border-emerald-500 outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Password</label>
+                        <input 
+                          type="password" 
+                          value={adminPassword}
+                          onChange={(e) => setAdminPassword(e.target.value)}
+                          className="w-full p-3 rounded-xl border-2 border-gray-200 font-bold focus:border-emerald-500 outline-none"
+                        />
+                      </div>
+                      {adminError && <p className="text-red-500 text-sm font-bold text-center">{adminError}</p>}
+                      <button className="w-full bg-emerald-500 text-white py-3 rounded-xl font-black uppercase tracking-widest shadow-[0_4px_0_0_#059669] active:shadow-none active:translate-y-1 transition-all">
+                        Login
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              ) : (
+                <div className="max-w-5xl mx-auto space-y-8">
+                  {/* Admin Stats */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="bg-white p-6 rounded-3xl border-2 border-gray-200 shadow-sm">
+                      <p className="text-gray-400 font-black text-xs uppercase tracking-widest mb-2">Total Quizzes</p>
+                      <p className="text-4xl font-black text-gray-800">{challengeRecords.length}</p>
+                    </div>
+                    <div className="bg-white p-6 rounded-3xl border-2 border-gray-200 shadow-sm">
+                      <p className="text-gray-400 font-black text-xs uppercase tracking-widest mb-2">Avg. Performance</p>
+                      <p className="text-4xl font-black text-emerald-500">
+                        {challengeRecords.length > 0 
+                          ? (challengeRecords.reduce((acc, r) => acc + (r.score / r.totalQuestions), 0) / challengeRecords.length * 100).toFixed(1)
+                          : 0}%
+                      </p>
+                    </div>
+                    <div className="bg-white p-6 rounded-3xl border-2 border-gray-200 shadow-sm">
+                      <p className="text-gray-400 font-black text-xs uppercase tracking-widest mb-2">Active Students</p>
+                      <p className="text-4xl font-black text-blue-500">
+                        {new Set(challengeRecords.map(r => r.studentName)).size}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <h2 className="text-2xl font-black text-gray-800 uppercase tracking-tight">Quiz Records</h2>
+                    <button 
+                      onClick={() => generatePDF(challengeRecords)}
+                      className="bg-emerald-500 text-white px-6 py-3 rounded-2xl font-black uppercase tracking-widest flex items-center gap-2 shadow-[0_4px_0_0_#059669] hover:bg-emerald-600 transition-all active:shadow-none active:translate-y-1"
+                    >
+                      <Download size={20} /> Export All
+                    </button>
+                  </div>
+
+                  <div className="bg-white rounded-[2rem] border-2 border-gray-200 overflow-hidden shadow-sm">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left">
+                        <thead className="bg-gray-50 border-b-2 border-gray-200">
+                          <tr>
+                            <th className="px-8 py-5 font-black text-gray-400 uppercase tracking-widest text-xs">Student</th>
+                            <th className="px-8 py-5 font-black text-gray-400 uppercase tracking-widest text-xs">Score</th>
+                            <th className="px-8 py-5 font-black text-gray-400 uppercase tracking-widest text-xs">Units</th>
+                            <th className="px-8 py-5 font-black text-gray-400 uppercase tracking-widest text-xs">Date</th>
+                            <th className="px-8 py-5 font-black text-gray-400 uppercase tracking-widest text-xs text-right">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y-2 divide-gray-100">
+                          {challengeRecords.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).map(record => (
+                            <tr key={record.id} className="hover:bg-gray-50 transition-colors group">
+                              <td className="px-8 py-5">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 font-black">
+                                    {record.studentName.charAt(0).toUpperCase()}
+                                  </div>
+                                  <span className="font-bold text-gray-800">{record.studentName}</span>
+                                </div>
+                              </td>
+                              <td className="px-8 py-5">
+                                <div className="flex flex-col">
+                                  <span className={`font-black text-lg ${
+                                    (record.score / record.totalQuestions) >= 0.8 ? 'text-emerald-500' :
+                                    (record.score / record.totalQuestions) >= 0.5 ? 'text-orange-500' :
+                                    'text-red-500'
+                                  }`}>
+                                    {record.score} / {record.totalQuestions}
+                                  </span>
+                                  <div className="w-24 h-1.5 bg-gray-100 rounded-full mt-1 overflow-hidden">
+                                    <div 
+                                      className={`h-full rounded-full ${
+                                        (record.score / record.totalQuestions) >= 0.8 ? 'bg-emerald-500' :
+                                        (record.score / record.totalQuestions) >= 0.5 ? 'bg-orange-500' :
+                                        'bg-red-500'
+                                      }`}
+                                      style={{ width: `${(record.score / record.totalQuestions) * 100}%` }}
+                                    />
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-8 py-5">
+                                <div className="flex flex-wrap gap-1">
+                                  {record.selectedUnits.map(uId => (
+                                    <span key={uId} className="bg-gray-100 text-gray-500 px-2 py-0.5 rounded-md text-[10px] font-black">
+                                      U{uId}
+                                    </span>
+                                  ))}
+                                </div>
+                              </td>
+                              <td className="px-8 py-5 text-gray-500 text-sm font-medium">
+                                {new Date(record.timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                              </td>
+                              <td className="px-8 py-5 text-right">
+                                <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <button 
+                                    onClick={() => generatePDF([record])}
+                                    className="p-2.5 text-blue-500 hover:bg-blue-50 rounded-xl transition-colors"
+                                    title="Download PDF"
+                                  >
+                                    <FileText size={20} />
+                                  </button>
+                                  <button 
+                                    onClick={() => setEditingRecord(record)}
+                                    className="p-2.5 text-amber-500 hover:bg-amber-50 rounded-xl transition-colors"
+                                    title="Edit Record"
+                                  >
+                                    <Edit size={20} />
+                                  </button>
+                                  <button 
+                                    onClick={() => {
+                                      if (confirm("Delete this record permanently?")) {
+                                        deleteChallengeRecord(record.id);
+                                      }
+                                    }}
+                                    className="p-2.5 text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+                                    title="Delete Record"
+                                  >
+                                    <Trash2 size={20} />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    {challengeRecords.length === 0 && (
+                      <div className="p-20 text-center">
+                        <div className="bg-gray-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-300">
+                          <Database size={40} />
+                        </div>
+                        <p className="text-gray-400 font-black uppercase tracking-widest text-sm">No records found yet</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </main>
+          </div>
+        )}
+
+        {editingRecord && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[400] flex items-center justify-center p-6">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl"
+            >
+              <h3 className="text-2xl font-black text-gray-800 uppercase mb-6">Edit Record</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Student Name</label>
+                  <input 
+                    type="text" 
+                    value={editingRecord.studentName}
+                    onChange={(e) => setEditingRecord({...editingRecord, studentName: e.target.value})}
+                    className="w-full p-3 rounded-xl border-2 border-gray-200 font-bold focus:border-emerald-500 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Score</label>
+                  <input 
+                    type="number" 
+                    value={editingRecord.score}
+                    onChange={(e) => setEditingRecord({...editingRecord, score: parseInt(e.target.value)})}
+                    className="w-full p-3 rounded-xl border-2 border-gray-200 font-bold focus:border-emerald-500 outline-none"
+                  />
+                </div>
+                <div className="flex gap-3 pt-4">
+                  <button 
+                    onClick={() => setEditingRecord(null)}
+                    className="flex-1 py-3 rounded-xl font-black uppercase tracking-widest border-2 border-gray-200 text-gray-400"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={() => {
+                      updateChallengeRecord(editingRecord);
+                      setEditingRecord(null);
+                    }}
+                    className="flex-1 bg-emerald-500 text-white py-3 rounded-xl font-black uppercase tracking-widest shadow-[0_4px_0_0_#059669]"
+                  >
+                    Save
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
       </AnimatePresence>
 
       <main className="max-w-2xl mx-auto p-4 space-y-6 mt-4">
+        {/* Event Mode Card */}
+        <motion.div 
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={() => setIsChallengeModeOpen(true)}
+          className="bg-gradient-to-br from-cyan-400 to-blue-500 rounded-2xl p-6 shadow-lg cursor-pointer relative overflow-hidden group"
+        >
+          <div className="absolute top-0 right-0 p-4 opacity-20 group-hover:opacity-40 transition-opacity">
+            <Zap size={80} />
+          </div>
+          <div className="relative z-10 flex items-center gap-4">
+            <div className="bg-white/20 p-3 rounded-xl backdrop-blur-sm">
+              <Zap className="text-white" size={32} />
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <h2 className="text-2xl font-black text-white uppercase tracking-tight">Event Mode</h2>
+              <div className="h-6 relative overflow-hidden">
+                <AnimatePresence mode="wait">
+                  <motion.p 
+                    key={currentEventMessageIndex}
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    exit={{ y: -20, opacity: 0 }}
+                    className="text-white/90 font-medium absolute inset-0 truncate"
+                  >
+                    {eventMessages[currentEventMessageIndex]}
+                  </motion.p>
+                </AnimatePresence>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
         <div className="bg-emerald-100 border-2 border-emerald-200 rounded-2xl p-6 flex items-center gap-6">
           <div className="bg-emerald-500 p-4 rounded-full text-white">
             <GraduationCap size={40} />
@@ -487,6 +1251,18 @@ export default function App() {
             </motion.div>
           ))}
         </div>
+
+        <footer className="max-w-2xl mx-auto p-8 text-center space-y-4">
+          <p className="text-gray-400 font-bold text-sm uppercase tracking-widest">
+            Made with <Heart className="inline text-red-400 mx-1" size={16} fill="currentColor" /> for Y8 Students
+          </p>
+          <button 
+            onClick={() => setIsAdminOpen(true)}
+            className="text-gray-300 hover:text-gray-400 text-xs font-bold uppercase tracking-tighter transition-colors"
+          >
+            Admin Access
+          </button>
+        </footer>
       </main>
     </div>
   );
@@ -3775,626 +4551,6 @@ export default function App() {
     );
   };
 
-  const TaskView = () => {
-    const [username, setUsername] = useState('');
-    const [password, setPassword] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-    const [hasSubmission, setHasSubmission] = useState(false);
-    const [currentSubmission, setCurrentSubmission] = useState<any>(null);
-
-    const credentials = {
-      edith: '4821', demi: '7394', hanson: '1067', dickson: '5980',
-      helen: '2146', kiki: '8735', felix: '4519', hanna: '6702',
-      ariel: '9328', alex: '1259', silvio: '8064', tony: '3471',
-      anka: '5693', kiyo: '7740', billy: '2085', samuel: '9156',
-      lawrence: '4368', xosox: '6817', chandler: '3024', mori: '8571',
-      marli: '1643', hiro: '6290', test: '9905', admin: '1069'
-    };
-
-    // Load user from localStorage
-    useEffect(() => {
-      const savedUser = localStorage.getItem('task_user');
-      if (savedUser) {
-        const user = JSON.parse(savedUser);
-        setTaskUser(user);
-        setTaskMode(user.role === 'admin' ? 'admin' : 'dashboard');
-      }
-    }, []);
-
-    useEffect(() => {
-      if (taskUser && taskUser.role === 'student') {
-        const q = query(collection(db, 'submissions'), where('username', '==', taskUser.username));
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-          if (!snapshot.empty) {
-            setHasSubmission(true);
-            setCurrentSubmission(snapshot.docs[0].data());
-          } else {
-            setHasSubmission(false);
-            setCurrentSubmission(null);
-          }
-        }, (error) => handleFirestoreError(error, 'get', 'submissions'));
-        return () => unsubscribe();
-      } else if (taskUser && taskUser.role === 'admin') {
-        const unsubscribe = onSnapshot(collection(db, 'submissions'), (snapshot) => {
-          const subs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          setTaskSubmissions(subs);
-        }, (error) => handleFirestoreError(error, 'get', 'submissions'));
-        return () => unsubscribe();
-      }
-    }, [taskUser]);
-
-    const handleFirestoreError = (error: any, operationType: string, path: string | null) => {
-      const errInfo = {
-        error: error instanceof Error ? error.message : String(error),
-        authInfo: {
-          userId: auth.currentUser?.uid,
-          email: auth.currentUser?.email,
-          emailVerified: auth.currentUser?.emailVerified,
-        },
-        operationType,
-        path
-      };
-      console.error('Firestore Error: ', JSON.stringify(errInfo));
-    };
-
-    const handleLogin = async () => {
-      setIsLoading(true);
-      setTaskLoginError(null);
-      
-      const lowerUsername = username.toLowerCase();
-      if (credentials[lowerUsername as keyof typeof credentials] === password) {
-        try {
-          // Sign in anonymously to get a UID for Firestore rules
-          await signInAnonymously(auth);
-          
-          const role = lowerUsername === 'admin' ? 'admin' : 'student';
-          const user = { username: lowerUsername, role };
-          setTaskUser(user);
-          localStorage.setItem('task_user', JSON.stringify(user));
-          setTaskMode(role === 'admin' ? 'admin' : 'dashboard');
-        } catch (error) {
-          console.error("Auth error:", error);
-          setTaskLoginError('Authentication service error. Please try again.');
-        }
-      } else {
-        setTaskLoginError('Login failed. Please input the correct login credentials');
-      }
-      setIsLoading(false);
-    };
-
-    const startAssignment = () => {
-      // Generate 100 questions: ~14 from each of 7 units
-      const assignmentQuestions: any[] = [];
-      for (let i = 1; i <= 7; i++) {
-        const unitQuestions = units.find(u => u.id === i)?.questions || [];
-        const count = i === 7 ? 16 : 14; // 14*6 + 16 = 100
-        const shuffled = [...unitQuestions].sort(() => 0.5 - Math.random()).slice(0, count);
-        assignmentQuestions.push(...shuffled);
-      }
-      
-      setTaskQuestions(assignmentQuestions.sort(() => 0.5 - Math.random()));
-      setTaskAnswers([]);
-      setTaskCurrentQuestionIndex(0);
-      setTaskMode('assignment');
-    };
-
-    const submitAssignment = async () => {
-      setIsLoading(true);
-      let score = 0;
-      taskQuestions.forEach((q, idx) => {
-        if (taskAnswers[idx] === q.correctAnswer) {
-          score++;
-        }
-      });
-      const percentage = (score / taskQuestions.length) * 100;
-
-      const submission = {
-        username: taskUser.username,
-        userId: auth.currentUser?.uid,
-        taskId: 'easter-2026',
-        answers: taskAnswers,
-        score,
-        percentage,
-        completedAt: new Date().toISOString()
-      };
-
-      try {
-        // Use setDoc with a unique ID for the submission
-        await setDoc(doc(db, 'submissions', `${taskUser.username}_easter`), submission);
-        setTaskScore(score);
-        setTaskPercentage(percentage);
-        setTaskMode('complete');
-      } catch (error) {
-        handleFirestoreError(error, 'write', `submissions/${taskUser.username}_easter`);
-        setTaskLoginError("Failed to submit assignment. Please check your connection.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    const downloadReport = (type: 'individual' | 'class', targetUser?: any) => {
-      const doc = new jsPDF();
-      doc.setFontSize(20);
-      doc.text(type === 'individual' ? `Student Report: ${targetUser.username}` : 'Class Performance Report', 20, 20);
-      
-      doc.setFontSize(12);
-      doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, 30);
-
-      if (type === 'individual') {
-        const sub = taskSubmissions.find(s => s.username === targetUser.username);
-        if (sub) {
-          doc.text(`Score: ${sub.score} / ${sub.answers.length}`, 20, 40);
-          doc.text(`Percentage: ${sub.percentage.toFixed(2)}%`, 20, 50);
-          doc.text(`Completed At: ${new Date(sub.completedAt).toLocaleString()}`, 20, 60);
-        } else {
-          doc.text('No submission found for this student.', 20, 40);
-        }
-      } else {
-        const totalScore = taskSubmissions.reduce((acc, s) => acc + s.score, 0);
-        const avgScore = taskSubmissions.length > 0 ? totalScore / taskSubmissions.length : 0;
-        const avgPercentage = taskSubmissions.length > 0 ? taskSubmissions.reduce((acc, s) => acc + s.percentage, 0) / taskSubmissions.length : 0;
-
-        doc.text(`Total Students: ${Object.keys(credentials).length - 1}`, 20, 40);
-        doc.text(`Submissions: ${taskSubmissions.length}`, 20, 50);
-        doc.text(`Average Score: ${avgScore.toFixed(2)}`, 20, 60);
-        doc.text(`Average Percentage: ${avgPercentage.toFixed(2)}%`, 20, 70);
-
-        const tableData = taskSubmissions.map(s => [s.username, s.score, `${s.percentage.toFixed(2)}%`, new Date(s.completedAt).toLocaleDateString()]);
-        (doc as any).autoTable({
-          startY: 80,
-          head: [['Username', 'Score', 'Percentage', 'Date']],
-          body: tableData,
-        });
-      }
-
-      doc.save(type === 'individual' ? `report_${targetUser.username}.pdf` : 'class_report.pdf');
-    };
-
-    if (taskMode === 'login') {
-      return (
-        <div className="min-h-screen bg-emerald-50 flex items-center justify-center p-6 relative overflow-hidden">
-          {/* Background Decorations */}
-          <div className="absolute top-0 left-0 w-64 h-64 bg-emerald-100 rounded-full -translate-x-1/2 -translate-y-1/2 blur-3xl opacity-50" />
-          <div className="absolute bottom-0 right-0 w-96 h-96 bg-blue-100 rounded-full translate-x-1/3 translate-y-1/3 blur-3xl opacity-50" />
-
-          <motion.div 
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-white border-4 border-emerald-500/10 p-10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(16,185,129,0.1)] w-full max-w-md relative z-10"
-          >
-            <div className="text-center mb-10">
-              <div className="bg-emerald-500 text-white w-24 h-24 rounded-[2rem] flex items-center justify-center mx-auto mb-6 shadow-[0_10px_20px_rgba(16,185,129,0.3)] rotate-3">
-                <Lock size={48} />
-              </div>
-              <h2 className="text-4xl font-black text-gray-800 uppercase tracking-tight">Task Center</h2>
-              <p className="text-emerald-500 font-bold uppercase tracking-[0.2em] text-xs mt-2">Student & Admin Portal</p>
-            </div>
-
-            <div className="space-y-6">
-              <div className="relative group">
-                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-4">Username</label>
-                <div className="relative">
-                  <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-emerald-500 transition-colors" size={20} />
-                  <input 
-                    type="text" 
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value.toLowerCase())}
-                    placeholder="Enter your username"
-                    className="w-full pl-12 pr-4 py-4 rounded-2xl border-2 border-gray-100 focus:border-emerald-400 focus:bg-emerald-50/30 outline-none font-bold transition-all text-gray-700"
-                  />
-                </div>
-              </div>
-              
-              <div className="relative group">
-                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-4">Password</label>
-                <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-emerald-500 transition-colors" size={20} />
-                  <input 
-                    type="password" 
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                    placeholder="4-digit code"
-                    className="w-full pl-12 pr-4 py-4 rounded-2xl border-2 border-gray-100 focus:border-emerald-400 focus:bg-emerald-50/30 outline-none font-bold transition-all text-gray-700"
-                  />
-                </div>
-              </div>
-              
-              {taskLoginError && (
-                <motion.div 
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="flex items-center gap-3 text-red-500 text-xs font-bold bg-red-50 p-4 rounded-2xl border border-red-100"
-                >
-                  <AlertCircle size={16} className="flex-shrink-0" />
-                  {taskLoginError}
-                </motion.div>
-              )}
-
-              <button 
-                onClick={handleLogin}
-                disabled={isLoading || !username || !password}
-                className="w-full bg-emerald-500 text-white py-5 rounded-2xl font-black text-xl uppercase tracking-widest shadow-[0_8px_0_0_#059669] hover:shadow-[0_4px_0_0_#059669] hover:translate-y-[4px] active:shadow-none active:translate-y-[8px] transition-all disabled:opacity-50 disabled:shadow-none disabled:translate-y-0 mt-4 group"
-              >
-                <span className="flex items-center justify-center gap-2">
-                  {isLoading ? 'Authenticating...' : 'Sign In'}
-                  {!isLoading && <ArrowRight size={24} className="group-hover:translate-x-1 transition-transform" />}
-                </span>
-              </button>
-            </div>
-          </motion.div>
-        </div>
-      );
-    }
-
-    if (taskMode === 'dashboard') {
-      return (
-        <div className="min-h-screen bg-gray-50 pb-24">
-          <header className="bg-white border-b-2 border-gray-200 p-6 sticky top-0 z-10">
-            <div className="max-w-2xl mx-auto flex justify-between items-center">
-              <div className="flex items-center gap-4">
-                <div className="bg-emerald-500 text-white p-3 rounded-2xl shadow-lg shadow-emerald-200">
-                  <User size={24} />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-black text-gray-800 uppercase tracking-tight">Hi, {taskUser.username}!</h1>
-                  <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px] mt-0.5">Student Dashboard</p>
-                </div>
-              </div>
-              <button 
-                onClick={() => { 
-                  setTaskUser(null); 
-                  setTaskMode('login'); 
-                  localStorage.removeItem('task_user');
-                }} 
-                className="bg-gray-100 text-gray-400 p-3 rounded-2xl hover:bg-red-50 hover:text-red-500 transition-all"
-              >
-                <LogOut size={20} />
-              </button>
-            </div>
-          </header>
-
-          <main className="max-w-2xl mx-auto p-6 space-y-6">
-            <div className="bg-white border-2 border-gray-200 p-8 rounded-[2.5rem] shadow-[0_10px_30px_rgba(0,0,0,0.03)] relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-full translate-x-1/2 -translate-y-1/2 transition-transform group-hover:scale-110" />
-              
-              <div className="relative z-10">
-                <div className="flex justify-between items-start mb-8">
-                  <div>
-                    <div className="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest mb-3 inline-block">
-                      Active Assignment
-                    </div>
-                    <h3 className="text-3xl font-black text-gray-800 uppercase tracking-tight leading-none">Easter assignment</h3>
-                    <div className="flex items-center gap-2 text-red-500 mt-3">
-                      <Calendar size={16} />
-                      <span className="text-xs font-bold uppercase tracking-widest">Due: 13th April 2026</span>
-                    </div>
-                  </div>
-                  <div className="bg-blue-500 text-white p-4 rounded-[1.5rem] shadow-lg shadow-blue-200">
-                    <FileText size={32} />
-                  </div>
-                </div>
-                
-                <p className="text-gray-500 font-medium mb-10 leading-relaxed text-lg">
-                  Complete <span className="text-blue-600 font-black">100 questions</span> covering Unit 1 to Unit 7. This task will be recorded in your final grade.
-                </p>
-
-                {hasSubmission ? (
-                  <div className="bg-emerald-50 border-4 border-emerald-100 p-8 rounded-[2rem] text-center">
-                    <div className="bg-emerald-500 text-white w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-emerald-100">
-                      <CheckCircle2 size={32} />
-                    </div>
-                    <h4 className="text-2xl font-black text-emerald-700 uppercase tracking-tight">Task Completed</h4>
-                    <p className="text-emerald-600 font-bold text-sm mt-1">Well done! You've submitted your work.</p>
-                    <div className="mt-6 flex items-center justify-center gap-8">
-                      <div>
-                        <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Score</p>
-                        <p className="text-3xl font-black text-emerald-700">{currentSubmission.score}/{currentSubmission.answers.length}</p>
-                      </div>
-                      <div className="w-px h-10 bg-emerald-200" />
-                      <div>
-                        <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Grade</p>
-                        <p className="text-3xl font-black text-emerald-700">{currentSubmission.percentage.toFixed(1)}%</p>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <button 
-                    onClick={startAssignment}
-                    className="w-full bg-blue-500 text-white py-6 rounded-2xl font-black text-2xl uppercase tracking-widest shadow-[0_8px_0_0_#2563eb] hover:shadow-[0_4px_0_0_#2563eb] hover:translate-y-[4px] active:shadow-none active:translate-y-[8px] transition-all flex items-center justify-center gap-3 group"
-                  >
-                    Start Now
-                    <ArrowRight size={28} className="group-hover:translate-x-2 transition-transform" />
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Tips Card */}
-            <div className="bg-orange-50 border-2 border-orange-100 p-6 rounded-3xl flex items-center gap-4">
-              <div className="bg-orange-100 text-orange-600 p-3 rounded-2xl">
-                <AlertCircle size={24} />
-              </div>
-              <p className="text-orange-700 text-sm font-bold leading-tight">
-                Make sure you have a stable internet connection before starting the assignment.
-              </p>
-            </div>
-          </main>
-        </div>
-      );
-    }
-
-    if (taskMode === 'assignment') {
-      const currentQuestion = taskQuestions[taskCurrentQuestionIndex];
-      return (
-        <div className="min-h-screen bg-gray-50 flex flex-col">
-          <header className="bg-white border-b-2 border-gray-200 p-4 sticky top-0 z-20">
-            <div className="max-w-3xl mx-auto flex items-center justify-between gap-6">
-              <div className="flex items-center gap-4">
-                <div className="bg-blue-500 text-white w-12 h-12 rounded-2xl flex items-center justify-center font-black text-xl shadow-lg shadow-blue-100">
-                  {taskCurrentQuestionIndex + 1}
-                </div>
-                <div className="hidden sm:block">
-                  <h1 className="text-lg font-black text-gray-800 uppercase tracking-tight leading-none">Easter Assignment</h1>
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">Progress: {Math.round(((taskCurrentQuestionIndex + 1) / taskQuestions.length) * 100)}%</p>
-                </div>
-              </div>
-              
-              <div className="flex-1 max-w-md">
-                <div className="h-4 bg-gray-100 rounded-full overflow-hidden border-2 border-gray-50 p-0.5">
-                  <motion.div 
-                    className="h-full bg-blue-500 rounded-full"
-                    initial={{ width: 0 }}
-                    animate={{ width: `${((taskCurrentQuestionIndex + 1) / taskQuestions.length) * 100}%` }}
-                    transition={{ type: "spring", stiffness: 50 }}
-                  />
-                </div>
-              </div>
-
-              <div className="text-right">
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Question</p>
-                <p className="text-lg font-black text-gray-800 leading-none">{taskCurrentQuestionIndex + 1} / {taskQuestions.length}</p>
-              </div>
-            </div>
-          </header>
-
-          <main className="flex-1 max-w-3xl mx-auto w-full p-6 flex flex-col justify-center">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={taskCurrentQuestionIndex}
-                initial={{ opacity: 0, x: 50 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -50 }}
-                className="bg-white border-2 border-gray-200 p-10 rounded-[3rem] shadow-[0_15px_40px_rgba(0,0,0,0.04)] mb-10 relative"
-              >
-                <div className="absolute -top-6 left-10 bg-blue-500 text-white px-6 py-2 rounded-full font-black text-xs uppercase tracking-widest shadow-lg">
-                  Unit {currentQuestion.unitId || '?' }
-                </div>
-
-                <h2 className="text-3xl font-black text-gray-800 mb-12 leading-[1.2]">
-                  {currentQuestion.text}
-                </h2>
-
-                <div className="grid gap-5">
-                  {currentQuestion.options.map((option: string, idx: number) => (
-                    <button
-                      key={option}
-                      onClick={() => {
-                        const newAnswers = [...taskAnswers];
-                        newAnswers[taskCurrentQuestionIndex] = option;
-                        setTaskAnswers(newAnswers);
-                      }}
-                      className={`group w-full p-6 text-left rounded-3xl border-2 transition-all font-bold text-xl flex items-center gap-4
-                        ${taskAnswers[taskCurrentQuestionIndex] === option 
-                          ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-[0_8px_0_0_#3b82f6]' 
-                          : 'border-gray-100 hover:border-gray-200 hover:bg-gray-50 text-gray-600 shadow-[0_8px_0_0_#f3f4f6]'
-                        }
-                      `}
-                    >
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm transition-colors
-                        ${taskAnswers[taskCurrentQuestionIndex] === option 
-                          ? 'bg-blue-500 text-white' 
-                          : 'bg-gray-100 text-gray-400 group-hover:bg-gray-200'
-                        }
-                      `}>
-                        {String.fromCharCode(65 + idx)}
-                      </div>
-                      {option}
-                    </button>
-                  ))}
-                </div>
-              </motion.div>
-            </AnimatePresence>
-
-            <div className="flex gap-6">
-              <button 
-                onClick={() => setTaskCurrentQuestionIndex(prev => Math.max(0, prev - 1))}
-                disabled={taskCurrentQuestionIndex === 0}
-                className="flex-1 bg-white text-gray-400 border-2 border-gray-200 py-5 rounded-2xl font-black text-xl uppercase tracking-widest shadow-[0_6px_0_0_#e5e7eb] hover:translate-y-[2px] active:shadow-none active:translate-y-[6px] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                <ArrowLeft size={24} />
-                Back
-              </button>
-              {taskCurrentQuestionIndex === taskQuestions.length - 1 ? (
-                <button 
-                  onClick={submitAssignment}
-                  disabled={!taskAnswers[taskCurrentQuestionIndex] || isLoading}
-                  className="flex-[2] bg-emerald-500 text-white py-5 rounded-2xl font-black text-2xl uppercase tracking-widest shadow-[0_8px_0_0_#059669] hover:translate-y-[4px] active:shadow-none active:translate-y-[8px] transition-all disabled:opacity-50 flex items-center justify-center gap-3"
-                >
-                  {isLoading ? 'Submitting...' : 'Finish & Submit'}
-                  {!isLoading && <CheckCircle2 size={28} />}
-                </button>
-              ) : (
-                <button 
-                  onClick={() => setTaskCurrentQuestionIndex(prev => prev + 1)}
-                  disabled={!taskAnswers[taskCurrentQuestionIndex]}
-                  className="flex-[2] bg-blue-500 text-white py-5 rounded-2xl font-black text-2xl uppercase tracking-widest shadow-[0_8px_0_0_#2563eb] hover:translate-y-[4px] active:shadow-none active:translate-y-[8px] transition-all disabled:opacity-50 flex items-center justify-center gap-3 group"
-                >
-                  Next Question
-                  <ArrowRight size={28} className="group-hover:translate-x-2 transition-transform" />
-                </button>
-              )}
-            </div>
-          </main>
-        </div>
-      );
-    }
-
-    if (taskMode === 'complete') {
-      return (
-        <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6 text-center">
-          <motion.div
-            initial={{ scale: 0, rotate: -180 }}
-            animate={{ scale: 1, rotate: 0 }}
-            className="bg-white p-12 rounded-full shadow-2xl mb-8"
-          >
-            <Trophy size={120} className="text-yellow-400" />
-          </motion.div>
-          <motion.h1
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            className="text-4xl font-black text-gray-800 mb-4 uppercase tracking-tight"
-          >
-            Task Complete!
-          </motion.h1>
-          <motion.div 
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="bg-white border-2 border-gray-200 p-8 rounded-3xl shadow-[0_6px_0_0_#e5e7eb] mb-12 w-full max-w-xs"
-          >
-            <p className="text-gray-400 font-black text-xs uppercase tracking-widest mb-2">Your Result</p>
-            <p className="text-5xl font-black text-emerald-500 mb-2">{taskPercentage.toFixed(1)}%</p>
-            <p className="text-gray-500 font-bold uppercase tracking-widest text-sm">{taskScore} / {taskQuestions.length} Correct</p>
-          </motion.div>
-          <button 
-            onClick={() => { setTaskMode('dashboard'); setMode('dashboard'); }}
-            className="bg-emerald-500 text-white px-12 py-4 rounded-2xl font-black text-xl uppercase tracking-widest shadow-[0_6px_0_0_#059669] active:shadow-none active:translate-y-1 transition-all"
-          >
-            Back to Home
-          </button>
-        </div>
-      );
-    }
-
-    if (taskMode === 'admin') {
-      const totalStudents = Object.keys(credentials).length - 1;
-      const completionRate = (taskSubmissions.length / totalStudents) * 100;
-
-      return (
-        <div className="min-h-screen bg-gray-50 pb-24">
-          <header className="bg-white border-b-2 border-gray-200 p-6 sticky top-0 z-10">
-            <div className="max-w-4xl mx-auto flex justify-between items-center">
-              <div>
-                <h1 className="text-2xl font-black text-gray-800 uppercase tracking-tight">Admin Dashboard</h1>
-                <p className="text-gray-400 font-bold uppercase tracking-widest text-xs mt-1">Task Management</p>
-              </div>
-              <div className="flex gap-4">
-                <button 
-                  onClick={() => downloadReport('class')}
-                  className="bg-blue-100 text-blue-600 px-4 py-2 rounded-xl font-black text-xs uppercase tracking-widest border-2 border-blue-200 flex items-center gap-2"
-                >
-                  <Download size={16} />
-                  Class Report
-                </button>
-                <button onClick={() => { setTaskUser(null); setTaskMode('login'); }} className="text-gray-400 hover:text-red-500 transition-colors">
-                  <LogOut size={24} />
-                </button>
-              </div>
-            </div>
-          </header>
-
-          <main className="max-w-4xl mx-auto p-6 space-y-8">
-            {/* Stats Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-white border-2 border-gray-200 p-6 rounded-3xl shadow-[0_4px_0_0_#e5e7eb]">
-                <div className="flex items-center gap-3 text-blue-500 mb-4">
-                  <Users size={24} />
-                  <span className="text-xs font-black uppercase tracking-widest">Completion Rate</span>
-                </div>
-                <p className="text-4xl font-black text-gray-800">{completionRate.toFixed(1)}%</p>
-                <p className="text-gray-400 text-xs font-bold uppercase mt-1">{taskSubmissions.length} / {totalStudents} Students</p>
-              </div>
-              <div className="bg-white border-2 border-gray-200 p-6 rounded-3xl shadow-[0_4px_0_0_#e5e7eb]">
-                <div className="flex items-center gap-3 text-emerald-500 mb-4">
-                  <Trophy size={24} />
-                  <span className="text-xs font-black uppercase tracking-widest">Average Score</span>
-                </div>
-                <p className="text-4xl font-black text-gray-800">
-                  {taskSubmissions.length > 0 ? (taskSubmissions.reduce((acc, s) => acc + s.score, 0) / taskSubmissions.length).toFixed(1) : '0.0'}
-                </p>
-                <p className="text-gray-400 text-xs font-bold uppercase mt-1">Out of 100</p>
-              </div>
-              <div className="bg-white border-2 border-gray-200 p-6 rounded-3xl shadow-[0_4px_0_0_#e5e7eb]">
-                <div className="flex items-center gap-3 text-purple-500 mb-4">
-                  <Calendar size={24} />
-                  <span className="text-xs font-black uppercase tracking-widest">Due Date</span>
-                </div>
-                <p className="text-xl font-black text-gray-800">13 Apr 2026</p>
-                <p className="text-gray-400 text-xs font-bold uppercase mt-1">Easter Assignment</p>
-              </div>
-            </div>
-
-            {/* Student List */}
-            <div className="bg-white border-2 border-gray-200 rounded-3xl overflow-hidden shadow-[0_6px_0_0_#e5e7eb]">
-              <div className="p-6 border-b-2 border-gray-100 flex justify-between items-center">
-                <h3 className="text-xl font-black text-gray-800 uppercase tracking-tight">Student Submissions</h3>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left">
-                  <thead>
-                    <tr className="bg-gray-50 border-b-2 border-gray-100">
-                      <th className="p-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Student</th>
-                      <th className="p-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Status</th>
-                      <th className="p-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Score</th>
-                      <th className="p-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Date</th>
-                      <th className="p-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {Object.keys(credentials).filter(u => u !== 'admin').map(uname => {
-                      const sub = taskSubmissions.find(s => s.username === uname);
-                      return (
-                        <tr key={uname} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                          <td className="p-4 font-black text-gray-800 uppercase tracking-tight">{uname}</td>
-                          <td className="p-4">
-                            {sub ? (
-                              <span className="bg-emerald-100 text-emerald-600 px-3 py-1 rounded-full text-[10px] font-black uppercase">Completed</span>
-                            ) : (
-                              <span className="bg-gray-100 text-gray-400 px-3 py-1 rounded-full text-[10px] font-black uppercase">Pending</span>
-                            )}
-                          </td>
-                          <td className="p-4 font-bold text-gray-600">
-                            {sub ? `${sub.score} (${sub.percentage.toFixed(1)}%)` : '-'}
-                          </td>
-                          <td className="p-4 text-xs text-gray-400 font-medium">
-                            {sub ? new Date(sub.completedAt).toLocaleDateString() : '-'}
-                          </td>
-                          <td className="p-4">
-                            {sub && (
-                              <button 
-                                onClick={() => downloadReport('individual', { username: uname })}
-                                className="text-blue-500 hover:text-blue-700 transition-colors"
-                                title="Download Individual Report"
-                              >
-                                <Download size={20} />
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </main>
-        </div>
-      );
-    }
-
-    return null;
-  };
-
   return (
     <div className="font-sans selection:bg-emerald-200">
       <AnimatePresence mode="wait">
@@ -4408,11 +4564,10 @@ export default function App() {
         {mode === 'user-stats' && <UserDashboardView key="user-stats" />}
         {mode === 'about' && <AboutView key="about" />}
         {mode === 'playground' && <PlaygroundView key="playground" />}
-        {mode === 'task' && <TaskView key="task" />}
       </AnimatePresence>
 
       {/* Bottom Nav for Dashboard, User Stats, and About */}
-      {['dashboard', 'playground', 'user-stats', 'about', 'task'].includes(mode) && (
+      {['dashboard', 'playground', 'user-stats', 'about'].includes(mode) && (
         <nav className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-200 p-4 z-20">
           <div className="max-w-2xl mx-auto flex justify-around items-center">
             <button 
@@ -4421,13 +4576,6 @@ export default function App() {
             >
               <Home size={28} fill={mode === 'dashboard' ? "currentColor" : "none"} />
               <span className="text-[10px] font-black uppercase">Home</span>
-            </button>
-            <button 
-              onClick={() => setMode('task')}
-              className={`flex flex-col items-center gap-1 transition-colors ${mode === 'task' ? 'text-emerald-500' : 'text-gray-400 hover:text-emerald-400'}`}
-            >
-              <ClipboardList size={28} fill={mode === 'task' ? "currentColor" : "none"} />
-              <span className="text-[10px] font-black uppercase">Task</span>
             </button>
             <button 
               onClick={() => setMode('playground')}
@@ -4453,6 +4601,48 @@ export default function App() {
           </div>
         </nav>
       )}
+
+      <AnimatePresence>
+        {showChallengeResult && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-6">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl text-center"
+            >
+              <Trophy className="text-yellow-500 mx-auto mb-4" size={64} />
+              <h3 className="text-3xl font-black text-gray-800 uppercase tracking-tight mb-2">Challenge Complete!</h3>
+              <p className="text-gray-500 text-lg mb-6">
+                You scored <span className="text-emerald-500 font-black">{challengeResponses.filter(r => r.isCorrect).length}</span> out of {challengeQuestions.length}
+              </p>
+              
+              <div className="space-y-4">
+                <div className="text-left">
+                  <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Enter Your Name</label>
+                  <input 
+                    type="text" 
+                    value={challengeStudentName}
+                    onChange={(e) => setChallengeStudentName(e.target.value)}
+                    placeholder="Student Name"
+                    className="w-full p-4 rounded-2xl border-2 border-gray-200 font-bold text-lg focus:border-emerald-500 outline-none transition-colors"
+                  />
+                </div>
+                <button
+                  disabled={!challengeStudentName.trim()}
+                  onClick={finalizeChallenge}
+                  className={`w-full py-4 rounded-2xl font-black text-xl uppercase tracking-widest transition-all ${
+                    challengeStudentName.trim()
+                      ? 'bg-emerald-500 text-white shadow-[0_6px_0_0_#059669] active:shadow-none active:translate-y-1'
+                      : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  }`}
+                >
+                  Save Record
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

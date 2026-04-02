@@ -3,6 +3,7 @@ export interface Question {
   text: string;
   options: string[];
   correctAnswer: string;
+  explanation?: string;
 }
 
 export interface Vocab {
@@ -111,11 +112,11 @@ export const units: Unit[] = [
       { term: "Inversely proportional", traditional: "反比", simplified: "反比", definition: "A relationship where one value increases as the other decreases." }
     ],
     questions: [
-      { id: "1-1", text: "What best describes respiration?", options: ["A physical process that moves air in and out of lungs", "A chemical reaction in cells that releases energy", "A process that pumps blood around the body", "A process that breaks food into smaller pieces"], correctAnswer: "A chemical reaction in cells that releases energy" },
-      { id: "1-2", text: "Respiration happens in:", options: ["lungs only", "all cells", "the heart only", "blood vessels only"], correctAnswer: "all cells" },
-      { id: "1-3", text: "Most aerobic respiration takes place in the:", options: ["nucleus", "mitochondria", "cell wall", "vacuole"], correctAnswer: "mitochondria" },
-      { id: "1-4", text: "Mitochondria are called the “powerhouse” because they:", options: ["store DNA", "make proteins", "release energy from respiration", "control the cell"], correctAnswer: "release energy from respiration" },
-      { id: "1-5", text: "Which is the correct word equation for aerobic respiration?", options: ["Glucose + oxygen → carbon dioxide + water + energy", "Oxygen + carbon dioxide → glucose + water + energy", "Glucose + carbon dioxide → oxygen + water + energy", "Water + oxygen → glucose + carbon dioxide + energy"], correctAnswer: "Glucose + oxygen → carbon dioxide + water + energy" },
+      { id: "1-1", text: "What best describes respiration?", options: ["A physical process that moves air in and out of lungs", "A chemical reaction in cells that releases energy", "A process that pumps blood around the body", "A process that breaks food into smaller pieces"], correctAnswer: "A chemical reaction in cells that releases energy", explanation: "Respiration is a chemical reaction that occurs in cells to release energy from glucose and oxygen. Breathing is the physical process of moving air." },
+      { id: "1-2", text: "Respiration happens in:", options: ["lungs only", "all cells", "the heart only", "blood vessels only"], correctAnswer: "all cells", explanation: "Every living cell needs energy to function, so respiration occurs in all living cells, not just specialized organs." },
+      { id: "1-3", text: "Most aerobic respiration takes place in the:", options: ["nucleus", "mitochondria", "cell wall", "vacuole"], correctAnswer: "mitochondria", explanation: "Mitochondria are the specialized organelles within cells where the majority of aerobic respiration occurs to produce energy." },
+      { id: "1-4", text: "Mitochondria are called the “powerhouse” because they:", options: ["store DNA", "make proteins", "release energy from respiration", "control the cell"], correctAnswer: "release energy from respiration", explanation: "Mitochondria are known as the powerhouse because they are the primary site for energy release through the process of respiration." },
+      { id: "1-5", text: "Which is the correct word equation for aerobic respiration?", options: ["Glucose + oxygen → carbon dioxide + water + energy", "Oxygen + carbon dioxide → glucose + water + energy", "Glucose + carbon dioxide → oxygen + water + energy", "Water + oxygen → glucose + carbon dioxide + energy"], correctAnswer: "Glucose + oxygen → carbon dioxide + water + energy", explanation: "In aerobic respiration, glucose and oxygen react to produce carbon dioxide and water, releasing energy in the process." },
       { id: "1-6", text: "Which is the balanced chemical equation for aerobic respiration?", options: ["C6H12O6 + 6O2 → 6CO2 + 6H2O", "C6H12O6 + O2 → CO2 + H2O", "C6H12O6 + 6CO2 → 6O2 + 6H2O", "6CO2 + 6H2O → C6H12O6 + 6O2 + energy"], correctAnswer: "C6H12O6 + 6O2 → 6CO2 + 6H2O" },
       { id: "1-7", text: "In aerobic respiration, the reactants are:", options: ["carbon dioxide and water", "glucose and oxygen", "oxygen and water", "glucose and carbon dioxide"], correctAnswer: "glucose and oxygen" },
       { id: "1-8", text: "In aerobic respiration, the products are:", options: ["glucose and oxygen", "carbon dioxide and water", "oxygen and energy only", "glucose and water"], correctAnswer: "carbon dioxide and water" },
