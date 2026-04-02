@@ -3,11 +3,134 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import * as React from 'react';
+import { useState, useEffect, useMemo, useRef, ErrorInfo, ReactNode, Component } from 'react';
 import { motion, AnimatePresence, Reorder } from 'motion/react';
 import { QRCodeSVG } from 'qrcode.react';
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
+import { 
+  collection, 
+  doc, 
+  setDoc, 
+  deleteDoc, 
+  onSnapshot, 
+  query, 
+  orderBy,
+  getDocFromServer
+} from 'firebase/firestore';
+import { onAuthStateChanged, signInAnonymously } from 'firebase/auth';
+import { db, auth } from './firebase';
+
+// Error Boundary Component
+interface ErrorBoundaryProps {
+  children: ReactNode;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+class AppErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  public props: ErrorBoundaryProps;
+  public state: ErrorBoundaryState;
+
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.props = props;
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error("ErrorBoundary caught an error", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      let errorMessage = "Something went wrong.";
+      try {
+        const parsed = JSON.parse(this.state.error?.message || "{}");
+        if (parsed.error) errorMessage = `Firestore Error: ${parsed.error}`;
+      } catch {
+        errorMessage = this.state.error?.message || errorMessage;
+      }
+
+      return (
+        <div className="min-h-screen bg-red-50 flex items-center justify-center p-6">
+          <div className="bg-white p-8 rounded-3xl shadow-xl max-w-md w-full text-center border-2 border-red-100">
+            <XCircle className="text-red-500 mx-auto mb-4" size={64} />
+            <h2 className="text-2xl font-black text-gray-800 mb-4 uppercase">System Error</h2>
+            <p className="text-gray-600 font-bold mb-6">{errorMessage}</p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="bg-red-500 text-white px-8 py-3 rounded-xl font-black uppercase tracking-widest shadow-[0_4px_0_0_#b91c1c] active:shadow-none active:translate-y-1 transition-all"
+            >
+              Reload App
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId: string | undefined;
+    email: string | null | undefined;
+    emailVerified: boolean | undefined;
+    isAnonymous: boolean | undefined;
+    tenantId: string | null | undefined;
+    providerInfo: {
+      providerId: string;
+      displayName: string | null;
+      email: string | null;
+      photoUrl: string | null;
+    }[];
+  }
+}
+
+function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+      tenantId: auth.currentUser?.tenantId,
+      providerInfo: auth.currentUser?.providerData.map(provider => ({
+        providerId: provider.providerId,
+        displayName: provider.displayName,
+        email: provider.email,
+        photoUrl: provider.photoURL
+      })) || []
+    },
+    operationType,
+    path
+  }
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
+}
 
 // Add these interfaces
 interface ChallengeResponse {
@@ -201,6 +324,14 @@ interface SessionStats {
 }
 
 export default function App() {
+  return (
+    <AppErrorBoundary>
+      <AppContent />
+    </AppErrorBoundary>
+  );
+}
+
+function AppContent() {
   const [mode, setMode] = useState<AppMode>('splash');
   const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
   const [quizProgress, setQuizProgress] = useState(0);
@@ -228,30 +359,71 @@ export default function App() {
   const [easterNoticeAgreed, setEasterNoticeAgreed] = useState(false);
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
   const [challengeRecords, setChallengeRecords] = useState<ChallengeRecord[]>([]);
+  const [isAuthReady, setIsAuthReady] = useState(false);
 
   useEffect(() => {
-    const savedRecords = localStorage.getItem('challengeRecords');
-    if (savedRecords) {
-      setChallengeRecords(JSON.parse(savedRecords));
-    }
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setIsAuthReady(true);
+      } else {
+        signInAnonymously(auth).catch(err => console.error("Auth error", err));
+      }
+    });
+    return () => unsubscribe();
   }, []);
 
-  const saveChallengeRecord = (record: ChallengeRecord) => {
-    const updatedRecords = [...challengeRecords, record];
-    setChallengeRecords(updatedRecords);
-    localStorage.setItem('challengeRecords', JSON.stringify(updatedRecords));
+  useEffect(() => {
+    if (!isAuthReady) return;
+
+    const q = query(collection(db, 'challengeRecords'), orderBy('timestamp', 'desc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const records: ChallengeRecord[] = [];
+      snapshot.forEach((doc) => {
+        records.push(doc.data() as ChallengeRecord);
+      });
+      setChallengeRecords(records);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'challengeRecords');
+    });
+
+    return () => unsubscribe();
+  }, [isAuthReady]);
+
+  useEffect(() => {
+    async function testConnection() {
+      try {
+        await getDocFromServer(doc(db, 'test', 'connection'));
+      } catch (error) {
+        if(error instanceof Error && error.message.includes('the client is offline')) {
+          console.error("Please check your Firebase configuration. ");
+        }
+      }
+    }
+    testConnection();
+  }, []);
+
+  const saveChallengeRecord = async (record: ChallengeRecord) => {
+    try {
+      await setDoc(doc(db, 'challengeRecords', record.id), record);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, `challengeRecords/${record.id}`);
+    }
   };
 
-  const deleteChallengeRecord = (id: string) => {
-    const updatedRecords = challengeRecords.filter(r => r.id !== id);
-    setChallengeRecords(updatedRecords);
-    localStorage.setItem('challengeRecords', JSON.stringify(updatedRecords));
+  const deleteChallengeRecord = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, 'challengeRecords', id));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `challengeRecords/${id}`);
+    }
   };
 
-  const updateChallengeRecord = (updatedRecord: ChallengeRecord) => {
-    const updatedRecords = challengeRecords.map(r => r.id === updatedRecord.id ? updatedRecord : r);
-    setChallengeRecords(updatedRecords);
-    localStorage.setItem('challengeRecords', JSON.stringify(updatedRecords));
+  const updateChallengeRecord = async (updatedRecord: ChallengeRecord) => {
+    try {
+      await setDoc(doc(db, 'challengeRecords', updatedRecord.id), updatedRecord);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `challengeRecords/${updatedRecord.id}`);
+    }
   };
 
   const generateChallengeQuiz = () => {

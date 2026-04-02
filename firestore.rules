@@ -1,39 +1,64 @@
+// ===============================================================
+// Assumed Data Model
+// ===============================================================
+//
+// Collection: challengeRecords
+// Document ID: record.id (string)
+// Fields:
+//   - id: string (required) - Unique identifier
+//   - studentName: string (required) - Student name
+//   - score: number (required) - Correct answers count
+//   - totalQuestions: number (required) - Total questions count
+//   - selectedUnits: list (required) - List of unit IDs (integers)
+//   - responses: list (required) - List of question response objects
+//   - timestamp: string (required) - ISO 8601 date-time string
+//
+// ===============================================================
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Helper functions
+    
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
     function isAuthenticated() {
       return request.auth != null;
     }
     
     function isAdmin() {
-      return isAuthenticated() && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      return isAuthenticated() && (
+        request.auth.token.email == "tomanlam@gmail.com" && request.auth.token.email_verified == true
+      );
+    }
+    
+    function isValidChallengeRecord(data) {
+      return data.keys().hasAll(['id', 'studentName', 'score', 'totalQuestions', 'selectedUnits', 'responses', 'timestamp']) &&
+             data.id is string &&
+             data.studentName is string && data.studentName.size() > 0 && data.studentName.size() < 100 &&
+             data.score is int && data.score >= 0 &&
+             data.totalQuestions is int && data.totalQuestions > 0 &&
+             data.selectedUnits is list &&
+             data.responses is list &&
+             data.timestamp is string;
     }
 
-    // Users collection
-    match /users/{userId} {
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /challengeRecords/{recordId} {
+      // Students can create their records (anonymous auth allowed)
+      allow create: if isAuthenticated() && isValidChallengeRecord(request.resource.data);
+      
+      // Only admins can read, update, or delete records
+      allow read, update, delete: if isAdmin();
+    }
+    
+    // Connection test document
+    match /test/connection {
       allow read: if isAuthenticated();
-      allow write: if isAdmin();
-    }
-
-    // Tasks collection
-    match /tasks/{taskId} {
-      allow read: if isAuthenticated();
-      allow write: if isAdmin();
-    }
-
-    // Questions collection
-    match /questions/{questionId} {
-      allow read: if isAuthenticated();
-      allow write: if isAdmin();
-    }
-
-    // Submissions collection
-    match /submissions/{submissionId} {
-      allow read: if isAdmin() || (isAuthenticated() && (resource == null || resource.data.username == request.auth.uid || resource.data.userId == request.auth.uid));
-      allow create: if isAuthenticated();
-      allow update: if isAdmin();
     }
   }
 }

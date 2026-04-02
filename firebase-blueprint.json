@@ -1,57 +1,38 @@
 {
   "entities": {
-    "User": {
-      "title": "User",
-      "description": "A user of the application (student or admin).",
+    "ChallengeRecord": {
+      "title": "Challenge Record",
+      "description": "A record of a student's performance in a quiz challenge or Easter assignment.",
       "type": "object",
       "properties": {
-        "username": { "type": "string", "description": "The unique username." },
-        "password": { "type": "string", "description": "The 4-digit password." },
-        "role": { "type": "string", "enum": ["student", "admin"], "description": "The user's role." }
+        "id": { "type": "string", "description": "Unique identifier for the record." },
+        "studentName": { "type": "string", "description": "The name of the student who completed the quiz." },
+        "score": { "type": "integer", "description": "The number of correct answers." },
+        "totalQuestions": { "type": "integer", "description": "The total number of questions in the quiz." },
+        "selectedUnits": { "type": "array", "items": { "type": "integer" }, "description": "The unit IDs included in the quiz." },
+        "responses": { 
+          "type": "array", 
+          "items": { 
+            "type": "object",
+            "properties": {
+              "questionId": { "type": "string" },
+              "questionText": { "type": "string" },
+              "userAnswer": { "type": "string" },
+              "correctAnswer": { "type": "string" },
+              "isCorrect": { "type": "boolean" }
+            }
+          },
+          "description": "The student's individual answers to each question."
+        },
+        "timestamp": { "type": "string", "format": "date-time", "description": "When the quiz was completed." }
       },
-      "required": ["username", "password", "role"]
-    },
-    "Task": {
-      "title": "Task",
-      "description": "An assigned homework task.",
-      "type": "object",
-      "properties": {
-        "title": { "type": "string", "description": "The title of the task." },
-        "dueDate": { "type": "string", "format": "date", "description": "The due date of the task." }
-      },
-      "required": ["title", "dueDate"]
-    },
-    "Question": {
-      "title": "Question",
-      "description": "A question for a task.",
-      "type": "object",
-      "properties": {
-        "unit": { "type": "integer", "description": "The unit number (1-7)." },
-        "text": { "type": "string", "description": "The question text." },
-        "options": { "type": "array", "items": { "type": "string" }, "description": "The answer options." },
-        "correctAnswer": { "type": "string", "description": "The correct answer." }
-      },
-      "required": ["unit", "text", "options", "correctAnswer"]
-    },
-    "Submission": {
-      "title": "Submission",
-      "description": "A student's submission for a task.",
-      "type": "object",
-      "properties": {
-        "username": { "type": "string", "description": "The student's username." },
-        "taskId": { "type": "string", "description": "The ID of the task." },
-        "answers": { "type": "array", "items": { "type": "object" }, "description": "The student's answers." },
-        "score": { "type": "number", "description": "The student's score." },
-        "percentage": { "type": "number", "description": "The student's percentage." },
-        "completedAt": { "type": "string", "format": "date-time", "description": "When the task was completed." }
-      },
-      "required": ["username", "taskId", "answers", "score", "percentage", "completedAt"]
+      "required": ["id", "studentName", "score", "totalQuestions", "selectedUnits", "responses", "timestamp"]
     }
   },
   "firestore": {
-    "/users/{userId}": { "schema": "User", "description": "Collection of users." },
-    "/tasks/{taskId}": { "schema": "Task", "description": "Collection of tasks." },
-    "/questions/{questionId}": { "schema": "Question", "description": "Collection of questions." },
-    "/submissions/{submissionId}": { "schema": "Submission", "description": "Collection of student submissions." }
+    "/challengeRecords/{recordId}": {
+      "schema": "ChallengeRecord",
+      "description": "Collection of all quiz records."
+    }
   }
 }
