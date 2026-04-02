@@ -12,8 +12,8 @@ import {
   GraduationCap, 
   Languages, 
   ChevronLeft, 
-  CheckCircle2, 
-  XCircle, 
+  CheckCircle2,
+  XCircle,
   Trophy,
   ArrowRight,
   ArrowRightLeft,
@@ -37,12 +37,26 @@ import {
   Droplets,
   Flame,
   TrendingUp,
-  QrCode
+  QrCode,
+  ClipboardList,
+  LogOut,
+  FileText,
+  Download,
+  Users,
+  Calendar,
+  ArrowLeft,
+  AlertCircle,
+  Lock,
+  User
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { units, Unit, Question, Vocab } from './data';
+import { db, auth, signInAnonymously } from './firebase';
+import { collection, doc, getDoc, getDocs, setDoc, query, where, onSnapshot, serverTimestamp } from 'firebase/firestore';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
-type AppMode = 'splash' | 'dashboard' | 'quiz' | 'quiz-select' | 'revision' | 'vocab' | 'result' | 'user-stats' | 'about' | 'playground';
+type AppMode = 'splash' | 'dashboard' | 'quiz' | 'quiz-select' | 'revision' | 'vocab' | 'result' | 'user-stats' | 'about' | 'playground' | 'task';
 type QuizSubMode = 'quick' | 'time-attack' | 'marathon';
 
 interface SessionStats {
@@ -67,6 +81,18 @@ export default function App() {
   const [isY8Open, setIsY8Open] = useState(false);
   const [isQRModalOpen, setIsQRModalOpen] = useState(false);
   const [sessionStats, setSessionStats] = useState<SessionStats>({});
+  
+  // Task Mode State
+  const [taskUser, setTaskUser] = useState<any>(null);
+  const [taskLoginError, setTaskLoginError] = useState<string | null>(null);
+  const [taskMode, setTaskMode] = useState<'login' | 'dashboard' | 'assignment' | 'complete' | 'admin'>('login');
+  const [taskCurrentQuestionIndex, setTaskCurrentQuestionIndex] = useState(0);
+  const [taskAnswers, setTaskAnswers] = useState<any[]>([]);
+  const [taskQuestions, setTaskQuestions] = useState<any[]>([]);
+  const [taskScore, setTaskScore] = useState(0);
+  const [taskPercentage, setTaskPercentage] = useState(0);
+  const [taskSubmissions, setTaskSubmissions] = useState<any[]>([]);
+  const [taskAdminSelectedUser, setTaskAdminSelectedUser] = useState<any>(null);
 
   const allConcepts = useMemo(() => units.flatMap(unit => unit.concepts), []);
   const [randomConcept, setRandomConcept] = useState(() => 
@@ -1323,6 +1349,74 @@ export default function App() {
       const [energyLabMode, setEnergyLabMode] = useState(false);
       const [selectedLabReaction, setSelectedLabReaction] = useState<string | null>(null);
 
+      // Metal Reactivity Equations State
+      const [metalEqMode, setMetalEqMode] = useState<'summary' | 'lab' | 'challenge'>('summary');
+      const [metalEqMetalIdx, setMetalEqMetalIdx] = useState(0);
+      const [metalEqReagentIdx, setMetalEqReagentIdx] = useState(0);
+      const [metalEqChallenge, setMetalEqChallenge] = useState<{product: string, metal: string, reagent: string} | null>(null);
+      const [metalEqUserMetal, setMetalEqUserMetal] = useState(0);
+      const [metalEqUserReagent, setMetalEqUserReagent] = useState(0);
+      const [metalEqFeedback, setMetalEqFeedback] = useState<'correct' | 'incorrect' | null>(null);
+      const [metalEqIsActive, setMetalEqIsActive] = useState(false);
+      const [metalEqProgress, setMetalEqProgress] = useState(0);
+
+      useEffect(() => {
+        let interval: any;
+        if (metalEqIsActive && metalEqProgress < 100) {
+          interval = setInterval(() => {
+            setMetalEqProgress(prev => Math.min(100, prev + 2));
+          }, 50);
+        }
+        return () => clearInterval(interval);
+      }, [metalEqIsActive, metalEqProgress]);
+
+      const metalEqMetals = [
+        { id: 'K', name: 'Potassium', reactivity: 11 },
+        { id: 'Na', name: 'Sodium', reactivity: 10 },
+        { id: 'Ca', name: 'Calcium', reactivity: 9 },
+        { id: 'Mg', name: 'Magnesium', reactivity: 8 },
+        { id: 'Al', name: 'Aluminium', reactivity: 7 },
+        { id: 'Zn', name: 'Zinc', reactivity: 6 },
+        { id: 'Fe', name: 'Iron', reactivity: 5 },
+        { id: 'Pb', name: 'Lead', reactivity: 4 },
+        { id: 'Cu', name: 'Copper', reactivity: 3 },
+        { id: 'Ag', name: 'Silver', reactivity: 2 },
+        { id: 'Au', name: 'Gold', reactivity: 1 }
+      ];
+
+      const metalEqReagents = [
+        { id: 'oxygen', name: 'Oxygen', limit: 8 }, // Cu is index 8
+        { id: 'water', name: 'Water (Cold/Hot)', limit: 2 }, // Ca is index 2
+        { id: 'steam', name: 'Steam', limit: 6 }, // Fe is index 6
+        { id: 'acid', name: 'Dilute Acid', limit: 7 } // Pb is index 7
+      ];
+
+      const canReact = (mIdx: number, rId: string) => {
+        if (rId === 'oxygen') return mIdx <= 8;
+        if (rId === 'water') return mIdx <= 2;
+        if (rId === 'steam') return mIdx <= 6;
+        if (rId === 'acid') return mIdx <= 7;
+        return false;
+      };
+
+      const generateChallenge = () => {
+        const mIdx = Math.floor(Math.random() * metalEqMetals.length);
+        const rIdx = Math.floor(Math.random() * metalEqReagents.length);
+        const metal = metalEqMetals[mIdx];
+        const reagent = metalEqReagents[rIdx];
+        
+        let product = 'No Reaction';
+        if (canReact(mIdx, reagent.id)) {
+          if (reagent.id === 'oxygen') product = `${metal.name} Oxide`;
+          if (reagent.id === 'water') product = `${metal.name} Hydroxide + Hydrogen`;
+          if (reagent.id === 'steam') product = `${metal.name} Oxide + Hydrogen`;
+          if (reagent.id === 'acid') product = `${metal.name} Salt + Hydrogen`;
+        }
+
+        setMetalEqChallenge({ product, metal: metal.id, reagent: reagent.id });
+        setMetalEqFeedback(null);
+      };
+
       // Metal Reactivity State
       const [metalSimMode, setMetalSimMode] = useState<'compare' | 'experiment'>('compare');
       const [metalSimReagent, setMetalSimReagent] = useState<'oxygen' | 'water' | 'acid'>('oxygen');
@@ -1336,14 +1430,102 @@ export default function App() {
       const [userGuessOrder, setUserGuessOrder] = useState<string[]>(['A', 'B', 'C']);
 
       const metals = [
-        { id: 'K', name: 'Potassium', reactivity: 10, color: 'bg-yellow-400' },
-        { id: 'Na', name: 'Sodium', reactivity: 9, color: 'bg-yellow-400' },
-        { id: 'Ca', name: 'Calcium', reactivity: 8, color: 'bg-yellow-400' },
-        { id: 'Mg', name: 'Magnesium', reactivity: 7, color: 'bg-yellow-400' },
-        { id: 'Zn', name: 'Zinc', reactivity: 5, color: 'bg-yellow-400' },
-        { id: 'Fe', name: 'Iron', reactivity: 4, color: 'bg-yellow-400' },
-        { id: 'Cu', name: 'Copper', reactivity: 1, color: 'bg-yellow-400' }
+        { id: 'K', name: 'Potassium', reactivity: 11, color: 'bg-yellow-400' },
+        { id: 'Na', name: 'Sodium', reactivity: 10, color: 'bg-yellow-400' },
+        { id: 'Ca', name: 'Calcium', reactivity: 9, color: 'bg-yellow-400' },
+        { id: 'Mg', name: 'Magnesium', reactivity: 8, color: 'bg-yellow-400' },
+        { id: 'Al', name: 'Aluminium', reactivity: 7, color: 'bg-yellow-400' },
+        { id: 'Zn', name: 'Zinc', reactivity: 6, color: 'bg-yellow-400' },
+        { id: 'Fe', name: 'Iron', reactivity: 5, color: 'bg-yellow-400' },
+        { id: 'Pb', name: 'Lead', reactivity: 4, color: 'bg-yellow-400' },
+        { id: 'Cu', name: 'Copper', reactivity: 3, color: 'bg-yellow-400' },
+        { id: 'Ag', name: 'Silver', reactivity: 2, color: 'bg-yellow-400' },
+        { id: 'Au', name: 'Gold', reactivity: 1, color: 'bg-yellow-400' }
       ];
+
+      const getActualEquation = (mId: string, rId: string, waterTemp?: string, acidType?: string) => {
+        const metal = metals.find(m => m.id === mId);
+        if (!metal) return "";
+        
+        const m = metal.id;
+        const name = metal.name;
+
+        // Check reactivity limits
+        let canReact = false;
+        const mIdx = metals.findIndex(met => met.id === mId);
+        if (rId === 'oxygen') canReact = mIdx <= 8; // K to Cu
+        if (rId === 'water') canReact = mIdx <= 2; // K to Ca
+        if (rId === 'steam') canReact = mIdx <= 6; // K to Fe
+        if (rId === 'acid') canReact = mIdx <= 7; // K to Pb
+
+        if (!canReact) return "No Reaction";
+
+        if (rId === 'oxygen') {
+          if (m === 'K') return "4K + O₂ → 2K₂O";
+          if (m === 'Na') return "4Na + O₂ → 2Na₂O";
+          if (m === 'Ca') return "2Ca + O₂ → 2CaO";
+          if (m === 'Mg') return "2Mg + O₂ → 2MgO";
+          if (m === 'Al') return "4Al + 3O₂ → 2Al₂O₃";
+          if (m === 'Zn') return "2Zn + O₂ → 2ZnO";
+          if (m === 'Fe') return "4Fe + 3O₂ → 2Fe₂O₃";
+          if (m === 'Pb') return "2Pb + O₂ → 2PbO";
+          if (m === 'Cu') return "2Cu + O₂ → 2CuO";
+        }
+
+        if (rId === 'water') {
+          if (m === 'K') return "2K + 2H₂O → 2KOH + H₂";
+          if (m === 'Na') return "2Na + 2H₂O → 2NaOH + H₂";
+          if (m === 'Ca') return "Ca + 2H₂O → Ca(OH)₂ + H₂";
+        }
+
+        if (rId === 'steam') {
+          if (m === 'K') return "2K + 2H₂O(g) → 2KOH + H₂";
+          if (m === 'Na') return "2Na + 2H₂O(g) → 2NaOH + H₂";
+          if (m === 'Ca') return "Ca + 2H₂O(g) → Ca(OH)₂ + H₂";
+          if (m === 'Mg') return "Mg + H₂O(g) → MgO + H₂";
+          if (m === 'Al') return "2Al + 3H₂O(g) → Al₂O₃ + 3H₂";
+          if (m === 'Zn') return "Zn + H₂O(g) → ZnO + H₂";
+          if (m === 'Fe') return "3Fe + 4H₂O(g) → Fe₃O₄ + 4H₂";
+        }
+
+        if (rId === 'acid') {
+          const acid = acidType === 'HCl' ? 'HCl' : acidType === 'H2SO4' ? 'H₂SO₄' : 'CH₃COOH';
+          const saltSuffix = acidType === 'HCl' ? 'Cl' : acidType === 'H2SO4' ? 'SO₄' : '(CH₃COO)';
+          
+          if (acidType === 'HCl') {
+            if (m === 'K') return "2K + 2HCl → 2KCl + H₂";
+            if (m === 'Na') return "2Na + 2HCl → 2NaCl + H₂";
+            if (m === 'Ca') return "Ca + 2HCl → CaCl₂ + H₂";
+            if (m === 'Mg') return "Mg + 2HCl → MgCl₂ + H₂";
+            if (m === 'Al') return "2Al + 6HCl → 2AlCl₃ + 3H₂";
+            if (m === 'Zn') return "Zn + 2HCl → ZnCl₂ + H₂";
+            if (m === 'Fe') return "Fe + 2HCl → FeCl₂ + H₂";
+            if (m === 'Pb') return "Pb + 2HCl → PbCl₂ + H₂";
+          }
+          if (acidType === 'H2SO4') {
+            if (m === 'K') return "2K + H₂SO₄ → K₂SO₄ + H₂";
+            if (m === 'Na') return "2Na + H₂SO₄ → Na₂SO₄ + H₂";
+            if (m === 'Ca') return "Ca + H₂SO₄ → CaSO₄ + H₂";
+            if (m === 'Mg') return "Mg + H₂SO₄ → MgSO₄ + H₂";
+            if (m === 'Al') return "2Al + 3H₂SO₄ → Al₂(SO₄)₃ + 3H₂";
+            if (m === 'Zn') return "Zn + H₂SO₄ → ZnSO₄ + H₂";
+            if (m === 'Fe') return "Fe + H₂SO₄ → FeSO₄ + H₂";
+            if (m === 'Pb') return "Pb + H₂SO₄ → PbSO₄ + H₂";
+          }
+          if (acidType === 'CH3COOH') {
+            if (m === 'K') return "2K + 2CH₃COOH → 2CH₃COOK + H₂";
+            if (m === 'Na') return "2Na + 2CH₃COOH → 2CH₃COONa + H₂";
+            if (m === 'Ca') return "Ca + 2CH₃COOH → (CH₃COO)₂Ca + H₂";
+            if (m === 'Mg') return "Mg + 2CH₃COOH → (CH₃COO)₂Mg + H₂";
+            if (m === 'Al') return "2Al + 6CH₃COOH → 2(CH₃COO)₃Al + 3H₂";
+            if (m === 'Zn') return "Zn + 2CH₃COOH → (CH₃COO)₂Zn + H₂";
+            if (m === 'Fe') return "Fe + 2CH₃COOH → (CH₃COO)₂Fe + H₂";
+            if (m === 'Pb') return "Pb + 2CH₃COOH → (CH₃COO)₂Pb + H₂";
+          }
+        }
+
+        return "";
+      };
 
       const initExperiment = () => {
         const shuffled = [...metals].sort(() => 0.5 - Math.random()).slice(0, 3);
@@ -1515,6 +1697,21 @@ export default function App() {
                 <div className="text-left">
                   <h3 className="text-2xl font-black text-gray-800 uppercase tracking-tight">Metal Reactivity</h3>
                   <p className="text-gray-500 font-medium">Compare how different metals react with oxygen, water, and acids.</p>
+                </div>
+              </motion.button>
+
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setSelectedSim('metal-equations')}
+                className="bg-white border-2 border-gray-200 p-8 rounded-3xl flex items-center gap-6 shadow-[0_6px_0_0_#e5e7eb] hover:border-blue-400 transition-all group"
+              >
+                <div className="bg-blue-100 text-blue-600 p-5 rounded-2xl group-hover:bg-blue-500 group-hover:text-white transition-colors">
+                  <BookOpen size={40} />
+                </div>
+                <div className="text-left">
+                  <h3 className="text-2xl font-black text-gray-800 uppercase tracking-tight">Metal Reactivity: Equations</h3>
+                  <p className="text-gray-500 font-medium">Learn word equations and experiment setups for metal reactions.</p>
                 </div>
               </motion.button>
 
@@ -1727,7 +1924,32 @@ export default function App() {
                         <h4 className={`text-2xl font-black uppercase tracking-tighter ${reactionType === 'exothermic' ? 'text-red-500' : 'text-blue-500'}`}>
                           {reactionType} reaction
                         </h4>
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">
+                          {reactionType === 'exothermic' 
+                            ? "Heat is released, temperature increases" 
+                            : "Heat is absorbed, temperature decreases"}
+                        </p>
                       </div>
+
+                      {/* Pouring Animation for Lab Mode */}
+                      <AnimatePresence>
+                        {isEnergySimulating && energyLabMode && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -50, rotate: -45 }}
+                            animate={{ opacity: [0, 1, 1, 0], y: [-50, -20, -20, -50], rotate: [-45, -90, -90, -45] }}
+                            transition={{ duration: 2, times: [0, 0.2, 0.8, 1] }}
+                            className="absolute top-0 right-10 z-40 text-purple-500"
+                          >
+                            <FlaskConical size={40} />
+                            <motion.div 
+                              initial={{ height: 0 }}
+                              animate={{ height: [0, 40, 40, 0] }}
+                              transition={{ duration: 2, times: [0, 0.2, 0.8, 1] }}
+                              className="absolute top-full left-1/2 -translate-x-1/2 w-2 bg-purple-300/50 rounded-full"
+                            />
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
 
                       {/* Thermometer */}
                       <div className="absolute left-6 top-4 w-8 h-48 bg-gray-200 rounded-full border-2 border-gray-300 z-20 flex flex-col items-center justify-end p-1">
@@ -1802,7 +2024,7 @@ export default function App() {
                         disabled={energyLabMode && !selectedLabReaction}
                         className={`flex-1 py-4 rounded-2xl font-black text-xl uppercase tracking-widest transition-all ${energyLabMode && !selectedLabReaction ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-emerald-500 text-white shadow-[0_6px_0_0_#059669] active:shadow-none active:translate-y-1'}`}
                       >
-                        {energyLabMode ? 'Start Reaction' : 'Start Simulation'}
+                        {energyLabMode ? 'Add Chemicals & Start' : 'Start Simulation'}
                       </button>
                     ) : (
                       <button
@@ -1840,7 +2062,7 @@ export default function App() {
                         }`}
                       >
                         <FlaskConical size={16} />
-                        {metalSimMode === 'experiment' ? 'Exit Lab' : 'Virtual Lab'}
+                        {metalSimMode === 'experiment' ? 'Exit Lab' : 'Lab'}
                       </button>
                       <div className="bg-yellow-100 text-yellow-600 p-4 rounded-2xl">
                         <Zap size={32} />
@@ -1901,31 +2123,37 @@ export default function App() {
                   )}
 
                   {metalSimMode === 'compare' ? (
-                    <div className="grid grid-cols-2 gap-4 mb-8">
+                    <div className="grid grid-cols-2 gap-8 mb-8">
                       {[0, 1].map(i => (
-                        <div key={i} className="space-y-2">
-                          <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest">Metal {i + 1}</label>
-                          <select 
-                            value={metalSimSelected[i]}
-                            onChange={e => {
+                        <div key={i} className="space-y-4">
+                          <div className="flex justify-between items-center">
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Metal {i + 1}</label>
+                            <span className="text-sm font-black text-yellow-600 uppercase">{metals.find(m => m.id === metalSimSelected[i])?.name}</span>
+                          </div>
+                          <input 
+                            type="range" 
+                            min="0" 
+                            max={metals.length - 1} 
+                            value={metals.findIndex(m => m.id === metalSimSelected[i])}
+                            onChange={(e) => {
                               const newSelected = [...metalSimSelected];
-                              newSelected[i] = e.target.value;
+                              newSelected[i] = metals[parseInt(e.target.value)].id;
                               setMetalSimSelected(newSelected);
                               setMetalSimIsActive(false);
                               setMetalSimProgress(0);
                             }}
-                            className="w-full p-3 rounded-xl border-2 border-gray-100 font-bold text-sm bg-white outline-none focus:border-yellow-400"
-                          >
-                            {metals.map(m => (
-                              <option key={m.id} value={m.id}>{m.name}</option>
-                            ))}
-                          </select>
+                            className="w-full h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer accent-yellow-500"
+                          />
+                          <div className="flex justify-between text-[8px] font-black text-gray-300 uppercase">
+                            <span>Most Reactive</span>
+                            <span>Least Reactive</span>
+                          </div>
                         </div>
                       ))}
                     </div>
                   ) : (
                     <div className="mb-8 p-4 bg-purple-50 rounded-2xl border-2 border-purple-100 text-center">
-                      <h4 className="font-black text-purple-700 uppercase mb-1">Virtual Lab</h4>
+                      <h4 className="font-black text-purple-700 uppercase mb-1">Lab</h4>
                       <p className="text-xs text-purple-600 font-medium">Test metals A, B, and C to find their reactivity order!</p>
                       <button 
                         onClick={initExperiment}
@@ -1944,18 +2172,18 @@ export default function App() {
                       // Calculate reaction intensity
                       let intensity = 0;
                       if (metalSimReagent === 'oxygen') {
-                        intensity = metal.reactivity * 0.1;
+                        intensity = metal.reactivity >= 3 ? (metal.reactivity - 2) * 0.1 : 0;
                       } else if (metalSimReagent === 'water') {
                         if (metalSimWaterTemp === 'cold') {
-                          intensity = metal.reactivity >= 7 ? (metal.reactivity - 6) * 0.3 : 0;
+                          intensity = metal.reactivity >= 9 ? (metal.reactivity - 8) * 0.3 : 0;
                         } else if (metalSimWaterTemp === 'hot') {
-                          intensity = metal.reactivity >= 4 ? (metal.reactivity - 3) * 0.25 : 0;
+                          intensity = metal.reactivity >= 9 ? (metal.reactivity - 8) * 0.5 : 0;
                         } else { // steam
-                          intensity = metal.reactivity >= 4 ? (metal.reactivity - 3) * 0.4 : 0;
+                          intensity = metal.reactivity >= 5 ? (metal.reactivity - 4) * 0.2 : 0;
                         }
                       } else { // acid
                         const acidStrength = metalSimAcidType === 'CH3COOH' ? 0.4 : 1;
-                        intensity = metal.reactivity > 1 ? (metal.reactivity - 1) * 0.2 * acidStrength : 0;
+                        intensity = metal.reactivity >= 4 ? (metal.reactivity - 3) * 0.2 * acidStrength : 0;
                       }
 
                       const currentProgress = metalSimIsActive ? Math.min(100, metalSimProgress * intensity * 2) : 0;
@@ -1967,8 +2195,8 @@ export default function App() {
                           <div className="relative w-24 h-32 flex flex-col items-center justify-end">
                             {/* Reagent Container */}
                             {(metalSimReagent === 'water' || metalSimReagent === 'acid') && (
-                              <div className={`absolute inset-0 border-x-2 border-b-2 border-gray-300 rounded-b-xl ${metalSimReagent === 'water' ? 'bg-blue-50/50' : 'bg-emerald-50/50'}`}>
-                                <div className={`absolute inset-x-0 bottom-0 h-4/5 ${metalSimReagent === 'water' ? 'bg-blue-100/60' : 'bg-emerald-100/60'} rounded-b-lg`} />
+                              <div className={`absolute inset-0 border-x-2 border-b-2 border-gray-300 rounded-b-xl ${metalSimReagent === 'water' ? 'bg-blue-50/50' : 'bg-red-50/50'}`}>
+                                <div className={`absolute inset-x-0 bottom-0 h-4/5 ${metalSimReagent === 'water' ? 'bg-blue-100/60' : 'bg-red-100/60'} rounded-b-lg`} />
                                 
                                 {/* Bubbles */}
                                 {metalSimIsActive && intensity > 0 && (
@@ -1984,7 +2212,7 @@ export default function App() {
                                           delay: Math.random() * 2,
                                           ease: "linear"
                                         }}
-                                        className="absolute w-1.5 h-1.5 bg-white rounded-full border border-blue-200"
+                                        className={`absolute w-1.5 h-1.5 bg-white rounded-full border ${metalSimReagent === 'water' ? 'border-blue-200' : 'border-red-200'}`}
                                       />
                                     ))}
                                   </div>
@@ -2008,17 +2236,39 @@ export default function App() {
                   </div>
 
                   {/* Word Equation */}
-                  <div className="bg-gray-900 p-4 rounded-2xl mb-8 text-center">
-                    <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-2">Word Equation</p>
-                    <p className="text-white font-bold text-sm">
-                      {metalSimReagent === 'oxygen' && "Metal + Oxygen → Metal Oxide"}
-                      {metalSimReagent === 'water' && (
-                        metalSimWaterTemp === 'steam' 
-                          ? "Metal + Steam → Metal Oxide + Hydrogen"
-                          : "Metal + Water → Metal Hydroxide + Hydrogen"
-                      )}
-                      {metalSimReagent === 'acid' && `Metal + ${metalSimAcidType === 'HCl' ? 'Hydrochloric' : metalSimAcidType === 'H2SO4' ? 'Sulfuric' : 'Ethanoic'} Acid → Metal ${metalSimAcidType === 'HCl' ? 'Chloride' : metalSimAcidType === 'H2SO4' ? 'Sulfate' : 'Ethanoate'} + Hydrogen`}
-                    </p>
+                  <div className="bg-gray-900 p-6 rounded-3xl mb-8 text-center shadow-xl">
+                    <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-3">Chemical Equations</p>
+                    <div className="space-y-4">
+                      <div>
+                        <p className="text-[8px] font-black text-white/20 uppercase tracking-widest mb-1">General Equation</p>
+                        <p className="text-white font-bold text-sm">
+                          {metalSimReagent === 'oxygen' && "Metal + Oxygen → Metal Oxide"}
+                          {metalSimReagent === 'water' && (
+                            metalSimWaterTemp === 'steam' 
+                              ? "Metal + Steam → Metal Oxide + Hydrogen"
+                              : "Metal + Water → Metal Hydroxide + Hydrogen"
+                          )}
+                          {metalSimReagent === 'acid' && `Metal + ${metalSimAcidType === 'HCl' ? 'Hydrochloric' : metalSimAcidType === 'H2SO4' ? 'Sulfuric' : 'Ethanoic'} Acid → Metal ${metalSimAcidType === 'HCl' ? 'Chloride' : metalSimAcidType === 'H2SO4' ? 'Sulfate' : 'Ethanoate'} + Hydrogen`}
+                        </p>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-4 border-t border-white/5 pt-4">
+                        {(metalSimMode === 'compare' ? metalSimSelected : experimentMetals).map((mIdOrObj, idx) => {
+                          const mId = typeof mIdOrObj === 'string' ? mIdOrObj : (mIdOrObj as any).id;
+                          const label = typeof mIdOrObj === 'string' ? metals.find(m => m.id === mId)?.name : (mIdOrObj as any).label;
+                          const equation = getActualEquation(mId, metalSimReagent, metalSimWaterTemp, metalSimAcidType);
+                          
+                          return (
+                            <div key={idx}>
+                              <p className="text-[8px] font-black text-white/20 uppercase tracking-widest mb-1">{label}</p>
+                              <p className={`text-xs font-mono font-bold ${equation === 'No Reaction' ? 'text-red-400' : 'text-yellow-400'}`}>
+                                {equation}
+                              </p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
                   </div>
 
                   {metalSimMode === 'experiment' && (
@@ -2088,6 +2338,489 @@ export default function App() {
                       </button>
                     )}
                   </div>
+                </div>
+              )}
+
+              {selectedSim === 'metal-equations' && (
+                <div className="bg-white p-8 rounded-[40px] shadow-2xl border-4 border-blue-100">
+                  {/* Header */}
+                  <div className="flex justify-between items-start mb-8">
+                    <div>
+                      <h3 className="text-2xl font-black text-gray-800 uppercase tracking-tight">Metal Reactivity: Equations</h3>
+                      <p className="text-blue-500 font-black text-xl uppercase tracking-widest text-xs">Reactions & Word Equations</p>
+                    </div>
+                    <div className="flex gap-2">
+                      {['summary', 'lab', 'challenge'].map(m => (
+                        <button
+                          key={m}
+                          onClick={() => {
+                            setMetalEqMode(m as any);
+                            if (m === 'challenge') generateChallenge();
+                          }}
+                          className={`px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${
+                            metalEqMode === m 
+                              ? 'bg-blue-600 text-white shadow-[0_4px_0_0_#1e40af]' 
+                              : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+                          }`}
+                        >
+                          {m}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Mode Content */}
+                  {metalEqMode === 'summary' && (
+                    <div className="space-y-6">
+                      <div className="overflow-x-auto rounded-2xl border-2 border-gray-100">
+                        <table className="w-full text-left border-collapse">
+                          <thead>
+                            <tr className="bg-gray-50 border-b-2 border-gray-100">
+                              <th className="p-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Metal</th>
+                              <th className="p-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Oxygen</th>
+                              <th className="p-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Cold/Hot Water</th>
+                              <th className="p-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Steam</th>
+                              <th className="p-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Dilute Acid</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {metalEqMetals.map((m, idx) => (
+                              <tr key={m.id} className="border-b border-gray-50 hover:bg-blue-50/30 transition-colors">
+                                <td className="p-4 font-black text-gray-800">{m.name} ({m.id})</td>
+                                <td className="p-4">
+                                  {idx <= 8 ? <CheckCircle2 className="text-emerald-500" size={18} /> : <XCircle className="text-gray-200" size={18} />}
+                                </td>
+                                <td className="p-4">
+                                  {idx <= 2 ? <CheckCircle2 className="text-emerald-500" size={18} /> : <XCircle className="text-gray-200" size={18} />}
+                                </td>
+                                <td className="p-4">
+                                  {idx <= 6 ? <CheckCircle2 className="text-emerald-500" size={18} /> : <XCircle className="text-gray-200" size={18} />}
+                                </td>
+                                <td className="p-4">
+                                  {idx <= 7 ? <CheckCircle2 className="text-emerald-500" size={18} /> : <XCircle className="text-gray-200" size={18} />}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      <div className="p-4 bg-blue-50 rounded-2xl border-2 border-blue-100 flex gap-3 items-center">
+                        <Info className="text-blue-500 shrink-0" size={20} />
+                        <p className="text-xs text-blue-700 font-medium leading-relaxed">
+                          The reactivity series shows that metals like Potassium are highly reactive, while Gold is chemically inert. 
+                          More reactive metals react with a wider range of substances and more vigorously.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {metalEqMode === 'lab' && (
+                    <div className="space-y-8">
+                      {/* Sliders */}
+                      <div className="grid grid-cols-2 gap-8">
+                        <div className="space-y-4">
+                          <div className="flex justify-between items-center">
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Select Metal</label>
+                            <span className="text-sm font-black text-blue-600 uppercase">{metalEqMetals[metalEqMetalIdx].name}</span>
+                          </div>
+                          <input 
+                            type="range" 
+                            min="0" 
+                            max={metalEqMetals.length - 1} 
+                            value={metalEqMetalIdx}
+                            onChange={(e) => {
+                              setMetalEqMetalIdx(parseInt(e.target.value));
+                              setMetalEqIsActive(false);
+                              setMetalEqProgress(0);
+                            }}
+                            className="w-full h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                          />
+                          <div className="flex justify-between text-[8px] font-black text-gray-300 uppercase">
+                            <span>Most Reactive</span>
+                            <span>Least Reactive</span>
+                          </div>
+                        </div>
+
+                        <div className="space-y-4">
+                          <div className="flex justify-between items-center">
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Select Reagent</label>
+                            <span className="text-sm font-black text-blue-600 uppercase">{metalEqReagents[metalEqReagentIdx].name}</span>
+                          </div>
+                          <input 
+                            type="range" 
+                            min="0" 
+                            max={metalEqReagents.length - 1} 
+                            value={metalEqReagentIdx}
+                            onChange={(e) => {
+                              setMetalEqReagentIdx(parseInt(e.target.value));
+                              setMetalEqIsActive(false);
+                              setMetalEqProgress(0);
+                            }}
+                            className="w-full h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                          />
+                          {metalEqReagents[metalEqReagentIdx].id === 'water' && (
+                            <div className="flex gap-2 mt-2">
+                              {['Cold', 'Hot'].map(t => (
+                                <button
+                                  key={t}
+                                  onClick={() => {
+                                    setMetalSimWaterTemp(t.toLowerCase() as any);
+                                    setMetalEqIsActive(false);
+                                    setMetalEqProgress(0);
+                                  }}
+                                  className={`flex-1 p-1 rounded border font-black text-[8px] uppercase transition-all ${
+                                    metalSimWaterTemp === t.toLowerCase() ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-400 border-gray-100'
+                                  }`}
+                                >
+                                  {t}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Experiment Setup Visualization */}
+                      <div className="relative h-64 bg-gray-50 rounded-3xl border-4 border-gray-100 overflow-hidden flex items-center justify-center">
+                        {/* Scientifically correct setups */}
+                        {metalEqReagents[metalEqReagentIdx].id === 'oxygen' && (
+                          <div className="flex flex-col items-center gap-4">
+                            <div className="relative">
+                              <div className="w-32 h-1 bg-gray-400 rounded-full" /> {/* Gauze */}
+                              <div className="w-16 h-16 bg-yellow-400 border-2 border-yellow-500 rounded-lg mx-auto mt-[-8px] flex items-center justify-center relative overflow-hidden">
+                                {canReact(metalEqMetalIdx, 'oxygen') && (
+                                  <motion.div 
+                                    className="absolute inset-0 bg-gray-600/60"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: metalEqIsActive ? metalEqProgress / 100 : 0 }}
+                                  />
+                                )}
+                              </div>
+                              <div className="absolute top-12 left-1/2 -translate-x-1/2">
+                                <Flame className="text-orange-500 animate-pulse" size={32} />
+                              </div>
+                            </div>
+                            <p className="text-[10px] font-black text-gray-400 uppercase mt-8">Heating metal in air/oxygen</p>
+                          </div>
+                        )}
+
+                        {metalEqReagents[metalEqReagentIdx].id === 'water' && (
+                          <div className="flex flex-col items-center gap-4">
+                            <div className="relative w-24 h-32 border-x-2 border-b-2 border-gray-300 rounded-b-xl bg-blue-50/30">
+                              <div className="absolute inset-x-0 bottom-0 h-3/4 bg-blue-200/40 rounded-b-lg" />
+                              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-8 h-8 bg-yellow-400 rounded shadow-sm" />
+                              {canReact(metalEqMetalIdx, 'water') && metalEqIsActive && (
+                                <div className="absolute inset-x-0 bottom-1/2 flex flex-wrap justify-center gap-1">
+                                  {[...Array(metalSimWaterTemp === 'hot' ? 15 : 6)].map((_, i) => (
+                                    <motion.div 
+                                      key={i}
+                                      animate={{ y: [-10, -50], opacity: [0, 1, 0] }}
+                                      transition={{ 
+                                        duration: metalSimWaterTemp === 'hot' ? 0.5 : 1, 
+                                        repeat: Infinity, 
+                                        delay: i * (metalSimWaterTemp === 'hot' ? 0.05 : 0.15) 
+                                      }}
+                                      className="w-1.5 h-1.5 bg-white rounded-full border border-blue-100"
+                                    />
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                            <p className="text-[10px] font-black text-gray-400 uppercase">Metal in water ({metalSimWaterTemp} water)</p>
+                          </div>
+                        )}
+
+                        {metalEqReagents[metalEqReagentIdx].id === 'steam' && (
+                          <div className="flex flex-col items-center gap-4">
+                            <div className="flex items-center gap-0">
+                              <div className="w-40 h-6 border-2 border-gray-300 rounded-full relative bg-gray-100/20"> {/* Boiling tube */}
+                                <div className="absolute left-4 top-1 w-6 h-4 bg-blue-100 rounded-sm" /> {/* Damp mineral wool */}
+                                <div className="absolute right-8 top-1 w-6 h-4 bg-yellow-400 rounded-sm relative overflow-hidden">
+                                  {canReact(metalEqMetalIdx, 'steam') && (
+                                    <motion.div 
+                                      className="absolute inset-0 bg-gray-600/60"
+                                      initial={{ opacity: 0 }}
+                                      animate={{ opacity: metalEqIsActive ? metalEqProgress / 100 : 0 }}
+                                    />
+                                  )}
+                                </div>
+                                <div className="absolute left-4 top-6">
+                                  <Flame className="text-orange-500 animate-pulse" size={16} />
+                                </div>
+                                <div className="absolute right-8 top-6">
+                                  <Flame className="text-orange-500 animate-pulse" size={16} />
+                                </div>
+                                {metalEqIsActive && (
+                                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                    {[...Array(5)].map((_, i) => (
+                                      <motion.div 
+                                        key={i}
+                                        animate={{ x: [0, 40], opacity: [0, 1, 0] }}
+                                        transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
+                                        className="w-1 h-1 bg-white/40 rounded-full"
+                                      />
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="w-12 h-1 bg-gray-300" /> {/* Delivery tube */}
+                              <div className="w-16 h-20 border-x-2 border-b-2 border-gray-300 rounded-b-xl bg-blue-50/30 relative"> {/* Trough */}
+                                <div className="absolute inset-x-0 bottom-0 h-1/2 bg-blue-200/40 rounded-b-lg" />
+                                <div className="absolute inset-x-2 bottom-0 h-16 border-x-2 border-t-2 border-gray-300 bg-white/20 flex flex-col items-center justify-end"> {/* Inverted test tube */}
+                                  {canReact(metalEqMetalIdx, 'steam') && metalEqIsActive && (
+                                    <motion.div 
+                                      className="w-full bg-white/20"
+                                      initial={{ height: 0 }}
+                                      animate={{ height: `${metalEqProgress}%` }}
+                                    />
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                            <p className="text-[10px] font-black text-gray-400 uppercase">Reaction of metal with steam</p>
+                          </div>
+                        )}
+
+                        {metalEqReagents[metalEqReagentIdx].id === 'acid' && (
+                          <div className="flex flex-col items-center gap-4">
+                            <div className="relative w-16 h-32 border-x-2 border-b-2 border-gray-300 rounded-b-xl bg-emerald-50/30">
+                              <div className="absolute inset-x-0 bottom-0 h-2/3 bg-emerald-200/40 rounded-b-lg" />
+                              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-6 h-6 bg-yellow-400 rounded shadow-sm" />
+                              {canReact(metalEqMetalIdx, 'acid') && metalEqIsActive && (
+                                <>
+                                  <div className="absolute inset-x-0 bottom-1/2 flex flex-wrap justify-center gap-1">
+                                    {[...Array(12)].map((_, i) => (
+                                      <motion.div 
+                                        key={i}
+                                        animate={{ y: [-10, -60], opacity: [0, 1, 0] }}
+                                        transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.08 }}
+                                        className="w-1.5 h-1.5 bg-white rounded-full border border-emerald-100"
+                                      />
+                                    ))}
+                                  </div>
+                                  {/* Squeaky Pop Test */}
+                                  {metalEqProgress > 60 && metalEqMetalIdx <= 3 && (
+                                    <motion.div 
+                                      className="absolute -top-12 left-1/2 -translate-x-1/2 flex flex-col items-center"
+                                      initial={{ opacity: 0, scale: 0 }}
+                                      animate={{ opacity: 1, scale: 1 }}
+                                    >
+                                      <div className="w-1 h-12 bg-orange-200 rounded-full relative"> {/* Lighted splint */}
+                                        <div className="absolute top-0 left-1/2 -translate-x-1/2">
+                                          <Flame className="text-orange-500 animate-pulse" size={12} />
+                                        </div>
+                                      </div>
+                                      {metalEqProgress > 80 && (
+                                        <motion.div 
+                                          className="absolute -top-4 bg-yellow-400 text-gray-900 px-2 py-0.5 rounded-full font-black text-[8px] uppercase tracking-widest border border-yellow-500 shadow-lg"
+                                          initial={{ scale: 0 }}
+                                          animate={{ scale: [1, 1.5, 1], opacity: [1, 1, 0] }}
+                                          transition={{ duration: 0.5 }}
+                                        >
+                                          POP!
+                                        </motion.div>
+                                      )}
+                                    </motion.div>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                            <p className="text-[10px] font-black text-gray-400 uppercase">Metal in dilute acid (Test tube)</p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Result & Equation */}
+                      <div className="space-y-4">
+                        <div className="flex gap-4">
+                          {!metalEqIsActive ? (
+                            <button
+                              onClick={() => setMetalEqIsActive(true)}
+                              className="flex-1 bg-blue-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest shadow-[0_6px_0_0_#1e40af] active:shadow-none active:translate-y-1 transition-all flex items-center justify-center gap-2"
+                            >
+                              <Zap size={20} />
+                              Start Reaction
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                setMetalEqIsActive(false);
+                                setMetalEqProgress(0);
+                              }}
+                              className="flex-1 bg-gray-100 text-gray-500 py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-gray-200 transition-all flex items-center justify-center gap-2"
+                            >
+                              <RefreshCw size={20} />
+                              Reset Lab
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="p-6 bg-gray-900 rounded-3xl text-center shadow-xl">
+                          <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-3">Word Equation</p>
+                          <div className="flex flex-col gap-2">
+                            <div className="flex items-center justify-center gap-3 text-white font-bold text-lg">
+                              <span className="text-blue-400">{metalEqMetals[metalEqMetalIdx].name}</span>
+                              <span className="text-white/40">+</span>
+                              <span className="text-emerald-400">{metalEqReagents[metalEqReagentIdx].name}</span>
+                              <ArrowRight size={20} className="text-white/20" />
+                              <span className={canReact(metalEqMetalIdx, metalEqReagents[metalEqReagentIdx].id) ? 'text-yellow-400' : 'text-red-400'}>
+                                {canReact(metalEqMetalIdx, metalEqReagents[metalEqReagentIdx].id) ? (
+                                  <>
+                                    {metalEqReagents[metalEqReagentIdx].id === 'oxygen' && `${metalEqMetals[metalEqMetalIdx].name} Oxide`}
+                                    {metalEqReagents[metalEqReagentIdx].id === 'water' && `${metalEqMetals[metalEqMetalIdx].name} Hydroxide + Hydrogen`}
+                                    {metalEqReagents[metalEqReagentIdx].id === 'steam' && `${metalEqMetals[metalEqMetalIdx].name} Oxide + Hydrogen`}
+                                    {metalEqReagents[metalEqReagentIdx].id === 'acid' && `${metalEqMetals[metalEqMetalIdx].name} Salt + Hydrogen`}
+                                  </>
+                                ) : 'No Reaction'}
+                              </span>
+                            </div>
+                            {!canReact(metalEqMetalIdx, metalEqReagents[metalEqReagentIdx].id) && (
+                              <p className="text-[10px] font-black text-red-400 uppercase tracking-widest">
+                                {metalEqMetals[metalEqMetalIdx].name} is not reactive enough to react with {metalEqReagents[metalEqReagentIdx].name}.
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {metalEqMode === 'challenge' && metalEqChallenge && (
+                    <div className="space-y-8">
+                      <div className="p-10 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-[40px] text-center text-white shadow-2xl relative overflow-hidden border-4 border-white/20">
+                        <div className="absolute top-0 right-0 p-6 opacity-10 rotate-12">
+                          <Trophy size={140} />
+                        </div>
+                        <div className="absolute bottom-0 left-0 p-6 opacity-10 -rotate-12">
+                          <BookOpen size={100} />
+                        </div>
+                        
+                        <div className="relative z-10">
+                          <p className="text-xs font-black text-blue-200 uppercase tracking-[0.3em] mb-4">Backward Deduction</p>
+                          <h4 className="text-4xl font-black mb-6 tracking-tight">Deduce the Reactants</h4>
+                          
+                          <div className="bg-white/10 backdrop-blur-md p-6 rounded-[32px] inline-block border border-white/20 shadow-inner">
+                            <p className="text-xs font-bold text-blue-100 uppercase mb-2 tracking-widest">Target Products</p>
+                            <p className="text-2xl font-black text-yellow-300 uppercase tracking-tight drop-shadow-sm">{metalEqChallenge.product}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-8">
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-1.5 h-1.5 bg-blue-500 rounded-full" />
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Select Metal</label>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto p-2 bg-gray-50 rounded-2xl border-2 border-gray-100 scrollbar-thin scrollbar-thumb-gray-200">
+                            {metalEqMetals.map((m, idx) => (
+                              <button
+                                key={m.id}
+                                onClick={() => {
+                                  setMetalEqUserMetal(idx);
+                                  setMetalEqFeedback(null);
+                                }}
+                                className={`p-3 rounded-xl border-2 font-black text-[10px] uppercase transition-all flex items-center justify-center gap-2 ${
+                                  metalEqUserMetal === idx 
+                                    ? 'border-blue-500 bg-blue-600 text-white shadow-lg shadow-blue-100 -translate-y-0.5' 
+                                    : 'border-white bg-white text-gray-400 hover:border-blue-200 hover:text-blue-400'
+                                }`}
+                              >
+                                {m.name}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-1.5 h-1.5 bg-blue-500 rounded-full" />
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Select Reagent</label>
+                          </div>
+                          <div className="flex flex-col gap-2 p-2 bg-gray-50 rounded-2xl border-2 border-gray-100">
+                            {metalEqReagents.map((r, idx) => (
+                              <button
+                                key={r.id}
+                                onClick={() => {
+                                  setMetalEqUserReagent(idx);
+                                  setMetalEqFeedback(null);
+                                }}
+                                className={`p-4 rounded-xl border-2 font-black text-[10px] uppercase text-left transition-all flex items-center justify-between ${
+                                  metalEqUserReagent === idx 
+                                    ? 'border-blue-500 bg-blue-600 text-white shadow-lg shadow-blue-100 -translate-y-0.5' 
+                                    : 'border-white bg-white text-gray-400 hover:border-blue-200 hover:text-blue-400'
+                                }`}
+                              >
+                                {r.name}
+                                {metalEqUserReagent === idx && <CheckCircle2 size={14} />}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-4">
+                        <button
+                          onClick={() => {
+                            const isCorrect = metalEqMetals[metalEqUserMetal].id === metalEqChallenge.metal && 
+                                              metalEqReagents[metalEqUserReagent].id === metalEqChallenge.reagent;
+                            
+                            // Special case for "No Reaction"
+                            const userCanReact = canReact(metalEqUserMetal, metalEqReagents[metalEqUserReagent].id);
+                            const challengeCanReact = metalEqChallenge.product !== 'No Reaction';
+                            
+                            if (!challengeCanReact && !userCanReact) {
+                              setMetalEqFeedback('correct');
+                            } else if (isCorrect) {
+                              setMetalEqFeedback('correct');
+                            } else {
+                              setMetalEqFeedback('incorrect');
+                            }
+                          }}
+                          className="flex-1 bg-blue-600 text-white py-5 rounded-3xl font-black uppercase tracking-widest shadow-[0_8px_0_0_#1e40af] active:shadow-none active:translate-y-1 transition-all text-lg"
+                        >
+                          Check Answer
+                        </button>
+                        <button
+                          onClick={() => {
+                            generateChallenge();
+                            setMetalEqFeedback(null);
+                          }}
+                          className="px-10 bg-gray-100 text-gray-400 py-5 rounded-3xl font-black uppercase tracking-widest hover:bg-gray-200 transition-all"
+                        >
+                          Skip
+                        </button>
+                      </div>
+
+                      {metalEqFeedback && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className={`p-6 rounded-3xl text-center border-4 ${
+                            metalEqFeedback === 'correct' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-red-50 border-red-200 text-red-700'
+                          }`}
+                        >
+                          <div className="flex items-center justify-center gap-3 mb-2">
+                            {metalEqFeedback === 'correct' ? <CheckCircle2 size={32} /> : <XCircle size={32} />}
+                            <h5 className="text-2xl font-black uppercase">{metalEqFeedback === 'correct' ? 'Correct!' : 'Try Again'}</h5>
+                          </div>
+                          <p className="font-medium">
+                            {metalEqFeedback === 'correct' 
+                              ? `Well done! ${metalEqMetals[metalEqUserMetal].name} reacts with ${metalEqReagents[metalEqUserReagent].name} to produce ${metalEqChallenge.product}.` 
+                              : `That's not quite right. Think about the products and the reactivity rules.`}
+                          </p>
+                          {metalEqFeedback === 'correct' && (
+                            <button 
+                              onClick={generateChallenge}
+                              className="mt-4 px-6 py-2 bg-emerald-600 text-white rounded-xl font-black uppercase text-xs tracking-widest"
+                            >
+                              Next Challenge
+                            </button>
+                          )}
+                        </motion.div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -3042,6 +3775,626 @@ export default function App() {
     );
   };
 
+  const TaskView = () => {
+    const [username, setUsername] = useState('');
+    const [password, setPassword] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [hasSubmission, setHasSubmission] = useState(false);
+    const [currentSubmission, setCurrentSubmission] = useState<any>(null);
+
+    const credentials = {
+      edith: '4821', demi: '7394', hanson: '1067', dickson: '5980',
+      helen: '2146', kiki: '8735', felix: '4519', hanna: '6702',
+      ariel: '9328', alex: '1259', silvio: '8064', tony: '3471',
+      anka: '5693', kiyo: '7740', billy: '2085', samuel: '9156',
+      lawrence: '4368', xosox: '6817', chandler: '3024', mori: '8571',
+      marli: '1643', hiro: '6290', test: '9905', admin: '1069'
+    };
+
+    // Load user from localStorage
+    useEffect(() => {
+      const savedUser = localStorage.getItem('task_user');
+      if (savedUser) {
+        const user = JSON.parse(savedUser);
+        setTaskUser(user);
+        setTaskMode(user.role === 'admin' ? 'admin' : 'dashboard');
+      }
+    }, []);
+
+    useEffect(() => {
+      if (taskUser && taskUser.role === 'student') {
+        const q = query(collection(db, 'submissions'), where('username', '==', taskUser.username));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+          if (!snapshot.empty) {
+            setHasSubmission(true);
+            setCurrentSubmission(snapshot.docs[0].data());
+          } else {
+            setHasSubmission(false);
+            setCurrentSubmission(null);
+          }
+        }, (error) => handleFirestoreError(error, 'get', 'submissions'));
+        return () => unsubscribe();
+      } else if (taskUser && taskUser.role === 'admin') {
+        const unsubscribe = onSnapshot(collection(db, 'submissions'), (snapshot) => {
+          const subs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          setTaskSubmissions(subs);
+        }, (error) => handleFirestoreError(error, 'get', 'submissions'));
+        return () => unsubscribe();
+      }
+    }, [taskUser]);
+
+    const handleFirestoreError = (error: any, operationType: string, path: string | null) => {
+      const errInfo = {
+        error: error instanceof Error ? error.message : String(error),
+        authInfo: {
+          userId: auth.currentUser?.uid,
+          email: auth.currentUser?.email,
+          emailVerified: auth.currentUser?.emailVerified,
+        },
+        operationType,
+        path
+      };
+      console.error('Firestore Error: ', JSON.stringify(errInfo));
+    };
+
+    const handleLogin = async () => {
+      setIsLoading(true);
+      setTaskLoginError(null);
+      
+      const lowerUsername = username.toLowerCase();
+      if (credentials[lowerUsername as keyof typeof credentials] === password) {
+        try {
+          // Sign in anonymously to get a UID for Firestore rules
+          await signInAnonymously(auth);
+          
+          const role = lowerUsername === 'admin' ? 'admin' : 'student';
+          const user = { username: lowerUsername, role };
+          setTaskUser(user);
+          localStorage.setItem('task_user', JSON.stringify(user));
+          setTaskMode(role === 'admin' ? 'admin' : 'dashboard');
+        } catch (error) {
+          console.error("Auth error:", error);
+          setTaskLoginError('Authentication service error. Please try again.');
+        }
+      } else {
+        setTaskLoginError('Login failed. Please input the correct login credentials');
+      }
+      setIsLoading(false);
+    };
+
+    const startAssignment = () => {
+      // Generate 100 questions: ~14 from each of 7 units
+      const assignmentQuestions: any[] = [];
+      for (let i = 1; i <= 7; i++) {
+        const unitQuestions = units.find(u => u.id === i)?.questions || [];
+        const count = i === 7 ? 16 : 14; // 14*6 + 16 = 100
+        const shuffled = [...unitQuestions].sort(() => 0.5 - Math.random()).slice(0, count);
+        assignmentQuestions.push(...shuffled);
+      }
+      
+      setTaskQuestions(assignmentQuestions.sort(() => 0.5 - Math.random()));
+      setTaskAnswers([]);
+      setTaskCurrentQuestionIndex(0);
+      setTaskMode('assignment');
+    };
+
+    const submitAssignment = async () => {
+      setIsLoading(true);
+      let score = 0;
+      taskQuestions.forEach((q, idx) => {
+        if (taskAnswers[idx] === q.correctAnswer) {
+          score++;
+        }
+      });
+      const percentage = (score / taskQuestions.length) * 100;
+
+      const submission = {
+        username: taskUser.username,
+        userId: auth.currentUser?.uid,
+        taskId: 'easter-2026',
+        answers: taskAnswers,
+        score,
+        percentage,
+        completedAt: new Date().toISOString()
+      };
+
+      try {
+        // Use setDoc with a unique ID for the submission
+        await setDoc(doc(db, 'submissions', `${taskUser.username}_easter`), submission);
+        setTaskScore(score);
+        setTaskPercentage(percentage);
+        setTaskMode('complete');
+      } catch (error) {
+        handleFirestoreError(error, 'write', `submissions/${taskUser.username}_easter`);
+        setTaskLoginError("Failed to submit assignment. Please check your connection.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    const downloadReport = (type: 'individual' | 'class', targetUser?: any) => {
+      const doc = new jsPDF();
+      doc.setFontSize(20);
+      doc.text(type === 'individual' ? `Student Report: ${targetUser.username}` : 'Class Performance Report', 20, 20);
+      
+      doc.setFontSize(12);
+      doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, 30);
+
+      if (type === 'individual') {
+        const sub = taskSubmissions.find(s => s.username === targetUser.username);
+        if (sub) {
+          doc.text(`Score: ${sub.score} / ${sub.answers.length}`, 20, 40);
+          doc.text(`Percentage: ${sub.percentage.toFixed(2)}%`, 20, 50);
+          doc.text(`Completed At: ${new Date(sub.completedAt).toLocaleString()}`, 20, 60);
+        } else {
+          doc.text('No submission found for this student.', 20, 40);
+        }
+      } else {
+        const totalScore = taskSubmissions.reduce((acc, s) => acc + s.score, 0);
+        const avgScore = taskSubmissions.length > 0 ? totalScore / taskSubmissions.length : 0;
+        const avgPercentage = taskSubmissions.length > 0 ? taskSubmissions.reduce((acc, s) => acc + s.percentage, 0) / taskSubmissions.length : 0;
+
+        doc.text(`Total Students: ${Object.keys(credentials).length - 1}`, 20, 40);
+        doc.text(`Submissions: ${taskSubmissions.length}`, 20, 50);
+        doc.text(`Average Score: ${avgScore.toFixed(2)}`, 20, 60);
+        doc.text(`Average Percentage: ${avgPercentage.toFixed(2)}%`, 20, 70);
+
+        const tableData = taskSubmissions.map(s => [s.username, s.score, `${s.percentage.toFixed(2)}%`, new Date(s.completedAt).toLocaleDateString()]);
+        (doc as any).autoTable({
+          startY: 80,
+          head: [['Username', 'Score', 'Percentage', 'Date']],
+          body: tableData,
+        });
+      }
+
+      doc.save(type === 'individual' ? `report_${targetUser.username}.pdf` : 'class_report.pdf');
+    };
+
+    if (taskMode === 'login') {
+      return (
+        <div className="min-h-screen bg-emerald-50 flex items-center justify-center p-6 relative overflow-hidden">
+          {/* Background Decorations */}
+          <div className="absolute top-0 left-0 w-64 h-64 bg-emerald-100 rounded-full -translate-x-1/2 -translate-y-1/2 blur-3xl opacity-50" />
+          <div className="absolute bottom-0 right-0 w-96 h-96 bg-blue-100 rounded-full translate-x-1/3 translate-y-1/3 blur-3xl opacity-50" />
+
+          <motion.div 
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white border-4 border-emerald-500/10 p-10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(16,185,129,0.1)] w-full max-w-md relative z-10"
+          >
+            <div className="text-center mb-10">
+              <div className="bg-emerald-500 text-white w-24 h-24 rounded-[2rem] flex items-center justify-center mx-auto mb-6 shadow-[0_10px_20px_rgba(16,185,129,0.3)] rotate-3">
+                <Lock size={48} />
+              </div>
+              <h2 className="text-4xl font-black text-gray-800 uppercase tracking-tight">Task Center</h2>
+              <p className="text-emerald-500 font-bold uppercase tracking-[0.2em] text-xs mt-2">Student & Admin Portal</p>
+            </div>
+
+            <div className="space-y-6">
+              <div className="relative group">
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-4">Username</label>
+                <div className="relative">
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-emerald-500 transition-colors" size={20} />
+                  <input 
+                    type="text" 
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value.toLowerCase())}
+                    placeholder="Enter your username"
+                    className="w-full pl-12 pr-4 py-4 rounded-2xl border-2 border-gray-100 focus:border-emerald-400 focus:bg-emerald-50/30 outline-none font-bold transition-all text-gray-700"
+                  />
+                </div>
+              </div>
+              
+              <div className="relative group">
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-4">Password</label>
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-emerald-500 transition-colors" size={20} />
+                  <input 
+                    type="password" 
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                    placeholder="4-digit code"
+                    className="w-full pl-12 pr-4 py-4 rounded-2xl border-2 border-gray-100 focus:border-emerald-400 focus:bg-emerald-50/30 outline-none font-bold transition-all text-gray-700"
+                  />
+                </div>
+              </div>
+              
+              {taskLoginError && (
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="flex items-center gap-3 text-red-500 text-xs font-bold bg-red-50 p-4 rounded-2xl border border-red-100"
+                >
+                  <AlertCircle size={16} className="flex-shrink-0" />
+                  {taskLoginError}
+                </motion.div>
+              )}
+
+              <button 
+                onClick={handleLogin}
+                disabled={isLoading || !username || !password}
+                className="w-full bg-emerald-500 text-white py-5 rounded-2xl font-black text-xl uppercase tracking-widest shadow-[0_8px_0_0_#059669] hover:shadow-[0_4px_0_0_#059669] hover:translate-y-[4px] active:shadow-none active:translate-y-[8px] transition-all disabled:opacity-50 disabled:shadow-none disabled:translate-y-0 mt-4 group"
+              >
+                <span className="flex items-center justify-center gap-2">
+                  {isLoading ? 'Authenticating...' : 'Sign In'}
+                  {!isLoading && <ArrowRight size={24} className="group-hover:translate-x-1 transition-transform" />}
+                </span>
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      );
+    }
+
+    if (taskMode === 'dashboard') {
+      return (
+        <div className="min-h-screen bg-gray-50 pb-24">
+          <header className="bg-white border-b-2 border-gray-200 p-6 sticky top-0 z-10">
+            <div className="max-w-2xl mx-auto flex justify-between items-center">
+              <div className="flex items-center gap-4">
+                <div className="bg-emerald-500 text-white p-3 rounded-2xl shadow-lg shadow-emerald-200">
+                  <User size={24} />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-black text-gray-800 uppercase tracking-tight">Hi, {taskUser.username}!</h1>
+                  <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px] mt-0.5">Student Dashboard</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => { 
+                  setTaskUser(null); 
+                  setTaskMode('login'); 
+                  localStorage.removeItem('task_user');
+                }} 
+                className="bg-gray-100 text-gray-400 p-3 rounded-2xl hover:bg-red-50 hover:text-red-500 transition-all"
+              >
+                <LogOut size={20} />
+              </button>
+            </div>
+          </header>
+
+          <main className="max-w-2xl mx-auto p-6 space-y-6">
+            <div className="bg-white border-2 border-gray-200 p-8 rounded-[2.5rem] shadow-[0_10px_30px_rgba(0,0,0,0.03)] relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-full translate-x-1/2 -translate-y-1/2 transition-transform group-hover:scale-110" />
+              
+              <div className="relative z-10">
+                <div className="flex justify-between items-start mb-8">
+                  <div>
+                    <div className="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest mb-3 inline-block">
+                      Active Assignment
+                    </div>
+                    <h3 className="text-3xl font-black text-gray-800 uppercase tracking-tight leading-none">Easter assignment</h3>
+                    <div className="flex items-center gap-2 text-red-500 mt-3">
+                      <Calendar size={16} />
+                      <span className="text-xs font-bold uppercase tracking-widest">Due: 13th April 2026</span>
+                    </div>
+                  </div>
+                  <div className="bg-blue-500 text-white p-4 rounded-[1.5rem] shadow-lg shadow-blue-200">
+                    <FileText size={32} />
+                  </div>
+                </div>
+                
+                <p className="text-gray-500 font-medium mb-10 leading-relaxed text-lg">
+                  Complete <span className="text-blue-600 font-black">100 questions</span> covering Unit 1 to Unit 7. This task will be recorded in your final grade.
+                </p>
+
+                {hasSubmission ? (
+                  <div className="bg-emerald-50 border-4 border-emerald-100 p-8 rounded-[2rem] text-center">
+                    <div className="bg-emerald-500 text-white w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-emerald-100">
+                      <CheckCircle2 size={32} />
+                    </div>
+                    <h4 className="text-2xl font-black text-emerald-700 uppercase tracking-tight">Task Completed</h4>
+                    <p className="text-emerald-600 font-bold text-sm mt-1">Well done! You've submitted your work.</p>
+                    <div className="mt-6 flex items-center justify-center gap-8">
+                      <div>
+                        <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Score</p>
+                        <p className="text-3xl font-black text-emerald-700">{currentSubmission.score}/{currentSubmission.answers.length}</p>
+                      </div>
+                      <div className="w-px h-10 bg-emerald-200" />
+                      <div>
+                        <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Grade</p>
+                        <p className="text-3xl font-black text-emerald-700">{currentSubmission.percentage.toFixed(1)}%</p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <button 
+                    onClick={startAssignment}
+                    className="w-full bg-blue-500 text-white py-6 rounded-2xl font-black text-2xl uppercase tracking-widest shadow-[0_8px_0_0_#2563eb] hover:shadow-[0_4px_0_0_#2563eb] hover:translate-y-[4px] active:shadow-none active:translate-y-[8px] transition-all flex items-center justify-center gap-3 group"
+                  >
+                    Start Now
+                    <ArrowRight size={28} className="group-hover:translate-x-2 transition-transform" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Tips Card */}
+            <div className="bg-orange-50 border-2 border-orange-100 p-6 rounded-3xl flex items-center gap-4">
+              <div className="bg-orange-100 text-orange-600 p-3 rounded-2xl">
+                <AlertCircle size={24} />
+              </div>
+              <p className="text-orange-700 text-sm font-bold leading-tight">
+                Make sure you have a stable internet connection before starting the assignment.
+              </p>
+            </div>
+          </main>
+        </div>
+      );
+    }
+
+    if (taskMode === 'assignment') {
+      const currentQuestion = taskQuestions[taskCurrentQuestionIndex];
+      return (
+        <div className="min-h-screen bg-gray-50 flex flex-col">
+          <header className="bg-white border-b-2 border-gray-200 p-4 sticky top-0 z-20">
+            <div className="max-w-3xl mx-auto flex items-center justify-between gap-6">
+              <div className="flex items-center gap-4">
+                <div className="bg-blue-500 text-white w-12 h-12 rounded-2xl flex items-center justify-center font-black text-xl shadow-lg shadow-blue-100">
+                  {taskCurrentQuestionIndex + 1}
+                </div>
+                <div className="hidden sm:block">
+                  <h1 className="text-lg font-black text-gray-800 uppercase tracking-tight leading-none">Easter Assignment</h1>
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">Progress: {Math.round(((taskCurrentQuestionIndex + 1) / taskQuestions.length) * 100)}%</p>
+                </div>
+              </div>
+              
+              <div className="flex-1 max-w-md">
+                <div className="h-4 bg-gray-100 rounded-full overflow-hidden border-2 border-gray-50 p-0.5">
+                  <motion.div 
+                    className="h-full bg-blue-500 rounded-full"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${((taskCurrentQuestionIndex + 1) / taskQuestions.length) * 100}%` }}
+                    transition={{ type: "spring", stiffness: 50 }}
+                  />
+                </div>
+              </div>
+
+              <div className="text-right">
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Question</p>
+                <p className="text-lg font-black text-gray-800 leading-none">{taskCurrentQuestionIndex + 1} / {taskQuestions.length}</p>
+              </div>
+            </div>
+          </header>
+
+          <main className="flex-1 max-w-3xl mx-auto w-full p-6 flex flex-col justify-center">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={taskCurrentQuestionIndex}
+                initial={{ opacity: 0, x: 50 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -50 }}
+                className="bg-white border-2 border-gray-200 p-10 rounded-[3rem] shadow-[0_15px_40px_rgba(0,0,0,0.04)] mb-10 relative"
+              >
+                <div className="absolute -top-6 left-10 bg-blue-500 text-white px-6 py-2 rounded-full font-black text-xs uppercase tracking-widest shadow-lg">
+                  Unit {currentQuestion.unitId || '?' }
+                </div>
+
+                <h2 className="text-3xl font-black text-gray-800 mb-12 leading-[1.2]">
+                  {currentQuestion.text}
+                </h2>
+
+                <div className="grid gap-5">
+                  {currentQuestion.options.map((option: string, idx: number) => (
+                    <button
+                      key={option}
+                      onClick={() => {
+                        const newAnswers = [...taskAnswers];
+                        newAnswers[taskCurrentQuestionIndex] = option;
+                        setTaskAnswers(newAnswers);
+                      }}
+                      className={`group w-full p-6 text-left rounded-3xl border-2 transition-all font-bold text-xl flex items-center gap-4
+                        ${taskAnswers[taskCurrentQuestionIndex] === option 
+                          ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-[0_8px_0_0_#3b82f6]' 
+                          : 'border-gray-100 hover:border-gray-200 hover:bg-gray-50 text-gray-600 shadow-[0_8px_0_0_#f3f4f6]'
+                        }
+                      `}
+                    >
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm transition-colors
+                        ${taskAnswers[taskCurrentQuestionIndex] === option 
+                          ? 'bg-blue-500 text-white' 
+                          : 'bg-gray-100 text-gray-400 group-hover:bg-gray-200'
+                        }
+                      `}>
+                        {String.fromCharCode(65 + idx)}
+                      </div>
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            </AnimatePresence>
+
+            <div className="flex gap-6">
+              <button 
+                onClick={() => setTaskCurrentQuestionIndex(prev => Math.max(0, prev - 1))}
+                disabled={taskCurrentQuestionIndex === 0}
+                className="flex-1 bg-white text-gray-400 border-2 border-gray-200 py-5 rounded-2xl font-black text-xl uppercase tracking-widest shadow-[0_6px_0_0_#e5e7eb] hover:translate-y-[2px] active:shadow-none active:translate-y-[6px] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                <ArrowLeft size={24} />
+                Back
+              </button>
+              {taskCurrentQuestionIndex === taskQuestions.length - 1 ? (
+                <button 
+                  onClick={submitAssignment}
+                  disabled={!taskAnswers[taskCurrentQuestionIndex] || isLoading}
+                  className="flex-[2] bg-emerald-500 text-white py-5 rounded-2xl font-black text-2xl uppercase tracking-widest shadow-[0_8px_0_0_#059669] hover:translate-y-[4px] active:shadow-none active:translate-y-[8px] transition-all disabled:opacity-50 flex items-center justify-center gap-3"
+                >
+                  {isLoading ? 'Submitting...' : 'Finish & Submit'}
+                  {!isLoading && <CheckCircle2 size={28} />}
+                </button>
+              ) : (
+                <button 
+                  onClick={() => setTaskCurrentQuestionIndex(prev => prev + 1)}
+                  disabled={!taskAnswers[taskCurrentQuestionIndex]}
+                  className="flex-[2] bg-blue-500 text-white py-5 rounded-2xl font-black text-2xl uppercase tracking-widest shadow-[0_8px_0_0_#2563eb] hover:translate-y-[4px] active:shadow-none active:translate-y-[8px] transition-all disabled:opacity-50 flex items-center justify-center gap-3 group"
+                >
+                  Next Question
+                  <ArrowRight size={28} className="group-hover:translate-x-2 transition-transform" />
+                </button>
+              )}
+            </div>
+          </main>
+        </div>
+      );
+    }
+
+    if (taskMode === 'complete') {
+      return (
+        <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6 text-center">
+          <motion.div
+            initial={{ scale: 0, rotate: -180 }}
+            animate={{ scale: 1, rotate: 0 }}
+            className="bg-white p-12 rounded-full shadow-2xl mb-8"
+          >
+            <Trophy size={120} className="text-yellow-400" />
+          </motion.div>
+          <motion.h1
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="text-4xl font-black text-gray-800 mb-4 uppercase tracking-tight"
+          >
+            Task Complete!
+          </motion.h1>
+          <motion.div 
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="bg-white border-2 border-gray-200 p-8 rounded-3xl shadow-[0_6px_0_0_#e5e7eb] mb-12 w-full max-w-xs"
+          >
+            <p className="text-gray-400 font-black text-xs uppercase tracking-widest mb-2">Your Result</p>
+            <p className="text-5xl font-black text-emerald-500 mb-2">{taskPercentage.toFixed(1)}%</p>
+            <p className="text-gray-500 font-bold uppercase tracking-widest text-sm">{taskScore} / {taskQuestions.length} Correct</p>
+          </motion.div>
+          <button 
+            onClick={() => { setTaskMode('dashboard'); setMode('dashboard'); }}
+            className="bg-emerald-500 text-white px-12 py-4 rounded-2xl font-black text-xl uppercase tracking-widest shadow-[0_6px_0_0_#059669] active:shadow-none active:translate-y-1 transition-all"
+          >
+            Back to Home
+          </button>
+        </div>
+      );
+    }
+
+    if (taskMode === 'admin') {
+      const totalStudents = Object.keys(credentials).length - 1;
+      const completionRate = (taskSubmissions.length / totalStudents) * 100;
+
+      return (
+        <div className="min-h-screen bg-gray-50 pb-24">
+          <header className="bg-white border-b-2 border-gray-200 p-6 sticky top-0 z-10">
+            <div className="max-w-4xl mx-auto flex justify-between items-center">
+              <div>
+                <h1 className="text-2xl font-black text-gray-800 uppercase tracking-tight">Admin Dashboard</h1>
+                <p className="text-gray-400 font-bold uppercase tracking-widest text-xs mt-1">Task Management</p>
+              </div>
+              <div className="flex gap-4">
+                <button 
+                  onClick={() => downloadReport('class')}
+                  className="bg-blue-100 text-blue-600 px-4 py-2 rounded-xl font-black text-xs uppercase tracking-widest border-2 border-blue-200 flex items-center gap-2"
+                >
+                  <Download size={16} />
+                  Class Report
+                </button>
+                <button onClick={() => { setTaskUser(null); setTaskMode('login'); }} className="text-gray-400 hover:text-red-500 transition-colors">
+                  <LogOut size={24} />
+                </button>
+              </div>
+            </div>
+          </header>
+
+          <main className="max-w-4xl mx-auto p-6 space-y-8">
+            {/* Stats Overview */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-white border-2 border-gray-200 p-6 rounded-3xl shadow-[0_4px_0_0_#e5e7eb]">
+                <div className="flex items-center gap-3 text-blue-500 mb-4">
+                  <Users size={24} />
+                  <span className="text-xs font-black uppercase tracking-widest">Completion Rate</span>
+                </div>
+                <p className="text-4xl font-black text-gray-800">{completionRate.toFixed(1)}%</p>
+                <p className="text-gray-400 text-xs font-bold uppercase mt-1">{taskSubmissions.length} / {totalStudents} Students</p>
+              </div>
+              <div className="bg-white border-2 border-gray-200 p-6 rounded-3xl shadow-[0_4px_0_0_#e5e7eb]">
+                <div className="flex items-center gap-3 text-emerald-500 mb-4">
+                  <Trophy size={24} />
+                  <span className="text-xs font-black uppercase tracking-widest">Average Score</span>
+                </div>
+                <p className="text-4xl font-black text-gray-800">
+                  {taskSubmissions.length > 0 ? (taskSubmissions.reduce((acc, s) => acc + s.score, 0) / taskSubmissions.length).toFixed(1) : '0.0'}
+                </p>
+                <p className="text-gray-400 text-xs font-bold uppercase mt-1">Out of 100</p>
+              </div>
+              <div className="bg-white border-2 border-gray-200 p-6 rounded-3xl shadow-[0_4px_0_0_#e5e7eb]">
+                <div className="flex items-center gap-3 text-purple-500 mb-4">
+                  <Calendar size={24} />
+                  <span className="text-xs font-black uppercase tracking-widest">Due Date</span>
+                </div>
+                <p className="text-xl font-black text-gray-800">13 Apr 2026</p>
+                <p className="text-gray-400 text-xs font-bold uppercase mt-1">Easter Assignment</p>
+              </div>
+            </div>
+
+            {/* Student List */}
+            <div className="bg-white border-2 border-gray-200 rounded-3xl overflow-hidden shadow-[0_6px_0_0_#e5e7eb]">
+              <div className="p-6 border-b-2 border-gray-100 flex justify-between items-center">
+                <h3 className="text-xl font-black text-gray-800 uppercase tracking-tight">Student Submissions</h3>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="bg-gray-50 border-b-2 border-gray-100">
+                      <th className="p-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Student</th>
+                      <th className="p-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Status</th>
+                      <th className="p-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Score</th>
+                      <th className="p-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Date</th>
+                      <th className="p-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Object.keys(credentials).filter(u => u !== 'admin').map(uname => {
+                      const sub = taskSubmissions.find(s => s.username === uname);
+                      return (
+                        <tr key={uname} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                          <td className="p-4 font-black text-gray-800 uppercase tracking-tight">{uname}</td>
+                          <td className="p-4">
+                            {sub ? (
+                              <span className="bg-emerald-100 text-emerald-600 px-3 py-1 rounded-full text-[10px] font-black uppercase">Completed</span>
+                            ) : (
+                              <span className="bg-gray-100 text-gray-400 px-3 py-1 rounded-full text-[10px] font-black uppercase">Pending</span>
+                            )}
+                          </td>
+                          <td className="p-4 font-bold text-gray-600">
+                            {sub ? `${sub.score} (${sub.percentage.toFixed(1)}%)` : '-'}
+                          </td>
+                          <td className="p-4 text-xs text-gray-400 font-medium">
+                            {sub ? new Date(sub.completedAt).toLocaleDateString() : '-'}
+                          </td>
+                          <td className="p-4">
+                            {sub && (
+                              <button 
+                                onClick={() => downloadReport('individual', { username: uname })}
+                                className="text-blue-500 hover:text-blue-700 transition-colors"
+                                title="Download Individual Report"
+                              >
+                                <Download size={20} />
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </main>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
   return (
     <div className="font-sans selection:bg-emerald-200">
       <AnimatePresence mode="wait">
@@ -3055,10 +4408,11 @@ export default function App() {
         {mode === 'user-stats' && <UserDashboardView key="user-stats" />}
         {mode === 'about' && <AboutView key="about" />}
         {mode === 'playground' && <PlaygroundView key="playground" />}
+        {mode === 'task' && <TaskView key="task" />}
       </AnimatePresence>
 
       {/* Bottom Nav for Dashboard, User Stats, and About */}
-      {['dashboard', 'playground', 'user-stats', 'about'].includes(mode) && (
+      {['dashboard', 'playground', 'user-stats', 'about', 'task'].includes(mode) && (
         <nav className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-200 p-4 z-20">
           <div className="max-w-2xl mx-auto flex justify-around items-center">
             <button 
@@ -3067,6 +4421,13 @@ export default function App() {
             >
               <Home size={28} fill={mode === 'dashboard' ? "currentColor" : "none"} />
               <span className="text-[10px] font-black uppercase">Home</span>
+            </button>
+            <button 
+              onClick={() => setMode('task')}
+              className={`flex flex-col items-center gap-1 transition-colors ${mode === 'task' ? 'text-emerald-500' : 'text-gray-400 hover:text-emerald-400'}`}
+            >
+              <ClipboardList size={28} fill={mode === 'task' ? "currentColor" : "none"} />
+              <span className="text-[10px] font-black uppercase">Task</span>
             </button>
             <button 
               onClick={() => setMode('playground')}
