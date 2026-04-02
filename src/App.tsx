@@ -222,7 +222,10 @@ export default function App() {
   const [challengeResponses, setChallengeResponses] = useState<ChallengeResponse[]>([]);
   const [challengeStudentName, setChallengeStudentName] = useState("");
   const [showChallengeResult, setShowChallengeResult] = useState(false);
+  const [shortResponseInput, setShortResponseInput] = useState("");
   const [isAdminOpen, setIsAdminOpen] = useState(false);
+  const [showEasterNotice, setShowEasterNotice] = useState(false);
+  const [easterNoticeAgreed, setEasterNoticeAgreed] = useState(false);
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
   const [challengeRecords, setChallengeRecords] = useState<ChallengeRecord[]>([]);
 
@@ -275,12 +278,16 @@ export default function App() {
 
   const handleChallengeAnswer = (answer: string) => {
     const currentQuestion = challengeQuestions[challengeCurrentIndex];
+    const isCorrect = currentQuestion.options.length > 0 
+      ? answer === currentQuestion.correctAnswer
+      : answer.trim().toLowerCase() === currentQuestion.correctAnswer.trim().toLowerCase();
+
     const newResponse: ChallengeResponse = {
       questionId: currentQuestion.id,
       questionText: currentQuestion.text,
       userAnswer: answer,
       correctAnswer: currentQuestion.correctAnswer,
-      isCorrect: answer === currentQuestion.correctAnswer
+      isCorrect: isCorrect
     };
 
     const updatedResponses = [...challengeResponses, newResponse];
@@ -329,28 +336,68 @@ export default function App() {
   }, [eventMessages]);
 
   const startEasterAssignment = () => {
-    const eventUnits = [1, 2, 3, 4, 5, 6, 7];
-    const eventCount = 60;
+    setShowEasterNotice(true);
+    setEasterNoticeAgreed(false);
+  };
+
+  const proceedToEasterAssignment = () => {
+    if (!easterNoticeAgreed) return;
+    setShowEasterNotice(false);
     
-    let allQuestions: Question[] = [];
+    const eventUnits = [1, 2, 3, 4, 5, 6, 7];
+    const mcqCount = 60;
+    const shortResponseCount = 10;
+    
+    let allMcqs: Question[] = [];
+    let allVocab: Vocab[] = [];
+    
     eventUnits.forEach(unitId => {
       const unit = units.find(u => u.id === unitId);
       if (unit) {
-        allQuestions = [...allQuestions, ...unit.questions];
+        allMcqs = [...allMcqs, ...unit.questions];
+        allVocab = [...allVocab, ...unit.vocab];
       }
     });
 
-    const shuffled = [...allQuestions].sort(() => 0.5 - Math.random());
-    const selected = shuffled.slice(0, eventCount);
+    // 60 random MCQs
+    const shuffledMcqs = [...allMcqs].sort(() => 0.5 - Math.random());
+    const selectedMcqs = shuffledMcqs.slice(0, mcqCount);
 
-    setChallengeQuestions(selected);
+    // 10 random short responses
+    const shuffledVocab = [...allVocab].sort(() => 0.5 - Math.random());
+    const selectedVocab = shuffledVocab.slice(0, shortResponseCount);
+    
+    const shortResponseQuestions: Question[] = selectedVocab.map((v, i) => {
+      if (i < 5) {
+        // Ask for term (given definition)
+        return {
+          id: `sr-term-${v.term}-${i}`,
+          text: `What is the term for: "${v.definition}"?`,
+          options: [], // empty options means short response
+          correctAnswer: v.term
+        };
+      } else {
+        // Ask for definition (given term)
+        return {
+          id: `sr-def-${v.term}-${i}`,
+          text: `Define the term: "${v.term}"`,
+          options: [],
+          correctAnswer: v.definition
+        };
+      }
+    });
+
+    const finalQuestions = [...selectedMcqs, ...shortResponseQuestions];
+
+    setChallengeQuestions(finalQuestions);
     setChallengeCurrentIndex(0);
     setChallengeResponses([]);
     setChallengeSelectedUnits(eventUnits);
-    setChallengeQuestionCount(eventCount);
+    setChallengeQuestionCount(finalQuestions.length);
     setIsChallengeQuizActive(true);
     setIsChallengeModeOpen(false);
     setIsEventMode(true);
+    setShortResponseInput("");
   };
 
   const [isQRModalOpen, setIsQRModalOpen] = useState(false);
@@ -380,7 +427,19 @@ export default function App() {
       
       doc.setFontSize(12);
       doc.text(`Student: ${record.studentName}`, 14, 32);
+      
+      const percentage = (record.score / record.totalQuestions) * 100;
       doc.text(`Score: ${record.score} / ${record.totalQuestions}`, 14, 40);
+      
+      // Add percentage with color
+      if (percentage >= 60) {
+        doc.setTextColor(16, 185, 129); // Green
+      } else {
+        doc.setTextColor(239, 68, 68); // Red
+      }
+      doc.text(`(${percentage.toFixed(1)}%)`, 50, 40);
+      doc.setTextColor(0, 0, 0); // Reset to black
+
       doc.text(`Date: ${new Date(record.timestamp).toLocaleString()}`, 14, 48);
       doc.text(`Units: ${record.selectedUnits.join(", ")}`, 14, 56);
 
@@ -677,7 +736,10 @@ export default function App() {
 
       <header className="bg-white border-b-2 border-gray-200 p-4 sticky top-0 z-10">
         <div className="max-w-2xl mx-auto flex justify-between items-center">
-          <h1 className="text-2xl font-black text-emerald-500 tracking-tight">SCIENCE QUEST</h1>
+          <div className="flex flex-col">
+            <h1 className="text-2xl font-black text-emerald-500 tracking-tight leading-none">Y8 Cambridge LS Science</h1>
+            <span className="text-[10px] font-bold text-black uppercase tracking-widest mt-1">An app by Toman</span>
+          </div>
           <div className="flex items-center gap-2">
             <button 
               onClick={() => setIsQRModalOpen(true)}
@@ -697,6 +759,66 @@ export default function App() {
       </header>
 
       <AnimatePresence>
+        {showEasterNotice && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[500] flex items-center justify-center p-6">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="bg-white rounded-[2.5rem] p-10 max-w-lg w-full shadow-2xl border-4 border-cyan-100"
+            >
+              <div className="bg-cyan-50 w-20 h-20 rounded-3xl flex items-center justify-center text-cyan-500 mx-auto mb-8">
+                <Star size={40} className="animate-pulse" />
+              </div>
+              <h2 className="text-3xl font-black text-center text-gray-800 uppercase tracking-tight mb-6">Notice</h2>
+              <div className="bg-gray-50 rounded-2xl p-6 mb-8 border-2 border-gray-100">
+                <p className="text-gray-600 font-bold leading-relaxed text-center">
+                  Welcome to the Easter assignment. Please read and answer these questions carefully. 
+                  If your grade is below <span className="text-red-500 font-black">60%</span> or if you missed the assignment, 
+                  you will have to sit for a written test paper on Tuesday so please answer the questions carefully. 
+                  You will be asked to input your name at the end.
+                </p>
+              </div>
+              
+              <label className="flex items-center gap-4 mb-8 cursor-pointer group justify-center">
+                <div className="relative">
+                  <input 
+                    type="checkbox" 
+                    checked={easterNoticeAgreed}
+                    onChange={(e) => setEasterNoticeAgreed(e.target.checked)}
+                    className="sr-only"
+                  />
+                  <div className={`w-8 h-8 rounded-xl border-4 transition-all flex items-center justify-center ${
+                    easterNoticeAgreed ? 'bg-cyan-500 border-cyan-500' : 'border-gray-200 group-hover:border-cyan-200'
+                  }`}>
+                    {easterNoticeAgreed && <CheckCircle2 size={20} className="text-white" />}
+                  </div>
+                </div>
+                <span className="text-gray-700 font-black uppercase tracking-widest text-sm">I agree to the terms</span>
+              </label>
+
+              <div className="flex gap-4">
+                <button 
+                  onClick={() => setShowEasterNotice(false)}
+                  className="flex-1 py-4 rounded-2xl font-black uppercase tracking-widest border-2 border-gray-200 text-gray-400 hover:bg-gray-50 transition-all"
+                >
+                  Cancel
+                </button>
+                <button 
+                  disabled={!easterNoticeAgreed}
+                  onClick={proceedToEasterAssignment}
+                  className={`flex-1 py-4 rounded-2xl font-black uppercase tracking-widest transition-all ${
+                    easterNoticeAgreed 
+                      ? 'bg-cyan-500 text-white shadow-[0_6px_0_0_#0891b2] active:shadow-none active:translate-y-1' 
+                      : 'bg-gray-100 text-gray-300 cursor-not-allowed'
+                  }`}
+                >
+                  Start Quiz
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
         {isChallengeModeOpen && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6 overflow-y-auto">
             <motion.div 
@@ -719,20 +841,24 @@ export default function App() {
                 {/* Easter Assignment Button */}
                 <button
                   onClick={startEasterAssignment}
-                  className="w-full p-4 rounded-2xl bg-cyan-500 text-white font-black text-lg uppercase tracking-widest shadow-[0_6px_0_0_#0891b2] active:shadow-none active:translate-y-1 transition-all flex items-center justify-center gap-3"
+                  className="w-full p-6 rounded-3xl bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-black text-xl uppercase tracking-widest shadow-[0_8px_0_0_#0891b2] active:shadow-none active:translate-y-1 transition-all flex flex-col items-center justify-center gap-2 group"
                 >
-                  <Star className="animate-pulse" /> Easter Assignment
+                  <div className="flex items-center gap-3">
+                    <Star className="animate-pulse group-hover:scale-125 transition-transform" size={28} />
+                    <span>Easter Assignment</span>
+                  </div>
+                  <span className="text-[10px] opacity-80 font-bold">60 MCQs + 10 Short Responses (Units 1-7)</span>
                 </button>
 
                 <div className="relative flex items-center gap-4 py-2">
-                  <div className="flex-1 h-px bg-gray-200"></div>
-                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">OR CUSTOM</span>
-                  <div className="flex-1 h-px bg-gray-200"></div>
+                  <div className="flex-1 h-px bg-gray-100"></div>
+                  <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest">OR CUSTOM CHALLENGE</span>
+                  <div className="flex-1 h-px bg-gray-100"></div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-black text-gray-400 uppercase tracking-widest mb-3">Select Topics</label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar">
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 ml-1">Select Topics</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar">
                     {units.map(unit => (
                       <button
                         key={unit.id}
@@ -743,10 +869,10 @@ export default function App() {
                               : [...prev, unit.id]
                           );
                         }}
-                        className={`p-3 rounded-2xl border-2 font-bold text-sm transition-all flex items-center gap-3 text-left ${
+                        className={`p-2.5 rounded-xl border-2 font-black text-[10px] transition-all flex flex-col items-center gap-2 text-center ${
                           challengeSelectedUnits.includes(unit.id)
                             ? `${unit.color} border-transparent text-white shadow-[0_4px_0_0_rgba(0,0,0,0.2)]`
-                            : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'
+                            : 'bg-white border-gray-100 text-gray-500 hover:border-gray-200'
                         }`}
                       >
                         <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
@@ -754,7 +880,7 @@ export default function App() {
                         }`}>
                           {unit.id}
                         </div>
-                        <span className="truncate">{unit.title}</span>
+                        <span className="leading-tight uppercase">{unit.title}</span>
                       </button>
                     ))}
                   </div>
@@ -831,17 +957,45 @@ export default function App() {
 
             <main className="flex-1 max-w-2xl mx-auto w-full p-6 flex flex-col overflow-y-auto">
               <h2 className="text-2xl font-black text-gray-800 mb-8">{challengeQuestions[challengeCurrentIndex].text}</h2>
-              <div className="space-y-4">
-                {challengeQuestions[challengeCurrentIndex].options.map((option) => (
+              
+              {challengeQuestions[challengeCurrentIndex].options.length > 0 ? (
+                <div className="space-y-4">
+                  {challengeQuestions[challengeCurrentIndex].options.map((option) => (
+                    <button
+                      key={option}
+                      onClick={() => handleChallengeAnswer(option)}
+                      className="w-full p-4 text-left rounded-2xl border-2 border-gray-200 hover:bg-gray-50 text-gray-700 shadow-[0_4px_0_0_#e5e7eb] active:shadow-none active:translate-y-1 transition-all font-bold text-lg"
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  <div className="relative">
+                    <textarea
+                      value={shortResponseInput}
+                      onChange={(e) => setShortResponseInput(e.target.value)}
+                      placeholder="Type your response here..."
+                      className="w-full p-6 rounded-2xl border-2 border-gray-200 font-bold text-lg focus:border-cyan-500 outline-none min-h-[150px] resize-none shadow-inner bg-gray-50"
+                    />
+                  </div>
                   <button
-                    key={option}
-                    onClick={() => handleChallengeAnswer(option)}
-                    className="w-full p-4 text-left rounded-2xl border-2 border-gray-200 hover:bg-gray-50 text-gray-700 shadow-[0_4px_0_0_#e5e7eb] active:shadow-none active:translate-y-1 transition-all font-bold text-lg"
+                    disabled={!shortResponseInput.trim()}
+                    onClick={() => {
+                      handleChallengeAnswer(shortResponseInput);
+                      setShortResponseInput("");
+                    }}
+                    className={`w-full py-4 rounded-2xl font-black text-xl uppercase tracking-widest transition-all ${
+                      shortResponseInput.trim()
+                        ? 'bg-cyan-500 text-white shadow-[0_6px_0_0_#0891b2] active:shadow-none active:translate-y-1'
+                        : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    }`}
                   >
-                    {option}
+                    Submit Answer
                   </button>
-                ))}
-              </div>
+                </div>
+              )}
             </main>
 
             {showExitConfirm && (
@@ -1007,7 +1161,9 @@ export default function App() {
                                   <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 font-black">
                                     {record.studentName.charAt(0).toUpperCase()}
                                   </div>
-                                  <span className="font-bold text-gray-800">{record.studentName}</span>
+                                  <span className={`font-bold ${ (record.score / record.totalQuestions) < 0.6 ? 'text-red-500' : 'text-gray-800' }`}>
+                                    {record.studentName}
+                                  </span>
                                 </div>
                               </td>
                               <td className="px-8 py-5">
@@ -1151,11 +1307,11 @@ export default function App() {
           className="bg-gradient-to-br from-cyan-400 to-blue-500 rounded-2xl p-6 shadow-lg cursor-pointer relative overflow-hidden group"
         >
           <div className="absolute top-0 right-0 p-4 opacity-20 group-hover:opacity-40 transition-opacity">
-            <Zap size={80} />
+            <Star size={80} />
           </div>
           <div className="relative z-10 flex items-center gap-4">
             <div className="bg-white/20 p-3 rounded-xl backdrop-blur-sm">
-              <Zap className="text-white" size={32} />
+              <Star className="text-white" size={32} />
             </div>
             <div className="flex-1 overflow-hidden">
               <h2 className="text-2xl font-black text-white uppercase tracking-tight">Event Mode</h2>
@@ -1258,7 +1414,7 @@ export default function App() {
           </p>
           <button 
             onClick={() => setIsAdminOpen(true)}
-            className="text-gray-300 hover:text-gray-400 text-xs font-bold uppercase tracking-tighter transition-colors"
+            className="bg-red-500 text-white px-6 py-2 rounded-xl font-black uppercase tracking-widest text-xs shadow-[0_4px_0_0_#b91c1c] active:shadow-none active:translate-y-1 transition-all"
           >
             Admin Access
           </button>
