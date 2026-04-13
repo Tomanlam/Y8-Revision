@@ -374,7 +374,10 @@ function AppContent() {
   }, []);
 
   useEffect(() => {
-    if (!isAuthReady) return;
+    if (!isAuthReady || !isAdminLoggedIn || !auth.currentUser) {
+      setChallengeRecords([]);
+      return;
+    }
 
     const q = query(collection(db, 'challengeRecords'), orderBy('timestamp', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -384,11 +387,14 @@ function AppContent() {
       });
       setChallengeRecords(records);
     }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'challengeRecords');
+      // Only handle error if we are supposed to be logged in
+      if (isAdminLoggedIn && auth.currentUser) {
+        handleFirestoreError(error, OperationType.LIST, 'challengeRecords');
+      }
     });
 
     return () => unsubscribe();
-  }, [isAuthReady]);
+  }, [isAuthReady, isAdminLoggedIn]);
 
   useEffect(() => {
     async function testConnection() {
@@ -581,26 +587,37 @@ function AppContent() {
 
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Keep legacy login for convenience if needed, or switch entirely to Google
+    
+    // Legacy login (UI only, no database access)
     if (adminUsername === 'admin' && adminPassword === '1069') {
       setIsAdminLoggedIn(true);
-      setAdminError("");
+      setAdminError("Note: Password login only grants UI access. Cloud records require Google Sign-In.");
       return;
     }
 
     try {
+      setAdminError("");
       const provider = new GoogleAuthProvider();
+      // Force account selection to help with multiple accounts
+      provider.setCustomParameters({ prompt: 'select_account' });
+      
       const result = await signInWithPopup(auth, provider);
       if (result.user.email === 'tomanlam@gmail.com') {
         setIsAdminLoggedIn(true);
         setAdminError("");
       } else {
-        setAdminError("Access denied: Not an authorized admin email.");
+        setAdminError("Access denied: " + result.user.email + " is not an authorized admin.");
         await signOut(auth);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login error", error);
-      setAdminError("Login failed. Please try again.");
+      if (error.code === 'auth/popup-blocked') {
+        setAdminError("Popup blocked! Please allow popups for this site.");
+      } else if (error.code === 'auth/unauthorized-domain') {
+        setAdminError("Domain not authorized in Firebase Console. Please add this URL to 'Authorized Domains'.");
+      } else {
+        setAdminError("Login failed: " + (error.message || "Unknown error"));
+      }
     }
   };
 
