@@ -1,5 +1,6 @@
 import React from 'react';
 import * as Unit1 from './Unit1Visuals';
+import * as Unit2 from './Unit2Visuals';
 
 interface VisualProps {
   isAssistMode: boolean;
@@ -18,6 +19,14 @@ export const visualRegistry: { [unitId: number]: { [conceptIndex: number]: Visua
     7: Unit1.ImmuneDefense,
     12: Unit1.AlveoliExchange,
     18: Unit1.BreathingSimulation,
+  },
+  2: {
+    1: Unit2.DissolvingAnimation,
+    6: Unit2.MassConservation,
+    7: Unit2.ConcentrationVisualizer,
+    11: Unit2.SolubilityCurve,
+    16: Unit2.SeparationTechniques,
+    17: Unit2.ChromatographyAnimation,
   }
 };
 
