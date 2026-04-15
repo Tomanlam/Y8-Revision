@@ -16,9 +16,16 @@ export interface Vocab {
 export interface Unit {
   id: number;
   title: string;
+  titleTraditional?: string;
+  titleSimplified?: string;
   description: string;
+  descriptionTraditional?: string;
+  descriptionSimplified?: string;
   color: string;
   concepts: string[];
+  conceptsTraditional?: string[];
+  conceptsSimplified?: string[];
+  keyTerms?: { [term: string]: string };
   vocab: Vocab[];
   questions: Question[];
 }
@@ -27,7 +34,11 @@ export const units: Unit[] = [
   {
     id: 1,
     title: "Respiration",
+    titleTraditional: "呼吸作用",
+    titleSimplified: "呼吸作用",
     description: "Understanding how the body transports nutrients and performs gas exchange.",
+    descriptionTraditional: "了解身體如何運輸營養物質並進行氣體交換。",
+    descriptionSimplified: "了解身体如何运输营养物质并进行气体交换。",
     color: "bg-emerald-500",
     concepts: [
       "The circulatory system delivers glucose and oxygen to cells and removes carbon dioxide.",
@@ -51,6 +62,70 @@ export const units: Unit[] = [
       "Inhalation: Diaphragm contracts/flattens, volume increases, pressure decreases, air enters.",
       "Exhalation: Diaphragm relaxes/domes, volume decreases, pressure increases, air exits."
     ],
+    conceptsTraditional: [
+      "循環系統將葡萄糖和氧氣輸送到細胞，並移除二氧化碳。",
+      "循環系統由心臟（泵）、血液（液體）和血管（通道）組成。",
+      "呼吸作用方程式：葡萄糖 + 氧氣 → 二氧化碳 + 水 + 能量。",
+      "線粒體是細胞的「動力工廠」，是發生呼吸作用的地方。",
+      "血液可以分離為血漿、紅血球、白血球和血小板。",
+      "血漿是一種淡黃色液體，可溶解葡萄糖、氧氣和二氧化碳。",
+      "紅血球含有血紅素以運輸氧氣，且沒有細胞核。",
+      "白血球（吞噬細胞和淋巴細胞）保護身體免受病原體侵害。",
+      "病原體是引起疾病的微生物，如病毒、細菌和真菌。",
+      "血小板是參與凝血作用以止血的細胞碎片。",
+      "呼吸（Breathing）是一個物理過程，而呼吸作用（Respiration）是一個釋放能量的化學過程。",
+      "氣流路徑：鼻腔 → 咽 → 喉 → 氣管 → 支氣管 → 小支氣管 → 肺泡。",
+      "肺泡是微小的氣囊，通過擴散作用進行高效的氣體交換。",
+      "擴散作用是粒子從高濃度向低濃度移動的過程。",
+      "在肺部，氧氣擴散進入血液，二氧化碳擴散進入肺泡。",
+      "在細胞中，氧氣從血液擴散進入細胞進行呼吸作用。",
+      "呼吸由橫膈膜和肋間肌控制。",
+      "呼吸期間，壓力和肺部體積成反比。",
+      "吸氣：橫膈膜收縮/變平，體積增加，壓力減少，空氣進入。",
+      "呼氣：橫膈膜放鬆/變拱形，體積減少，壓力增加，空氣排出。"
+    ],
+    conceptsSimplified: [
+      "循环系统将葡萄糖和氧气输送到细胞，并移除二氧化碳。",
+      "循环系统由心脏（泵）、血液（液体）和血管（通道）组成。",
+      "呼吸作用方程式：葡萄糖 + 氧气 → 二氧化碳 + 水 + 能量。",
+      "线粒体是细胞的“动力工厂”，是发生呼吸作用的地方。",
+      "血液可以分离为血浆、红血球、白血球和血小板。",
+      "血浆是一种淡黄色液体，可溶解葡萄糖、氧气和二氧化碳。",
+      "红血球含有血红素以运输氧气，且没有细胞核。",
+      "白血球（吞噬细胞和淋巴细胞）保护身体免受病原体侵害。",
+      "病原体是引起疾病的微生物，如病毒、细菌和真菌。",
+      "血小板是参与凝血作用以止血的细胞碎片。",
+      "呼吸（Breathing）是一个物理过程，而呼吸作用（Respiration）是一个释放能量的化学过程。",
+      "气流路径：鼻腔 → 咽 → 喉 → 气管 → 支气管 → 小支气管 → 肺泡。",
+      "肺泡是微小的气囊，通过扩散作用进行高效的气体交换。",
+      "扩散作用是粒子从高浓度向低浓度移动的过程。",
+      "在肺部，氧气扩散进入血液，二氧化碳扩散进入肺泡。",
+      "在细胞中，氧气从血液扩散进入细胞进行呼吸作用。",
+      "呼吸由横膈膜和肋间肌控制。",
+      "呼吸期间，压力和肺部体积成反比。",
+      "吸气：横膈膜收缩/变平，体积增加，压力减少，空气进入。",
+      "呼气：横膈膜放松/变拱形，体积减少，压力增加，空气排出。"
+    ],
+    keyTerms: {
+      "circulatory system": "#10b981", "循環系統": "#10b981", "循环系统": "#10b981",
+      "heart": "#ef4444", "心臟": "#ef4444", "心脏": "#ef4444",
+      "blood": "#dc2626", "血液": "#dc2626",
+      "blood vessels": "#3b82f6", "血管": "#3b82f6",
+      "respiration": "#f59e0b", "呼吸作用": "#f59e0b",
+      "mitochondria": "#8b5cf6", "線粒體": "#8b5cf6", "线粒体": "#8b5cf6",
+      "plasma": "#fbbf24", "血漿": "#fbbf24", "血浆": "#fbbf24",
+      "red blood cells": "#ef4444", "紅血球": "#ef4444", "红血球": "#ef4444",
+      "white blood cells": "#60a5fa", "白血球": "#60a5fa",
+      "pathogens": "#7c3aed", "病原體": "#7c3aed", "病原体": "#7c3aed",
+      "platelets": "#ec4899", "血小板": "#ec4899",
+      "alveoli": "#06b6d4", "肺泡": "#06b6d4",
+      "diffusion": "#14b8a6", "擴散作用": "#14b8a6", "扩散作用": "#14b8a6",
+      "diaphragm": "#f97316", "橫膈膜": "#f97316", "横膈膜": "#f97316",
+      "glucose": "#10b981", "葡萄糖": "#10b981",
+      "oxygen": "#3b82f6", "氧氣": "#3b82f6", "氧气": "#3b82f6",
+      "carbon dioxide": "#6b7280", "二氧化碳": "#6b7280",
+      "breathing": "#3b82f6", "呼吸": "#3b82f6"
+    },
     vocab: [
       { term: "Circulatory system", traditional: "循環系統", simplified: "循环系统", definition: "The system that transports blood, nutrients, and oxygen throughout the body." },
       { term: "Heart", traditional: "心臟", simplified: "心脏", definition: "The muscular organ that pumps blood through the circulatory system." },
@@ -167,7 +242,11 @@ export const units: Unit[] = [
   {
     id: 2,
     title: "Properties of materials",
+    titleTraditional: "物質的性質",
+    titleSimplified: "物质的性质",
     description: "Understanding solutes, solvents, solubility, and separation techniques.",
+    descriptionTraditional: "了解溶質、溶劑、溶解度以及分離技術。",
+    descriptionSimplified: "了解溶质、溶剂、溶解度以及分离技术。",
     color: "bg-blue-500",
     concepts: [
       "A solution forms when a solute breaks down into smaller pieces and dissolves into a solvent, like salt in water.",
@@ -191,6 +270,67 @@ export const units: Unit[] = [
       "As the solvent travels up the paper, dyes separate based on their different solubilities, creating a pattern called a chromatogram.",
       "A pure dye produces a single spot on a chromatogram, while an impure dye creates multiple spots that travel different distances depending on their solubility."
     ],
+    conceptsTraditional: [
+      "當溶質分解成較小的碎片並溶解在溶劑中（如水中的鹽）時，就會形成溶液。",
+      "溶解發生在移動的溶劑粒子撞擊固體溶質粒子，將其拆散直到肉眼看不見為止。",
+      "能溶解在溶劑中的物質稱為可溶，而不能溶解的（如水中的油或沙）稱為不可溶。",
+      "溶液是混合物，且總是透明的，允許光線通過，儘管它們可能有顏色。",
+      "溶解涉及混合兩種或多種物質，而熔化涉及單一物質從固體變為液體。",
+      "溶解是一種可逆的物理變化，因為過程中沒有形成新的化學物質。",
+      "溶解過程中質量守恆，即溶質和溶劑的總質量等於最終溶液的質量。",
+      "濃溶液含有大量溶解的溶質，而稀溶液含有的溶質很少。",
+      "當溶劑不能再溶解更多溶質時，就達到了飽和溶液，導致額外的固體沉到杯底。",
+      "溶解度是以在特定溫度下，100克溶劑中能溶解的溶質最大克數來衡量的。",
+      "加熱溶劑通常會增加固體溶質的溶解度，使其溶解得更快且量更多。",
+      "溶解度曲線是顯示溶質溶解度如何隨溫度變化的圖表，便於比較不同物質。",
+      "水被認為是通用溶劑，因為它可以溶解許多不同的物質，但並非所有物質。",
+      "當水不能溶解某種物質時，可以使用替代溶劑，如甲醇（用於油漆）或丙酮（用於指甲油）。",
+      "純淨物只含有一種粒子，不能通過物理方式分離成更簡單的物質。",
+      "不純淨物是不同粒子的混合物，如鹽水，可以分離成更簡單的成分。",
+      "不可溶固體可以使用過濾法從液體中分離，而可溶固體可以通過蒸發回收。",
+      "色層分析法是用於分離染料混合物（如鋼筆墨水）的技術，使用特殊的紙和上升的溶劑。",
+      "隨著溶劑在紙上上升，染料根據其不同的溶解度進行分離，形成稱為色層分析圖的圖案。",
+      "純染料在色層分析圖上產生單個斑點，而不純染料則根據溶解度產生多個移動距離不同的斑點。"
+    ],
+    conceptsSimplified: [
+      "当溶质分解成较小的碎片并溶解在溶剂中（如水中的盐）时，就会形成溶液。",
+      "溶解发生在移动的溶剂粒子撞击固体溶质粒子，将其拆散直到肉眼看不见为止。",
+      "能溶解在溶剂中的物质称为可溶，而不能溶解的（如水中的油或沙）称为不可溶。",
+      "溶液是混合物，且总是透明的，允许光线通过，尽管它们可能有颜色。",
+      "溶解涉及混合两种或多种物质，而熔化涉及单一物质从固体变为液体。",
+      "溶解是一种可逆的物理变化，因为过程中没有形成新的化学物质。",
+      "溶解过程中质量守恒，即溶质和溶剂的总质量等于最终溶液的质量。",
+      "浓溶液含有大量溶解的溶质，而稀溶液含有的溶质很少。",
+      "当溶剂不能再溶解更多溶质时，就达到了饱和溶液，导致额外的固体沉到杯底。",
+      "溶解度是以在特定温度下，100克溶剂中能溶解的溶质最大克数来衡量的。",
+      "加热溶剂通常会增加固体溶质的溶解度，使其溶解得更快且量更多。",
+      "溶解度曲线是显示溶质溶解度如何随温度变化的图表，便于比较不同物质。",
+      "水被认为是通用溶剂，因为它可以溶解许多不同的物质，但并非所有物质。",
+      "当水不能溶解某种物质时，可以使用替代溶剂，如甲醇（用于油漆）或丙酮（用于指甲油）。",
+      "纯净物只含有一种粒子，不能通过物理方式分离成更简单的物质。",
+      "不纯净物是不同粒子的混合物，如盐水，可以分离成更简单的成分。",
+      "不可溶固体可以使用过滤法从液体中分离，而可溶固体可以通过蒸发回收。",
+      "色层分析法是用于分离染料混合物（如钢笔墨水）的技術，使用特殊的纸和上升的溶剂。",
+      "随着溶剂在纸上升，染料根据其不同的溶解度进行分离，形成称为色层分析图的图案。",
+      "纯染料在色层分析图上产生单个斑点，而不纯染料则根据溶解度产生多个移动距离不同的斑点。"
+    ],
+    keyTerms: {
+      "solution": "#3b82f6", "溶液": "#3b82f6",
+      "solute": "#ef4444", "溶質": "#ef4444", "溶质": "#ef4444",
+      "solvent": "#10b981", "溶劑": "#10b981", "溶剂": "#10b981",
+      "soluble": "#8b5cf6", "可溶": "#8b5cf6",
+      "insoluble": "#6b7280", "不可溶": "#6b7280",
+      "saturated": "#f59e0b", "飽和": "#f59e0b", "饱和": "#f59e0b",
+      "solubility": "#ec4899", "溶解度": "#ec4899",
+      "filtration": "#06b6d4", "過濾法": "#06b6d4", "过滤法": "#06b6d4",
+      "evaporation": "#f97316", "蒸發": "#f97316", "蒸发": "#f97316",
+      "chromatography": "#8b5cf6", "色層分析法": "#8b5cf6", "色层分析法": "#8b5cf6",
+      "dissolving": "#3b82f6", "溶解": "#3b82f6",
+      "melting": "#f59e0b", "熔化": "#f59e0b",
+      "pure substance": "#10b981", "純淨物": "#10b981", "纯净物": "#10b981",
+      "impure substance": "#ef4444", "不純淨物": "#ef4444", "不纯净物": "#ef4444",
+      "mixture": "#6b7280", "混合物": "#6b7280"
+    },
     vocab: [
       { term: "Dissolving", traditional: "溶解", simplified: "溶解", definition: "The process where a solute incorporates into a solvent to form a solution." },
       { term: "Solute", traditional: "溶質", simplified: "溶质", definition: "The substance that is dissolved in a solvent." },
@@ -284,7 +424,11 @@ export const units: Unit[] = [
   {
     id: 3,
     title: "Forces and energy",
+    titleTraditional: "力與能量",
+    titleSimplified: "力与能量",
     description: "Understanding motion, energy transfer, and balance.",
+    descriptionTraditional: "了解運動、能量轉移和平衡。",
+    descriptionSimplified: "了解运动、能量转移和平衡。",
     color: "bg-orange-500",
     concepts: [
       "Speed is calculated as distance divided by time.",
@@ -293,6 +437,32 @@ export const units: Unit[] = [
       "Pressure is force per unit area (P = F/A).",
       "Diffusion is the movement of particles from high to low concentration."
     ],
+    conceptsTraditional: [
+      "速率的計算方法是距離除以時間。",
+      "摩擦力、重力和張力等力會影響物體的運動方式。",
+      "力矩是力的轉動效應，計算方法是力乘以與支點的距離。",
+      "壓力是單位面積上的力 (P = F/A)。",
+      "擴散作用是粒子從高濃度向低濃度移動的過程。"
+    ],
+    conceptsSimplified: [
+      "速率的计算方法是距离除以时间。",
+      "摩擦力、重力和张力等力会影响物体的运动方式。",
+      "力矩是力的转动效应，计算方法是力乘以与支点的距离。",
+      "压力是单位面积上的力 (P = F/A)。",
+      "扩散作用是粒子从高浓度向低浓度移动的过程。"
+    ],
+    keyTerms: {
+      "speed": "#3b82f6", "速率": "#3b82f6",
+      "distance": "#ef4444", "距離": "#ef4444", "距离": "#ef4444",
+      "time": "#10b981", "時間": "#10b981", "时间": "#10b981",
+      "friction": "#f59e0b", "摩擦力": "#f59e0b",
+      "gravity": "#8b5cf6", "重力": "#8b5cf6",
+      "tension": "#ec4899", "張力": "#ec4899", "张力": "#ec4899",
+      "moment": "#06b6d4", "力矩": "#06b6d4",
+      "pivot": "#14b8a6", "支點": "#14b8a6", "支点": "#14b8a6",
+      "pressure": "#f97316", "壓力": "#f97316", "压力": "#f97316",
+      "diffusion": "#10b981", "擴散作用": "#10b981", "扩散作用": "#10b981"
+    },
     vocab: [
       { term: "Force", traditional: "力", simplified: "力", definition: "A push or pull acting upon an object as a result of its interaction with another object." },
       { term: "Motion", traditional: "運動", simplified: "运动", definition: "The action or process of moving or being moved." },
@@ -472,7 +642,11 @@ export const units: Unit[] = [
   {
     id: 4,
     title: "Ecosystems",
+    titleTraditional: "生態系統",
+    titleSimplified: "生态系统",
     description: "Interactions of living things in their environments.",
+    descriptionTraditional: "生物與其環境之間的相互作用。",
+    descriptionSimplified: "生物与其环境之间的相互作用。",
     color: "bg-lime-500",
     concepts: [
       "An ecosystem is the complex interaction between living and non-living things.",
@@ -483,6 +657,35 @@ export const units: Unit[] = [
       "Invasive species can harm natural ecosystems.",
       "Biomagnification is the increase in toxin concentration along a food chain."
     ],
+    conceptsTraditional: [
+      "生態系統是生物與非生物之間複雜的相互作用。",
+      "生產者（植物）通過光合作用製造食物：二氧化碳 + 水 -> 葡萄糖 + 氧氣。",
+      "消費者（動物）必須攝取其他生物以獲得能量。",
+      "食物鏈和食物網顯示了攝食關係和能量流動。",
+      "適應特徵幫助生物在沙漠或紅樹林等特定棲息地生存。",
+      "入侵物種會損害自然生態系統。",
+      "生物放大作用是指毒素濃度沿食物鏈增加的現象。"
+    ],
+    conceptsSimplified: [
+      "生态系统是生物与非生物之间复杂的相互作用。",
+      "生产者（植物）通过光合作用制造食物：二氧化碳 + 水 -> 葡萄糖 + 氧气。",
+      "消费者（动物）必须摄取其他生物以获得能量。",
+      "食物链和食物网显示了摄食关系和能量流动。",
+      "适应特征帮助生物在沙漠或红树林等特定栖息地生存。",
+      "入侵物种会损害自然生态系统。",
+      "生物放大作用是指毒素浓度沿食物链增加的现象。"
+    ],
+    keyTerms: {
+      "ecosystem": "#10b981", "生態系統": "#10b981", "生态系统": "#10b981",
+      "producers": "#22c55e", "生產者": "#22c55e", "生产者": "#22c55e",
+      "consumers": "#f59e0b", "消費者": "#f59e0b", "消费者": "#f59e0b",
+      "photosynthesis": "#10b981", "光合作用": "#10b981",
+      "food chain": "#ef4444", "食物鏈": "#ef4444", "食物链": "#ef4444",
+      "food web": "#ef4444", "食物網": "#ef4444", "食物网": "#ef4444",
+      "adaptations": "#3b82f6", "適應特徵": "#3b82f6", "适应特征": "#3b82f6",
+      "invasive species": "#991b1b", "入侵物種": "#991b1b", "入侵物种": "#991b1b",
+      "biomagnification": "#7c3aed", "生物放大作用": "#7c3aed"
+    },
     vocab: [
       { term: "Ecosystem", traditional: "生態系統", simplified: "生态系统", definition: "A biological community of interacting organisms and their physical environment." },
       { term: "Ecology", traditional: "生態學", simplified: "生态学", definition: "The branch of biology that deals with the relations of organisms to one another and to their physical surroundings." },
@@ -609,7 +812,11 @@ export const units: Unit[] = [
   {
     id: 5,
     title: "Materials and cycles on Earth",
+    titleTraditional: "地球上的物質與循環",
+    titleSimplified: "地球上的物质与循环",
     description: "Atomic structure, purity, and Earth's climate cycles.",
+    descriptionTraditional: "原子結構、純度以及地球的氣候循環。",
+    descriptionSimplified: "原子结构、纯度以及地球的气候循环。",
     color: "bg-amber-700",
     concepts: [
       "Elements are pure substances made of one type of atom.",
@@ -620,6 +827,33 @@ export const units: Unit[] = [
       "Meteorology is the study of weather; Climatology is the study of long-term climate.",
       "Glaciers and peat bogs provide evidence of past climate changes."
     ],
+    conceptsTraditional: [
+      "元素是由一種原子組成的純淨物質。",
+      "化合物是化學結合的原子；混合物是物理混合的物質。",
+      "原子由原子核（質子、中子）和電子殼層組成。",
+      "純度是樣品中某種物質的百分比（例如，24K金）。",
+      "海水是含有氯化鈉等鹽類的混合物。",
+      "氣象學是研究天氣的學科；氣候學是研究長期氣候的學科。",
+      "冰川和泥炭沼澤提供了過去氣候變遷的證據。"
+    ],
+    conceptsSimplified: [
+      "元素是由一种原子组成的纯净物质。",
+      "化合物是化学结合的原子；混合物是物理混合的物质。",
+      "原子由原子核（质子、中子）和电子壳层组成。",
+      "纯度是样品中某种物质的百分比（例如，24K金）。",
+      "海水是含有氯化钠等盐类的混合物。",
+      "气象学是研究天气的学科；气候学是研究长期气候的学科。",
+      "冰川和泥炭沼泽提供了过去气候变迁的证据。"
+    ],
+    keyTerms: {
+      "elements": "#3b82f6", "元素": "#3b82f6",
+      "atoms": "#ef4444", "原子": "#ef4444",
+      "compounds": "#10b981", "化合物": "#10b981",
+      "nucleus": "#7c3aed", "原子核": "#7c3aed",
+      "purity": "#f59e0b", "純度": "#f59e0b", "纯度": "#f59e0b",
+      "meteorology": "#06b6d4", "氣象學": "#06b6d4", "气象学": "#06b6d4",
+      "climatology": "#0891b2", "氣候學": "#0891b2", "气候学": "#0891b2"
+    },
     vocab: [
       { term: "Element", traditional: "元素", simplified: "元素", definition: "A substance that cannot be broken down into simpler substances by chemical means." },
       { term: "Atom", traditional: "原子", simplified: "原子", definition: "The smallest unit of an element that maintains the properties of that element." },
@@ -738,7 +972,11 @@ export const units: Unit[] = [
   {
     id: 6,
     title: "Light",
+    titleTraditional: "光",
+    titleSimplified: "光",
     description: "Behavior of light, color theory, and celestial bodies.",
+    descriptionTraditional: "光的行為、色彩理論和天體。",
+    descriptionSimplified: "光的行为、色彩理论和天体。",
     color: "bg-yellow-400",
     concepts: [
       "Light travels in straight lines called rays.",
@@ -749,6 +987,35 @@ export const units: Unit[] = [
       "The Solar System is in the Milky Way, a spiral galaxy.",
       "Asteroids, comets, and meteors are smaller celestial bodies in our Solar System."
     ],
+    conceptsTraditional: [
+      "光以直線傳播，稱為光線。",
+      "反射遵循定律：入射角 = 反射角。",
+      "折射是光由於介質間的速度變化而產生的彎曲。",
+      "白光是顏色的連續光譜 (ROYGBIV)，可以通過色散分解。",
+      "混色可以是加法（光）或減法（顏料）。",
+      "太陽系位於銀河系，一個螺旋星系中。",
+      "小行星、彗星和流星是我們太陽系中較小的天體。"
+    ],
+    conceptsSimplified: [
+      "光以直线传播，称为光线。",
+      "反射遵循定律：入射角 = 反射角。",
+      "折射是光由于介质间的速度变化而产生的弯曲。",
+      "白光是颜色的连续光谱 (ROYGBIV)，可以通过色散分解。",
+      "混色可以是加法（光）或减法（颜料）。",
+      "太阳系位于银河系，一个螺旋星系中。",
+      "小行星、彗星和流星是我们太阳系中较小的天体。"
+    ],
+    keyTerms: {
+      "reflection": "#3b82f6", "反射": "#3b82f6",
+      "refraction": "#10b981", "折射": "#10b981",
+      "dispersion": "#f59e0b", "色散": "#f59e0b",
+      "spectrum": "#7c3aed", "光譜": "#7c3aed", "光谱": "#7c3aed",
+      "angle of incidence": "#ef4444", "入射角": "#ef4444",
+      "angle of reflection": "#ef4444", "反射角": "#ef4444",
+      "primary colors": "#3b82f6", "三原色": "#3b82f6",
+      "solar system": "#f97316", "太陽系": "#f97316", "太阳系": "#f97316",
+      "milky way": "#6366f1", "銀河系": "#6366f1", "银河系": "#6366f1"
+    },
     vocab: [
       { term: "Reflection", traditional: "反射", simplified: "反射", definition: "The bouncing back of light when it hits a surface." },
       { term: "Pupil", traditional: "瞳孔", simplified: "瞳孔", definition: "The opening in the center of the iris that allows light to enter the eye." },
