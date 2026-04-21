@@ -118,48 +118,48 @@ export default function Quiz({ selectedUnit, onClose, onQuestionAttempted }: Qui
 
   const QuizSelectView = () => (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6">
-      <div className="max-w-md w-full space-y-6">
+      <div className="max-w-4xl w-full space-y-6">
         <div className="text-center mb-8">
           <h2 className="text-3xl font-black text-gray-800 uppercase tracking-tight mb-2">Choose Your Challenge</h2>
           <p className="text-gray-500 font-medium">{selectedUnit.title}</p>
         </div>
 
-        <div className="grid gap-4">
+        <div className="grid md:grid-cols-3 gap-6">
           <button
             onClick={() => startQuizWithMode('quick')}
-            className="bg-white border-2 border-gray-200 p-6 rounded-3xl flex items-center gap-6 hover:border-emerald-400 transition-all group shadow-[0_4px_0_0_#e5e7eb] hover:shadow-[0_4px_0_0_#34d399]"
+            className="bg-white border-2 border-gray-200 p-8 rounded-3xl flex flex-col items-center gap-6 hover:border-emerald-400 transition-all group shadow-[0_4px_0_0_#e5e7eb] hover:shadow-[0_4px_0_0_#34d399] text-center"
           >
-            <div className="bg-emerald-100 text-emerald-600 p-4 rounded-2xl group-hover:bg-emerald-500 group-hover:text-white transition-colors">
-              <CheckCircle2 size={32} />
+            <div className="bg-emerald-100 text-emerald-600 p-5 rounded-2xl group-hover:bg-emerald-500 group-hover:text-white transition-colors">
+              <CheckCircle2 size={40} />
             </div>
-            <div className="text-left">
-              <h3 className="font-black text-xl text-gray-800 uppercase">Quick Mode</h3>
+            <div>
+              <h3 className="font-black text-xl text-gray-800 uppercase mb-2">Quick Mode</h3>
               <p className="text-gray-500 text-sm">10 random questions to test your knowledge.</p>
             </div>
           </button>
 
           <button
             onClick={() => startQuizWithMode('time-attack')}
-            className="bg-white border-2 border-gray-200 p-6 rounded-3xl flex items-center gap-6 hover:border-orange-400 transition-all group shadow-[0_4px_0_0_#e5e7eb] hover:shadow-[0_4px_0_0_#fb923c]"
+            className="bg-white border-2 border-gray-200 p-8 rounded-3xl flex flex-col items-center gap-6 hover:border-orange-400 transition-all group shadow-[0_4px_0_0_#e5e7eb] hover:shadow-[0_4px_0_0_#fb923c] text-center"
           >
-            <div className="bg-orange-100 text-orange-600 p-4 rounded-2xl group-hover:bg-orange-500 group-hover:text-white transition-colors">
-              <Trophy size={32} />
+            <div className="bg-orange-100 text-orange-600 p-5 rounded-2xl group-hover:bg-orange-500 group-hover:text-white transition-colors">
+              <Trophy size={40} />
             </div>
-            <div className="text-left">
-              <h3 className="font-black text-xl text-gray-800 uppercase">Time Attack</h3>
-              <p className="text-gray-500 text-sm">Race against the clock! 30 seconds to answer as many as you can.</p>
+            <div>
+              <h3 className="font-black text-xl text-gray-800 uppercase mb-2">Time Attack</h3>
+              <p className="text-gray-500 text-sm">Race against the clock! 30s to answer as many as you can.</p>
             </div>
           </button>
 
           <button
             onClick={() => startQuizWithMode('marathon')}
-            className="bg-white border-2 border-gray-200 p-6 rounded-3xl flex items-center gap-6 hover:border-blue-400 transition-all group shadow-[0_4px_0_0_#e5e7eb] hover:shadow-[0_4px_0_0_#60a5fa]"
+            className="bg-white border-2 border-gray-200 p-8 rounded-3xl flex flex-col items-center gap-6 hover:border-blue-400 transition-all group shadow-[0_4px_0_0_#e5e7eb] hover:shadow-[0_4px_0_0_#60a5fa] text-center"
           >
-            <div className="bg-blue-100 text-blue-600 p-4 rounded-2xl group-hover:bg-blue-500 group-hover:text-white transition-colors">
-              <BookOpen size={32} />
+            <div className="bg-blue-100 text-blue-600 p-5 rounded-2xl group-hover:bg-blue-500 group-hover:text-white transition-colors">
+              <BookOpen size={40} />
             </div>
-            <div className="text-left">
-              <h3 className="font-black text-xl text-gray-800 uppercase">Marathon</h3>
+            <div>
+              <h3 className="font-black text-xl text-gray-800 uppercase mb-2">Marathon</h3>
               <p className="text-gray-500 text-sm">All questions in random order. No time limit.</p>
             </div>
           </button>
@@ -181,9 +181,9 @@ export default function Quiz({ selectedUnit, onClose, onQuestionAttempted }: Qui
 
     return (
       <div className="min-h-screen bg-white flex flex-col">
-        <header className="p-4 flex items-center gap-4 max-w-2xl mx-auto w-full">
+        <header className="p-4 flex items-center gap-4 max-w-4xl mx-auto w-full">
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <XCircle size={32} />
+            <XCircle size={40} />
           </button>
           
           <div className="flex-1 flex flex-col gap-1">
@@ -202,7 +202,7 @@ export default function Quiz({ selectedUnit, onClose, onQuestionAttempted }: Qui
                 </span>
               )}
             </div>
-            <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+            <div className="h-4 bg-gray-100 rounded-full overflow-hidden">
               <motion.div 
                 initial={{ width: 0 }}
                 animate={{ width: quizSubMode === 'time-attack' ? `${(timeLeft / 30) * 100}%` : `${quizProgress}%` }}
@@ -211,16 +211,16 @@ export default function Quiz({ selectedUnit, onClose, onQuestionAttempted }: Qui
             </div>
           </div>
 
-          <div className="flex items-center gap-1 text-red-500 font-bold">
-            <Heart size={20} fill={hearts > 0 ? "currentColor" : "none"} />
-            <span>{hearts}</span>
+          <div className="flex items-center gap-2 text-red-500 font-bold bg-red-50 px-4 py-2 rounded-2xl">
+            <Heart size={24} fill={hearts > 0 ? "currentColor" : "none"} />
+            <span className="text-xl">{hearts}</span>
           </div>
         </header>
 
-        <main className="flex-1 max-w-2xl mx-auto w-full p-6 flex flex-col">
-          <h2 className="text-2xl font-black text-gray-800 mb-8">{currentQuestion.text}</h2>
+        <main className="flex-1 max-w-4xl mx-auto w-full p-6 flex flex-col justify-center">
+          <h2 className="text-3xl font-black text-gray-800 mb-12 text-center">{currentQuestion.text}</h2>
           
-          <div className="space-y-4 flex-1">
+          <div className="grid md:grid-cols-2 gap-4 flex-1 content-start">
             {currentQuestion.options.map((option) => (
               <button
                 key={option}
@@ -245,8 +245,8 @@ export default function Quiz({ selectedUnit, onClose, onQuestionAttempted }: Qui
           </div>
         </main>
 
-        <footer className={`p-6 border-t-2 transition-colors ${isAnswerChecked ? (isCorrect ? 'bg-emerald-100 border-emerald-200' : 'bg-red-100 border-red-200') : 'bg-white border-gray-100'}`}>
-          <div className="max-w-2xl mx-auto flex items-center justify-between">
+        <footer className={`p-8 border-t-2 transition-colors ${isAnswerChecked ? (isCorrect ? 'bg-emerald-100 border-emerald-200' : 'bg-red-100 border-red-200') : 'bg-white border-gray-100'} z-10`}>
+          <div className="max-w-4xl mx-auto flex items-center justify-between">
             {isAnswerChecked ? (
               <div className="flex items-center gap-3">
                 <div className={`p-2 rounded-full ${isCorrect ? 'bg-white text-emerald-500' : 'bg-white text-red-500'}`}>

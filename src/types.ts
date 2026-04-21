@@ -1,0 +1,90 @@
+import { LucideIcon } from 'lucide-react';
+
+export type AppMode = 'splash' | 'dashboard' | 'revision' | 'quiz' | 'vocab' | 'user-stats' | 'about' | 'playground' | 'quick-facts' | 'tasks';
+
+export interface QuizSubMode {
+  id: string;
+  title: string;
+  description: string;
+  id_prefix: number;
+}
+
+export interface SessionStats {
+  [unitId: number]: {
+    attemptedQuestions: string[];
+    masteredVocab: string[];
+  }
+}
+
+export interface ChallengeResponse {
+  questionId: string;
+  answer: string;
+  isCorrect: boolean;
+}
+
+export interface ChallengeRecord {
+  id: string;
+  studentName: string;
+  score: number;
+  totalQuestions: number;
+  timestamp: string;
+  selectedUnits: number[];
+  responses: ChallengeResponse[];
+}
+
+export type OperationType = 'create' | 'update' | 'delete' | 'list' | 'get' | 'write';
+
+export interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId: string | null;
+    email: string | null;
+    emailVerified: boolean;
+    isAnonymous: boolean;
+  }
+}
+
+export interface NavItem {
+  mode: AppMode;
+  icon: LucideIcon;
+  label: string;
+}
+
+export interface Question {
+  id: string;
+  text: string;
+  options: string[];
+  correctAnswer: string;
+  explanation?: string;
+  correct?: number; // Some units use index, some use correctAnswer string
+}
+
+export interface Vocab {
+  term: string;
+  definition: string;
+  traditional: string;
+  simplified: string;
+}
+
+export interface Concept {
+  title: string;
+  content: string;
+}
+
+export interface Unit {
+  id: number;
+  title: string;
+  titleTraditional?: string;
+  titleSimplified?: string;
+  description: string;
+  descriptionTraditional?: string;
+  descriptionSimplified?: string;
+  color: string;
+  concepts: Concept[];
+  conceptsTraditional?: string[];
+  conceptsSimplified?: string[];
+  vocab: Vocab[];
+  questions: Question[];
+}

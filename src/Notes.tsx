@@ -58,20 +58,22 @@ export default function Notes({
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white border-b-2 border-gray-200 p-4 sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
+        <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
               <ChevronLeft size={32} />
             </button>
             <div className="flex flex-col">
-              <h1 className="text-xl font-black text-gray-800 uppercase tracking-tight leading-none">
-                {isAssistMode && translatedTitle ? translatedTitle : selectedUnit.title} Notes
-              </h1>
-              {isAssistMode && translatedTitle && (
-                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">
-                  {selectedUnit.title}
-                </span>
-              )}
+              <div className={`flex ${isAssistMode ? 'flex-col md:flex-row md:items-baseline md:gap-3' : 'flex-col'}`}>
+                <h1 className="text-xl font-black text-gray-800 uppercase tracking-tight leading-none">
+                  {selectedUnit.title} Notes
+                </h1>
+                {isAssistMode && translatedTitle && (
+                  <span className="text-lg font-black text-gray-400 uppercase tracking-tight leading-none mt-1 md:mt-0">
+                    {translatedTitle}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
           
@@ -99,20 +101,29 @@ export default function Notes({
         </div>
       </header>
 
-      <main className={`${isAssistMode ? 'max-w-6xl' : 'max-w-2xl'} mx-auto p-6 space-y-6`}>
+      <main className={`${isAssistMode ? 'max-w-6xl' : 'max-w-4xl'} mx-auto p-6 space-y-6`}>
         <div className={`${selectedUnit.color} rounded-3xl p-8 text-white shadow-lg relative overflow-hidden`}>
           <div className="relative z-10">
-            <h2 className="text-3xl font-black mb-2">
-              {isAssistMode && translatedTitle ? translatedTitle : selectedUnit.title}
-            </h2>
-            <p className="text-white/90 text-lg">
-              {isAssistMode && translatedDesc ? translatedDesc : selectedUnit.description}
-            </p>
-            {isAssistMode && translatedTitle && (
-              <div className="mt-4 pt-4 border-t border-white/20 text-white/70 text-sm font-bold italic">
-                {selectedUnit.title}: {selectedUnit.description}
+            <div className={`grid ${isAssistMode && translatedTitle ? 'grid-cols-1 md:grid-cols-2 gap-8' : 'grid-cols-1'}`}>
+              <div>
+                <h2 className="text-3xl font-black mb-2">
+                  {selectedUnit.title}
+                </h2>
+                <p className="text-white/90 text-lg">
+                  {selectedUnit.description}
+                </p>
               </div>
-            )}
+              {isAssistMode && translatedTitle && (
+                <div className="border-t md:border-t-0 md:border-l border-white/20 pt-6 md:pt-0 md:pl-8 italic cursor-default">
+                  <h2 className="text-3xl font-black mb-2 opacity-90">
+                    {translatedTitle}
+                  </h2>
+                  <p className="text-white/80 text-lg">
+                    {translatedDesc}
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
           <div className="absolute top-0 right-0 p-8 opacity-10">
             <Activity size={120} />

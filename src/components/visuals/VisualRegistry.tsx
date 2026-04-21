@@ -3,6 +3,8 @@ import * as Unit1 from './Unit1Visuals';
 import * as Unit2 from './Unit2Visuals';
 import * as Unit3 from './Unit3Visuals';
 import * as Unit4 from './Unit4Visuals';
+import * as Unit5 from './Unit5Visuals';
+import * as Unit6 from './Unit6Visuals';
 
 interface VisualProps {
   isAssistMode: boolean;
@@ -32,7 +34,7 @@ export const visualRegistry: { [unitId: number]: { [conceptIndex: number]: Visua
   },
   3: {
     2: Unit3.ForceExplorer,
-    6: Unit3.ForceBalancer,
+    6: Unit3.ResultantForceLab,
     10: Unit3.DistanceTimeInteractive,
     15: Unit3.SeesawMoment,
     17: Unit3.PressureVisualizer,
@@ -44,6 +46,18 @@ export const visualRegistry: { [unitId: number]: { [conceptIndex: number]: Visua
     11: Unit4.FoodWebExplorer,
     16: Unit4.SamplingSimulator,
     20: Unit4.BiomagnificationVisual,
+  },
+  5: {
+    2: Unit5.AtomicStructureExplorer,
+    3: Unit5.PurityCalculator,
+    6: Unit5.ClimateChangeEvidence,
+  },
+  6: {
+    1: Unit6.ReflectionSimulator,
+    2: Unit6.RefractionSimulator,
+    4: Unit6.LightMixingSimulator,
+    5: Unit6.SolarSystemModel,
+    6: Unit6.AsteroidCometComparison,
   }
 };
 

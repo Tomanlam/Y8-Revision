@@ -27,22 +27,34 @@ interface VisualProps {
   chineseType: 'traditional' | 'simplified';
 }
 
+const t = (en: string, sc: string, tc: string, type: string) => {
+  if (type === 'simplified') return sc;
+  if (type === 'traditional') return tc;
+  return en;
+};
+
 // 1. Dissolving Animation (Concept 1)
 export const DissolvingAnimation: React.FC<VisualProps> = ({ isAssistMode, chineseType }) => {
   const [isDissolving, setIsDissolving] = useState(false);
   
   return (
     <div className="bg-blue-50 rounded-2xl p-6 border-2 border-blue-100 my-4">
-      <div className="flex justify-between items-center mb-4">
-        <h4 className="font-black text-blue-800 uppercase tracking-wider text-sm">
-          {isAssistMode ? (chineseType === 'traditional' ? '溶解過程演示' : '溶解过程演示') : 'Dissolving Process'}
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-4 gap-4">
+        <h4 className="font-black text-blue-800 uppercase tracking-wider text-sm flex flex-wrap gap-x-2">
+          <span>Dissolving Process</span>
+          {isAssistMode && <span className="text-blue-500 opacity-60">({chineseType === 'traditional' ? '溶解過程演示' : '溶解过程演示'})</span>}
         </h4>
         <button 
           onClick={() => setIsDissolving(!isDissolving)}
-          className="bg-blue-500 text-white px-4 py-2 rounded-xl font-black text-xs uppercase tracking-widest shadow-[0_4px_0_0_#1d4ed8] active:shadow-none active:translate-y-1 transition-all flex items-center gap-2"
+          className="bg-blue-500 text-white px-4 py-2 rounded-xl font-black text-xs uppercase tracking-widest shadow-[0_4px_0_0_#1d4ed8] active:shadow-none active:translate-y-1 transition-all flex flex-col items-center leading-none"
         >
-          <RefreshCw size={14} className={isDissolving ? 'animate-spin' : ''} />
-          {isDissolving ? 'Reset' : 'Start Dissolving'}
+          <div className="flex items-center gap-2 mb-0.5 flex-wrap justify-center">
+            <RefreshCw size={14} className={isDissolving ? 'animate-spin' : ''} />
+            <div className="flex flex-wrap gap-x-1 items-baseline">
+              <span>{isDissolving ? 'Reset' : 'Start Dissolving'}</span>
+              {isAssistMode && <span className="text-[10px] opacity-70 font-bold lowercase">({isDissolving ? t("", "重置", "重置", chineseType) : t("", "开始溶解", "開始溶解", chineseType)})</span>}
+            </div>
+          </div>
         </button>
       </div>
       
@@ -103,11 +115,16 @@ export const DissolvingAnimation: React.FC<VisualProps> = ({ isAssistMode, chine
           </div>
         )}
       </div>
-      <p className="mt-4 text-xs text-blue-600 font-bold text-center italic">
-        {isAssistMode 
-          ? (chineseType === 'traditional' ? '溶劑粒子撞擊溶質固體，將其拆散成微小粒子。' : '溶剂粒子撞击溶质固体，将其拆散成微小粒子。')
-          : 'Solvent particles collide with the solute solid, breaking it into tiny particles.'}
-      </p>
+      <div className="mt-4 flex flex-col items-center gap-1">
+        <p className="text-xs text-blue-600 font-bold text-center italic">
+          Solvent particles collide with the solute solid, breaking it into tiny particles.
+        </p>
+        {isAssistMode && (
+          <p className="text-[10px] text-blue-500 font-medium text-center italic border-t border-blue-100 pt-1">
+            {chineseType === 'traditional' ? '溶劑粒子撞擊溶質固體，將其拆散成微小粒子。' : '溶剂粒子撞击溶质固体，将其拆散成微小粒子。'}
+          </p>
+        )}
+      </div>
     </div>
   );
 };
@@ -122,15 +139,19 @@ export const MassConservation: React.FC<VisualProps> = ({ isAssistMode, chineseT
 
   return (
     <div className="bg-emerald-50 rounded-2xl p-6 border-2 border-emerald-100 my-4">
-      <div className="flex justify-between items-center mb-4">
-        <h4 className="font-black text-emerald-800 uppercase tracking-wider text-sm">
-          {isAssistMode ? (chineseType === 'traditional' ? '質量守恆定律' : '质量守恒定律') : 'Conservation of Mass'}
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-4 gap-4">
+        <h4 className="font-black text-emerald-800 uppercase tracking-wider text-sm flex flex-wrap gap-x-2">
+          <span>Conservation of Mass</span>
+          {isAssistMode && <span className="text-emerald-500 opacity-60">({chineseType === 'traditional' ? '質量守恆定律' : '質量守恆定律'})</span>}
         </h4>
         <button 
           onClick={() => setStep(step === 0 ? 1 : 0)}
-          className="bg-emerald-500 text-white px-4 py-2 rounded-xl font-black text-xs uppercase tracking-widest shadow-[0_4px_0_0_#059669] active:shadow-none active:translate-y-1 transition-all"
+          className="bg-emerald-500 text-white px-4 py-1.5 rounded-xl font-black text-xs uppercase tracking-widest shadow-[0_4px_0_0_#059669] active:shadow-none active:translate-y-1 transition-all"
         >
-          {step === 0 ? 'Dissolve Solute' : 'Reset'}
+          <div className="flex flex-wrap gap-x-1 justify-center items-baseline">
+            <span>{step === 0 ? 'Dissolve Solute' : 'Reset'}</span>
+            {isAssistMode && <span className="text-[10px] opacity-70 font-bold lowercase">({step === 0 ? t("", "溶解溶质", "溶解溶質", chineseType) : t("", "重置", "重置", chineseType)})</span>}
+          </div>
         </button>
       </div>
 
@@ -186,11 +207,14 @@ export const MassConservation: React.FC<VisualProps> = ({ isAssistMode, chineseT
               ? `${solventMass}g (Solvent) + ${soluteMass}g (Solute)` 
               : `${solventMass}g + ${soluteMass}g = ${totalMass}g (Solution)`}
           </p>
-          <p className="text-xs text-emerald-600 italic">
-            {isAssistMode 
-              ? (chineseType === 'traditional' ? '溶解前後的總質量保持不變。' : '溶解前后的总质量保持不变。')
-              : 'Total mass remains the same before and after dissolving.'}
-          </p>
+          <div className="flex flex-col items-center gap-1">
+            <p className="text-xs text-emerald-600 italic">Total mass remains the same before and after dissolving.</p>
+            {isAssistMode && (
+              <p className="text-[10px] text-emerald-500 font-medium italic border-t border-emerald-100 pt-1">
+                {chineseType === 'traditional' ? '溶解前後的總質量保持不變。' : '溶解前后的总质量保持不变。'}
+              </p>
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -203,8 +227,9 @@ export const ConcentrationVisualizer: React.FC<VisualProps> = ({ isAssistMode, c
 
   return (
     <div className="bg-purple-50 rounded-2xl p-6 border-2 border-purple-100 my-4">
-      <h4 className="font-black text-purple-800 uppercase tracking-wider text-sm mb-4">
-        {isAssistMode ? (chineseType === 'traditional' ? '濃度演示' : '浓度演示') : 'Concentration Visualizer'}
+      <h4 className="font-black text-purple-800 uppercase tracking-wider text-sm mb-4 flex flex-wrap gap-x-2">
+        <span>Concentration Visualizer</span>
+        {isAssistMode && <span className="text-purple-500 opacity-60">({chineseType === 'traditional' ? '濃度演示' : '浓度演示'})</span>}
       </h4>
 
       <div className="flex flex-col md:flex-row items-center gap-8">
@@ -216,11 +241,16 @@ export const ConcentrationVisualizer: React.FC<VisualProps> = ({ isAssistMode, c
               opacity: concentration / 100 + 0.1
             }}
           />
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-white drop-shadow-md">
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-white drop-shadow-md leading-none">
             <span className="font-black text-2xl">{concentration}%</span>
             <span className="text-[10px] font-bold uppercase tracking-widest">
               {concentration > 70 ? 'Concentrated' : concentration < 30 ? 'Dilute' : 'Medium'}
             </span>
+            {isAssistMode && (
+              <span className="text-[9px] font-black opacity-80 italic mt-1">
+                {concentration > 70 ? t("", "浓", "濃", chineseType) : concentration < 30 ? t("", "稀", "稀", chineseType) : t("", "中", "中", chineseType)}
+              </span>
+            )}
           </div>
         </div>
 
@@ -240,13 +270,16 @@ export const ConcentrationVisualizer: React.FC<VisualProps> = ({ isAssistMode, c
             />
           </div>
 
-          <div className="bg-white p-4 rounded-xl border-2 border-purple-100 text-xs text-purple-700 leading-relaxed font-medium">
-            {isAssistMode ? (
-              chineseType === 'traditional' 
-                ? '濃溶液含有大量的溶質，而稀溶液含有的溶質很少。' 
-                : '浓溶液含有大量的溶质，而稀溶液含有的溶质很少。'
-            ) : (
-              'A concentrated solution has a large amount of solute, while a dilute solution has very little.'
+          <div className="bg-white p-4 rounded-xl border-2 border-purple-100 flex flex-col gap-2">
+            <p className="text-xs text-purple-700 leading-relaxed font-bold">
+              A concentrated solution has a large amount of solute, while a dilute solution has very little.
+            </p>
+            {isAssistMode && (
+              <p className="text-[11px] text-purple-500 italic font-medium leading-relaxed border-t border-purple-50 pt-2">
+                {chineseType === 'traditional' 
+                  ? '濃溶液含有大量的溶質，而稀溶液含有的溶質很少。' 
+                  : '浓溶液含有大量的溶质，而稀溶液含有的溶质很少。'}
+              </p>
             )}
           </div>
         </div>
@@ -268,8 +301,9 @@ export const SolubilityCurve: React.FC<VisualProps> = ({ isAssistMode, chineseTy
 
   return (
     <div className="bg-orange-50 rounded-2xl p-6 border-2 border-orange-100 my-4">
-      <h4 className="font-black text-orange-800 uppercase tracking-wider text-sm mb-4">
-        {isAssistMode ? (chineseType === 'traditional' ? '溶解度曲線' : '溶解度曲线') : 'Solubility Curve'}
+      <h4 className="font-black text-orange-800 uppercase tracking-wider text-sm mb-4 flex flex-wrap gap-x-2">
+        <span>Solubility Curve</span>
+        {isAssistMode && <span className="text-orange-500 opacity-60">({chineseType === 'traditional' ? '溶解度曲線' : '溶解度曲线'})</span>}
       </h4>
 
       <div className="h-64 w-full bg-white rounded-xl p-2 border-2 border-orange-100">
@@ -296,11 +330,16 @@ export const SolubilityCurve: React.FC<VisualProps> = ({ isAssistMode, chineseTy
         </ResponsiveContainer>
       </div>
       
-      <p className="mt-4 text-xs text-orange-600 font-bold text-center italic">
-        {isAssistMode 
-          ? (chineseType === 'traditional' ? '大多數固體的溶解度隨溫度升高而增加。' : '大多数固体的溶解度随温度升高而增加。')
-          : 'Solubility of most solids increases as temperature rises.'}
-      </p>
+      <div className="mt-4 flex flex-col items-center gap-1">
+        <p className="text-xs text-orange-600 font-bold text-center italic">
+          Solubility of most solids increases as temperature rises.
+        </p>
+        {isAssistMode && (
+          <p className="text-[10px] text-orange-500 font-medium italic border-t border-orange-100 pt-1">
+            {chineseType === 'traditional' ? '大多數固體的溶解度隨溫度升高而增加。' : '大多数固体的溶解度随温度升高而增加。'}
+          </p>
+        )}
+      </div>
     </div>
   );
 };
@@ -311,22 +350,25 @@ export const SeparationTechniques: React.FC<VisualProps> = ({ isAssistMode, chin
 
   return (
     <div className="bg-cyan-50 rounded-2xl p-6 border-2 border-cyan-100 my-4">
-      <div className="flex justify-between items-center mb-6">
-        <h4 className="font-black text-cyan-800 uppercase tracking-wider text-sm">
-          {isAssistMode ? (chineseType === 'traditional' ? '分離技術' : '分离技术') : 'Separation Techniques'}
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4">
+        <h4 className="font-black text-cyan-800 uppercase tracking-wider text-sm flex flex-wrap gap-x-2">
+          <span>Separation Techniques</span>
+          {isAssistMode && <span className="text-cyan-500 opacity-60">({chineseType === 'traditional' ? '分離技術' : '分离技术'})</span>}
         </h4>
         <div className="flex bg-white rounded-xl p-1 border-2 border-cyan-200 shadow-sm">
           <button 
             onClick={() => setMode('filtration')}
-            className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${mode === 'filtration' ? 'bg-cyan-500 text-white shadow-sm' : 'text-gray-400 hover:bg-gray-50'}`}
+            className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex flex-col items-center leading-none ${mode === 'filtration' ? 'bg-cyan-500 text-white shadow-sm' : 'text-gray-400 hover:bg-gray-50'}`}
           >
-            Filtration
+            <span>Filtration</span>
+            {isAssistMode && <span className="text-[8px] opacity-70 mt-0.5 lowercase">{t("", "过滤", "過濾", chineseType)}</span>}
           </button>
           <button 
             onClick={() => setMode('evaporation')}
-            className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${mode === 'evaporation' ? 'bg-cyan-500 text-white shadow-sm' : 'text-gray-400 hover:bg-gray-50'}`}
+            className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex flex-col items-center leading-none ${mode === 'evaporation' ? 'bg-cyan-500 text-white shadow-sm' : 'text-gray-400 hover:bg-gray-50'}`}
           >
-            Evaporation
+            <span>Evaporation</span>
+            {isAssistMode && <span className="text-[8px] opacity-70 mt-0.5 lowercase">{t("", "蒸发", "蒸發", chineseType)}</span>}
           </button>
         </div>
       </div>
@@ -398,16 +440,42 @@ export const SeparationTechniques: React.FC<VisualProps> = ({ isAssistMode, chin
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-4">
-        <div className="bg-white p-3 rounded-xl border-2 border-cyan-100">
-          <span className="block text-[10px] font-black text-cyan-600 uppercase mb-1">Separates</span>
+        <div className="bg-white p-3 rounded-xl border-2 border-cyan-100 flex flex-col items-center text-center">
+          <span className="block text-[10px] font-black text-cyan-600 uppercase mb-1">
+             <span>Separates</span>
+             {isAssistMode && <span className="opacity-50 ml-1">({t("", "分离", "分離", chineseType)})</span>}
+          </span>
           <p className="text-[11px] font-bold text-gray-700">
-            {mode === 'filtration' ? 'Insoluble solids' : 'Soluble solids'}
+            {mode === 'filtration' ? (
+              <>
+                <span>Insoluble solids</span>
+                {isAssistMode && <span className="opacity-60 block text-[10px] italic">({t("", "不溶性固体", "不溶性固體", chineseType)})</span>}
+              </>
+            ) : (
+              <>
+                <span>Soluble solids</span>
+                {isAssistMode && <span className="opacity-60 block text-[10px] italic">({t("", "可溶性固体", "可溶性固體", chineseType)})</span>}
+              </>
+            )}
           </p>
         </div>
-        <div className="bg-white p-3 rounded-xl border-2 border-cyan-100">
-          <span className="block text-[10px] font-black text-cyan-600 uppercase mb-1">Recovers</span>
+        <div className="bg-white p-3 rounded-xl border-2 border-cyan-100 flex flex-col items-center text-center">
+          <span className="block text-[10px] font-black text-cyan-600 uppercase mb-1">
+             <span>Recovers</span>
+             {isAssistMode && <span className="opacity-50 ml-1">({t("", "回收", "回收", chineseType)})</span>}
+          </span>
           <p className="text-[11px] font-bold text-gray-700">
-            {mode === 'filtration' ? 'Filtrate (Liquid)' : 'Solute (Solid)'}
+            {mode === 'filtration' ? (
+              <>
+                <span>Filtrate (Liquid)</span>
+                {isAssistMode && <span className="opacity-60 block text-[10px] italic">({t("", "滤液 (液体)", "濾液 (液體)", chineseType)})</span>}
+              </>
+            ) : (
+              <>
+                <span>Solute (Solid)</span>
+                {isAssistMode && <span className="opacity-60 block text-[10px] italic">({t("", "溶质 (固体)", "溶質 (固體)", chineseType)})</span>}
+              </>
+            )}
           </p>
         </div>
       </div>
@@ -428,9 +496,10 @@ export const ChromatographyAnimation: React.FC<VisualProps> = ({ isAssistMode, c
 
   return (
     <div className="bg-pink-50 rounded-2xl p-6 border-2 border-pink-100 my-4">
-      <div className="flex justify-between items-center mb-4">
-        <h4 className="font-black text-pink-800 uppercase tracking-wider text-sm">
-          {isAssistMode ? (chineseType === 'traditional' ? '色層分析演示' : '色层分析演示') : 'Chromatography Demo'}
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-4 gap-4">
+        <h4 className="font-black text-pink-800 uppercase tracking-wider text-sm flex flex-wrap gap-x-2">
+          <span>Chromatography Demo</span>
+          {isAssistMode && <span className="text-pink-500 opacity-60">({chineseType === 'traditional' ? '色層分析演示' : '色层分析演示'})</span>}
         </h4>
         <button 
           onClick={() => setIsRunning(!isRunning)}
@@ -470,11 +539,16 @@ export const ChromatographyAnimation: React.FC<VisualProps> = ({ isAssistMode, c
         </div>
       </div>
 
-      <p className="mt-4 text-xs text-pink-600 font-bold text-center italic leading-relaxed">
-        {isAssistMode 
-          ? (chineseType === 'traditional' ? '不同的染料根據其在溶劑中的溶解度以不同的速度移動。' : '不同的染料根据其在溶剂中的溶解度以不同的速度移动。')
-          : 'Different dyes travel at different speeds based on their solubility in the solvent.'}
-      </p>
+      <div className="mt-4 flex flex-col items-center gap-1">
+        <p className="text-xs text-pink-600 font-bold text-center italic leading-relaxed">
+          Different dyes travel at different speeds based on their solubility in the solvent.
+        </p>
+        {isAssistMode && (
+          <p className="text-[10px] text-pink-500 font-medium italic text-center border-t border-pink-100 pt-1">
+            {chineseType === 'traditional' ? '不同的染料根據其在溶劑中的溶解度以不同的速度移動。' : '不同的染料根据其在溶剂中的溶解度以不同的速度移动。'}
+          </p>
+        )}
+      </div>
     </div>
   );
 };

@@ -14,7 +14,7 @@ const t = (en: string, sc: string, tc: string, type: string) => {
 };
 
 // 1. Force Explorer (Drag & Drop for Weight/Normal Force)
-export const ForceExplorer: React.FC<VisualProps> = ({ chineseType }) => {
+export const ForceExplorer: React.FC<VisualProps> = ({ isAssistMode, chineseType }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [position, setPosition] = useState({ y: 50 });
   const [isOnSurface, setIsOnSurface] = useState(false);
@@ -26,26 +26,18 @@ export const ForceExplorer: React.FC<VisualProps> = ({ chineseType }) => {
   };
 
   return (
-    <div className="my-8 bg-white rounded-3xl border-2 border-gray-100 p-6 shadow-sm">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
-          <Move size={20} />
-        </div>
-        <div>
-          <h4 className="font-black text-gray-800 uppercase tracking-tight">
-            {t('Force Explorer', '受力探索', '受力探索', chineseType)}
-          </h4>
-          <p className="text-xs text-gray-500 font-bold">
-            {t('Drag the box to see how forces change.', '拖动盒子观察受力变化。', '拖動盒子觀察受力變化。', chineseType)}
-          </p>
-        </div>
-      </div>
+    <div className="my-4 bg-gray-50 rounded-2xl border-2 border-gray-100 p-6 shadow-sm">
+      <h4 className="font-black text-gray-800 uppercase tracking-wider text-sm mb-4 flex flex-wrap gap-x-2">
+        <span>Force Explorer</span>
+        {isAssistMode && <span className="opacity-50">{t("", "受力探索", "受力探索", chineseType)}</span>}
+      </h4>
 
-      <div className="relative h-64 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200 overflow-hidden flex flex-col items-center">
+      <div className="relative h-64 bg-white rounded-xl border-2 border-dashed border-gray-200 overflow-hidden flex flex-col items-center">
         {/* Surface */}
         <div className="absolute bottom-0 w-full h-16 bg-gray-200 border-t-4 border-gray-300 flex items-center justify-center">
-          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-            {t('Surface', '表面', '表面', chineseType)}
+          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex flex-col items-center">
+            <span>Surface</span>
+            {isAssistMode && <span>{t("", "表面", "表面", chineseType)}</span>}
           </span>
         </div>
 
@@ -59,7 +51,10 @@ export const ForceExplorer: React.FC<VisualProps> = ({ chineseType }) => {
           animate={{ y: position.y }}
           className={`w-24 h-24 bg-orange-500 rounded-xl cursor-grab active:cursor-grabbing flex items-center justify-center shadow-lg z-10 ${isDragging ? 'scale-105' : ''}`}
         >
-          <span className="text-white font-black text-xs uppercase">{t('Box', '盒子', '盒子', chineseType)}</span>
+          <span className="text-white font-black text-xs uppercase flex flex-col items-center">
+            <span>Box</span>
+            {isAssistMode && <span className="text-[8px] leading-none opacity-80">{t("", "盒子", "盒子", chineseType)}</span>}
+          </span>
 
           {/* Force Arrows */}
           <AnimatePresence>
@@ -70,8 +65,9 @@ export const ForceExplorer: React.FC<VisualProps> = ({ chineseType }) => {
               className="absolute top-1/2 left-1/2 -translate-x-1/2 w-1 h-20 bg-red-500 origin-top"
             >
               <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full border-l-[6px] border-r-[6px] border-t-[10px] border-l-transparent border-r-transparent border-t-red-500" />
-              <span className="absolute -right-16 top-1/2 -translate-y-1/2 text-[10px] font-black text-red-600 bg-white px-1 rounded shadow-sm">
-                {t('Weight', '重量', '重量', chineseType)}
+              <span className="absolute -right-20 top-1/2 -translate-y-1/2 text-[10px] font-black text-red-600 bg-white px-1 rounded shadow-sm flex flex-col items-center whitespace-nowrap min-w-[50px]">
+                <span>Weight</span>
+                {isAssistMode && <span className="text-[8px] opacity-70 leading-none">{t("", "重量", "重量", chineseType)}</span>}
               </span>
             </motion.div>
 
@@ -84,29 +80,40 @@ export const ForceExplorer: React.FC<VisualProps> = ({ chineseType }) => {
                 className="absolute bottom-1/2 left-1/2 -translate-x-1/2 w-1 h-20 bg-blue-500 origin-bottom"
               >
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-full border-l-[6px] border-r-[6px] border-b-[10px] border-l-transparent border-r-transparent border-b-blue-500" />
-                <span className="absolute -left-20 top-1/2 -translate-y-1/2 text-[10px] font-black text-blue-600 bg-white px-1 rounded shadow-sm">
-                  {t('Normal Force', '法向力', '法向力', chineseType)}
+                <span className="absolute -left-20 top-1/2 -translate-y-1/2 text-[10px] font-black text-blue-600 bg-white px-1 rounded shadow-sm flex flex-col items-center whitespace-nowrap min-w-[50px]">
+                  <span>Normal Force</span>
+                  {isAssistMode && <span className="text-[8px] opacity-70 leading-none">{t("", "法向力", "法向力", chineseType)}</span>}
                 </span>
               </motion.div>
             )}
           </AnimatePresence>
         </motion.div>
 
-        <div className="absolute top-4 right-4 bg-white/80 backdrop-blur-sm p-3 rounded-xl border border-gray-100 shadow-sm">
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">{t('Status', '状态', '狀態', chineseType)}</p>
-          <p className="text-xs font-bold text-gray-700">
-            {isOnSurface 
-              ? t('Resting on surface (Balanced)', '停留在表面 (受力平衡)', '停留在表面 (受力平衡)', chineseType) 
-              : t('Falling / Held (Unbalanced)', '下落 / 被握住 (受力不平衡)', '下落 / 被握住 (受力不平衡)', chineseType)}
+        <div className="absolute top-4 right-4 bg-white/80 backdrop-blur-sm p-3 rounded-xl border border-gray-100 shadow-sm max-w-[150px]">
+          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 flex flex-wrap gap-x-1">
+            <span>Status</span>
+            {isAssistMode && <span className="opacity-50 tracking-normal">{t("", "状态", "狀態", chineseType)}</span>}
           </p>
+          <div className="text-xs font-bold text-gray-700 flex flex-col">
+            <span>
+              {isOnSurface ? 'Resting on surface (Balanced)' : 'Falling / Held (Unbalanced)'}
+            </span>
+            {isAssistMode && (
+              <span className="text-[10px] text-gray-500 italic mt-1 border-t border-gray-100 pt-1">
+                {isOnSurface 
+                  ? t('', '停留在表面 (受力平衡)', '停留在表面 (受力平衡)', chineseType) 
+                  : t('', '下落 / 被握住 (受力不平衡)', '下落 / 被握住 (受力不平衡)', chineseType)}
+              </span>
+            )}
+          </div>
         </div>
       </div>
     </div>
   );
 };
 
-// 2. Force Balancer (Resultant Force & Movement)
-export const ForceBalancer: React.FC<VisualProps> = ({ chineseType }) => {
+// 2. Resultant Force Lab (Interactive Sliders)
+export const ResultantForceLab: React.FC<VisualProps> = ({ isAssistMode, chineseType }) => {
   const [leftForce, setLeftForce] = useState(50);
   const [rightForce, setRightForce] = useState(50);
   const [boxPos, setBoxPos] = useState(0);
@@ -117,7 +124,6 @@ export const ForceBalancer: React.FC<VisualProps> = ({ chineseType }) => {
     const interval = setInterval(() => {
       setVelocity(v => {
         const newV = v + netForce * 0.001;
-        // Add some friction to stop eventually
         return newV * 0.98;
       });
       setBoxPos(p => {
@@ -140,31 +146,26 @@ export const ForceBalancer: React.FC<VisualProps> = ({ chineseType }) => {
   const netForce = rightForce - leftForce;
 
   return (
-    <div className="my-8 bg-white rounded-3xl border-2 border-gray-100 p-6 shadow-sm">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-orange-100 rounded-lg text-orange-600">
-            <RefreshCcw size={20} />
+    <div className="my-4 bg-blue-50 rounded-2xl border-2 border-blue-100 p-6 shadow-sm">
+      <div className="flex flex-col md:flex-row items-baseline justify-between mb-6 gap-2">
+        <h4 className="font-black text-blue-800 uppercase tracking-wider text-sm flex flex-wrap gap-x-2">
+          <span>Resultant Force Lab</span>
+          {isAssistMode && <span className="opacity-50">{t("", "合力实验室", "合力實驗室", chineseType)}</span>}
+        </h4>
+        <button 
+          onClick={reset} 
+          className="bg-blue-500 text-white px-3 py-1.5 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-[0_4px_0_0_#1d4ed8] active:shadow-none active:translate-y-1 transition-all flex flex-col items-center leading-none"
+        >
+          <div className="flex items-center gap-2">
+            <RefreshCcw size={14} />
+            <span>Reset</span>
           </div>
-          <div>
-            <h4 className="font-black text-gray-800 uppercase tracking-tight">
-              {t('Resultant Force Lab', '合力实验室', '合力實驗室', chineseType)}
-            </h4>
-            <p className="text-xs text-gray-500 font-bold">
-              {t('Adjust forces to see how the box moves.', '调整力度观察盒子如何运动。', '調整力度觀察盒子如何運動。', chineseType)}
-            </p>
-          </div>
-        </div>
-        <button onClick={reset} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-          <RefreshCcw size={18} className="text-gray-400" />
+          {isAssistMode && <span className="text-[8px] font-bold opacity-70 mt-0.5 lowercase">{t("", "重置", "重置", chineseType)}</span>}
         </button>
       </div>
 
-      <div className="relative h-48 bg-gray-900 rounded-2xl border-4 border-gray-800 overflow-hidden flex items-center justify-center">
-        {/* Track */}
+      <div className="relative h-48 bg-gray-900 rounded-xl border-4 border-gray-800 overflow-hidden flex items-center justify-center">
         <div className="absolute bottom-10 w-full h-1 bg-gray-700" />
-
-        {/* Box */}
         <motion.div 
           animate={{ x: boxPos }}
           className="relative w-16 h-16 bg-emerald-500 rounded-lg shadow-lg flex items-center justify-center z-10"
@@ -172,8 +173,6 @@ export const ForceBalancer: React.FC<VisualProps> = ({ chineseType }) => {
           <span className="text-white font-black text-[10px] uppercase">10kg</span>
         </motion.div>
 
-        {/* Force Arrows */}
-        {/* Left Force Arrow (Pushing Right) */}
         <div className="absolute left-1/2 -translate-x-1/2 flex items-center" style={{ transform: `translateX(${boxPos - 40 - leftForce/2}px)` }}>
           <motion.div 
             style={{ width: leftForce }}
@@ -184,7 +183,6 @@ export const ForceBalancer: React.FC<VisualProps> = ({ chineseType }) => {
           </motion.div>
         </div>
 
-        {/* Right Force Arrow (Pushing Left) */}
         <div className="absolute left-1/2 -translate-x-1/2 flex items-center" style={{ transform: `translateX(${boxPos + 40 + rightForce/2}px)` }}>
           <motion.div 
             style={{ width: rightForce }}
@@ -197,27 +195,41 @@ export const ForceBalancer: React.FC<VisualProps> = ({ chineseType }) => {
       </div>
 
       <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="space-y-4">
-          <div className="bg-blue-50 p-4 rounded-2xl border-2 border-blue-100">
-            <label className="block text-[10px] font-black text-blue-600 uppercase tracking-widest mb-2">{t('Left Force', '左侧推力', '左側推力', chineseType)}</label>
+        <div className="bg-white p-4 rounded-xl border-2 border-blue-100 shadow-sm flex flex-col items-start">
+            <label className="block text-[10px] font-black text-blue-600 uppercase tracking-widest mb-2 flex flex-wrap gap-x-1">
+              <span>Left Force</span>
+              {isAssistMode && <span className="opacity-50">{t("", "左侧推力", "左側推力", chineseType)}</span>}
+            </label>
             <input type="range" min="0" max="100" value={leftForce} onChange={(e) => setLeftForce(parseInt(e.target.value))} className="w-full h-2 bg-blue-200 rounded-lg appearance-none cursor-pointer accent-blue-500" />
           </div>
-          <div className="bg-red-50 p-4 rounded-2xl border-2 border-red-100">
-            <label className="block text-[10px] font-black text-red-600 uppercase tracking-widest mb-2">{t('Right Force', '右侧推力', '右側推力', chineseType)}</label>
+          <div className="bg-white p-4 rounded-xl border-2 border-red-100 shadow-sm flex flex-col items-start">
+            <label className="block text-[10px] font-black text-red-600 uppercase tracking-widest mb-2 flex flex-wrap gap-x-1">
+              <span>Right Force</span>
+              {isAssistMode && <span className="opacity-50">{t("", "右侧推力", "右側推力", chineseType)}</span>}
+            </label>
             <input type="range" min="0" max="100" value={rightForce} onChange={(e) => setRightForce(parseInt(e.target.value))} className="w-full h-2 bg-red-200 rounded-lg appearance-none cursor-pointer accent-red-500" />
           </div>
-        </div>
 
-        <div className="bg-gray-50 p-6 rounded-2xl border-2 border-gray-100 flex flex-col justify-center items-center text-center">
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">{t('Resultant Force', '合力', '合力', chineseType)}</p>
+        <div className="bg-white p-6 rounded-xl border-2 border-blue-100 flex flex-col justify-center items-center text-center shadow-sm">
+          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 flex flex-wrap gap-x-1 justify-center">
+            <span>Resultant Force</span>
+            {isAssistMode && <span className="opacity-50">{t("", "合力", "合力", chineseType)}</span>}
+          </p>
           <p className={`text-3xl font-black ${netForce === 0 ? 'text-emerald-500' : 'text-orange-500'}`}>
             {Math.abs(netForce)}N {netForce > 0 ? '→' : netForce < 0 ? '←' : ''}
           </p>
-          <p className="text-xs font-bold text-gray-500 mt-2">
-            {netForce === 0 
-              ? t('Balanced: Constant velocity or stationary', '受力平衡：保持匀速或静止', '受力平衡：保持勻速或靜止', chineseType) 
-              : t('Unbalanced: Object is accelerating', '受力不平衡：物体正在加速', '受力不平衡：物體正在加速', chineseType)}
-          </p>
+          <div className="flex flex-col items-center mt-2">
+            <p className="text-sm font-bold text-gray-500">
+               {netForce === 0 ? "Balanced: Constant velocity or stationary" : "Unbalanced: Object is accelerating"}
+            </p>
+            {isAssistMode && (
+              <p className="text-xs text-gray-400 italic border-t border-gray-100 mt-1 pt-1 max-w-[200px]">
+                {netForce === 0 
+                  ? t('', '受力平衡：保持匀速或静止', '受力平衡：保持勻速或靜止', chineseType) 
+                  : t('', '受力不平衡：物体正在加速', '受力不平衡：物體正在加速', chineseType)}
+              </p>
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -225,7 +237,7 @@ export const ForceBalancer: React.FC<VisualProps> = ({ chineseType }) => {
 };
 
 // 3. Distance-Time Graph Interactive
-export const DistanceTimeInteractive: React.FC<VisualProps> = ({ chineseType }) => {
+export const DistanceTimeInteractive: React.FC<VisualProps> = ({ isAssistMode, chineseType }) => {
   const [points, setPoints] = useState<{ t: number; d: number }[]>([]);
   const [isMoving, setIsMoving] = useState(false);
   const [time, setTime] = useState(0);
@@ -250,33 +262,39 @@ export const DistanceTimeInteractive: React.FC<VisualProps> = ({ chineseType }) 
   };
 
   return (
-    <div className="my-8 bg-white rounded-3xl border-2 border-gray-100 p-6 shadow-sm">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-emerald-100 rounded-lg text-emerald-600">
-            <Activity size={20} />
+    <div className="my-4 bg-emerald-50 rounded-2xl border-2 border-emerald-100 p-6 shadow-sm">
+      <div className="flex flex-col md:flex-row items-baseline justify-between mb-6 gap-2">
+        <h4 className="font-black text-emerald-800 uppercase tracking-wider text-sm flex flex-wrap gap-x-2">
+          <span>Live Motion Graph</span>
+          {isAssistMode && <span className="opacity-50">{t("", "实时运动图表", "實時運動圖表", chineseType)}</span>}
+        </h4>
+        <button 
+          onClick={reset} 
+          className="bg-emerald-500 text-white px-3 py-1.5 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-[0_4px_0_0_#047857] active:shadow-none active:translate-y-1 transition-all flex flex-col items-center leading-none"
+        >
+          <div className="flex items-center gap-2">
+            <RefreshCcw size={14} />
+            <span>Reset</span>
           </div>
-          <div>
-            <h4 className="font-black text-gray-800 uppercase tracking-tight">
-              {t('Live Motion Graph', '实时运动图表', '實時運動圖表', chineseType)}
-            </h4>
-            <p className="text-xs text-gray-500 font-bold">
-              {t('Move the object and watch the graph grow.', '移动物体并观察图表增长。', '移動物體並觀察圖表增長。', chineseType)}
-            </p>
-          </div>
-        </div>
-        <button onClick={reset} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-          <RefreshCcw size={18} className="text-gray-400" />
+          {isAssistMode && <span className="text-[8px] font-bold opacity-70 mt-0.5 lowercase">{t("", "重置", "重置", chineseType)}</span>}
         </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Animation Area */}
-        <div className="bg-gray-900 rounded-2xl p-6 flex flex-col justify-between relative overflow-hidden h-64">
+        <div className="bg-gray-900 rounded-xl p-6 flex flex-col justify-between relative overflow-hidden h-64 shadow-inner">
           <div className="flex justify-between items-center text-white/50 text-[10px] font-black uppercase tracking-widest">
-            <span>0m</span>
-            <span>{t('Distance', '距离', '距離', chineseType)}</span>
-            <span>100m</span>
+            <span className="flex flex-col items-center">
+              <span>0m</span>
+              {isAssistMode && <span className="text-[8px] opacity-70 leading-none">{t("", "0米", "0米", chineseType)}</span>}
+            </span>
+            <span className="flex flex-col items-center">
+              <span>Distance</span>
+              {isAssistMode && <span className="text-[8px] opacity-70 leading-none">{t("", "距离", "距離", chineseType)}</span>}
+            </span>
+            <span className="flex flex-col items-center">
+              <span>100m</span>
+              {isAssistMode && <span className="text-[8px] opacity-70 leading-none">{t("", "100米", "100米", chineseType)}</span>}
+            </span>
           </div>
           
           <div className="relative h-1 bg-gray-800 w-full my-auto">
@@ -288,35 +306,35 @@ export const DistanceTimeInteractive: React.FC<VisualProps> = ({ chineseType }) 
             </motion.div>
           </div>
 
-          <div className="flex gap-4">
             <button 
               onClick={() => setIsMoving(!isMoving)}
-              className={`flex-1 py-3 rounded-xl font-black uppercase tracking-widest transition-all ${isMoving ? 'bg-red-500 text-white' : 'bg-emerald-500 text-white'}`}
+              className={`flex-1 py-3 rounded-xl font-black uppercase tracking-widest transition-all shadow-[0_4px_0_0_rgba(0,0,0,0.2)] active:shadow-none active:translate-y-1 flex flex-col items-center leading-none ${isMoving ? 'bg-red-500 text-white' : 'bg-emerald-500 text-white'}`}
             >
-              {isMoving ? t('Stop', '停止', '停止', chineseType) : t('Start Moving', '开始运动', '開始運動', chineseType)}
+              <span>{isMoving ? 'Stop' : 'Start Moving'}</span>
+              {isAssistMode && <span className="text-[9px] opacity-70 mt-1 font-bold lowercase">{isMoving ? t("", "停止", "停止", chineseType) : t("", "开始运动", "開始運動", chineseType)}</span>}
             </button>
             <div className="flex-1 bg-white/10 rounded-xl p-2 flex flex-col justify-center">
-              <label className="text-[8px] text-white/50 font-black uppercase mb-1">{t('Speed', '速度', '速度', chineseType)}</label>
+              <label className="text-[8px] text-white/50 font-black uppercase mb-1 flex flex-wrap gap-x-1">
+                <span>Speed</span>
+                {isAssistMode && <span className="opacity-50 tracking-normal font-bold lowercase">{t("", "速度", "速度", chineseType)}</span>}
+              </label>
               <input type="range" min="0.5" max="5" step="0.5" value={speed} onChange={(e) => setSpeed(parseFloat(e.target.value))} className="w-full h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-emerald-500" />
             </div>
-          </div>
         </div>
 
-        {/* Graph Area */}
-        <div className="bg-gray-50 rounded-2xl p-6 border-2 border-gray-100 h-64 relative">
-          <div className="absolute left-4 top-4 text-[10px] font-black text-gray-400 uppercase vertical-text">
-            {t('Distance (m)', '距离 (米)', '距離 (米)', chineseType)}
+        <div className="bg-white rounded-xl p-6 border-2 border-emerald-100 h-64 relative shadow-sm">
+          <div className="absolute left-4 top-4 text-[10px] font-black text-gray-400 uppercase vertical-text flex flex-col gap-2">
+            <span>Distance (m)</span>
+            {isAssistMode && <span className="opacity-50">{t("", "距离 (米)", "距離 (米)", chineseType)}</span>}
           </div>
-          <div className="absolute right-4 bottom-4 text-[10px] font-black text-gray-400 uppercase">
-            {t('Time (s)', '时间 (秒)', '時間 (秒)', chineseType)}
+          <div className="absolute right-4 bottom-4 text-[10px] font-black text-gray-400 uppercase flex gap-2">
+            <span>Time (s)</span>
+            {isAssistMode && <span className="opacity-50">{t("", "时间 (秒)", "時間 (秒)", chineseType)}</span>}
           </div>
 
           <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-            {/* Grid */}
             <line x1="0" y1="100" x2="100" y2="100" stroke="#e5e7eb" strokeWidth="1" />
             <line x1="0" y1="0" x2="0" y2="100" stroke="#e5e7eb" strokeWidth="1" />
-            
-            {/* Path */}
             <polyline
               fill="none"
               stroke="#10b981"
@@ -331,7 +349,7 @@ export const DistanceTimeInteractive: React.FC<VisualProps> = ({ chineseType }) 
 };
 
 // 4. Seesaw Moment Simulation
-export const SeesawMoment: React.FC<VisualProps> = ({ chineseType }) => {
+export const SeesawMoment: React.FC<VisualProps> = ({ isAssistMode, chineseType }) => {
   const [leftWeight, setLeftWeight] = useState(2);
   const [leftDist, setLeftDist] = useState(3);
   const [rightWeight, setRightWeight] = useState(3);
@@ -340,44 +358,27 @@ export const SeesawMoment: React.FC<VisualProps> = ({ chineseType }) => {
   const leftMoment = leftWeight * leftDist;
   const rightMoment = rightWeight * rightDist;
   const balance = rightMoment - leftMoment;
-  
-  // Rotation angle based on balance
   const angle = Math.max(-15, Math.min(15, balance * 2));
 
   return (
-    <div className="my-8 bg-white rounded-3xl border-2 border-gray-100 p-6 shadow-sm">
-      <div className="flex items-center gap-3 mb-8">
-        <div className="p-2 bg-purple-100 rounded-lg text-purple-600">
-          <Maximize2 size={20} />
-        </div>
-        <div>
-          <h4 className="font-black text-gray-800 uppercase tracking-tight">
-            {t('Moment Balancer', '力矩平衡器', '力矩平衡器', chineseType)}
-          </h4>
-          <p className="text-xs text-gray-500 font-bold">
-            {t('Balance the seesaw by changing weight and distance.', '通过改变重量和距离来平衡跷跷板。', '通過改變重量和距離來平衡蹺蹺板。', chineseType)}
-          </p>
-        </div>
-      </div>
+    <div className="my-4 bg-purple-50 rounded-2xl border-2 border-purple-100 p-6 shadow-sm">
+      <h4 className="font-black text-purple-800 uppercase tracking-wider text-sm mb-8 flex flex-wrap gap-x-2">
+        <span>Moment Balancer</span>
+        {isAssistMode && <span className="opacity-50">{t("", "力矩平衡器", "力矩平衡器", chineseType)}</span>}
+      </h4>
 
-      <div className="relative h-64 bg-gray-50 rounded-2xl border-2 border-gray-100 flex flex-col items-center justify-center overflow-hidden">
-        {/* Pivot */}
+      <div className="relative h-64 bg-white rounded-xl border-2 border-purple-100 flex flex-col items-center justify-center overflow-hidden shadow-inner">
         <div className="absolute bottom-12 w-8 h-12 bg-gray-400 clip-triangle z-0" style={{ clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)' }} />
-
-        {/* Seesaw Plank */}
         <motion.div 
           animate={{ rotate: angle }}
           className="relative w-4/5 h-2 bg-gray-800 rounded-full flex items-center justify-center z-10"
         >
-          {/* Left Weight */}
           <motion.div 
             style={{ left: `${50 - leftDist * 15}%` }}
             className="absolute bottom-2 w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center shadow-md"
           >
             <span className="text-white font-black text-[10px]">{leftWeight}N</span>
           </motion.div>
-
-          {/* Right Weight */}
           <motion.div 
             style={{ right: `${50 - rightDist * 15}%` }}
             className="absolute bottom-2 w-10 h-10 bg-red-500 rounded-lg flex items-center justify-center shadow-md"
@@ -386,77 +387,78 @@ export const SeesawMoment: React.FC<VisualProps> = ({ chineseType }) => {
           </motion.div>
         </motion.div>
 
-        {/* Stats Overlay */}
         <div className="absolute top-4 left-4 right-4 flex justify-between">
-          <div className="bg-blue-50 px-3 py-1 rounded-full border border-blue-100">
+          <div className="bg-blue-100 px-3 py-1 rounded-full border border-blue-200">
             <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">{t('Left Moment', '左侧力矩', '左側力矩', chineseType)}: {leftMoment}Nm</span>
           </div>
-          <div className="bg-red-50 px-3 py-1 rounded-full border border-red-100">
+          <div className="bg-red-100 px-3 py-1 rounded-full border border-red-200">
             <span className="text-[10px] font-black text-red-600 uppercase tracking-widest">{t('Right Moment', '右侧力矩', '右側力矩', chineseType)}: {rightMoment}Nm</span>
           </div>
         </div>
       </div>
 
       <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="space-y-6">
-          <div className="bg-blue-50 p-4 rounded-2xl border-2 border-blue-100 space-y-4">
-            <div>
-              <label className="block text-[10px] font-black text-blue-600 uppercase tracking-widest mb-2">{t('Left Weight (N)', '左侧重量 (牛顿)', '左側重量 (牛頓)', chineseType)}</label>
-              <input type="range" min="1" max="10" value={leftWeight} onChange={(e) => setLeftWeight(parseInt(e.target.value))} className="w-full h-2 bg-blue-200 rounded-lg appearance-none cursor-pointer accent-blue-500" />
-            </div>
-            <div>
-              <label className="block text-[10px] font-black text-blue-600 uppercase tracking-widest mb-2">{t('Left Distance (m)', '左侧距离 (米)', '左側距離 (米)', chineseType)}</label>
-              <input type="range" min="1" max="3" step="0.5" value={leftDist} onChange={(e) => setLeftDist(parseFloat(e.target.value))} className="w-full h-2 bg-blue-200 rounded-lg appearance-none cursor-pointer accent-blue-500" />
-            </div>
+        <div className="bg-white p-4 rounded-xl border-2 border-purple-100 shadow-sm space-y-4">
+          <div>
+            <label className="block text-[10px] font-black text-blue-600 uppercase tracking-widest mb-2 flex flex-wrap gap-x-1">
+              <span>Left Weight (N)</span>
+              {isAssistMode && <span className="opacity-50 tracking-normal">{t("", "左侧重量 (牛顿)", "左側重量 (牛頓)", chineseType)}</span>}
+            </label>
+            <input type="range" min="1" max="10" value={leftWeight} onChange={(e) => setLeftWeight(parseInt(e.target.value))} className="w-full h-2 bg-blue-200 rounded-lg appearance-none cursor-pointer accent-blue-500" />
+          </div>
+          <div>
+            <label className="block text-[10px] font-black text-blue-600 uppercase tracking-widest mb-2 flex flex-wrap gap-x-1">
+              <span>Left Distance (m)</span>
+              {isAssistMode && <span className="opacity-50 tracking-normal">{t("", "左侧距离 (米)", "左側距離 (米)", chineseType)}</span>}
+            </label>
+            <input type="range" min="1" max="3" step="0.5" value={leftDist} onChange={(e) => setLeftDist(parseFloat(e.target.value))} className="w-full h-2 bg-blue-200 rounded-lg appearance-none cursor-pointer accent-blue-500" />
           </div>
         </div>
 
-        <div className="space-y-6">
-          <div className="bg-red-50 p-4 rounded-2xl border-2 border-red-100 space-y-4">
-            <div>
-              <label className="block text-[10px] font-black text-red-600 uppercase tracking-widest mb-2">{t('Right Weight (N)', '右侧重量 (牛顿)', '右側重量 (牛頓)', chineseType)}</label>
-              <input type="range" min="1" max="10" value={rightWeight} onChange={(e) => setRightWeight(parseInt(e.target.value))} className="w-full h-2 bg-red-200 rounded-lg appearance-none cursor-pointer accent-red-500" />
-            </div>
-            <div>
-              <label className="block text-[10px] font-black text-red-600 uppercase tracking-widest mb-2">{t('Right Distance (m)', '右侧距离 (米)', '右側距離 (米)', chineseType)}</label>
-              <input type="range" min="1" max="3" step="0.5" value={rightDist} onChange={(e) => setRightDist(parseFloat(e.target.value))} className="w-full h-2 bg-red-200 rounded-lg appearance-none cursor-pointer accent-red-500" />
-            </div>
+        <div className="bg-white p-4 rounded-xl border-2 border-purple-100 shadow-sm space-y-4">
+          <div>
+            <label className="block text-[10px] font-black text-red-600 uppercase tracking-widest mb-2 flex flex-wrap gap-x-1">
+              <span>Right Weight (N)</span>
+              {isAssistMode && <span className="opacity-50 tracking-normal">{t("", "右侧重量 (牛顿)", "右側重量 (牛頓)", chineseType)}</span>}
+            </label>
+            <input type="range" min="1" max="10" value={rightWeight} onChange={(e) => setRightWeight(parseInt(e.target.value))} className="w-full h-2 bg-red-200 rounded-lg appearance-none cursor-pointer accent-red-500" />
+          </div>
+          <div>
+            <label className="block text-[10px] font-black text-red-600 uppercase tracking-widest mb-2 flex flex-wrap gap-x-1">
+              <span>Right Distance (m)</span>
+              {isAssistMode && <span className="opacity-50 tracking-normal">{t("", "右侧距离 (米)", "右側距離 (米)", chineseType)}</span>}
+            </label>
+            <input type="range" min="1" max="3" step="0.5" value={rightDist} onChange={(e) => setRightDist(parseFloat(e.target.value))} className="w-full h-2 bg-red-200 rounded-lg appearance-none cursor-pointer accent-red-500" />
           </div>
         </div>
       </div>
 
-      <div className={`mt-6 p-4 rounded-2xl border-2 text-center font-black uppercase tracking-widest ${Math.abs(balance) < 0.1 ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-orange-50 border-orange-100 text-orange-600'}`}>
-        {Math.abs(balance) < 0.1 ? t('Perfectly Balanced!', '完美平衡！', '完美平衡！', chineseType) : t('Unbalanced', '未平衡', '未平衡', chineseType)}
+      <div className={`mt-6 p-4 rounded-xl border-2 text-center font-black uppercase tracking-widest flex flex-col gap-1 ${Math.abs(balance) < 0.1 ? 'bg-emerald-100 border-emerald-200 text-emerald-600' : 'bg-orange-100 border-orange-200 text-orange-600'}`}>
+        <span>{Math.abs(balance) < 0.1 ? "Perfectly Balanced!" : "Unbalanced"}</span>
+        {isAssistMode && (
+          <span className="text-xs opacity-60 font-black border-t border-current/10 pt-1">
+            {Math.abs(balance) < 0.1 ? t('', '完美平衡！', '完美平衡！', chineseType) : t('', '未平衡', '未平衡', chineseType)}
+          </span>
+        )}
       </div>
     </div>
   );
 };
 
 // 5. Pressure Visualizer (Area vs Pressure)
-export const PressureVisualizer: React.FC<VisualProps> = ({ chineseType }) => {
+export const PressureVisualizer: React.FC<VisualProps> = ({ isAssistMode, chineseType }) => {
   const [area, setArea] = useState(50);
   const force = 100;
   const pressure = force / (area / 10);
 
   return (
-    <div className="my-8 bg-white rounded-3xl border-2 border-gray-100 p-6 shadow-sm">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="p-2 bg-pink-100 rounded-lg text-pink-600">
-          <Info size={20} />
-        </div>
-        <div>
-          <h4 className="font-black text-gray-800 uppercase tracking-tight">
-            {t('Pressure Visualizer', '压力可视化', '壓力可視化', chineseType)}
-          </h4>
-          <p className="text-xs text-gray-500 font-bold">
-            {t('See how area affects the pressure applied.', '观察面积如何影响施加的压力。', '觀察面積如何影響施加的壓力。', chineseType)}
-          </p>
-        </div>
-      </div>
+    <div className="my-4 bg-pink-50 rounded-2xl border-2 border-pink-100 p-6 shadow-sm">
+      <h4 className="font-black text-pink-800 uppercase tracking-wider text-sm mb-6">
+        {t('Pressure Visualizer', '压力可视化', '壓力可視化', chineseType)}
+      </h4>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="bg-gray-50 rounded-2xl p-8 flex flex-col items-center justify-center h-64 relative overflow-hidden">
-          {/* Force Arrow */}
+        <div className="bg-white rounded-xl p-8 flex flex-col items-center justify-center h-64 relative overflow-hidden shadow-inner border border-pink-100">
           <motion.div 
             animate={{ y: [0, 5, 0] }}
             transition={{ repeat: Infinity, duration: 2 }}
@@ -466,7 +468,6 @@ export const PressureVisualizer: React.FC<VisualProps> = ({ chineseType }) => {
             <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] font-black text-red-600 uppercase">100N</span>
           </motion.div>
 
-          {/* Contact Object */}
           <motion.div 
             animate={{ width: area * 2 }}
             className="h-12 bg-gray-800 rounded-t-lg flex items-center justify-center"
@@ -474,7 +475,6 @@ export const PressureVisualizer: React.FC<VisualProps> = ({ chineseType }) => {
             <span className="text-white text-[8px] font-black uppercase">{area}cm²</span>
           </motion.div>
 
-          {/* Surface with Pressure Glow */}
           <div className="w-full h-4 bg-gray-200 border-t-2 border-gray-300 relative">
             <motion.div 
               animate={{ 
@@ -487,17 +487,30 @@ export const PressureVisualizer: React.FC<VisualProps> = ({ chineseType }) => {
         </div>
 
         <div className="flex flex-col justify-center space-y-6">
-          <div className="bg-white p-6 rounded-2xl border-2 border-gray-100 shadow-sm text-center">
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">{t('Calculated Pressure', '计算压力', '計算壓力', chineseType)}</p>
+          <div className="bg-white p-6 rounded-xl border-2 border-pink-100 shadow-sm text-center">
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 flex flex-wrap justify-center gap-x-1">
+              <span>Calculated Pressure</span>
+              {isAssistMode && <span className="opacity-50">{t("", "计算压力", "計算壓力", chineseType)}</span>}
+            </p>
             <p className="text-4xl font-black text-pink-500">{pressure.toFixed(1)} <span className="text-sm">N/cm²</span></p>
           </div>
 
-          <div className="bg-pink-50 p-6 rounded-2xl border-2 border-pink-100">
-            <label className="block text-[10px] font-black text-pink-600 uppercase tracking-widest mb-4">{t('Contact Area', '接触面积', '接觸面積', chineseType)}: {area}cm²</label>
+          <div className="bg-white p-6 rounded-xl border-2 border-pink-100 shadow-sm">
+            <label className="block text-[10px] font-black text-pink-600 uppercase tracking-widest mb-4 flex flex-wrap gap-x-1">
+              <span>Contact Area</span>
+              {isAssistMode && <span className="opacity-50 tracking-normal">{t("", "接触面积", "接觸面積", chineseType)}</span>}
+              : {area}cm²
+            </label>
             <input type="range" min="10" max="100" value={area} onChange={(e) => setArea(parseInt(e.target.value))} className="w-full h-2 bg-pink-200 rounded-lg appearance-none cursor-pointer accent-pink-500" />
             <div className="flex justify-between mt-2">
-              <span className="text-[8px] font-black text-pink-400 uppercase">{t('Sharp', '锋利', '鋒利', chineseType)}</span>
-              <span className="text-[8px] font-black text-pink-400 uppercase">{t('Blunt', '钝', '鈍', chineseType)}</span>
+              <span className="text-[8px] font-black text-pink-400 uppercase flex flex-col items-center">
+                <span>Sharp</span>
+                {isAssistMode && <span className="opacity-60">{t("", "锋利", "鋒利", chineseType)}</span>}
+              </span>
+              <span className="text-[8px] font-black text-pink-400 uppercase flex flex-col items-center">
+                <span>Blunt</span>
+                {isAssistMode && <span className="opacity-60">{t("", "钝", "鈍", chineseType)}</span>}
+              </span>
             </div>
           </div>
         </div>
@@ -507,31 +520,18 @@ export const PressureVisualizer: React.FC<VisualProps> = ({ chineseType }) => {
 };
 
 // 6. Liquid Pressure Depth
-export const LiquidPressureDepth: React.FC<VisualProps> = ({ chineseType }) => {
+export const LiquidPressureDepth: React.FC<VisualProps> = ({ isAssistMode, chineseType }) => {
   const [depth, setDepth] = useState(50);
   const pressure = depth * 0.5;
 
   return (
-    <div className="my-8 bg-white rounded-3xl border-2 border-gray-100 p-6 shadow-sm">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
-          <Activity size={20} />
-        </div>
-        <div>
-          <h4 className="font-black text-gray-800 uppercase tracking-tight">
-            {t('Underwater Pressure', '水下压力', '水下壓力', chineseType)}
-          </h4>
-          <p className="text-xs text-gray-500 font-bold">
-            {t('See how pressure increases as you go deeper.', '观察压力如何随深度增加。', '觀察壓力如何隨深度增加。', chineseType)}
-          </p>
-        </div>
-      </div>
+    <div className="my-4 bg-blue-50 rounded-2xl border-2 border-blue-100 p-6 shadow-sm">
+      <h4 className="font-black text-blue-800 uppercase tracking-wider text-sm mb-6">
+        {t('Underwater Pressure', '水下压力', '水下壓力', chineseType)}
+      </h4>
 
-      <div className="relative h-80 bg-blue-900 rounded-2xl border-4 border-blue-800 overflow-hidden">
-        {/* Water Gradient */}
+      <div className="relative h-80 bg-blue-900 rounded-xl border-4 border-blue-800 overflow-hidden shadow-inner">
         <div className="absolute inset-0 bg-gradient-to-b from-blue-400/30 via-blue-600/50 to-blue-900" />
-
-        {/* Diver */}
         <motion.div 
           animate={{ y: depth * 2.5 }}
           className="absolute left-1/2 -translate-x-1/2 z-20"
@@ -540,15 +540,12 @@ export const LiquidPressureDepth: React.FC<VisualProps> = ({ chineseType }) => {
             <div className="w-4 h-4 bg-blue-200 rounded-full absolute right-1 top-1 border border-orange-700" />
             <span className="text-[6px] font-black text-white uppercase">DIVER</span>
           </div>
-          
-          {/* Pressure Indicator around diver */}
           <motion.div 
             animate={{ scale: 1 + pressure / 50 }}
             className="absolute inset-0 rounded-full border-2 border-white/20 -z-10"
           />
         </motion.div>
 
-        {/* Depth Markings */}
         <div className="absolute left-4 h-full flex flex-col justify-between py-4 text-[8px] font-black text-white/30 uppercase">
           <span>0m</span>
           <span>25m</span>
@@ -557,9 +554,11 @@ export const LiquidPressureDepth: React.FC<VisualProps> = ({ chineseType }) => {
           <span>100m</span>
         </div>
 
-        {/* Pressure Gauge */}
-        <div className="absolute bottom-6 right-6 bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/20 text-white min-w-[120px]">
-          <p className="text-[8px] font-black uppercase tracking-widest mb-1 opacity-60">{t('Pressure', '压力', '壓力', chineseType)}</p>
+        <div className="absolute bottom-6 right-6 bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/20 text-white min-w-[120px]">
+          <p className="text-[8px] font-black uppercase tracking-widest mb-1 opacity-60 flex flex-wrap gap-x-1">
+            <span>Pressure</span>
+            {isAssistMode && <span className="opacity-60 tracking-normal">{t("", "压力", "壓力", chineseType)}</span>}
+          </p>
           <p className="text-2xl font-black">{pressure.toFixed(1)} <span className="text-xs">kPa</span></p>
           <div className="w-full h-1 bg-white/20 rounded-full mt-2 overflow-hidden">
             <motion.div 
@@ -569,7 +568,6 @@ export const LiquidPressureDepth: React.FC<VisualProps> = ({ chineseType }) => {
           </div>
         </div>
 
-        {/* Control Slider Overlay */}
         <div className="absolute top-6 right-6 w-8 h-48 bg-white/10 rounded-full p-1 border border-white/20">
           <input 
             type="range" 
@@ -587,30 +585,20 @@ export const LiquidPressureDepth: React.FC<VisualProps> = ({ chineseType }) => {
 };
 
 // 7. Diffusion Visual (Concentration Gradient)
-export const DiffusionVisual: React.FC<VisualProps> = ({ chineseType }) => {
+export const DiffusionVisual: React.FC<VisualProps> = ({ isAssistMode, chineseType }) => {
   const [isDiffusing, setIsDiffusing] = useState(false);
 
   return (
-    <div className="my-8 bg-white rounded-3xl border-2 border-gray-100 p-6 shadow-sm">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="p-2 bg-emerald-100 rounded-lg text-emerald-600">
-          <RefreshCcw size={20} />
-        </div>
-        <div>
-          <h4 className="font-black text-gray-800 uppercase tracking-tight">
-            {t('Diffusion Simulator', '扩散模拟器', '擴散模擬器', chineseType)}
-          </h4>
-          <p className="text-xs text-gray-500 font-bold">
-            {t('Watch particles move from high to low concentration.', '观察粒子如何从高浓度向低浓度移动。', '觀察粒子如何從高濃度向低濃度移動。', chineseType)}
-          </p>
-        </div>
-      </div>
+    <div className="my-4 bg-emerald-50 rounded-2xl border-2 border-emerald-100 p-6 shadow-sm">
+      <h4 className="font-black text-emerald-800 uppercase tracking-wider text-sm mb-6">
+        {t('Diffusion Simulator', '扩散模拟器', '擴散模擬器', chineseType)}
+      </h4>
 
-      <div className="relative h-48 bg-gray-50 rounded-2xl border-2 border-gray-100 overflow-hidden flex items-center">
-        {/* Left Side (High Concentration) */}
-        <div className="w-1/2 h-full border-r-2 border-dashed border-gray-200 relative">
-          <div className="absolute top-2 left-2 text-[8px] font-black text-gray-400 uppercase tracking-widest">
-            {t('High Concentration', '高浓度', '高濃度', chineseType)}
+      <div className="relative h-48 bg-white rounded-xl border-2 border-emerald-100 overflow-hidden flex items-center shadow-inner">
+        <div className="w-1/2 h-full border-r-2 border-dashed border-emerald-100 relative">
+          <div className="absolute top-2 left-2 text-[8px] font-black text-emerald-400 uppercase tracking-widest flex flex-col items-start leading-none">
+            <span>High Concentration</span>
+            {isAssistMode && <span className="opacity-60">{t("", "高浓度", "高濃度", chineseType)}</span>}
           </div>
           {[...Array(30)].map((_, i) => (
             <motion.div
@@ -630,10 +618,10 @@ export const DiffusionVisual: React.FC<VisualProps> = ({ chineseType }) => {
           ))}
         </div>
 
-        {/* Right Side (Low Concentration) */}
         <div className="w-1/2 h-full relative">
-          <div className="absolute top-2 right-2 text-[8px] font-black text-gray-400 uppercase tracking-widest">
-            {t('Low Concentration', '低浓度', '低濃度', chineseType)}
+          <div className="absolute top-2 right-2 text-[8px] font-black text-emerald-400 uppercase tracking-widest flex flex-col items-end leading-none">
+            <span>Low Concentration</span>
+            {isAssistMode && <span className="opacity-60">{t("", "低浓度", "低濃度", chineseType)}</span>}
           </div>
           {[...Array(5)].map((_, i) => (
             <motion.div
@@ -654,9 +642,10 @@ export const DiffusionVisual: React.FC<VisualProps> = ({ chineseType }) => {
 
         <button 
           onClick={() => setIsDiffusing(!isDiffusing)}
-          className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white px-6 py-2 rounded-full border-2 border-emerald-500 text-emerald-600 font-black text-xs uppercase tracking-widest shadow-lg hover:bg-emerald-50 transition-all"
+          className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-emerald-500 text-white px-6 py-2 rounded-xl font-black text-xs uppercase tracking-widest shadow-[0_4px_0_0_#047857] active:shadow-none active:translate-y-1 transition-all flex flex-col items-center leading-none"
         >
-          {isDiffusing ? t('Reset', '重置', '重置', chineseType) : t('Start Diffusion', '开始扩散', '開始擴散', chineseType)}
+          <span>{isDiffusing ? 'Reset' : 'Start Diffusion'}</span>
+          {isAssistMode && <span className="text-[10px] opacity-75 mt-1 font-bold lowercase">{isDiffusing ? t("", "重置", "重置", chineseType) : t("", "开始扩散", "開始擴散", chineseType)}</span>}
         </button>
       </div>
     </div>
