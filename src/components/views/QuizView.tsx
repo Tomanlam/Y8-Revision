@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   X, CheckCircle2, XCircle, Trophy, RefreshCcw, 
-  ArrowRight, ShieldCheck, Zap, Star, LayoutGrid, Timer
+  ArrowRight, ShieldCheck, Zap, Star, LayoutGrid, Timer, Languages
 } from 'lucide-react';
 import { Unit } from '../../types';
 
@@ -16,23 +16,44 @@ interface QuizViewProps {
 const QuizView: React.FC<QuizViewProps> = ({ unit, onBack, sessionStats, setSessionStats }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
-  const [isAnswered, setIsAnswered] = useState(false);
+  const [status, setStatus] = useState<'idle' | 'selected' | 'checked'>('idle');
   const [score, setScore] = useState(0);
   const [showResults, setShowResults] = useState(false);
   const [streak, setStreak] = useState(0);
   const [startTime] = useState(Date.now());
+  
+  const [assistMode, setAssistMode] = useState(false);
+  const [assistLang, setAssistLang] = useState<'traditional' | 'simplified'>('traditional');
 
   if (!unit) return null;
 
   const currentQuestion = unit.questions[currentIndex];
+  const correctIndex = currentQuestion.options.indexOf(currentQuestion.correctAnswer);
+  const isCorrect = selectedAnswer === correctIndex;
+  
+  const currentTranslation = assistLang === 'traditional' ? {
+    text: currentQuestion.textTraditional,
+    options: currentQuestion.optionsTraditional,
+    correctAnswer: currentQuestion.correctAnswerTraditional
+  } : {
+    text: currentQuestion.textSimplified,
+    options: currentQuestion.optionsSimplified,
+    correctAnswer: currentQuestion.correctAnswerSimplified
+  };
 
   const handleAnswerSelect = (index: number) => {
-    if (isAnswered) return;
+    if (status === 'checked') return;
     setSelectedAnswer(index);
-    setIsAnswered(true);
+    setStatus('selected');
+  };
 
-    const isCorrect = index === currentQuestion.correct;
-    if (isCorrect) {
+  const handleCheck = () => {
+    if (status !== 'selected' || selectedAnswer === null) return;
+    
+    setStatus('checked');
+    const correct = selectedAnswer === correctIndex;
+    
+    if (correct) {
       setScore(prev => prev + 1);
       setStreak(prev => prev + 1);
     } else {
@@ -53,49 +74,57 @@ const QuizView: React.FC<QuizViewProps> = ({ unit, onBack, sessionStats, setSess
     if (currentIndex < unit.questions.length - 1) {
       setCurrentIndex(prev => prev + 1);
       setSelectedAnswer(null);
-      setIsAnswered(false);
+      setStatus('idle');
     } else {
       setShowResults(true);
     }
   };
 
-  const progress = ((currentIndex + 1) / unit.questions.length) * 100;
+  const progress = ((currentIndex + (status === 'checked' && isCorrect ? 1 : 0)) / unit.questions.length) * 100;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <header className="bg-white border-b-2 border-gray-100 p-4 sticky top-0 z-10">
-        <div className="max-w-xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <button onClick={onBack} className="p-2 hover:bg-gray-100 rounded-full text-gray-400">
-              <X size={24} />
+    <div className="flex flex-col min-h-screen bg-white font-sans selection:bg-blue-100">
+      {!showResults && (
+        <header className="flex items-center justify-between px-4 py-4 md:px-8 max-w-4xl mx-auto w-full gap-4">
+          <button 
+            onClick={onBack} 
+            className="text-gray-400 hover:text-gray-600 transition-colors p-2"
+          >
+            <X size={28} />
+          </button>
+          <div className="flex-1 h-4 bg-gray-200 rounded-full overflow-hidden relative">
+            <motion.div 
+              initial={false}
+              animate={{ width: `${progress}%` }}
+              className="absolute top-0 left-0 h-full bg-emerald-500 rounded-full transition-all duration-500 ease-out"
+            />
+          </div>
+          <div className="flex items-center gap-2 font-bold text-orange-500">
+            <Zap size={24} fill="currentColor" />
+            <span className="text-xl">{streak}</span>
+          </div>
+          <div className="flex items-center gap-2 ml-2">
+            <button 
+              onClick={() => setAssistMode(!assistMode)}
+              className={`p-2 rounded-xl border-2 transition-all font-bold flex items-center gap-1.5 md:gap-2 ${assistMode ? 'bg-blue-100 border-blue-400 text-blue-700 shadow-[0_2px_0_0_#60a5fa] translate-y-[2px]' : 'border-gray-200 text-gray-500 hover:bg-gray-50 shadow-[0_4px_0_0_#e5e7eb] active:translate-y-1 active:shadow-none'}`}
+              title="Assist Mode"
+            >
+              <Languages size={20} />
+              <span className="hidden sm:inline text-sm uppercase tracking-wider">Assist</span>
             </button>
-            <div className="flex-1">
-              <div className="flex justify-between items-center mb-1">
-                <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">{unit.title}</span>
-                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Question {currentIndex + 1} / {unit.questions.length}</span>
-              </div>
-              <div className="h-2 w-48 bg-gray-100 rounded-full overflow-hidden">
-                <motion.div 
-                  initial={{ width: 0 }}
-                  animate={{ width: `${progress}%` }}
-                  className="h-full bg-blue-500 rounded-full"
-                />
-              </div>
-            </div>
+            {assistMode && (
+              <button 
+                onClick={() => setAssistLang(prev => prev === 'traditional' ? 'simplified' : 'traditional')}
+                className="w-10 h-10 rounded-xl text-sm font-black border-2 border-slate-200 text-slate-600 bg-slate-50 hover:bg-slate-100 transition-all shadow-[0_4px_0_0_#e2e8f0] active:translate-y-1 active:shadow-none"
+              >
+                {assistLang === 'traditional' ? '繁' : '简'}
+              </button>
+            )}
           </div>
-          <div className="flex items-center gap-3">
-             <div className="bg-orange-100 px-3 py-1 rounded-full text-orange-600 font-bold text-sm flex items-center gap-1.5">
-               <Zap size={14} fill="currentColor" />
-               {streak}
-             </div>
-             <div className="bg-blue-100 px-3 py-1 rounded-full text-blue-600 font-bold text-sm">
-               {score}
-             </div>
-          </div>
-        </div>
-      </header>
+        </header>
+      )}
 
-      <main className="flex-1 flex flex-col items-center justify-center p-6 max-w-4xl mx-auto w-full">
+      <main className={`flex-1 flex flex-col items-center w-full mx-auto px-4 md:px-8 pb-32 pt-4 md:pt-12 transition-all duration-300 ${assistMode ? 'max-w-5xl' : 'max-w-3xl'}`}>
         <AnimatePresence mode="wait">
           {!showResults ? (
             <motion.div
@@ -103,117 +132,193 @@ const QuizView: React.FC<QuizViewProps> = ({ unit, onBack, sessionStats, setSess
               initial={{ x: 20, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: -20, opacity: 0 }}
-              className="w-full space-y-8"
+              className={`w-full mx-auto flex flex-col gap-8 ${assistMode ? 'max-w-4xl' : 'max-w-xl'}`}
             >
-              <div className="bg-white p-8 md:p-12 rounded-[2.5rem] shadow-[0_8px_0_0_#e5e7eb] border-2 border-gray-100 text-center">
-                <h2 className="text-2xl md:text-4xl font-black text-gray-800 leading-tight">
-                  {currentQuestion.text}
-                </h2>
-              </div>
+              <h2 className="text-2xl md:text-3xl font-bold text-gray-800 tracking-tight leading-snug">
+                {assistMode ? (
+                  <div className="flex flex-col md:flex-row md:items-start gap-4">
+                    <span className="flex-1">{currentQuestion.text}</span>
+                    <div className="flex-1 bg-blue-50 text-blue-700 p-4 md:p-6 rounded-2xl border-2 border-blue-100 shadow-inner">
+                      {currentTranslation.text ? (
+                        <span>{currentTranslation.text}</span>
+                      ) : (
+                        <span className="opacity-50">Translation unavailable in static data.</span>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  currentQuestion.text
+                )}
+              </h2>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-3 md:gap-4">
                 {currentQuestion.options.map((option, idx) => {
                   const isSelected = selectedAnswer === idx;
-                  const isCorrect = idx === currentQuestion.correct;
+                  const isChecked = status === 'checked';
+                  const isOptionCorrect = idx === correctIndex;
                   
-                  let stateStyle = 'border-gray-200 hover:border-blue-200 hover:bg-blue-50/50';
-                  if (isAnswered) {
-                    if (isCorrect) stateStyle = 'border-emerald-500 bg-emerald-50 text-emerald-700 shadow-[0_4px_0_0_#10b981]';
-                    else if (isSelected) stateStyle = 'border-red-500 bg-red-50 text-red-700 shadow-[0_4px_0_0_#ef4444]';
-                    else stateStyle = 'border-gray-100 opacity-50';
+                  let stateStyle = 'border-gray-200 hover:bg-gray-50 text-gray-700 hover:border-gray-300 shadow-[0_4px_0_0_#e5e7eb] active:shadow-none active:translate-y-1';
+                  
+                  if (isChecked) {
+                    if (isOptionCorrect) {
+                      stateStyle = 'border-emerald-500 bg-emerald-100 text-emerald-700 shadow-none translate-y-1';
+                    } else if (isSelected) {
+                      stateStyle = 'border-red-500 bg-red-100 text-red-700 shadow-none translate-y-1';
+                    } else {
+                      stateStyle = 'border-gray-200 text-gray-400 opacity-50 shadow-none translate-y-1';
+                    }
                   } else if (isSelected) {
-                    stateStyle = 'border-blue-500 bg-blue-50 text-blue-700';
+                    stateStyle = 'border-blue-400 bg-blue-50 text-blue-700 shadow-[0_4px_0_0_#60a5fa] ring-2 ring-blue-100';
                   }
 
                   return (
-                    <motion.button
+                    <button
                       key={idx}
-                      whileTap={{ scale: 0.98 }}
-                      disabled={isAnswered}
+                      disabled={isChecked}
                       onClick={() => handleAnswerSelect(idx)}
-                      className={`w-full p-5 text-left rounded-2xl border-2 font-bold transition-all flex items-center justify-between group ${stateStyle}`}
+                      className={`w-full p-4 relative text-left rounded-2xl border-2 font-bold transition-all ${stateStyle}`}
                     >
-                      <span className="flex-1">{option}</span>
-                      {isAnswered && isCorrect && <CheckCircle2 size={24} className="text-emerald-500" />}
-                      {isAnswered && isSelected && !isCorrect && <XCircle size={24} className="text-red-500" />}
-                    </motion.button>
+                      <div className="flex items-center gap-4">
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm transition-colors shrink-0 ${
+                          isChecked && isOptionCorrect ? 'bg-emerald-200 text-emerald-800' :
+                          isChecked && isSelected && !isOptionCorrect ? 'bg-red-200 text-red-800' :
+                          isSelected ? 'bg-blue-200 text-blue-800' :
+                          'bg-gray-100 text-gray-500'
+                        }`}>
+                          {idx + 1}
+                        </div>
+                        <div className="flex-1 text-lg">
+                          {assistMode ? (
+                            <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-6 justify-between">
+                              <span className="flex-1 font-bold">{option}</span>
+                              <div className="flex-1 text-sm md:text-base md:text-right text-blue-700/80 pt-1 md:pt-0 border-t md:border-t-0 md:border-l border-blue-200/50 md:pl-6 font-medium">
+                                {currentTranslation.options && currentTranslation.options[idx] ? (
+                                  currentTranslation.options[idx]
+                                ) : (
+                                  <span className="opacity-50 text-xs">...</span>
+                                )}
+                              </div>
+                            </div>
+                          ) : (
+                            option
+                          )}
+                        </div>
+                      </div>
+                    </button>
                   );
                 })}
               </div>
-
-              {isAnswered && (
-                <motion.button
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  onClick={handleNext}
-                  className="w-full py-4 rounded-2xl bg-blue-500 text-white font-black uppercase tracking-widest shadow-[0_6px_0_0_#2563eb] active:shadow-none active:translate-y-1 transition-all flex items-center justify-center gap-3"
-                >
-                  {currentIndex === unit.questions.length - 1 ? 'Finish Quiz' : 'Next Question'}
-                  <ArrowRight size={20} />
-                </motion.button>
-              )}
             </motion.div>
           ) : (
             <motion.div 
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="text-center bg-white p-10 rounded-[3rem] shadow-2xl w-full border-4 border-blue-50"
+              className="text-center w-full max-w-xl mx-auto pt-10"
             >
-              <div className="bg-blue-100 w-28 h-28 rounded-3xl flex items-center justify-center text-blue-500 mx-auto mb-8 shadow-xl shadow-blue-100 group">
-                <Trophy size={60} className="group-hover:rotate-12 transition-transform" />
+              <div className="bg-yellow-100 w-32 h-32 rounded-[2rem] flex items-center justify-center text-yellow-500 mx-auto mb-8 shadow-xl shadow-yellow-100 group">
+                <Trophy size={64} className="group-hover:rotate-12 transition-transform" fill="currentColor" />
               </div>
-              <h2 className="text-4xl font-black text-gray-800 uppercase tracking-tighter mb-2">Quiz Complete!</h2>
-              <p className="text-gray-400 font-bold mb-10">You've mastered the content for {unit.title}.</p>
+              <h2 className="text-3xl font-black text-gray-800 mb-2">Lesson Complete!</h2>
+              <p className="text-gray-500 font-bold mb-10 text-lg">Great job finishing {unit.title}.</p>
               
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
-                <div className="bg-gray-50 p-6 rounded-3xl border-2 border-gray-100">
-                  <div className="bg-white p-2 rounded-xl shadow-sm inline-block mb-3 text-blue-500">
-                    <Star size={20} fill="currentColor" />
+              <div className="flex gap-4 mb-10">
+                <div className="flex-1 bg-orange-50 border-2 border-orange-200 p-4 rounded-3xl flex flex-col items-center">
+                  <div className="text-orange-500 font-black text-sm uppercase tracking-widest mb-1">Total XP</div>
+                  <div className="text-3xl font-black text-orange-600 flex items-center gap-1">
+                    <Zap size={24} fill="currentColor" /> {score * 10}
                   </div>
-                  <p className="text-gray-400 font-black text-[10px] uppercase tracking-widest mb-1">Score</p>
-                  <p className="text-3xl font-black text-gray-800">{Math.round((score / unit.questions.length) * 100)}%</p>
                 </div>
-                <div className="bg-gray-50 p-6 rounded-3xl border-2 border-gray-100">
-                  <div className="bg-white p-2 rounded-xl shadow-sm inline-block mb-3 text-orange-500">
-                    <Timer size={20} />
+                <div className="flex-1 bg-emerald-50 border-2 border-emerald-200 p-4 rounded-3xl flex flex-col items-center">
+                  <div className="text-emerald-500 font-black text-sm uppercase tracking-widest mb-1">Accuracy</div>
+                  <div className="text-3xl font-black text-emerald-600 flex items-center gap-1">
+                    <ShieldCheck size={24} fill="currentColor" />
+                    {Math.round((score / unit.questions.length) * 100)}%
                   </div>
-                  <p className="text-gray-400 font-black text-[10px] uppercase tracking-widest mb-1">Time</p>
-                  <p className="text-3xl font-black text-gray-800">{Math.floor((Date.now() - startTime) / 1000)}s</p>
                 </div>
-                <div className="bg-gray-50 p-6 rounded-3xl border-2 border-gray-100">
-                  <div className="bg-white p-2 rounded-xl shadow-sm inline-block mb-3 text-emerald-500">
-                    <ShieldCheck size={20} fill="currentColor" />
-                  </div>
-                  <p className="text-gray-400 font-black text-[10px] uppercase tracking-widest mb-1">Correct</p>
-                  <p className="text-3xl font-black text-emerald-600">{score}/{unit.questions.length}</p>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-4">
-                <button 
-                  onClick={() => {
-                    setCurrentIndex(0);
-                    setScore(0);
-                    setShowResults(false);
-                    setSelectedAnswer(null);
-                    setIsAnswered(false);
-                    setStreak(0);
-                  }}
-                  className="w-full py-5 rounded-2xl bg-blue-500 text-white font-black uppercase tracking-widest shadow-[0_6px_0_0_#2563eb] active:shadow-none active:translate-y-1 transition-all flex items-center justify-center gap-3"
-                >
-                  <RefreshCcw size={20} /> Try Again
-                </button>
-                <button 
-                  onClick={onBack}
-                  className="w-full py-5 rounded-2xl border-4 border-gray-100 text-gray-400 font-black uppercase tracking-widest hover:bg-gray-50 transition-all"
-                >
-                  Back to Hub
-                </button>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
       </main>
+
+      {/* Footer Actions */}
+      <div className="fixed bottom-0 left-0 w-full border-t-2 bg-white px-4 py-4 md:py-6">
+        <div className="max-w-4xl mx-auto">
+          {!showResults ? (
+            status === 'checked' ? (
+              <div className={`p-4 md:p-6 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 w-full ${isCorrect ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>
+                <div className="flex items-center gap-4 w-full md:w-auto">
+                  <div className={`p-2 rounded-full ${isCorrect ? 'bg-emerald-200' : 'bg-red-200'}`}>
+                    {isCorrect ? <CheckCircle2 size={32} /> : <XCircle size={32} />}
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-xl md:text-2xl">
+                      {isCorrect ? 'Excellent!' : 'Incorrect'}
+                    </h3>
+                    {!isCorrect && (
+                      <div className="text-sm font-medium mt-1">
+                        Correct answer: <span className="font-bold text-red-900">{currentQuestion.options[correctIndex]}</span>
+                        {assistMode && currentTranslation.correctAnswer && (
+                          <span className="block text-red-700 mt-1 bg-red-50 p-2 rounded-lg border border-red-200">{currentTranslation.correctAnswer}</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <button
+                  onClick={handleNext}
+                  className={`w-full md:w-auto px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-lg transition-transform active:scale-95 shadow-sm hover:opacity-90 ${isCorrect ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'}`}
+                >
+                  Continue
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between w-full max-w-3xl mx-auto">
+                <button
+                  onClick={() => {}}
+                  className="px-6 py-4 rounded-2xl text-gray-400 font-bold uppercase tracking-widest hover:bg-gray-100 hidden md:block"
+                >
+                  Skip
+                </button>
+                <button
+                  disabled={status !== 'selected'}
+                  onClick={handleCheck}
+                  className={`w-full md:w-48 py-4 rounded-2xl font-black uppercase tracking-widest text-lg transition-all ${
+                    status === 'selected'
+                      ? 'bg-emerald-500 text-white hover:bg-emerald-600 shadow-[0_4px_0_0_#059669] active:shadow-none active:translate-y-1'
+                      : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  }`}
+                >
+                  Check
+                </button>
+              </div>
+            )
+          ) : (
+            <div className="flex gap-4 w-full max-w-xl mx-auto">
+              <button
+                 onClick={() => {
+                   setCurrentIndex(0);
+                   setScore(0);
+                   setShowResults(false);
+                   setSelectedAnswer(null);
+                   setStatus('idle');
+                   setStreak(0);
+                 }}
+                 className="w-16 h-16 md:w-auto md:flex-1 py-4 flex items-center justify-center rounded-2xl border-2 border-gray-200 text-gray-500 font-black uppercase tracking-widest hover:bg-gray-50 transition-all shadow-[0_4px_0_0_#e5e7eb] active:shadow-none active:translate-y-1"
+               >
+                 <RefreshCcw size={24} className="md:hidden" />
+                 <span className="hidden md:inline">Practice Again</span>
+               </button>
+              <button
+                onClick={onBack}
+                className="flex-[3] md:flex-1 py-4 rounded-2xl font-black uppercase tracking-widest text-lg transition-all bg-emerald-500 text-white hover:bg-emerald-600 shadow-[0_4px_0_0_#059669] active:shadow-none active:translate-y-1"
+              >
+                Continue
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 };

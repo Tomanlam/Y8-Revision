@@ -1,8 +1,14 @@
 export interface Question {
   id: string;
   text: string;
+  textTraditional?: string;
+  textSimplified?: string;
   options: string[];
+  optionsTraditional?: string[];
+  optionsSimplified?: string[];
   correctAnswer: string;
+  correctAnswerTraditional?: string;
+  correctAnswerSimplified?: string;
   explanation?: string;
 }
 
@@ -32,15 +38,15 @@ export interface Unit {
 
 export const units: Unit[] = [
   {
-    id: 1,
-    title: "Respiration",
-    titleTraditional: "呼吸作用",
-    titleSimplified: "呼吸作用",
-    description: "Understanding how the body transports nutrients and performs gas exchange.",
-    descriptionTraditional: "了解身體如何運輸營養物質並進行氣體交換。",
-    descriptionSimplified: "了解身体如何运输营养物质并进行气体交换。",
-    color: "bg-emerald-500",
-    concepts: [
+    "id": 1,
+    "title": "Respiration",
+    "titleTraditional": "呼吸作用",
+    "titleSimplified": "呼吸作用",
+    "description": "Understanding how the body transports nutrients and performs gas exchange.",
+    "descriptionTraditional": "了解身體如何運輸營養物質並進行氣體交換。",
+    "descriptionSimplified": "了解身体如何运输营养物质并进行气体交换。",
+    "color": "bg-emerald-500",
+    "concepts": [
       "The circulatory system delivers glucose and oxygen to cells and removes carbon dioxide.",
       "The circulatory system consists of the heart (pump), blood (liquid), and blood vessels (passages).",
       "Respiration equation: Glucose + Oxygen → Carbon dioxide + Water + Energy.",
@@ -62,7 +68,7 @@ export const units: Unit[] = [
       "Inhalation: Diaphragm contracts/flattens, volume increases, pressure decreases, air enters.",
       "Exhalation: Diaphragm relaxes/domes, volume decreases, pressure increases, air exits."
     ],
-    conceptsTraditional: [
+    "conceptsTraditional": [
       "循環系統將葡萄糖和氧氣輸送到細胞，並移除二氧化碳。",
       "循環系統由心臟（泵）、血液（液體）和血管（通道）組成。",
       "呼吸作用方程式：葡萄糖 + 氧氣 → 二氧化碳 + 水 + 能量。",
@@ -84,7 +90,7 @@ export const units: Unit[] = [
       "吸氣：橫膈膜收縮/變平，體積增加，壓力減少，空氣進入。",
       "呼氣：橫膈膜放鬆/變拱形，體積減少，壓力增加，空氣排出。"
     ],
-    conceptsSimplified: [
+    "conceptsSimplified": [
       "循环系统将葡萄糖和氧气输送到细胞，并移除二氧化碳。",
       "循环系统由心脏（泵）、血液（液体）和血管（通道）组成。",
       "呼吸作用方程式：葡萄糖 + 氧气 → 二氧化碳 + 水 + 能量。",
@@ -106,149 +112,1643 @@ export const units: Unit[] = [
       "吸气：横膈膜收缩/变平，体积增加，压力减少，空气进入。",
       "呼气：横膈膜放松/变拱形，体积减少，压力增加，空气排出。"
     ],
-    keyTerms: {
-      "circulatory system": "#10b981", "循環系統": "#10b981", "循环系统": "#10b981",
-      "heart": "#ef4444", "心臟": "#ef4444", "心脏": "#ef4444",
-      "blood": "#dc2626", "血液": "#dc2626",
-      "blood vessels": "#3b82f6", "血管": "#3b82f6",
-      "respiration": "#f59e0b", "呼吸作用": "#f59e0b",
-      "mitochondria": "#8b5cf6", "線粒體": "#8b5cf6", "线粒体": "#8b5cf6",
-      "plasma": "#fbbf24", "血漿": "#fbbf24", "血浆": "#fbbf24",
-      "red blood cells": "#ef4444", "紅血球": "#ef4444", "红血球": "#ef4444",
-      "white blood cells": "#60a5fa", "白血球": "#60a5fa",
-      "pathogens": "#7c3aed", "病原體": "#7c3aed", "病原体": "#7c3aed",
-      "platelets": "#ec4899", "血小板": "#ec4899",
-      "alveoli": "#06b6d4", "肺泡": "#06b6d4",
-      "diffusion": "#14b8a6", "擴散作用": "#14b8a6", "扩散作用": "#14b8a6",
-      "diaphragm": "#f97316", "橫膈膜": "#f97316", "横膈膜": "#f97316",
-      "glucose": "#10b981", "葡萄糖": "#10b981",
-      "oxygen": "#3b82f6", "氧氣": "#3b82f6", "氧气": "#3b82f6",
-      "carbon dioxide": "#6b7280", "二氧化碳": "#6b7280",
-      "breathing": "#3b82f6", "呼吸": "#3b82f6"
+    "keyTerms": {
+      "circulatory system": "#10b981",
+      "循環系統": "#10b981",
+      "循环系统": "#10b981",
+      "heart": "#ef4444",
+      "心臟": "#ef4444",
+      "心脏": "#ef4444",
+      "blood": "#dc2626",
+      "血液": "#dc2626",
+      "blood vessels": "#3b82f6",
+      "血管": "#3b82f6",
+      "respiration": "#f59e0b",
+      "呼吸作用": "#f59e0b",
+      "mitochondria": "#8b5cf6",
+      "線粒體": "#8b5cf6",
+      "线粒体": "#8b5cf6",
+      "plasma": "#fbbf24",
+      "血漿": "#fbbf24",
+      "血浆": "#fbbf24",
+      "red blood cells": "#ef4444",
+      "紅血球": "#ef4444",
+      "红血球": "#ef4444",
+      "white blood cells": "#60a5fa",
+      "白血球": "#60a5fa",
+      "pathogens": "#7c3aed",
+      "病原體": "#7c3aed",
+      "病原体": "#7c3aed",
+      "platelets": "#ec4899",
+      "血小板": "#ec4899",
+      "alveoli": "#06b6d4",
+      "肺泡": "#06b6d4",
+      "diffusion": "#14b8a6",
+      "擴散作用": "#14b8a6",
+      "扩散作用": "#14b8a6",
+      "diaphragm": "#f97316",
+      "橫膈膜": "#f97316",
+      "横膈膜": "#f97316",
+      "glucose": "#10b981",
+      "葡萄糖": "#10b981",
+      "oxygen": "#3b82f6",
+      "氧氣": "#3b82f6",
+      "氧气": "#3b82f6",
+      "carbon dioxide": "#6b7280",
+      "二氧化碳": "#6b7280",
+      "breathing": "#3b82f6",
+      "呼吸": "#3b82f6"
     },
-    vocab: [
-      { term: "Circulatory system", traditional: "循環系統", simplified: "循环系统", definition: "The system that transports blood, nutrients, and oxygen throughout the body." },
-      { term: "Heart", traditional: "心臟", simplified: "心脏", definition: "The muscular organ that pumps blood through the circulatory system." },
-      { term: "Blood", traditional: "血液", simplified: "血液", definition: "The red liquid that circulates in the arteries and veins, carrying oxygen and nutrients." },
-      { term: "Blood vessels", traditional: "血管", simplified: "血管", definition: "The tubes (arteries, veins, capillaries) through which blood flows." },
-      { term: "Arteries", traditional: "動脈", simplified: "动脉", definition: "Blood vessels that carry oxygenated blood away from the heart." },
-      { term: "Veins", traditional: "靜脈", simplified: "静脉", definition: "Blood vessels that carry deoxygenated blood back to the heart." },
-      { term: "Capillaries", traditional: "微絲血管", simplified: "微丝血管", definition: "Tiny blood vessels where gas and nutrient exchange occurs between blood and cells." },
-      { term: "Plasma", traditional: "血漿", simplified: "血浆", definition: "The yellowish liquid component of blood that holds the blood cells in suspension." },
-      { term: "Red blood cells", traditional: "紅血球", simplified: "红血球", definition: "Cells that carry oxygen from the lungs to the rest of the body using haemoglobin." },
-      { term: "White blood cells", traditional: "白血球", simplified: "白血球", definition: "Cells of the immune system that are involved in protecting the body against infectious disease." },
-      { term: "Platelets", traditional: "血小板", simplified: "血小板", definition: "Small cell fragments in the blood that help with blood clotting." },
-      { term: "Haemoglobin", traditional: "血紅素", simplified: "血红素", definition: "A protein in red blood cells that carries oxygen." },
-      { term: "Oxyhaemoglobin", traditional: "氧合血紅素", simplified: "氧合血红素", definition: "The bright red substance formed by the combination of haemoglobin with oxygen." },
-      { term: "Pathogens", traditional: "病原體", simplified: "病原体", definition: "Microorganisms that cause disease, such as bacteria or viruses." },
-      { term: "Phagocytes", traditional: "吞噬細胞", simplified: "吞噬细胞", definition: "A type of white blood cell that engulfs and digests pathogens." },
-      { term: "Lymphocytes", traditional: "淋巴細胞", simplified: "淋巴细胞", definition: "A type of white blood cell that produces antibodies to fight pathogens." },
-      { term: "Antibodies", traditional: "抗體", simplified: "抗体", definition: "Proteins produced by lymphocytes that identify and neutralize pathogens." },
-      { term: "Virus", traditional: "病毒", simplified: "病毒", definition: "A tiny pathogen that can only replicate inside the living cells of an organism." },
-      { term: "Bacteria", traditional: "細菌", simplified: "细菌", definition: "Single-celled microorganisms that can be beneficial or cause disease." },
-      { term: "Fungi", traditional: "真菌", simplified: "真菌", definition: "A group of organisms including yeasts and molds that can sometimes be pathogenic." },
-      { term: "Blood clotting", traditional: "凝血作用", simplified: "凝血作用", definition: "The process by which blood changes from a liquid to a gel, forming a clot to stop bleeding." },
-      { term: "Scab", traditional: "結痂", simplified: "结痂", definition: "A protective crust that forms over a wound during healing." },
-      { term: "Centrifuge", traditional: "離心機", simplified: "离心机", definition: "A machine used to separate blood components by spinning them at high speed." },
-      { term: "Microscope", traditional: "顯微鏡", simplified: "显微镜", definition: "An instrument used to see objects that are too small for the naked eye, like blood cells." },
-      { term: "Respiratory system", traditional: "呼吸系統", simplified: "呼吸系统", definition: "The system of organs involved in breathing and gas exchange." },
-      { term: "Digestive system", traditional: "消化系統", simplified: "消化系统", definition: "The system that breaks down food into nutrients for the body." },
-      { term: "Respiration", traditional: "呼吸作用", simplified: "呼吸作用", definition: "The chemical process in cells that releases energy from glucose and oxygen." },
-      { term: "Breathing", traditional: "呼吸", simplified: "呼吸", definition: "The physical process of moving air into and out of the lungs." },
-      { term: "Glucose", traditional: "葡萄糖", simplified: "葡萄糖", definition: "A simple sugar that is an important energy source in living organisms." },
-      { term: "Oxygen", traditional: "氧氣", simplified: "氧气", definition: "A gas that is essential for respiration in most living things." },
-      { term: "Carbon dioxide", traditional: "二氧化碳", simplified: "二氧化碳", definition: "A gas produced as a waste product of respiration." },
-      { term: "Carbohydrate", traditional: "碳水化合物", simplified: "碳水化合物", definition: "Nutrients that provide energy, such as sugars and starches." },
-      { term: "Mitochondria", traditional: "線粒體", simplified: "线粒体", definition: "The part of the cell where respiration takes place to release energy." },
-      { term: "Reactants", traditional: "反應物", simplified: "反应物", definition: "The starting substances in a chemical reaction." },
-      { term: "Products", traditional: "生成物 / 產物", simplified: "生成物 / 产物", definition: "The substances formed as a result of a chemical reaction." },
-      { term: "Nasal cavity", traditional: "鼻腔", simplified: "鼻腔", definition: "The hollow space behind the nose where air is warmed and filtered." },
-      { term: "Pharynx / Throat", traditional: "咽 / 喉嚨", simplified: "咽 / 喉咙", definition: "The part of the throat behind the mouth and nasal cavity." },
-      { term: "Larynx / Voicebox", traditional: "喉", simplified: "喉", definition: "The organ in the neck involved in breathing and sound production." },
-      { term: "Trachea / Windpipe", traditional: "氣管", simplified: "气管", definition: "The tube that connects the larynx to the bronchi." },
-      { term: "Bronchus / Bronchi", traditional: "支氣管", simplified: "支气管", definition: "The large air tubes that branch off from the trachea into the lungs." },
-      { term: "Bronchiole", traditional: "小支氣管", simplified: "小支气管", definition: "Small branches of the bronchi that lead to the alveoli." },
-      { term: "Alveoli / Air sacs", traditional: "肺泡 / 氣囊", simplified: "肺泡 / 气囊", definition: "Tiny sacs in the lungs where gas exchange occurs." },
-      { term: "Gas exchange", traditional: "氣體交換", simplified: "气体交换", definition: "The process of swapping oxygen for carbon dioxide in the lungs or cells." },
-      { term: "Diaphragm", traditional: "橫膈膜", simplified: "横膈膜", definition: "A large muscle below the lungs that helps with breathing." },
-      { term: "Intercostal muscles", traditional: "肋間肌", simplified: "肋间肌", definition: "Muscles between the ribs that help expand and contract the chest cavity." },
-      { term: "Rib cage", traditional: "肋骨架", simplified: "肋骨架", definition: "The structure of ribs that protects the heart and lungs." },
-      { term: "Oesophagus", traditional: "食道", simplified: "食道", definition: "The tube that carries food from the throat to the stomach." },
-      { term: "Epiglottis", traditional: "會厭", simplified: "会厌", definition: "A flap of tissue that prevents food from entering the trachea during swallowing." },
-      { term: "Emphysema", traditional: "肺氣腫", simplified: "肺气肿", definition: "A lung condition that causes shortness of breath due to damaged alveoli." },
-      { term: "Inhalation", traditional: "吸氣", simplified: "吸气", definition: "The act of breathing in." },
-      { term: "Exhalation", traditional: "呼氣", simplified: "呼气", definition: "The act of breathing out." },
-      { term: "Contract / Contraction", traditional: "收縮", simplified: "收缩", definition: "The tightening or shortening of a muscle." },
-      { term: "Relax / Relaxation", traditional: "放鬆", simplified: "放松", definition: "The state of being free from tension or the lengthening of a muscle." },
-      { term: "Concentration", traditional: "濃度", simplified: "浓度", definition: "The amount of a substance in a given volume." },
-      { term: "Diffusion", traditional: "擴散 / 擴散作用", simplified: "扩散 / 扩散作用", definition: "The movement of particles from high to low concentration." },
-      { term: "Pressure", traditional: "壓力", simplified: "压力", definition: "The force applied over an area." },
-      { term: "Volume", traditional: "體積", simplified: "体积", definition: "The amount of space that an object or substance occupies." },
-      { term: "Inversely proportional", traditional: "反比", simplified: "反比", definition: "A relationship where one value increases as the other decreases." }
+    "vocab": [
+      {
+        "term": "Circulatory system",
+        "traditional": "循環系統",
+        "simplified": "循环系统",
+        "definition": "The system that transports blood, nutrients, and oxygen throughout the body."
+      },
+      {
+        "term": "Heart",
+        "traditional": "心臟",
+        "simplified": "心脏",
+        "definition": "The muscular organ that pumps blood through the circulatory system."
+      },
+      {
+        "term": "Blood",
+        "traditional": "血液",
+        "simplified": "血液",
+        "definition": "The red liquid that circulates in the arteries and veins, carrying oxygen and nutrients."
+      },
+      {
+        "term": "Blood vessels",
+        "traditional": "血管",
+        "simplified": "血管",
+        "definition": "The tubes (arteries, veins, capillaries) through which blood flows."
+      },
+      {
+        "term": "Arteries",
+        "traditional": "動脈",
+        "simplified": "动脉",
+        "definition": "Blood vessels that carry oxygenated blood away from the heart."
+      },
+      {
+        "term": "Veins",
+        "traditional": "靜脈",
+        "simplified": "静脉",
+        "definition": "Blood vessels that carry deoxygenated blood back to the heart."
+      },
+      {
+        "term": "Capillaries",
+        "traditional": "微絲血管",
+        "simplified": "微丝血管",
+        "definition": "Tiny blood vessels where gas and nutrient exchange occurs between blood and cells."
+      },
+      {
+        "term": "Plasma",
+        "traditional": "血漿",
+        "simplified": "血浆",
+        "definition": "The yellowish liquid component of blood that holds the blood cells in suspension."
+      },
+      {
+        "term": "Red blood cells",
+        "traditional": "紅血球",
+        "simplified": "红血球",
+        "definition": "Cells that carry oxygen from the lungs to the rest of the body using haemoglobin."
+      },
+      {
+        "term": "White blood cells",
+        "traditional": "白血球",
+        "simplified": "白血球",
+        "definition": "Cells of the immune system that are involved in protecting the body against infectious disease."
+      },
+      {
+        "term": "Platelets",
+        "traditional": "血小板",
+        "simplified": "血小板",
+        "definition": "Small cell fragments in the blood that help with blood clotting."
+      },
+      {
+        "term": "Haemoglobin",
+        "traditional": "血紅素",
+        "simplified": "血红素",
+        "definition": "A protein in red blood cells that carries oxygen."
+      },
+      {
+        "term": "Oxyhaemoglobin",
+        "traditional": "氧合血紅素",
+        "simplified": "氧合血红素",
+        "definition": "The bright red substance formed by the combination of haemoglobin with oxygen."
+      },
+      {
+        "term": "Pathogens",
+        "traditional": "病原體",
+        "simplified": "病原体",
+        "definition": "Microorganisms that cause disease, such as bacteria or viruses."
+      },
+      {
+        "term": "Phagocytes",
+        "traditional": "吞噬細胞",
+        "simplified": "吞噬细胞",
+        "definition": "A type of white blood cell that engulfs and digests pathogens."
+      },
+      {
+        "term": "Lymphocytes",
+        "traditional": "淋巴細胞",
+        "simplified": "淋巴细胞",
+        "definition": "A type of white blood cell that produces antibodies to fight pathogens."
+      },
+      {
+        "term": "Antibodies",
+        "traditional": "抗體",
+        "simplified": "抗体",
+        "definition": "Proteins produced by lymphocytes that identify and neutralize pathogens."
+      },
+      {
+        "term": "Virus",
+        "traditional": "病毒",
+        "simplified": "病毒",
+        "definition": "A tiny pathogen that can only replicate inside the living cells of an organism."
+      },
+      {
+        "term": "Bacteria",
+        "traditional": "細菌",
+        "simplified": "细菌",
+        "definition": "Single-celled microorganisms that can be beneficial or cause disease."
+      },
+      {
+        "term": "Fungi",
+        "traditional": "真菌",
+        "simplified": "真菌",
+        "definition": "A group of organisms including yeasts and molds that can sometimes be pathogenic."
+      },
+      {
+        "term": "Blood clotting",
+        "traditional": "凝血作用",
+        "simplified": "凝血作用",
+        "definition": "The process by which blood changes from a liquid to a gel, forming a clot to stop bleeding."
+      },
+      {
+        "term": "Scab",
+        "traditional": "結痂",
+        "simplified": "结痂",
+        "definition": "A protective crust that forms over a wound during healing."
+      },
+      {
+        "term": "Centrifuge",
+        "traditional": "離心機",
+        "simplified": "离心机",
+        "definition": "A machine used to separate blood components by spinning them at high speed."
+      },
+      {
+        "term": "Microscope",
+        "traditional": "顯微鏡",
+        "simplified": "显微镜",
+        "definition": "An instrument used to see objects that are too small for the naked eye, like blood cells."
+      },
+      {
+        "term": "Respiratory system",
+        "traditional": "呼吸系統",
+        "simplified": "呼吸系统",
+        "definition": "The system of organs involved in breathing and gas exchange."
+      },
+      {
+        "term": "Digestive system",
+        "traditional": "消化系統",
+        "simplified": "消化系统",
+        "definition": "The system that breaks down food into nutrients for the body."
+      },
+      {
+        "term": "Respiration",
+        "traditional": "呼吸作用",
+        "simplified": "呼吸作用",
+        "definition": "The chemical process in cells that releases energy from glucose and oxygen."
+      },
+      {
+        "term": "Breathing",
+        "traditional": "呼吸",
+        "simplified": "呼吸",
+        "definition": "The physical process of moving air into and out of the lungs."
+      },
+      {
+        "term": "Glucose",
+        "traditional": "葡萄糖",
+        "simplified": "葡萄糖",
+        "definition": "A simple sugar that is an important energy source in living organisms."
+      },
+      {
+        "term": "Oxygen",
+        "traditional": "氧氣",
+        "simplified": "氧气",
+        "definition": "A gas that is essential for respiration in most living things."
+      },
+      {
+        "term": "Carbon dioxide",
+        "traditional": "二氧化碳",
+        "simplified": "二氧化碳",
+        "definition": "A gas produced as a waste product of respiration."
+      },
+      {
+        "term": "Carbohydrate",
+        "traditional": "碳水化合物",
+        "simplified": "碳水化合物",
+        "definition": "Nutrients that provide energy, such as sugars and starches."
+      },
+      {
+        "term": "Mitochondria",
+        "traditional": "線粒體",
+        "simplified": "线粒体",
+        "definition": "The part of the cell where respiration takes place to release energy."
+      },
+      {
+        "term": "Reactants",
+        "traditional": "反應物",
+        "simplified": "反应物",
+        "definition": "The starting substances in a chemical reaction."
+      },
+      {
+        "term": "Products",
+        "traditional": "生成物 / 產物",
+        "simplified": "生成物 / 产物",
+        "definition": "The substances formed as a result of a chemical reaction."
+      },
+      {
+        "term": "Nasal cavity",
+        "traditional": "鼻腔",
+        "simplified": "鼻腔",
+        "definition": "The hollow space behind the nose where air is warmed and filtered."
+      },
+      {
+        "term": "Pharynx / Throat",
+        "traditional": "咽 / 喉嚨",
+        "simplified": "咽 / 喉咙",
+        "definition": "The part of the throat behind the mouth and nasal cavity."
+      },
+      {
+        "term": "Larynx / Voicebox",
+        "traditional": "喉",
+        "simplified": "喉",
+        "definition": "The organ in the neck involved in breathing and sound production."
+      },
+      {
+        "term": "Trachea / Windpipe",
+        "traditional": "氣管",
+        "simplified": "气管",
+        "definition": "The tube that connects the larynx to the bronchi."
+      },
+      {
+        "term": "Bronchus / Bronchi",
+        "traditional": "支氣管",
+        "simplified": "支气管",
+        "definition": "The large air tubes that branch off from the trachea into the lungs."
+      },
+      {
+        "term": "Bronchiole",
+        "traditional": "小支氣管",
+        "simplified": "小支气管",
+        "definition": "Small branches of the bronchi that lead to the alveoli."
+      },
+      {
+        "term": "Alveoli / Air sacs",
+        "traditional": "肺泡 / 氣囊",
+        "simplified": "肺泡 / 气囊",
+        "definition": "Tiny sacs in the lungs where gas exchange occurs."
+      },
+      {
+        "term": "Gas exchange",
+        "traditional": "氣體交換",
+        "simplified": "气体交换",
+        "definition": "The process of swapping oxygen for carbon dioxide in the lungs or cells."
+      },
+      {
+        "term": "Diaphragm",
+        "traditional": "橫膈膜",
+        "simplified": "横膈膜",
+        "definition": "A large muscle below the lungs that helps with breathing."
+      },
+      {
+        "term": "Intercostal muscles",
+        "traditional": "肋間肌",
+        "simplified": "肋间肌",
+        "definition": "Muscles between the ribs that help expand and contract the chest cavity."
+      },
+      {
+        "term": "Rib cage",
+        "traditional": "肋骨架",
+        "simplified": "肋骨架",
+        "definition": "The structure of ribs that protects the heart and lungs."
+      },
+      {
+        "term": "Oesophagus",
+        "traditional": "食道",
+        "simplified": "食道",
+        "definition": "The tube that carries food from the throat to the stomach."
+      },
+      {
+        "term": "Epiglottis",
+        "traditional": "會厭",
+        "simplified": "会厌",
+        "definition": "A flap of tissue that prevents food from entering the trachea during swallowing."
+      },
+      {
+        "term": "Emphysema",
+        "traditional": "肺氣腫",
+        "simplified": "肺气肿",
+        "definition": "A lung condition that causes shortness of breath due to damaged alveoli."
+      },
+      {
+        "term": "Inhalation",
+        "traditional": "吸氣",
+        "simplified": "吸气",
+        "definition": "The act of breathing in."
+      },
+      {
+        "term": "Exhalation",
+        "traditional": "呼氣",
+        "simplified": "呼气",
+        "definition": "The act of breathing out."
+      },
+      {
+        "term": "Contract / Contraction",
+        "traditional": "收縮",
+        "simplified": "收缩",
+        "definition": "The tightening or shortening of a muscle."
+      },
+      {
+        "term": "Relax / Relaxation",
+        "traditional": "放鬆",
+        "simplified": "放松",
+        "definition": "The state of being free from tension or the lengthening of a muscle."
+      },
+      {
+        "term": "Concentration",
+        "traditional": "濃度",
+        "simplified": "浓度",
+        "definition": "The amount of a substance in a given volume."
+      },
+      {
+        "term": "Diffusion",
+        "traditional": "擴散 / 擴散作用",
+        "simplified": "扩散 / 扩散作用",
+        "definition": "The movement of particles from high to low concentration."
+      },
+      {
+        "term": "Pressure",
+        "traditional": "壓力",
+        "simplified": "压力",
+        "definition": "The force applied over an area."
+      },
+      {
+        "term": "Volume",
+        "traditional": "體積",
+        "simplified": "体积",
+        "definition": "The amount of space that an object or substance occupies."
+      },
+      {
+        "term": "Inversely proportional",
+        "traditional": "反比",
+        "simplified": "反比",
+        "definition": "A relationship where one value increases as the other decreases."
+      }
     ],
-    questions: [
-      { id: "1-1", text: "What best describes respiration?", options: ["A physical process that moves air in and out of lungs", "A chemical reaction in cells that releases energy", "A process that pumps blood around the body", "A process that breaks food into smaller pieces"], correctAnswer: "A chemical reaction in cells that releases energy", explanation: "Respiration is a chemical reaction that occurs in cells to release energy from glucose and oxygen. Breathing is the physical process of moving air." },
-      { id: "1-2", text: "Respiration happens in:", options: ["lungs only", "all cells", "the heart only", "blood vessels only"], correctAnswer: "all cells", explanation: "Every living cell needs energy to function, so respiration occurs in all living cells, not just specialized organs." },
-      { id: "1-3", text: "Most aerobic respiration takes place in the:", options: ["nucleus", "mitochondria", "cell wall", "vacuole"], correctAnswer: "mitochondria", explanation: "Mitochondria are the specialized organelles within cells where the majority of aerobic respiration occurs to produce energy." },
-      { id: "1-4", text: "Mitochondria are called the “powerhouse” because they:", options: ["store DNA", "make proteins", "release energy from respiration", "control the cell"], correctAnswer: "release energy from respiration", explanation: "Mitochondria are known as the powerhouse because they are the primary site for energy release through the process of respiration." },
-      { id: "1-5", text: "Which is the correct word equation for aerobic respiration?", options: ["Glucose + oxygen → carbon dioxide + water + energy", "Oxygen + carbon dioxide → glucose + water + energy", "Glucose + carbon dioxide → oxygen + water + energy", "Water + oxygen → glucose + carbon dioxide + energy"], correctAnswer: "Glucose + oxygen → carbon dioxide + water + energy", explanation: "In aerobic respiration, glucose and oxygen react to produce carbon dioxide and water, releasing energy in the process." },
-      { id: "1-6", text: "Which is the balanced chemical equation for aerobic respiration?", options: ["C6H12O6 + 6O2 → 6CO2 + 6H2O", "C6H12O6 + O2 → CO2 + H2O", "C6H12O6 + 6CO2 → 6O2 + 6H2O", "6CO2 + 6H2O → C6H12O6 + 6O2 + energy"], correctAnswer: "C6H12O6 + 6O2 → 6CO2 + 6H2O" },
-      { id: "1-7", text: "In aerobic respiration, the reactants are:", options: ["carbon dioxide and water", "glucose and oxygen", "oxygen and water", "glucose and carbon dioxide"], correctAnswer: "glucose and oxygen" },
-      { id: "1-8", text: "In aerobic respiration, the products are:", options: ["glucose and oxygen", "carbon dioxide and water", "oxygen and energy only", "glucose and water"], correctAnswer: "carbon dioxide and water" },
-      { id: "1-9", text: "Which is NOT a product of aerobic respiration?", options: ["Water", "Carbon dioxide", "Oxygen", "Energy"], correctAnswer: "Oxygen" },
-      { id: "1-10", text: "Which statement is TRUE?", options: ["Respiration happens only when we breathe in", "Respiration happens only in plants", "Respiration happens in all living cells", "Respiration happens only in the lungs"], correctAnswer: "Respiration happens in all living cells" },
-      { id: "1-11", text: "Breathing is best described as:", options: ["a chemical process in mitochondria", "a physical process moving air in and out of lungs", "a process that releases energy from glucose", "a process that produces carbon dioxide in cells"], correctAnswer: "a physical process moving air in and out of lungs" },
-      { id: "1-12", text: "Respiration is:", options: ["physical only", "chemical only", "neither physical nor chemical", "the same as breathing"], correctAnswer: "chemical only" },
-      { id: "1-13", text: "Which happens in all cells?", options: ["Breathing", "Respiration", "Gas exchange at alveoli", "Pumping by the heart"], correctAnswer: "Respiration" },
-      { id: "1-14", text: "Which involves the lungs directly?", options: ["Respiration", "Breathing", "Digestion", "Blood clotting"], correctAnswer: "Breathing" },
-      { id: "1-15", text: "Inhalation means air moves:", options: ["into the lungs", "out of the lungs", "into the blood", "out of the heart"], correctAnswer: "into the lungs" },
-      { id: "1-16", text: "Exhalation means air moves:", options: ["into the lungs", "out of the lungs", "into the stomach", "out of the blood"], correctAnswer: "out of the lungs" },
-      { id: "1-17", text: "During breathing, air is moved:", options: ["into and out of the lungs", "only into the lungs", "only out of the lungs", "into and out of the heart"], correctAnswer: "into and out of the lungs" },
-      { id: "1-18", text: "The system used for breathing is the:", options: ["circulatory system", "digestive system", "respiratory system", "excretory system"], correctAnswer: "respiratory system" },
-      { id: "1-19", text: "The “voice box” is the:", options: ["trachea", "larynx", "bronchiole", "diaphragm"], correctAnswer: "larynx" },
-      { id: "1-20", text: "The trachea is also known as the:", options: ["windpipe", "food pipe", "air sac", "capillary"], correctAnswer: "windpipe" },
-      { id: "1-21", text: "Which order shows the correct path of air to the alveoli?", options: ["Nose → trachea → bronchi → bronchioles → alveoli", "Nose → bronchioles → bronchi → trachea → alveoli", "Nose → oesophagus → trachea → bronchi → alveoli", "Nose → trachea → alveoli → bronchi → bronchioles"], correctAnswer: "Nose → trachea → bronchi → bronchioles → alveoli" },
-      { id: "1-22", text: "Bronchi are:", options: ["tiny air sacs", "tubes that lead from the trachea into the lungs", "muscles for breathing", "blood vessels"], correctAnswer: "tubes that lead from the trachea into the lungs" },
-      { id: "1-23", text: "Bronchioles are:", options: ["the main windpipe", "smaller branches in the lungs leading to alveoli", "the rings of cartilage in the trachea", "blood vessels leaving the heart"], correctAnswer: "smaller branches in the lungs leading to alveoli" },
-      { id: "1-24", text: "Alveoli are:", options: ["tiny air sacs where gas exchange happens", "the muscles that move the ribs", "tubes that carry blood", "cells that carry oxygen"], correctAnswer: "tiny air sacs where gas exchange happens" },
-      { id: "1-25", text: "Alveoli are well-suited for gas exchange mainly because they have:", options: ["small surface area and thick walls", "large surface area and thin walls", "no blood supply", "hard walls made of cartilage"], correctAnswer: "large surface area and thin walls" },
-      { id: "1-26", text: "Gas exchange occurs between alveoli and:", options: ["arteries", "veins", "capillaries", "bronchi"], correctAnswer: "capillaries" },
-      { id: "1-27", text: "Concentration is the number of:", options: ["particles in a given volume", "breaths in a given minute", "organs in a body", "cells in a tissue"], correctAnswer: "particles in a given volume" },
-      { id: "1-28", text: "Diffusion is the overall movement of particles from:", options: ["low concentration to high concentration", "high concentration to low concentration", "low pressure to high pressure", "high temperature to low temperature"], correctAnswer: "high concentration to low concentration" },
-      { id: "1-29", text: "A concentration gradient is:", options: ["the difference in concentration between two regions", "the total number of particles", "the volume of a gas", "the mass of a substance"], correctAnswer: "the difference in concentration between two regions" },
-      { id: "1-30", text: "Oxygen moves from alveoli into blood mainly by:", options: ["diffusion", "evaporation", "condensation", "combustion"], correctAnswer: "diffusion" },
-      { id: "1-31", text: "Diffusion will continue until:", options: ["all particles stop moving", "concentrations become equal (no net movement)", "pressure becomes higher", "temperature becomes zero"], correctAnswer: "concentrations become equal (no net movement)" },
-      { id: "1-32", text: "Oxygen is mainly transported by:", options: ["white blood cells", "platelets", "red blood cells", "plasma only"], correctAnswer: "red blood cells" },
-      { id: "1-33", text: "Red blood cells are red because they contain:", options: ["chlorophyll", "haemoglobin", "antibodies", "enzymes for digestion"], correctAnswer: "haemoglobin" },
-      { id: "1-34", text: "Haemoglobin’s main function is to:", options: ["fight pathogens", "help blood clot", "transport oxygen", "digest glucose"], correctAnswer: "transport oxygen" },
-      { id: "1-35", text: "In the lungs, haemoglobin combines with oxygen to form:", options: ["carbon dioxide", "oxyhaemoglobin", "glucose", "plasma"], correctAnswer: "oxyhaemoglobin" },
-      { id: "1-36", text: "When red blood cells reach body cells, oxyhaemoglobin will:", options: ["stay the same", "release oxygen", "produce antibodies", "become platelets"], correctAnswer: "release oxygen" },
-      { id: "1-37", text: "Oxygen diffuses from blood into body cells because body cells have:", options: ["higher oxygen concentration than blood", "lower oxygen concentration than blood", "no oxygen concentration", "the same oxygen concentration as blood at all times"], correctAnswer: "lower oxygen concentration than blood" },
-      { id: "1-38", text: "Pressure and volume of a gas are usually:", options: ["directly proportional", "inversely proportional", "unrelated", "always equal"], correctAnswer: "inversely proportional" },
-      { id: "1-39", text: "If lung volume increases, lung pressure will:", options: ["increase", "decrease", "stay the same", "become zero"], correctAnswer: "decrease" },
-      { id: "1-40", text: "Gas moves from high pressure to low pressure down the:", options: ["temperature gradient", "pressure gradient", "concentration gradient", "energy gradient"], correctAnswer: "pressure gradient" },
-      { id: "1-41", text: "Two main muscle groups involved in breathing are:", options: ["biceps and triceps", "diaphragm and intercostal muscles", "heart muscle and leg muscles", "tongue and jaw muscles"], correctAnswer: "diaphragm and intercostal muscles" },
-      { id: "1-42", text: "During inhalation, the diaphragm:", options: ["contracts and flattens", "relaxes and flattens", "contracts and becomes dome-shaped", "stops working"], correctAnswer: "contracts and flattens" },
-      { id: "1-43", text: "During exhalation, the diaphragm:", options: ["contracts and flattens", "relaxes and returns to a dome shape", "contracts and pulls ribs up", "has no effect"], correctAnswer: "relaxes and returns to a dome shape" },
-      { id: "1-44", text: "During inhalation, chest (lung) volume:", options: ["increases", "decreases", "stays the same", "becomes zero"], correctAnswer: "increases" },
-      { id: "1-45", text: "During exhalation, chest (lung) volume:", options: ["increases", "decreases", "stays the same", "doubles"], correctAnswer: "decreases" },
-      { id: "1-46", text: "During inhalation, lung pressure becomes:", options: ["higher than outside air", "lower than outside air", "equal to outside air always", "unrelated to outside air"], correctAnswer: "lower than outside air" },
-      { id: "1-47", text: "During exhalation, lung pressure becomes:", options: ["lower than outside air", "higher than outside air", "always zero", "always equal to outside air"], correctAnswer: "higher than outside air" },
-      { id: "1-48", text: "The circulatory system is needed mainly to:", options: ["break down food into glucose", "deliver oxygen and nutrients to body cells", "make antibodies", "produce oxygen in the body"], correctAnswer: "deliver oxygen and nutrients to body cells" },
-      { id: "1-49", text: "The circulatory system consists of:", options: ["heart, lungs, trachea", "heart, blood, blood vessels", "blood, alveoli, bronchioles", "stomach, intestines, blood"], correctAnswer: "heart, blood, blood vessels" },
-      { id: "1-50", text: "Which part of blood is a pale yellowish liquid that carries dissolved substances?", options: ["Plasma", "Platelets", "Red blood cells", "White blood cells"], correctAnswer: "Plasma" }
+    "questions": [
+      {
+        "id": "1-1",
+        "text": "What best describes respiration?",
+        "textTraditional": "以下哪項最能描述呼吸作用？",
+        "textSimplified": "以下哪项最能描述呼吸作用？",
+        "options": [
+          "A physical process that moves air in and out of lungs",
+          "A chemical reaction in cells that releases energy",
+          "A process that pumps blood around the body",
+          "A process that breaks food into smaller pieces"
+        ],
+        "optionsTraditional": [
+          "空氣進出肺部的物理過程",
+          "細胞內釋放能量的化學反應",
+          "將血液泵送至全身的過程",
+          "將食物分解成小塊的過程"
+        ],
+        "optionsSimplified": [
+          "空气进出肺部的物理过程",
+          "细胞内释放能量的化学反应",
+          "将血液泵送至全身的过程",
+          "将食物分解成小块的过程"
+        ],
+        "correctAnswer": "A chemical reaction in cells that releases energy",
+        "correctAnswerTraditional": "細胞內釋放能量的化學反應",
+        "correctAnswerSimplified": "细胞内释放能量的化学反应",
+        "explanation": "Respiration is a chemical reaction that occurs in cells to release energy from glucose and oxygen. Breathing is the physical process of moving air."
+      },
+      {
+        "id": "1-2",
+        "text": "Respiration happens in:",
+        "textTraditional": "呼吸作用發生在：",
+        "textSimplified": "呼吸作用发生在：",
+        "options": [
+          "lungs only",
+          "all cells",
+          "the heart only",
+          "blood vessels only"
+        ],
+        "optionsTraditional": [
+          "僅限肺部",
+          "所有細胞",
+          "僅限心臟",
+          "僅限血管"
+        ],
+        "optionsSimplified": [
+          "仅限肺部",
+          "所有细胞",
+          "仅限心脏",
+          "仅限血管"
+        ],
+        "correctAnswer": "all cells",
+        "correctAnswerTraditional": "所有細胞",
+        "correctAnswerSimplified": "所有细胞",
+        "explanation": "Every living cell needs energy to function, so respiration occurs in all living cells, not just specialized organs."
+      },
+      {
+        "id": "1-3",
+        "text": "Most aerobic respiration takes place in the:",
+        "textTraditional": "大多數有氧呼吸發生在：",
+        "textSimplified": "大多数有氧呼吸发生在：",
+        "options": [
+          "nucleus",
+          "mitochondria",
+          "cell wall",
+          "vacuole"
+        ],
+        "optionsTraditional": [
+          "細胞核",
+          "線粒體",
+          "細胞壁",
+          "液泡"
+        ],
+        "optionsSimplified": [
+          "细胞核",
+          "线粒体",
+          "细胞壁",
+          "液泡"
+        ],
+        "correctAnswer": "mitochondria",
+        "correctAnswerTraditional": "線粒體",
+        "correctAnswerSimplified": "线粒体",
+        "explanation": "Mitochondria are the specialized organelles within cells where the majority of aerobic respiration occurs to produce energy."
+      },
+      {
+        "id": "1-4",
+        "text": "Mitochondria are called the “powerhouse” because they:",
+        "textTraditional": "線粒體被稱為「動力工廠」，是因為它們：",
+        "textSimplified": "线粒体被称为“动力工厂”，是因为它们：",
+        "options": [
+          "store DNA",
+          "make proteins",
+          "release energy from respiration",
+          "control the cell"
+        ],
+        "optionsTraditional": [
+          "儲存 DNA",
+          "製造蛋白質",
+          "從呼吸作用中釋放能量",
+          "控制細胞"
+        ],
+        "optionsSimplified": [
+          "储存 DNA",
+          "制造蛋白质",
+          "从呼吸作用中释放能量",
+          "控制细胞"
+        ],
+        "correctAnswer": "release energy from respiration",
+        "correctAnswerTraditional": "從呼吸作用中釋放能量",
+        "correctAnswerSimplified": "从呼吸作用中释放能量",
+        "explanation": "Mitochondria are known as the powerhouse because they are the primary site for energy release through the process of respiration."
+      },
+      {
+        "id": "1-5",
+        "text": "Which is the correct word equation for aerobic respiration?",
+        "textTraditional": "以下哪項是有氧呼吸的正確認字方程式？",
+        "textSimplified": "以下哪项是有氧呼吸的正确文字方程式？",
+        "options": [
+          "Glucose + oxygen → carbon dioxide + water + energy",
+          "Oxygen + carbon dioxide → glucose + water + energy",
+          "Glucose + carbon dioxide → oxygen + water + energy",
+          "Water + oxygen → glucose + carbon dioxide + energy"
+        ],
+        "optionsTraditional": [
+          "葡萄糖 + 氧氣 → 二氧化碳 + 水 + 能量",
+          "氧氣 + 二氧化碳 → 葡萄糖 + 水 + 能量",
+          "葡萄糖 + 二氧化碳 → 氧氣 + 水 + 能量",
+          "水 + 氧氣 → 葡萄糖 + 二氧化碳 + 能量"
+        ],
+        "optionsSimplified": [
+          "葡萄糖 + 氧气 → 二氧化碳 + 水 + 能量",
+          "氧气 + 二氧化碳 → 葡萄糖 + 水 + 能量",
+          "葡萄糖 + 二氧化碳 → 氧气 + 水 + 能量",
+          "水 + 氧气 → 葡萄糖 + 二氧化碳 + 能量"
+        ],
+        "correctAnswer": "Glucose + oxygen → carbon dioxide + water + energy",
+        "correctAnswerTraditional": "葡萄糖 + 氧氣 → 二氧化碳 + 水 + 能量",
+        "correctAnswerSimplified": "葡萄糖 + 氧气 → 二氧化碳 + 水 + 能量",
+        "explanation": "In aerobic respiration, glucose and oxygen react to produce carbon dioxide and water, releasing energy in the process."
+      },
+      {
+        "id": "1-6",
+        "text": "Which is the balanced chemical equation for aerobic respiration?",
+        "textTraditional": "以下哪項是有氧呼吸的平衡化學方程式？",
+        "textSimplified": "以下哪项是有氧呼吸的平衡化学方程式？",
+        "options": [
+          "C6H12O6 + 6O2 → 6CO2 + 6H2O",
+          "C6H12O6 + O2 → CO2 + H2O",
+          "C6H12O6 + 6CO2 → 6O2 + 6H2O",
+          "6CO2 + 6H2O → C6H12O6 + 6O2 + energy"
+        ],
+        "optionsTraditional": [
+          "C6H12O6 + 6O2 → 6CO2 + 6H2O",
+          "C6H12O6 + O2 → CO2 + H2O",
+          "C6H12O6 + 6CO2 → 6O2 + 6H2O",
+          "6CO2 + 6H2O → C6H12O6 + 6O2 + 能量"
+        ],
+        "optionsSimplified": [
+          "C6H12O6 + 6O2 → 6CO2 + 6H2O",
+          "C6H12O6 + O2 → CO2 + H2O",
+          "C6H12O6 + 6CO2 → 6O2 + 6H2O",
+          "6CO2 + 6H2O → C6H12O6 + 6O2 + 能量"
+        ],
+        "correctAnswer": "C6H12O6 + 6O2 → 6CO2 + 6H2O",
+        "correctAnswerTraditional": "C6H12O6 + 6O2 → 6CO2 + 6H2O",
+        "correctAnswerSimplified": "C6H12O6 + 6O2 → 6CO2 + 6H2O"
+      },
+      {
+        "id": "1-7",
+        "text": "In aerobic respiration, the reactants are:",
+        "textTraditional": "在有氧呼吸中，反應物是：",
+        "textSimplified": "在有氧呼吸中，反应物是：",
+        "options": [
+          "carbon dioxide and water",
+          "glucose and oxygen",
+          "oxygen and water",
+          "glucose and carbon dioxide"
+        ],
+        "optionsTraditional": [
+          "二氧化碳和水",
+          "葡萄糖和氧氣",
+          "氧氣和水",
+          "葡萄糖和二氧化碳"
+        ],
+        "optionsSimplified": [
+          "二氧化碳和水",
+          "葡萄糖和氧气",
+          "氧气和水",
+          "葡萄糖和二氧化碳"
+        ],
+        "correctAnswer": "glucose and oxygen",
+        "correctAnswerTraditional": "葡萄糖和氧氣",
+        "correctAnswerSimplified": "葡萄糖和氧气"
+      },
+      {
+        "id": "1-8",
+        "text": "In aerobic respiration, the products are:",
+        "textTraditional": "在有氧呼吸中，產物是：",
+        "textSimplified": "在有氧呼吸中，产物是：",
+        "options": [
+          "glucose and oxygen",
+          "carbon dioxide and water",
+          "oxygen and energy only",
+          "glucose and water"
+        ],
+        "optionsTraditional": [
+          "葡萄糖和氧氣",
+          "二氧化碳和水",
+          "僅限氧氣和能量",
+          "葡萄糖和水"
+        ],
+        "optionsSimplified": [
+          "葡萄糖和氧气",
+          "二氧化碳和水",
+          "仅限氧气和能量",
+          "葡萄糖和水"
+        ],
+        "correctAnswer": "carbon dioxide and water",
+        "correctAnswerTraditional": "二氧化碳和水",
+        "correctAnswerSimplified": "二氧化碳和水"
+      },
+      {
+        "id": "1-9",
+        "text": "Which is NOT a product of aerobic respiration?",
+        "textTraditional": "以下哪項不是有氧呼吸的產物？",
+        "textSimplified": "以下哪项不是有氧呼吸的产物？",
+        "options": [
+          "Water",
+          "Carbon dioxide",
+          "Oxygen",
+          "Energy"
+        ],
+        "optionsTraditional": [
+          "水",
+          "二氧化碳",
+          "氧氣",
+          "能量"
+        ],
+        "optionsSimplified": [
+          "水",
+          "二氧化碳",
+          "氧气",
+          "能量"
+        ],
+        "correctAnswer": "Oxygen",
+        "correctAnswerTraditional": "氧氣",
+        "correctAnswerSimplified": "氧气"
+      },
+      {
+        "id": "1-10",
+        "text": "Which statement is TRUE?",
+        "textTraditional": "以下哪項陳述是正確的？",
+        "textSimplified": "以下哪项陈述是正确的？",
+        "options": [
+          "Respiration happens only when we breathe in",
+          "Respiration happens only in plants",
+          "Respiration happens in all living cells",
+          "Respiration happens only in the lungs"
+        ],
+        "optionsTraditional": [
+          "呼吸作用僅在我們吸氣時發生",
+          "呼吸作用僅在植物中發生",
+          "呼吸作用在所有活細胞中發生",
+          "呼吸作用僅在肺部發生"
+        ],
+        "optionsSimplified": [
+          "呼吸作用仅在我们要吸气时发生",
+          "呼吸作用仅在植物中发生",
+          "呼吸作用在所有活细胞中发生",
+          "呼吸作用仅在肺部发生"
+        ],
+        "correctAnswer": "Respiration happens in all living cells",
+        "correctAnswerTraditional": "呼吸作用在所有活細胞中發生",
+        "correctAnswerSimplified": "呼吸作用在所有活细胞中发生"
+      },
+      {
+        "id": "1-11",
+        "text": "Breathing is best described as:",
+        "textTraditional": "呼吸（Breathing）最準確的描述是：",
+        "textSimplified": "呼吸（Breathing）最准确的描述是：",
+        "options": [
+          "a chemical process in mitochondria",
+          "a physical process moving air in and out of lungs",
+          "a process that releases energy from glucose",
+          "a process that produces carbon dioxide in cells"
+        ],
+        "optionsTraditional": [
+          "線粒體中的化學過程",
+          "空氣進出肺部的物理過程",
+          "從葡萄糖中釋放能量的過程",
+          "細胞中產生二氧化碳的過程"
+        ],
+        "optionsSimplified": [
+          "线粒体中的化学过程",
+          "空气进出肺部的物理过程",
+          "从葡萄糖中释放能量的过程",
+          "细胞中产生二氧化碳的过程"
+        ],
+        "correctAnswer": "a physical process moving air in and out of lungs",
+        "correctAnswerTraditional": "空氣進出肺部的物理過程",
+        "correctAnswerSimplified": "空气进出肺部的物理过程"
+      },
+      {
+        "id": "1-12",
+        "text": "Respiration is:",
+        "textTraditional": "呼吸作用（Respiration）是：",
+        "textSimplified": "呼吸作用（Respiration）是：",
+        "options": [
+          "physical only",
+          "chemical only",
+          "neither physical nor chemical",
+          "the same as breathing"
+        ],
+        "optionsTraditional": [
+          "純物理的",
+          "純化學的",
+          "既非物理也非化學",
+          "與呼吸相同"
+        ],
+        "optionsSimplified": [
+          "纯物理的",
+          "纯化学的",
+          "既非物理也非化学",
+          "与呼吸相同"
+        ],
+        "correctAnswer": "chemical only",
+        "correctAnswerTraditional": "純化學的",
+        "correctAnswerSimplified": "纯化学的"
+      },
+      {
+        "id": "1-13",
+        "text": "Which happens in all cells?",
+        "textTraditional": "哪項過程在所有細胞中發生？",
+        "textSimplified": "哪项过程在所有细胞中发生？",
+        "options": [
+          "Breathing",
+          "Respiration",
+          "Gas exchange at alveoli",
+          "Pumping by the heart"
+        ],
+        "optionsTraditional": [
+          "呼吸",
+          "呼吸作用",
+          "肺泡處的氣體交換",
+          "心臟泵血"
+        ],
+        "optionsSimplified": [
+          "呼吸",
+          "呼吸作用",
+          "肺泡处的气体交换",
+          "心脏泵血"
+        ],
+        "correctAnswer": "Respiration",
+        "correctAnswerTraditional": "呼吸作用",
+        "correctAnswerSimplified": "呼吸作用"
+      },
+      {
+        "id": "1-14",
+        "text": "Which involves the lungs directly?",
+        "textTraditional": "哪項過程直接涉及肺部？",
+        "textSimplified": "哪项过程直接涉及肺部？",
+        "options": [
+          "Respiration",
+          "Breathing",
+          "Digestion",
+          "Blood clotting"
+        ],
+        "optionsTraditional": [
+          "呼吸作用",
+          "呼吸",
+          "消化",
+          "血液凝固"
+        ],
+        "optionsSimplified": [
+          "呼吸作用",
+          "呼吸",
+          "消化",
+          "血液凝固"
+        ],
+        "correctAnswer": "Breathing",
+        "correctAnswerTraditional": "呼吸",
+        "correctAnswerSimplified": "呼吸"
+      },
+      {
+        "id": "1-15",
+        "text": "Inhalation means air moves:",
+        "textTraditional": "吸氣意味著空氣：",
+        "textSimplified": "吸气意味着空气：",
+        "options": [
+          "into the lungs",
+          "out of the lungs",
+          "into the blood",
+          "out of the heart"
+        ],
+        "optionsTraditional": [
+          "進入肺部",
+          "排出肺部",
+          "進入血液",
+          "排出心臟"
+        ],
+        "optionsSimplified": [
+          "进入肺部",
+          "排出肺部",
+          "进入血液",
+          "排出心脏"
+        ],
+        "correctAnswer": "into the lungs",
+        "correctAnswerTraditional": "進入肺部",
+        "correctAnswerSimplified": "进入肺部"
+      },
+      {
+        "id": "1-16",
+        "text": "Exhalation means air moves:",
+        "textTraditional": "呼氣意味著空氣：",
+        "textSimplified": "呼气意味着空气：",
+        "options": [
+          "into the lungs",
+          "out of the lungs",
+          "into the stomach",
+          "out of the blood"
+        ],
+        "optionsTraditional": [
+          "進入肺部",
+          "排出肺部",
+          "進入胃部",
+          "排出血液"
+        ],
+        "optionsSimplified": [
+          "进入肺部",
+          "排出肺部",
+          "进入胃部",
+          "排出血液"
+        ],
+        "correctAnswer": "out of the lungs",
+        "correctAnswerTraditional": "排出肺部",
+        "correctAnswerSimplified": "排出肺部"
+      },
+      {
+        "id": "1-17",
+        "text": "During breathing, air is moved:",
+        "textTraditional": "在呼吸過程中，空氣被：",
+        "textSimplified": "在呼吸过程中，空气被：",
+        "options": [
+          "into and out of the lungs",
+          "only into the lungs",
+          "only out of the lungs",
+          "into and out of the heart"
+        ],
+        "optionsTraditional": [
+          "進出肺部",
+          "僅進入肺部",
+          "僅排出肺部",
+          "進出心臟"
+        ],
+        "optionsSimplified": [
+          "进出肺部",
+          "仅进入肺部",
+          "仅排出肺部",
+          "进出心脏"
+        ],
+        "correctAnswer": "into and out of the lungs",
+        "correctAnswerTraditional": "進出肺部",
+        "correctAnswerSimplified": "进出肺部"
+      },
+      {
+        "id": "1-18",
+        "text": "The system used for breathing is the:",
+        "textTraditional": "用於呼吸的系統是：",
+        "textSimplified": "用于呼吸的系统是：",
+        "options": [
+          "circulatory system",
+          "digestive system",
+          "respiratory system",
+          "excretory system"
+        ],
+        "optionsTraditional": [
+          "循環系統",
+          "消化系統",
+          "呼吸系統",
+          "排泄系統"
+        ],
+        "optionsSimplified": [
+          "循环系统",
+          "消化系统",
+          "呼吸系统",
+          "排泄系统"
+        ],
+        "correctAnswer": "respiratory system",
+        "correctAnswerTraditional": "呼吸系統",
+        "correctAnswerSimplified": "呼吸系统"
+      },
+      {
+        "id": "1-19",
+        "text": "The “voice box” is the:",
+        "textTraditional": "「喉接（聲音箱）」是：",
+        "textSimplified": "“喉接（声音箱）”是：",
+        "options": [
+          "trachea",
+          "larynx",
+          "bronchiole",
+          "diaphragm"
+        ],
+        "optionsTraditional": [
+          "氣管",
+          "喉",
+          "小支氣管",
+          "橫膈膜"
+        ],
+        "optionsSimplified": [
+          "气管",
+          "喉",
+          "小支气管",
+          "横膈膜"
+        ],
+        "correctAnswer": "larynx",
+        "correctAnswerTraditional": "喉",
+        "correctAnswerSimplified": "喉"
+      },
+      {
+        "id": "1-20",
+        "text": "The trachea is also known as the:",
+        "textTraditional": "氣管（Trachea）也稱為：",
+        "textSimplified": "气管（Trachea）也称为：",
+        "options": [
+          "windpipe",
+          "food pipe",
+          "air sac",
+          "capillary"
+        ],
+        "optionsTraditional": [
+          "氣管（Windpipe）",
+          "食道",
+          "肺泡",
+          "微血管"
+        ],
+        "optionsSimplified": [
+          "气管（Windpipe）",
+          "食道",
+          "肺泡",
+          "微血管"
+        ],
+        "correctAnswer": "windpipe",
+        "correctAnswerTraditional": "氣管（Windpipe）",
+        "correctAnswerSimplified": "气管（Windpipe）"
+      },
+      {
+        "id": "1-21",
+        "text": "Which order shows the correct path of air to the alveoli?",
+        "textTraditional": "以下哪個順序顯示了空氣到達肺泡的正確路徑？",
+        "textSimplified": "以下哪个顺序显示了空气到达肺泡的正确路径？",
+        "options": [
+          "Nose → trachea → bronchi → bronchioles → alveoli",
+          "Nose → bronchioles → bronchi → trachea → alveoli",
+          "Nose → oesophagus → trachea → bronchi → alveoli",
+          "Nose → trachea → alveoli → bronchi → bronchioles"
+        ],
+        "optionsTraditional": [
+          "鼻子 → 氣管 → 支氣管 → 小支氣管 → 肺泡",
+          "鼻子 → 小支氣管 → 支氣管 → 氣管 → 肺泡",
+          "鼻子 → 食道 → 氣管 → 支氣管 → 肺泡",
+          "鼻子 → 氣管 → 肺泡 → 支氣管 → 小支氣管"
+        ],
+        "optionsSimplified": [
+          "鼻子 → 气管 → 支气管 → 小支气管 → 肺泡",
+          "鼻子 → 小支气管 → 支气管 → 气管 → 肺泡",
+          "鼻子 → 食道 → 气管 → 支气管 → 肺泡",
+          "鼻子 → 气管 → 肺泡 → 支气管 → 小支气管"
+        ],
+        "correctAnswer": "Nose → trachea → bronchi → bronchioles → alveoli",
+        "correctAnswerTraditional": "鼻子 → 氣管 → 支氣管 → 小支氣管 → 肺泡",
+        "correctAnswerSimplified": "鼻子 → 气管 → 支气管 → 小支气管 → 肺泡"
+      },
+      {
+        "id": "1-22",
+        "text": "Bronchi are:",
+        "textTraditional": "支氣管（Bronchi）是：",
+        "textSimplified": "支气管（Bronchi）是：",
+        "options": [
+          "tiny air sacs",
+          "tubes that lead from the trachea into the lungs",
+          "muscles for breathing",
+          "blood vessels"
+        ],
+        "optionsTraditional": [
+          "微小的氣囊",
+          "從氣管引導到肺部的管道",
+          "呼吸肌",
+          "血管"
+        ],
+        "optionsSimplified": [
+          "微小的气囊",
+          "从气管引导到肺部的管道",
+          "呼吸肌",
+          "血管"
+        ],
+        "correctAnswer": "tubes that lead from the trachea into the lungs",
+        "correctAnswerTraditional": "從氣管引導到肺部的管道",
+        "correctAnswerSimplified": "从气管引导到肺部的管道"
+      },
+      {
+        "id": "1-23",
+        "text": "Bronchioles are:",
+        "textTraditional": "小支氣管（Bronchioles）是：",
+        "textSimplified": "小支气管（Bronchioles）是：",
+        "options": [
+          "the main windpipe",
+          "smaller branches in the lungs leading to alveoli",
+          "the rings of cartilage in the trachea",
+          "blood vessels leaving the heart"
+        ],
+        "optionsTraditional": [
+          "主氣管",
+          "肺部引導至肺泡的較小分支",
+          "氣管中的軟骨環",
+          "離開心臟的血管"
+        ],
+        "optionsSimplified": [
+          "主气管",
+          "肺部引导至肺泡的较小分支",
+          "气管中的软骨环",
+          "离开心脏的血管"
+        ],
+        "correctAnswer": "smaller branches in the lungs leading to alveoli",
+        "correctAnswerTraditional": "肺部引導至肺泡的較小分支",
+        "correctAnswerSimplified": "肺部引导至肺泡的较小分支"
+      },
+      {
+        "id": "1-24",
+        "text": "Alveoli are:",
+        "textTraditional": "肺泡（Alveoli）是：",
+        "textSimplified": "肺泡（Alveoli）是：",
+        "options": [
+          "tiny air sacs where gas exchange happens",
+          "the muscles that move the ribs",
+          "tubes that carry blood",
+          "cells that carry oxygen"
+        ],
+        "optionsTraditional": [
+          "發生氣體交換的微小氣囊",
+          "移動肋骨的肌肉",
+          "輸送血液的管道",
+          "攜帶氧氣的細胞"
+        ],
+        "optionsSimplified": [
+          "发生气体交换的微小气囊",
+          "移动肋骨的肌肉",
+          "输送血液的管道",
+          "携带氧气的细胞"
+        ],
+        "correctAnswer": "tiny air sacs where gas exchange happens",
+        "correctAnswerTraditional": "發生氣體交換的微小氣囊",
+        "correctAnswerSimplified": "发生气体交换的微小气囊"
+      },
+      {
+        "id": "1-25",
+        "text": "Alveoli are well-suited for gas exchange mainly because they have:",
+        "textTraditional": "肺泡非常適合氣體交換，主要是因為它們具有：",
+        "textSimplified": "肺泡非常适合气体交换，主要是因为它们具有：",
+        "options": [
+          "small surface area and thick walls",
+          "large surface area and thin walls",
+          "no blood supply",
+          "hard walls made of cartilage"
+        ],
+        "optionsTraditional": [
+          "小表面積和厚壁",
+          "大表面積和薄壁",
+          "沒有血液供應",
+          "軟骨製成的硬壁"
+        ],
+        "optionsSimplified": [
+          "小表面积和厚壁",
+          "大表面积和薄壁",
+          "没有血液供应",
+          "软骨制成的硬壁"
+        ],
+        "correctAnswer": "large surface area and thin walls",
+        "correctAnswerTraditional": "大表面積和薄壁",
+        "correctAnswerSimplified": "大表面积和薄壁"
+      },
+      {
+        "id": "1-26",
+        "text": "Gas exchange occurs between alveoli and:",
+        "textTraditional": "氣體交換發生在肺泡和以下哪項之間？",
+        "textSimplified": "气体交换发生在肺泡和以下哪项之间？",
+        "options": [
+          "arteries",
+          "veins",
+          "capillaries",
+          "bronchi"
+        ],
+        "optionsTraditional": [
+          "動脈",
+          "靜脈",
+          "微血管",
+          "支氣管"
+        ],
+        "optionsSimplified": [
+          "动脉",
+          "静脉",
+          "微血管",
+          "支气管"
+        ],
+        "correctAnswer": "capillaries",
+        "correctAnswerTraditional": "微血管",
+        "correctAnswerSimplified": "微血管"
+      },
+      {
+        "id": "1-27",
+        "text": "Concentration is the number of:",
+        "textTraditional": "濃度是以下哪項的數量？",
+        "textSimplified": "浓度是以下哪项的数量？",
+        "options": [
+          "particles in a given volume",
+          "breaths in a given minute",
+          "organs in a body",
+          "cells in a tissue"
+        ],
+        "optionsTraditional": [
+          "給定體積內的微粒",
+          "給定分鐘內的呼吸次數",
+          "身體內的器官",
+          "組織內的細胞"
+        ],
+        "optionsSimplified": [
+          "给定体积内的微粒",
+          "给定分钟内的呼吸次数",
+          "身体内的器官",
+          "组织内的细胞"
+        ],
+        "correctAnswer": "particles in a given volume",
+        "correctAnswerTraditional": "給定體積內的微粒",
+        "correctAnswerSimplified": "给定体积内的微粒"
+      },
+      {
+        "id": "1-28",
+        "text": "Diffusion is the overall movement of particles from:",
+        "textTraditional": "擴散是微粒從……的總體運動：",
+        "textSimplified": "扩散是微粒从……的总体运动：",
+        "options": [
+          "low concentration to high concentration",
+          "high concentration to low concentration",
+          "low pressure to high pressure",
+          "high temperature to low temperature"
+        ],
+        "optionsTraditional": [
+          "低濃度到高濃度",
+          "高濃度到低濃度",
+          "低壓到高壓",
+          "高溫到低溫"
+        ],
+        "optionsSimplified": [
+          "低浓度到高浓度",
+          "高浓度到低浓度",
+          "低压到高压",
+          "高温到低温"
+        ],
+        "correctAnswer": "high concentration to low concentration",
+        "correctAnswerTraditional": "高濃度到低濃度",
+        "correctAnswerSimplified": "高浓度到低浓度"
+      },
+      {
+        "id": "1-29",
+        "text": "A concentration gradient is:",
+        "textTraditional": "濃度梯度（Concentration gradient）是：",
+        "textSimplified": "浓度梯度（Concentration gradient）是：",
+        "options": [
+          "the difference in concentration between two regions",
+          "the total number of particles",
+          "the volume of a gas",
+          "the mass of a substance"
+        ],
+        "optionsTraditional": [
+          "兩個區域之間的濃度差異",
+          "微粒的總數",
+          "氣體的體積",
+          "物質的質量"
+        ],
+        "optionsSimplified": [
+          "两个区域之间的浓度差异",
+          "微粒的总数",
+          "气体的体积",
+          "物质的质量"
+        ],
+        "correctAnswer": "the difference in concentration between two regions",
+        "correctAnswerTraditional": "兩個區域之間的濃度差異",
+        "correctAnswerSimplified": "两个区域之间的浓度差异"
+      },
+      {
+        "id": "1-30",
+        "text": "Oxygen moves from alveoli into blood mainly by:",
+        "textTraditional": "氧氣主要通過以下哪種方式從肺泡進入血液？",
+        "textSimplified": "氧气主要通过以下哪种方式从肺泡进入血液？",
+        "options": [
+          "diffusion",
+          "evaporation",
+          "condensation",
+          "combustion"
+        ],
+        "optionsTraditional": [
+          "擴散作用",
+          "蒸發作用",
+          "凝結作用",
+          "燃燒作用"
+        ],
+        "optionsSimplified": [
+          "扩散作用",
+          "蒸发作用",
+          "凝结作用",
+          "燃烧作用"
+        ],
+        "correctAnswer": "diffusion",
+        "correctAnswerTraditional": "擴散作用",
+        "correctAnswerSimplified": "扩散作用"
+      },
+      {
+        "id": "1-31",
+        "text": "Diffusion will continue until:",
+        "textTraditional": "擴散作用將持續到：",
+        "textSimplified": "扩散作用将持续到：",
+        "options": [
+          "all particles stop moving",
+          "concentrations become equal (no net movement)",
+          "pressure becomes higher",
+          "temperature becomes zero"
+        ],
+        "optionsTraditional": [
+          "所有微粒停止運動",
+          "濃度變得相等（無淨移）",
+          "壓力變得更高",
+          "溫度變為零"
+        ],
+        "optionsSimplified": [
+          "所有微粒停止运动",
+          "浓度变得相等（无净移）",
+          "压力变得更高",
+          "温度变为零"
+        ],
+        "correctAnswer": "concentrations become equal (no net movement)",
+        "correctAnswerTraditional": "濃度變得相等（無淨移）",
+        "correctAnswerSimplified": "浓度变得相等（无净移）"
+      },
+      {
+        "id": "1-32",
+        "text": "Oxygen is mainly transported by:",
+        "textTraditional": "氧氣主要由以下哪項運輸？",
+        "textSimplified": "氧气主要由以下哪项运输？",
+        "options": [
+          "white blood cells",
+          "platelets",
+          "red blood cells",
+          "plasma only"
+        ],
+        "optionsTraditional": [
+          "白血球",
+          "血小板",
+          "紅血球",
+          "僅限血漿"
+        ],
+        "optionsSimplified": [
+          "白血球",
+          "血小板",
+          "红血球",
+          "仅限血浆"
+        ],
+        "correctAnswer": "red blood cells",
+        "correctAnswerTraditional": "紅血球",
+        "correctAnswerSimplified": "红血球"
+      },
+      {
+        "id": "1-33",
+        "text": "Red blood cells are red because they contain:",
+        "textTraditional": "紅血球呈現紅色，是因為它們含有：",
+        "textSimplified": "红血球呈现红色，是因为它们含有：",
+        "options": [
+          "chlorophyll",
+          "haemoglobin",
+          "antibodies",
+          "enzymes for digestion"
+        ],
+        "optionsTraditional": [
+          "葉綠素",
+          "血紅蛋白",
+          "抗體",
+          "消化酶"
+        ],
+        "optionsSimplified": [
+          "叶绿素",
+          "血红蛋白",
+          "抗体",
+          "消化酶"
+        ],
+        "correctAnswer": "haemoglobin",
+        "correctAnswerTraditional": "血紅蛋白",
+        "correctAnswerSimplified": "血红蛋白"
+      },
+      {
+        "id": "1-34",
+        "text": "Haemoglobin’s main function is to:",
+        "textTraditional": "血紅蛋白的主要功能是：",
+        "textSimplified": "血红蛋白的主要功能是：",
+        "options": [
+          "fight pathogens",
+          "help blood clot",
+          "transport oxygen",
+          "digest glucose"
+        ],
+        "optionsTraditional": [
+          "對抗病原體",
+          "幫助血液凝固",
+          "運輸氧氣",
+          "消化葡萄糖"
+        ],
+        "optionsSimplified": [
+          "对抗病原体",
+          "帮助血液凝固",
+          "运输氧气",
+          "消化葡萄糖"
+        ],
+        "correctAnswer": "transport oxygen",
+        "correctAnswerTraditional": "運輸氧氣",
+        "correctAnswerSimplified": "运输氧气"
+      },
+      {
+        "id": "1-35",
+        "text": "In the lungs, haemoglobin combines with oxygen to form:",
+        "textTraditional": "在肺部，血紅蛋白與氧氣結合形成：",
+        "textSimplified": "在肺部，血红蛋白与氧气结合形成：",
+        "options": [
+          "carbon dioxide",
+          "oxyhaemoglobin",
+          "glucose",
+          "plasma"
+        ],
+        "optionsTraditional": [
+          "二氧化碳",
+          "氧合血紅蛋白",
+          "葡萄糖",
+          "血漿"
+        ],
+        "optionsSimplified": [
+          "二氧化碳",
+          "氧合血红蛋白",
+          "葡萄糖",
+          "血浆"
+        ],
+        "correctAnswer": "oxyhaemoglobin",
+        "correctAnswerTraditional": "氧合血紅蛋白",
+        "correctAnswerSimplified": "氧合血红蛋白"
+      },
+      {
+        "id": "1-36",
+        "text": "When red blood cells reach body cells, oxyhaemoglobin will:",
+        "textTraditional": "當紅血球到達身體細胞時，氧合血紅蛋白將：",
+        "textSimplified": "当红血球到达身体细胞时，氧合血红蛋白将：",
+        "options": [
+          "stay the same",
+          "release oxygen",
+          "produce antibodies",
+          "become platelets"
+        ],
+        "optionsTraditional": [
+          "保持不變",
+          "釋放氧氣",
+          "產生抗體",
+          "變為血小板"
+        ],
+        "optionsSimplified": [
+          "保持不变",
+          "释放氧气",
+          "产生抗体",
+          "变为血小板"
+        ],
+        "correctAnswer": "release oxygen",
+        "correctAnswerTraditional": "釋放氧氣",
+        "correctAnswerSimplified": "释放氧气"
+      },
+      {
+        "id": "1-37",
+        "text": "Oxygen diffuses from blood into body cells because body cells have:",
+        "textTraditional": "氧氣從血液擴散到身體細胞，是因為身體細胞具有：",
+        "textSimplified": "氧气从血液扩散到身体细胞，是因为身体细胞具有：",
+        "options": [
+          "higher oxygen concentration than blood",
+          "lower oxygen concentration than blood",
+          "no oxygen concentration",
+          "the same oxygen concentration as blood at all times"
+        ],
+        "optionsTraditional": [
+          "比血液更高的氧氣濃度",
+          "比血液更低的氧氣濃度",
+          "零氧氣濃度",
+          "始終與血液相同的氧氣濃度"
+        ],
+        "optionsSimplified": [
+          "比血液更高的氧气浓度",
+          "比血液更低的氧气浓度",
+          "零氧气浓度",
+          "始终与血液相同的氧气浓度"
+        ],
+        "correctAnswer": "lower oxygen concentration than blood",
+        "correctAnswerTraditional": "比血液更低的氧氣濃度",
+        "correctAnswerSimplified": "比血液更低的氧气浓度"
+      },
+      {
+        "id": "1-38",
+        "text": "Pressure and volume of a gas are usually:",
+        "textTraditional": "氣體的壓力和體積通常是：",
+        "textSimplified": "气体的压力和体积通常是：",
+        "options": [
+          "directly proportional",
+          "inversely proportional",
+          "unrelated",
+          "always equal"
+        ],
+        "optionsTraditional": [
+          "正比的",
+          "反比的",
+          "無關的",
+          "始終相等的"
+        ],
+        "optionsSimplified": [
+          "正比的",
+          "反比的",
+          "无关的",
+          "始终相等的"
+        ],
+        "correctAnswer": "inversely proportional",
+        "correctAnswerTraditional": "反比的",
+        "correctAnswerSimplified": "反比的"
+      },
+      {
+        "id": "1-39",
+        "text": "If lung volume increases, lung pressure will:",
+        "textTraditional": "如果肺體積增加，肺壓力將：",
+        "textSimplified": "如果肺体积增加，肺压力将：",
+        "options": [
+          "increase",
+          "decrease",
+          "stay the same",
+          "become zero"
+        ],
+        "optionsTraditional": [
+          "增加",
+          "減少",
+          "保持不變",
+          "變為零"
+        ],
+        "optionsSimplified": [
+          "增加",
+          "减少",
+          "保持不变",
+          "变为零"
+        ],
+        "correctAnswer": "decrease",
+        "correctAnswerTraditional": "減少",
+        "correctAnswerSimplified": "减少"
+      },
+      {
+        "id": "1-40",
+        "text": "Gas moves from high pressure to low pressure down the:",
+        "textTraditional": "氣體沿著以下哪項從高壓處移動到低壓處？",
+        "textSimplified": "气体沿着以下哪项從高压处移动到低压处？",
+        "options": [
+          "temperature gradient",
+          "pressure gradient",
+          "concentration gradient",
+          "energy gradient"
+        ],
+        "optionsTraditional": [
+          "溫度梯度",
+          "壓力梯度",
+          "濃度梯度",
+          "能量梯度"
+        ],
+        "optionsSimplified": [
+          "温度梯度",
+          "压力梯度",
+          "浓度梯度",
+          "能量梯度"
+        ],
+        "correctAnswer": "pressure gradient",
+        "correctAnswerTraditional": "壓力梯度",
+        "correctAnswerSimplified": "压力梯度"
+      },
+      {
+        "id": "1-41",
+        "text": "Two main muscle groups involved in breathing are:",
+        "textTraditional": "參與呼吸的兩大肌肉群是：",
+        "textSimplified": "参与呼吸的两大肌肉群是：",
+        "options": [
+          "biceps and triceps",
+          "diaphragm and intercostal muscles",
+          "heart muscle and leg muscles",
+          "tongue and joke muscles"
+        ],
+        "optionsTraditional": [
+          "二頭肌和三頭肌",
+          "橫膈膜和肋間肌",
+          "心肌和腿部肌肉",
+          "舌頭和顎骨肌肉"
+        ],
+        "optionsSimplified": [
+          "二头肌和三头肌",
+          "横膈膜和肋间肌",
+          "心肌和腿部肌肉",
+          "舌头和颚骨肌肉"
+        ],
+        "correctAnswer": "diaphragm and intercostal muscles",
+        "correctAnswerTraditional": "橫膈膜和肋間肌",
+        "correctAnswerSimplified": "横膈膜和肋间肌"
+      },
+      {
+        "id": "1-42",
+        "text": "During inhalation, the diaphragm:",
+        "textTraditional": "吸氣時，橫膈膜：",
+        "textSimplified": "吸气时，横膈膜：",
+        "options": [
+          "contracts and flattens",
+          "relaxes and flattens",
+          "contracts and becomes dome-shaped",
+          "stops working"
+        ],
+        "optionsTraditional": [
+          "收縮並變平",
+          "放鬆並變平",
+          "收縮並變為穹頂狀",
+          "停止工作"
+        ],
+        "optionsSimplified": [
+          "收缩并变平",
+          "放松并变平",
+          "收缩并变为穹顶状",
+          "停止工作"
+        ],
+        "correctAnswer": "contracts and flattens",
+        "correctAnswerTraditional": "收縮並變平",
+        "correctAnswerSimplified": "收缩并变平"
+      },
+      {
+        "id": "1-43",
+        "text": "During exhalation, the diaphragm:",
+        "options": [
+          "contracts and flattens",
+          "relaxes and returns to a dome shape",
+          "contracts and pulls ribs up",
+          "has no effect"
+        ],
+        "correctAnswer": "relaxes and returns to a dome shape"
+      },
+      {
+        "id": "1-44",
+        "text": "During inhalation, chest (lung) volume:",
+        "options": [
+          "increases",
+          "decreases",
+          "stays the same",
+          "becomes zero"
+        ],
+        "correctAnswer": "increases"
+      },
+      {
+        "id": "1-45",
+        "text": "During exhalation, chest (lung) volume:",
+        "options": [
+          "increases",
+          "decreases",
+          "stays the same",
+          "doubles"
+        ],
+        "correctAnswer": "decreases"
+      },
+      {
+        "id": "1-46",
+        "text": "During inhalation, lung pressure becomes:",
+        "options": [
+          "higher than outside air",
+          "lower than outside air",
+          "equal to outside air always",
+          "unrelated to outside air"
+        ],
+        "correctAnswer": "lower than outside air"
+      },
+      {
+        "id": "1-47",
+        "text": "During exhalation, lung pressure becomes:",
+        "options": [
+          "lower than outside air",
+          "higher than outside air",
+          "always zero",
+          "always equal to outside air"
+        ],
+        "correctAnswer": "higher than outside air"
+      },
+      {
+        "id": "1-48",
+        "text": "The circulatory system is needed mainly to:",
+        "options": [
+          "break down food into glucose",
+          "deliver oxygen and nutrients to body cells",
+          "make antibodies",
+          "produce oxygen in the body"
+        ],
+        "correctAnswer": "deliver oxygen and nutrients to body cells"
+      },
+      {
+        "id": "1-49",
+        "text": "The circulatory system consists of:",
+        "options": [
+          "heart, lungs, trachea",
+          "heart, blood, blood vessels",
+          "blood, alveoli, bronchioles",
+          "stomach, intestines, blood"
+        ],
+        "correctAnswer": "heart, blood, blood vessels"
+      },
+      {
+        "id": "1-50",
+        "text": "Which part of blood is a pale yellowish liquid that carries dissolved substances?",
+        "options": [
+          "Plasma",
+          "Platelets",
+          "Red blood cells",
+          "White blood cells"
+        ],
+        "correctAnswer": "Plasma"
+      }
     ]
   },
   {
-    id: 2,
-    title: "Properties of materials",
-    titleTraditional: "物質的性質",
-    titleSimplified: "物质的性质",
-    description: "Understanding solutes, solvents, solubility, and separation techniques.",
-    descriptionTraditional: "了解溶質、溶劑、溶解度以及分離技術。",
-    descriptionSimplified: "了解溶质、溶剂、溶解度以及分离技术。",
-    color: "bg-blue-500",
-    concepts: [
+    "id": 2,
+    "title": "Properties of materials",
+    "titleTraditional": "物質的性質",
+    "titleSimplified": "物质的性质",
+    "description": "Understanding solutes, solvents, solubility, and separation techniques.",
+    "descriptionTraditional": "了解溶質、溶劑、溶解度以及分離技術。",
+    "descriptionSimplified": "了解溶质、溶剂、溶解度以及分离技术。",
+    "color": "bg-blue-500",
+    "concepts": [
       "A solution forms when a solute breaks down into smaller pieces and dissolves into a solvent, like salt in water.",
       "Dissolving occurs when moving solvent particles smash into solid solute particles, breaking them apart until they are no longer visible.",
       "Substances that can dissolve in a solvent are called soluble, while those that cannot, like oil or sand in water, are insoluble.",
@@ -270,7 +1770,7 @@ export const units: Unit[] = [
       "As the solvent travels up the paper, dyes separate based on their different solubilities, creating a pattern called a chromatogram.",
       "A pure dye produces a single spot on a chromatogram, while an impure dye creates multiple spots that travel different distances depending on their solubility."
     ],
-    conceptsTraditional: [
+    "conceptsTraditional": [
       "當溶質分解成較小的碎片並溶解在溶劑中（如水中的鹽）時，就會形成溶液。",
       "溶解發生在移動的溶劑粒子撞擊固體溶質粒子，將其拆散直到肉眼看不見為止。",
       "能溶解在溶劑中的物質稱為可溶，而不能溶解的（如水中的油或沙）稱為不可溶。",
@@ -292,7 +1792,7 @@ export const units: Unit[] = [
       "隨著溶劑在紙上上升，染料根據其不同的溶解度進行分離，形成稱為色層分析圖的圖案。",
       "純染料在色層分析圖上產生單個斑點，而不純染料則根據溶解度產生多個移動距離不同的斑點。"
     ],
-    conceptsSimplified: [
+    "conceptsSimplified": [
       "当溶质分解成较小的碎片并溶解在溶剂中（如水中的盐）时，就会形成溶液。",
       "溶解发生在移动的溶剂粒子撞击固体溶质粒子，将其拆散直到肉眼看不见为止。",
       "能溶解在溶剂中的物质称为可溶，而不能溶解的（如水中的油或沙）称为不可溶。",
@@ -314,123 +1814,1221 @@ export const units: Unit[] = [
       "随着溶剂在纸上升，染料根据其不同的溶解度进行分离，形成称为色层分析图的图案。",
       "纯染料在色层分析图上产生单个斑点，而不纯染料则根据溶解度产生多个移动距离不同的斑点。"
     ],
-    keyTerms: {
-      "solution": "#3b82f6", "溶液": "#3b82f6",
-      "solute": "#ef4444", "溶質": "#ef4444", "溶质": "#ef4444",
-      "solvent": "#10b981", "溶劑": "#10b981", "溶剂": "#10b981",
-      "soluble": "#8b5cf6", "可溶": "#8b5cf6",
-      "insoluble": "#6b7280", "不可溶": "#6b7280",
-      "saturated": "#f59e0b", "飽和": "#f59e0b", "饱和": "#f59e0b",
-      "solubility": "#ec4899", "溶解度": "#ec4899",
-      "filtration": "#06b6d4", "過濾法": "#06b6d4", "过滤法": "#06b6d4",
-      "evaporation": "#f97316", "蒸發": "#f97316", "蒸发": "#f97316",
-      "chromatography": "#8b5cf6", "色層分析法": "#8b5cf6", "色层分析法": "#8b5cf6",
-      "dissolving": "#3b82f6", "溶解": "#3b82f6",
-      "melting": "#f59e0b", "熔化": "#f59e0b",
-      "pure substance": "#10b981", "純淨物": "#10b981", "纯净物": "#10b981",
-      "impure substance": "#ef4444", "不純淨物": "#ef4444", "不纯净物": "#ef4444",
-      "mixture": "#6b7280", "混合物": "#6b7280"
+    "keyTerms": {
+      "solution": "#3b82f6",
+      "溶液": "#3b82f6",
+      "solute": "#ef4444",
+      "溶質": "#ef4444",
+      "溶质": "#ef4444",
+      "solvent": "#10b981",
+      "溶劑": "#10b981",
+      "溶剂": "#10b981",
+      "soluble": "#8b5cf6",
+      "可溶": "#8b5cf6",
+      "insoluble": "#6b7280",
+      "不可溶": "#6b7280",
+      "saturated": "#f59e0b",
+      "飽和": "#f59e0b",
+      "饱和": "#f59e0b",
+      "solubility": "#ec4899",
+      "溶解度": "#ec4899",
+      "filtration": "#06b6d4",
+      "過濾法": "#06b6d4",
+      "过滤法": "#06b6d4",
+      "evaporation": "#f97316",
+      "蒸發": "#f97316",
+      "蒸发": "#f97316",
+      "chromatography": "#8b5cf6",
+      "色層分析法": "#8b5cf6",
+      "色层分析法": "#8b5cf6",
+      "dissolving": "#3b82f6",
+      "溶解": "#3b82f6",
+      "melting": "#f59e0b",
+      "熔化": "#f59e0b",
+      "pure substance": "#10b981",
+      "純淨物": "#10b981",
+      "纯净物": "#10b981",
+      "impure substance": "#ef4444",
+      "不純淨物": "#ef4444",
+      "不纯净物": "#ef4444",
+      "mixture": "#6b7280",
+      "混合物": "#6b7280"
     },
-    vocab: [
-      { term: "Dissolving", traditional: "溶解", simplified: "溶解", definition: "The process where a solute incorporates into a solvent to form a solution." },
-      { term: "Solute", traditional: "溶質", simplified: "溶质", definition: "The substance that is dissolved in a solvent." },
-      { term: "Solvent", traditional: "溶劑", simplified: "溶剂", definition: "The substance (usually a liquid) that dissolves the solute." },
-      { term: "Solution", traditional: "溶液", simplified: "溶液", definition: "A homogeneous mixture of one or more solutes dissolved in a solvent." },
-      { term: "Soluble", traditional: "可溶的", simplified: "可溶的", definition: "Capable of being dissolved in a particular solvent." },
-      { term: "Insoluble", traditional: "不可溶的", simplified: "不可溶的", definition: "Incapable of being dissolved in a particular solvent." },
-      { term: "Solid", traditional: "固體", simplified: "固体", definition: "A state of matter with a definite shape and volume." },
-      { term: "Liquid", traditional: "液體", simplified: "液体", definition: "A state of matter with a definite volume but no definite shape." },
-      { term: "Gas", traditional: "氣體", simplified: "气体", definition: "A state of matter with no definite shape or volume." },
-      { term: "Melting", traditional: "熔化", simplified: "熔化", definition: "The process by which a substance changes from a solid to a liquid." },
-      { term: "Concentrated", traditional: "濃", simplified: "浓", definition: "A solution containing a large amount of solute relative to the amount of solvent." },
-      { term: "Dilute", traditional: "稀", simplified: "稀", definition: "A solution containing a small amount of solute relative to the amount of solvent." },
-      { term: "Saturated solution", traditional: "飽和溶液", simplified: "饱和溶液", definition: "A solution that contains the maximum amount of solute that can be dissolved at a given temperature." },
-      { term: "Solubility", traditional: "溶解度", simplified: "溶解度", definition: "The maximum amount of a solute that can dissolve in a specific amount of solvent at a given temperature." },
-      { term: "Solubility curve", traditional: "溶解度曲線", simplified: "溶解度曲线", definition: "A graph showing the relationship between solubility and temperature for a specific substance." },
-      { term: "Universal solvent", traditional: "通用溶劑", simplified: "通用溶剂", definition: "A substance that dissolves many different solutes (commonly referring to water)." },
-      { term: "Pure substance", traditional: "純淨物", simplified: "纯净物", definition: "A substance made of only one type of atom or molecule." },
-      { term: "Impure substance", traditional: "不純淨物", simplified: "不纯净物", definition: "A substance that contains more than one type of element or compound; a mixture." },
-      { term: "Mixture", traditional: "混合物", simplified: "混合物", definition: "A material made up of two or more different substances which are not chemically combined." },
-      { term: "Transparent", traditional: "透光的", simplified: "透光的", definition: "Allowing light to pass through so that objects behind can be distinctly seen." },
-      { term: "Opaque", traditional: "不透光的", simplified: "不透光的", definition: "Not able to be seen through; not transparent." },
-      { term: "Colorless", traditional: "無色的", simplified: "无色的", definition: "Having no color." },
-      { term: "Physical change", traditional: "物理變化", simplified: "物理变化", definition: "A change in which no new substance is formed, such as a change in state." },
-      { term: "Chemical change", traditional: "化學變化", simplified: "化学变化", definition: "A change that results in the formation of one or more new substances." },
-      { term: "Reversible", traditional: "可逆", simplified: "可逆", definition: "A process that can be undone to return to the original state." },
-      { term: "Irreversible", traditional: "不可逆", simplified: "不可逆", definition: "A process that cannot be undone to return to the original state." },
-      { term: "Rusting", traditional: "生鏽", simplified: "生锈", definition: "The chemical reaction of iron with oxygen and water to form iron oxide." },
-      { term: "Filtration", traditional: "過濾法", simplified: "过滤法", definition: "A process used to separate an insoluble solid from a liquid." },
-      { term: "Evaporation", traditional: "蒸發", simplified: "蒸发", definition: "The process of a liquid turning into a gas, often used to recover a soluble solid from a solution." },
-      { term: "Paper chromatography", traditional: "色層分析法", simplified: "色层分析法", definition: "A technique used to separate mixtures of soluble substances, such as dyes." },
-      { term: "Chromatogram", traditional: "色層分析圖", simplified: "色层分析图", definition: "The visible result of a chromatography separation." },
-      { term: "Dye", traditional: "染料 / 色素", simplified: "染料 / 色素", definition: "A natural or synthetic substance used to add color to or change the color of something." },
-      { term: "Capillary action", traditional: "毛細管現象", simplified: "毛细管现象", definition: "The ability of a liquid to flow in narrow spaces without the assistance of external forces." },
-      { term: "Beaker", traditional: "燒杯", simplified: "烧杯", definition: "A cylindrical container used in laboratories for mixing, stirring, and heating liquids." },
-      { term: "Measuring cylinder", traditional: "量筒", simplified: "量筒", definition: "A piece of laboratory equipment used to measure the volume of a liquid accurately." }
+    "vocab": [
+      {
+        "term": "Dissolving",
+        "traditional": "溶解",
+        "simplified": "溶解",
+        "definition": "The process where a solute incorporates into a solvent to form a solution."
+      },
+      {
+        "term": "Solute",
+        "traditional": "溶質",
+        "simplified": "溶质",
+        "definition": "The substance that is dissolved in a solvent."
+      },
+      {
+        "term": "Solvent",
+        "traditional": "溶劑",
+        "simplified": "溶剂",
+        "definition": "The substance (usually a liquid) that dissolves the solute."
+      },
+      {
+        "term": "Solution",
+        "traditional": "溶液",
+        "simplified": "溶液",
+        "definition": "A homogeneous mixture of one or more solutes dissolved in a solvent."
+      },
+      {
+        "term": "Soluble",
+        "traditional": "可溶的",
+        "simplified": "可溶的",
+        "definition": "Capable of being dissolved in a particular solvent."
+      },
+      {
+        "term": "Insoluble",
+        "traditional": "不可溶的",
+        "simplified": "不可溶的",
+        "definition": "Incapable of being dissolved in a particular solvent."
+      },
+      {
+        "term": "Solid",
+        "traditional": "固體",
+        "simplified": "固体",
+        "definition": "A state of matter with a definite shape and volume."
+      },
+      {
+        "term": "Liquid",
+        "traditional": "液體",
+        "simplified": "液体",
+        "definition": "A state of matter with a definite volume but no definite shape."
+      },
+      {
+        "term": "Gas",
+        "traditional": "氣體",
+        "simplified": "气体",
+        "definition": "A state of matter with no definite shape or volume."
+      },
+      {
+        "term": "Melting",
+        "traditional": "熔化",
+        "simplified": "熔化",
+        "definition": "The process by which a substance changes from a solid to a liquid."
+      },
+      {
+        "term": "Concentrated",
+        "traditional": "濃",
+        "simplified": "浓",
+        "definition": "A solution containing a large amount of solute relative to the amount of solvent."
+      },
+      {
+        "term": "Dilute",
+        "traditional": "稀",
+        "simplified": "稀",
+        "definition": "A solution containing a small amount of solute relative to the amount of solvent."
+      },
+      {
+        "term": "Saturated solution",
+        "traditional": "飽和溶液",
+        "simplified": "饱和溶液",
+        "definition": "A solution that contains the maximum amount of solute that can be dissolved at a given temperature."
+      },
+      {
+        "term": "Solubility",
+        "traditional": "溶解度",
+        "simplified": "溶解度",
+        "definition": "The maximum amount of a solute that can dissolve in a specific amount of solvent at a given temperature."
+      },
+      {
+        "term": "Solubility curve",
+        "traditional": "溶解度曲線",
+        "simplified": "溶解度曲线",
+        "definition": "A graph showing the relationship between solubility and temperature for a specific substance."
+      },
+      {
+        "term": "Universal solvent",
+        "traditional": "通用溶劑",
+        "simplified": "通用溶剂",
+        "definition": "A substance that dissolves many different solutes (commonly referring to water)."
+      },
+      {
+        "term": "Pure substance",
+        "traditional": "純淨物",
+        "simplified": "纯净物",
+        "definition": "A substance made of only one type of atom or molecule."
+      },
+      {
+        "term": "Impure substance",
+        "traditional": "不純淨物",
+        "simplified": "不纯净物",
+        "definition": "A substance that contains more than one type of element or compound; a mixture."
+      },
+      {
+        "term": "Mixture",
+        "traditional": "混合物",
+        "simplified": "混合物",
+        "definition": "A material made up of two or more different substances which are not chemically combined."
+      },
+      {
+        "term": "Transparent",
+        "traditional": "透光的",
+        "simplified": "透光的",
+        "definition": "Allowing light to pass through so that objects behind can be distinctly seen."
+      },
+      {
+        "term": "Opaque",
+        "traditional": "不透光的",
+        "simplified": "不透光的",
+        "definition": "Not able to be seen through; not transparent."
+      },
+      {
+        "term": "Colorless",
+        "traditional": "無色的",
+        "simplified": "无色的",
+        "definition": "Having no color."
+      },
+      {
+        "term": "Physical change",
+        "traditional": "物理變化",
+        "simplified": "物理变化",
+        "definition": "A change in which no new substance is formed, such as a change in state."
+      },
+      {
+        "term": "Chemical change",
+        "traditional": "化學變化",
+        "simplified": "化学变化",
+        "definition": "A change that results in the formation of one or more new substances."
+      },
+      {
+        "term": "Reversible",
+        "traditional": "可逆",
+        "simplified": "可逆",
+        "definition": "A process that can be undone to return to the original state."
+      },
+      {
+        "term": "Irreversible",
+        "traditional": "不可逆",
+        "simplified": "不可逆",
+        "definition": "A process that cannot be undone to return to the original state."
+      },
+      {
+        "term": "Rusting",
+        "traditional": "生鏽",
+        "simplified": "生锈",
+        "definition": "The chemical reaction of iron with oxygen and water to form iron oxide."
+      },
+      {
+        "term": "Filtration",
+        "traditional": "過濾法",
+        "simplified": "过滤法",
+        "definition": "A process used to separate an insoluble solid from a liquid."
+      },
+      {
+        "term": "Evaporation",
+        "traditional": "蒸發",
+        "simplified": "蒸发",
+        "definition": "The process of a liquid turning into a gas, often used to recover a soluble solid from a solution."
+      },
+      {
+        "term": "Paper chromatography",
+        "traditional": "色層分析法",
+        "simplified": "色层分析法",
+        "definition": "A technique used to separate mixtures of soluble substances, such as dyes."
+      },
+      {
+        "term": "Chromatogram",
+        "traditional": "色層分析圖",
+        "simplified": "色层分析图",
+        "definition": "The visible result of a chromatography separation."
+      },
+      {
+        "term": "Dye",
+        "traditional": "染料 / 色素",
+        "simplified": "染料 / 色素",
+        "definition": "A natural or synthetic substance used to add color to or change the color of something."
+      },
+      {
+        "term": "Capillary action",
+        "traditional": "毛細管現象",
+        "simplified": "毛细管现象",
+        "definition": "The ability of a liquid to flow in narrow spaces without the assistance of external forces."
+      },
+      {
+        "term": "Beaker",
+        "traditional": "燒杯",
+        "simplified": "烧杯",
+        "definition": "A cylindrical container used in laboratories for mixing, stirring, and heating liquids."
+      },
+      {
+        "term": "Measuring cylinder",
+        "traditional": "量筒",
+        "simplified": "量筒",
+        "definition": "A piece of laboratory equipment used to measure the volume of a liquid accurately."
+      }
     ],
-    questions: [
-      { id: "2-1", text: "When table salt “disappears” in water, the process is called:", options: ["Evaporation", "Dissolving", "Melting", "Condensation"], correctAnswer: "Dissolving" },
-      { id: "2-2", text: "A solution is formed by dissolving a ___ into a ___.", options: ["solvent; solute", "solute; solvent", "gas; solid", "solid; gas"], correctAnswer: "solute; solvent" },
-      { id: "2-3", text: "The word equation for dissolving is:", options: ["solute + solvent → solution", "solvent + solution → solute", "solute + solution → solvent", "solvent + solute → element"], correctAnswer: "solute + solvent → solution" },
-      { id: "2-4", text: "A solute is:", options: ["The liquid used to dissolve something", "The substance that dissolves", "The container used for mixing", "The gas above a liquid"], correctAnswer: "The substance that dissolves" },
-      { id: "2-5", text: "A solvent is usually:", options: ["A liquid", "A solid", "A metal", "A gas"], correctAnswer: "A liquid" },
-      { id: "2-6", text: "Solutions are:", options: ["Pure substances", "Mixtures", "Elements only", "Compounds only"], correctAnswer: "Mixtures" },
-      { id: "2-7", text: "Solutions are always:", options: ["Opaque", "Transparent", "Solid", "Magnetic"], correctAnswer: "Transparent" },
-      { id: "2-8", text: "A solution can be colored because:", options: ["It must contain a metal", "It must contain a gas", "It can contain dissolved substances that absorb light", "All solutions are colorless"], correctAnswer: "It can contain dissolved substances that absorb light" },
-      { id: "2-9", text: "A substance that can dissolve in water is described as:", options: ["Insoluble", "Soluble", "Saturated", "Immiscible"], correctAnswer: "Soluble" },
-      { id: "2-10", text: "A substance that cannot dissolve in water is described as:", options: ["Soluble", "Concentrated", "Insoluble", "Dilute"], correctAnswer: "Insoluble" },
-      { id: "2-11", text: "Which is most likely to dissolve in water?", options: ["Sand", "Table salt", "Cooking oil", "Wax"], correctAnswer: "Table salt" },
-      { id: "2-12", text: "Oil and water usually form:", options: ["A clear solution", "Two layers (not a solution)", "A pure substance", "A saturated solution"], correctAnswer: "Two layers (not a solution)" },
-      { id: "2-13", text: "Before dissolving, table salt is a:", options: ["Gas", "Liquid", "Solid", "Plasma"], correctAnswer: "Solid" },
-      { id: "2-14", text: "In a solid, particles are:", options: ["Very close together", "Very far apart", "Not moving at all", "Turning into new particles"], correctAnswer: "Very close together" },
-      { id: "2-15", text: "Water at room temperature is a:", options: ["Solid", "Liquid", "Gas", "Crystal"], correctAnswer: "Liquid" },
-      { id: "2-16", text: "In a liquid, particles:", options: ["Are fixed in a regular pattern", "Can slide past each other", "Are extremely far apart", "Do not move"], correctAnswer: "Can slide past each other" },
-      { id: "2-17", text: "The three states of matter are:", options: ["Hot, warm, cold", "Solid, liquid, gas", "Metal, non-metal, noble gas", "Acid, alkali, neutral"], correctAnswer: "Solid, liquid, gas" },
-      { id: "2-18", text: "When salt is added to water, water particles collide with the salt and cause salt particles to:", options: ["Burn", "Break off", "Freeze", "Magnetise"], correctAnswer: "Break off" },
-      { id: "2-19", text: "When salt is dissolved, it is no longer visible because salt particles become:", options: ["Larger", "Far apart in the water", "Heavier", "Radioactive"], correctAnswer: "Far apart in the water" },
-      { id: "2-20", text: "A liquid that is a solution must be:", options: ["Opaque", "Transparent", "Always white", "Always thick"], correctAnswer: "Transparent" },
-      { id: "2-21", text: "Milk is usually classified as:", options: ["A transparent solution", "An opaque liquid, so not a solution", "A pure substance", "A gas"], correctAnswer: "An opaque liquid, so not a solution" },
-      { id: "2-22", text: "Gatorade is usually:", options: ["Transparent, so it can be a solution", "Opaque, so it must be a suspension", "Always a pure substance", "Not a liquid"], correctAnswer: "Transparent, so it can be a solution" },
-      { id: "2-23", text: "Straight tea (red tea) is usually:", options: ["Opaque, so not a solution", "Transparent, so it can be a solution", "A solid", "A gas"], correctAnswer: "Transparent, so it can be a solution" },
-      { id: "2-24", text: "Dissolving is different from melting because dissolving involves:", options: ["Two substances (solute and solvent)", "Only one substance", "Fire", "A chemical reaction"], correctAnswer: "Two substances (solute and solvent)" },
-      { id: "2-25", text: "Melting involves:", options: ["Two substances", "Only one substance", "Filtration", "Evaporation"], correctAnswer: "Only one substance" },
-      { id: "2-26", text: "Honey mixed into water is an example of:", options: ["Melting", "Dissolving", "Burning", "Freezing"], correctAnswer: "Dissolving" },
-      { id: "2-27", text: "Wax melting on a candle is an example of:", options: ["Dissolving", "Melting", "Filtration", "Rusting"], correctAnswer: "Melting" },
-      { id: "2-28", text: "Ice turning into water on a hot day is:", options: ["Dissolving", "Melting", "Condensing", "Reacting"], correctAnswer: "Melting" },
-      { id: "2-29", text: "Dissolving is a physical change because:", options: ["New substances are formed", "No new substances are formed", "Heat is always produced", "Light is always produced"], correctAnswer: "No new substances are formed" },
-      { id: "2-30", text: "Physical changes are often:", options: ["Irreversible", "Reversible", "Explosive", "Always dangerous"], correctAnswer: "Reversible" },
-      { id: "2-31", text: "A chemical change usually forms:", options: ["No new substances", "New substances", "Only mixtures", "Only solutions"], correctAnswer: "New substances" },
-      { id: "2-32", text: "Crushing a can is:", options: ["Chemical change", "Physical change", "Nuclear change", "Biological change"], correctAnswer: "Physical change" },
-      { id: "2-33", text: "An iron nail turning brown (rusting) is:", options: ["Physical change", "Chemical change", "Freezing", "Melting"], correctAnswer: "Chemical change" },
-      { id: "2-34", text: "Cooking an egg is:", options: ["Physical change", "Chemical change", "Dissolving", "Filtering"], correctAnswer: "Chemical change" },
-      { id: "2-35", text: "When dissolving occurs, mass is conserved. This means the mass before and after dissolving:", options: ["Is always zero", "Remains the same", "Doubles", "Disappears"], correctAnswer: "Remains the same" },
-      { id: "2-36", text: "A concentrated solution contains:", options: ["No solute", "Lots of solute dissolved", "Only solvent", "Only solid"], correctAnswer: "Lots of solute dissolved" },
-      { id: "2-37", text: "A dilute solution contains:", options: ["Very little solute dissolved", "Lots of solute dissolved", "No solvent", "Only gas"], correctAnswer: "Very little solute dissolved" },
-      { id: "2-38", text: "Pure water contains:", options: ["Many different solutes", "No solute added", "Two layers", "Only salt"], correctAnswer: "No solute added" },
-      { id: "2-39", text: "In a food dye experiment where total volume is kept at 10 cm³, the most concentrated mixture is the one with:", options: ["The least dye", "The most dye", "The most water", "No water"], correctAnswer: "The most dye" },
-      { id: "2-40", text: "In the set A (10 cm³ dye + 0 cm³ water) to E (2 cm³ dye + 8 cm³ water), the most concentrated is:", options: ["A", "B", "C", "D"], correctAnswer: "A" },
-      { id: "2-41", text: "Salt solutions are hard to compare by sight because they are usually:", options: ["Colored", "Opaque", "Colorless", "Solid"], correctAnswer: "Colorless" },
-      { id: "2-42", text: "Measuring volumes accurately is important because it ensures:", options: ["The total volume and concentration are correct and fair", "The solution becomes opaque", "The solute becomes insoluble", "The solvent freezes"], correctAnswer: "The total volume and concentration are correct and fair" },
-      { id: "2-43", text: "Using a 100 cm³ measuring cylinder to measure small volumes (like 2–10 cm³) is usually:", options: ["More accurate", "Less accurate", "The same accuracy", "Impossible"], correctAnswer: "Less accurate" },
-      { id: "2-44", text: "Insoluble substances can be separated from water by:", options: ["Filtration", "Evaporation", "Freezing", "Melting"], correctAnswer: "Filtration" },
-      { id: "2-45", text: "A soluble substance dissolved in water can be separated by:", options: ["Filtration", "Evaporation", "Magnetism", "Sieving"], correctAnswer: "Evaporation" },
-      { id: "2-46", text: "A saturated solution is one that:", options: ["Has no solute", "Cannot dissolve any more solute at that temperature", "Is always colored", "Is always opaque"], correctAnswer: "Cannot dissolve any more solute at that temperature" },
-      { id: "2-47", text: "If extra solid is added after a solution becomes saturated, the extra solid can be removed by:", options: ["Filtration", "Condensation", "Burning", "Freezing"], correctAnswer: "Filtration" },
-      { id: "2-48", text: "Solubility is defined as the mass of solute that dissolves in:", options: ["10 g of solvent", "100 g of solvent", "1 kg of solvent", "Any mass of solvent"], correctAnswer: "100 g of solvent" },
-      { id: "2-49", text: "If copper(II) sulfate has a solubility of 32 g per 100 g water at 20°C, then in 200 g water at 20°C it can dissolve:", options: ["16 g", "32 g", "64 g", "320 g"], correctAnswer: "64 g" },
-      { id: "2-50", text: "Water is sometimes called a “universal solvent” because it:", options: ["Dissolves every substance", "Dissolves many (but not all) solutes", "Never dissolves salt", "Only dissolves gases"], correctAnswer: "Dissolves many (but not all) solutes" }
+    "questions": [
+      {
+        "id": "2-1",
+        "text": "When table salt “disappears” in water, the process is called:",
+        "textTraditional": "當食鹽在水中「消失」時，這個過程稱為：",
+        "textSimplified": "当食盐在水中“消失”时，这个过程称为：",
+        "options": [
+          "Evaporation",
+          "Dissolving",
+          "Melting",
+          "Condensation"
+        ],
+        "optionsTraditional": [
+          "蒸發",
+          "溶解",
+          "熔化",
+          "凝結"
+        ],
+        "optionsSimplified": [
+          "蒸发",
+          "溶解",
+          "熔化",
+          "凝结"
+        ],
+        "correctAnswer": "Dissolving",
+        "correctAnswerTraditional": "溶解",
+        "correctAnswerSimplified": "溶解"
+      },
+      {
+        "id": "2-2",
+        "text": "A solution is formed by dissolving a ___ into a ___.",
+        "textTraditional": "溶液是由將 ___ 溶解到 ___ 中形成的。",
+        "textSimplified": "溶液是由将 ___ 溶解到 ___ 中形成的。",
+        "options": [
+          "solvent; solute",
+          "solute; solvent",
+          "gas; solid",
+          "solid; gas"
+        ],
+        "optionsTraditional": [
+          "溶劑；溶質",
+          "溶質；溶劑",
+          "氣體；固體",
+          "固體；氣體"
+        ],
+        "optionsSimplified": [
+          "溶剂；溶质",
+          "溶质；溶剂",
+          "气体；固体",
+          "固体；气体"
+        ],
+        "correctAnswer": "solute; solvent",
+        "correctAnswerTraditional": "溶質；溶劑",
+        "correctAnswerSimplified": "溶质；溶剂"
+      },
+      {
+        "id": "2-3",
+        "text": "The word equation for dissolving is:",
+        "textTraditional": "溶解的字詞方程式是：",
+        "textSimplified": "溶解的文字方程式是：",
+        "options": [
+          "solute + solvent → solution",
+          "solvent + solution → solute",
+          "solute + solution → solvent",
+          "solvent + solute → element"
+        ],
+        "optionsTraditional": [
+          "溶質 + 溶劑 → 溶液",
+          "溶劑 + 溶液 → 溶質",
+          "溶質 + 溶液 → 溶劑",
+          "溶劑 + 溶質 → 元素"
+        ],
+        "optionsSimplified": [
+          "溶质 + 溶剂 → 溶液",
+          "溶剂 + 溶液 → 溶质",
+          "溶质 + 溶液 → 溶剂",
+          "溶剂 + 溶质 → 元素"
+        ],
+        "correctAnswer": "solute + solvent → solution",
+        "correctAnswerTraditional": "溶質 + 溶劑 → 溶液",
+        "correctAnswerSimplified": "溶质 + 溶剂 → 溶液"
+      },
+      {
+        "id": "2-4",
+        "text": "A solute is:",
+        "textTraditional": "溶質（Solute）是：",
+        "textSimplified": "溶质（Solute）是：",
+        "options": [
+          "The liquid used to dissolve something",
+          "The substance that dissolves",
+          "The container used for mixing",
+          "The gas above a liquid"
+        ],
+        "optionsTraditional": [
+          "用於溶解某物的液體",
+          "被溶解的物質",
+          "用於混合的容器",
+          "液體上方的氣體"
+        ],
+        "optionsSimplified": [
+          "用于溶解某物的液体",
+          "被溶解的物质",
+          "用于混合的容器",
+          "液体上方的气体"
+        ],
+        "correctAnswer": "The substance that dissolves",
+        "correctAnswerTraditional": "被溶解的物質",
+        "correctAnswerSimplified": "被溶解的物质"
+      },
+      {
+        "id": "2-5",
+        "text": "A solvent is usually:",
+        "textTraditional": "溶劑（Solvent）通常是：",
+        "textSimplified": "溶剂（Solvent）通常是：",
+        "options": [
+          "A liquid",
+          "A solid",
+          "A metal",
+          "A gas"
+        ],
+        "optionsTraditional": [
+          "液體",
+          "固體",
+          "金屬",
+          "氣體"
+        ],
+        "optionsSimplified": [
+          "液体",
+          "固体",
+          "金属",
+          "气体"
+        ],
+        "correctAnswer": "A liquid",
+        "correctAnswerTraditional": "液體",
+        "correctAnswerSimplified": "液体"
+      },
+      {
+        "id": "2-6",
+        "text": "Solutions are:",
+        "textTraditional": "溶液是：",
+        "textSimplified": "溶液是：",
+        "options": [
+          "Pure substances",
+          "Mixtures",
+          "Elements only",
+          "Compounds only"
+        ],
+        "optionsTraditional": [
+          "純物質",
+          "混合物",
+          "僅限元素",
+          "僅限化合物"
+        ],
+        "optionsSimplified": [
+          "纯物质",
+          "混合物",
+          "仅限元素",
+          "仅限化合物"
+        ],
+        "correctAnswer": "Mixtures",
+        "correctAnswerTraditional": "混合物",
+        "correctAnswerSimplified": "混合物"
+      },
+      {
+        "id": "2-7",
+        "text": "Solutions are always:",
+        "textTraditional": "溶液始終是：",
+        "textSimplified": "溶液始终是：",
+        "options": [
+          "Opaque",
+          "Transparent",
+          "Solid",
+          "Magnetic"
+        ],
+        "optionsTraditional": [
+          "不透明的",
+          "透明的",
+          "固體的",
+          "具磁性的"
+        ],
+        "optionsSimplified": [
+          "不透明的",
+          "透明的",
+          "固体的",
+          "具磁性的"
+        ],
+        "correctAnswer": "Transparent",
+        "correctAnswerTraditional": "透明的",
+        "correctAnswerSimplified": "透明的"
+      },
+      {
+        "id": "2-8",
+        "text": "A solution can be colored because:",
+        "textTraditional": "溶液可以是有顏色的，是因為：",
+        "textSimplified": "溶液可以是有颜色的，是因为：",
+        "options": [
+          "It must contain a metal",
+          "It must contain a gas",
+          "It can contain dissolved substances that absorb light",
+          "All solutions are colorless"
+        ],
+        "optionsTraditional": [
+          "它必須含有金屬",
+          "它必須含有氣體",
+          "它可以含有吸收光線的溶解物質",
+          "所有溶液都是無色的"
+        ],
+        "optionsSimplified": [
+          "它必须含有金属",
+          "它必须含有气体",
+          "它可以含有吸收光线的溶解物质",
+          "所有溶液都是无色的"
+        ],
+        "correctAnswer": "It can contain dissolved substances that absorb light",
+        "correctAnswerTraditional": "它可以含有吸收光線的溶解物質",
+        "correctAnswerSimplified": "它可以含有吸收光线的溶解物质"
+      },
+      {
+        "id": "2-9",
+        "text": "A substance that can dissolve in water is described as:",
+        "textTraditional": "能溶解在水中的物質被描述為：",
+        "textSimplified": "能溶解在水中的物质被描述为：",
+        "options": [
+          "Insoluble",
+          "Soluble",
+          "Saturated",
+          "Immiscible"
+        ],
+        "optionsTraditional": [
+          "不溶性的",
+          "可溶性的",
+          "飽和的",
+          "不相混溶的"
+        ],
+        "optionsSimplified": [
+          "不溶性的",
+          "可溶性的",
+          "饱和的",
+          "不相混溶的"
+        ],
+        "correctAnswer": "Soluble",
+        "correctAnswerTraditional": "可溶性的",
+        "correctAnswerSimplified": "可溶性的"
+      },
+      {
+        "id": "2-10",
+        "text": "A substance that cannot dissolve in water is described as:",
+        "textTraditional": "不能溶解在水中的物質被描述為：",
+        "textSimplified": "不能溶解在水中的物质被描述为：",
+        "options": [
+          "Soluble",
+          "Concentrated",
+          "Insoluble",
+          "Dilute"
+        ],
+        "optionsTraditional": [
+          "可溶性的",
+          "濃縮的",
+          "不溶性的",
+          "稀釋的"
+        ],
+        "optionsSimplified": [
+          "可溶性的",
+          "浓缩的",
+          "不溶性的",
+          "稀释的"
+        ],
+        "correctAnswer": "Insoluble",
+        "correctAnswerTraditional": "不溶性的",
+        "correctAnswerSimplified": "不溶性的"
+      },
+      {
+        "id": "2-11",
+        "text": "Which is most likely to dissolve in water?",
+        "textTraditional": "哪種物質最有可能溶解在水中？",
+        "textSimplified": "哪种物质最有可能溶解在水中？",
+        "options": [
+          "Sand",
+          "Table salt",
+          "Cooking oil",
+          "Wax"
+        ],
+        "optionsTraditional": [
+          "沙子",
+          "食鹽",
+          "食用油",
+          "蠟"
+        ],
+        "optionsSimplified": [
+          "沙子",
+          "食盐",
+          "食用油",
+          "蜡"
+        ],
+        "correctAnswer": "Table salt",
+        "correctAnswerTraditional": "食鹽",
+        "correctAnswerSimplified": "食盐"
+      },
+      {
+        "id": "2-12",
+        "text": "Oil and water usually form:",
+        "textTraditional": "油和水通常形成：",
+        "textSimplified": "油和水通常形成：",
+        "options": [
+          "A clear solution",
+          "Two layers (not a solution)",
+          "A pure substance",
+          "A saturated solution"
+        ],
+        "optionsTraditional": [
+          "清澈的溶液",
+          "兩層（非溶液）",
+          "純物質",
+          "飽和溶液"
+        ],
+        "optionsSimplified": [
+          "清澈的溶液",
+          "两层（非溶液）",
+          "纯物质",
+          "饱和溶液"
+        ],
+        "correctAnswer": "Two layers (not a solution)",
+        "correctAnswerTraditional": "兩層（非溶液）",
+        "correctAnswerSimplified": "两层（非溶液）"
+      },
+      {
+        "id": "2-13",
+        "text": "Before dissolving, table salt is a:",
+        "textTraditional": "在溶解之前，食鹽是：",
+        "textSimplified": "在溶解之前，食盐是：",
+        "options": [
+          "Gas",
+          "Liquid",
+          "Solid",
+          "Plasma"
+        ],
+        "optionsTraditional": [
+          "氣體",
+          "液體",
+          "固體",
+          "電漿"
+        ],
+        "optionsSimplified": [
+          "气体",
+          "液体",
+          "固体",
+          "等离子体"
+        ],
+        "correctAnswer": "Solid",
+        "correctAnswerTraditional": "固體",
+        "correctAnswerSimplified": "固体"
+      },
+      {
+        "id": "2-14",
+        "text": "In a solid, particles are:",
+        "textTraditional": "在固體中，微粒：",
+        "textSimplified": "在固体中，微粒：",
+        "options": [
+          "Very close together",
+          "Very far apart",
+          "Not moving at all",
+          "Turning into new particles"
+        ],
+        "optionsTraditional": [
+          "非常緊密地排列在一起",
+          "相距很遠",
+          "完全不動",
+          "轉變成新的微粒"
+        ],
+        "optionsSimplified": [
+          "非常紧密地排列在一起",
+          "相距很远",
+          "完全不动",
+          "转变成新的微粒"
+        ],
+        "correctAnswer": "Very close together",
+        "correctAnswerTraditional": "非常緊密地排列在一起",
+        "correctAnswerSimplified": "非常紧密地排列在一起"
+      },
+      {
+        "id": "2-15",
+        "text": "Water at room temperature is a:",
+        "textTraditional": "室溫下的水是：",
+        "textSimplified": "室温下的水是：",
+        "options": [
+          "Solid",
+          "Liquid",
+          "Gas",
+          "Crystal"
+        ],
+        "optionsTraditional": [
+          "固體",
+          "液體",
+          "氣體",
+          "晶體"
+        ],
+        "optionsSimplified": [
+          "固体",
+          "液体",
+          "气体",
+          "晶体"
+        ],
+        "correctAnswer": "Liquid",
+        "correctAnswerTraditional": "液體",
+        "correctAnswerSimplified": "液体"
+      },
+      {
+        "id": "2-16",
+        "text": "In a liquid, particles:",
+        "textTraditional": "在液體中，微粒：",
+        "textSimplified": "在液体中，微粒：",
+        "options": [
+          "Are fixed in a regular pattern",
+          "Can slide past each other",
+          "Are extremely far apart",
+          "Do not move"
+        ],
+        "optionsTraditional": [
+          "固定於規則的排列模式中",
+          "可以互相滑過",
+          "極其分散",
+          "不運動"
+        ],
+        "optionsSimplified": [
+          "固定于规则的排列模式中",
+          "可以互相滑过",
+          "极其分散",
+          "不运动"
+        ],
+        "correctAnswer": "Can slide past each other",
+        "correctAnswerTraditional": "可以互相滑過",
+        "correctAnswerSimplified": "可以互相滑过"
+      },
+      {
+        "id": "2-17",
+        "text": "The three states of matter are:",
+        "textTraditional": "物質的三種狀態是：",
+        "textSimplified": "物质的三种状态是：",
+        "options": [
+          "Hot, warm, cold",
+          "Solid, liquid, gas",
+          "Metal, non-metal, noble gas",
+          "Acid, alkali, neutral"
+        ],
+        "optionsTraditional": [
+          "熱的、溫的、冷的",
+          "固體、液體、氣體",
+          "金屬、非金屬、惰性氣體",
+          "酸、鹼、中性"
+        ],
+        "optionsSimplified": [
+          "热的、温的、冷的",
+          "固体、液体、气体",
+          "金属、非金属、惰性气体",
+          "酸、碱、中性"
+        ],
+        "correctAnswer": "Solid, liquid, gas",
+        "correctAnswerTraditional": "固體、液體、氣體",
+        "correctAnswerSimplified": "固体、液体、气体"
+      },
+      {
+        "id": "2-18",
+        "text": "When salt is added to water, water particles collide with the salt and cause salt particles to:",
+        "textTraditional": "當鹽加入水中時，水微粒會與鹽碰撞並導致鹽微粒：",
+        "textSimplified": "当盐加入水中时，水微粒会与盐碰撞并导致盐微粒：",
+        "options": [
+          "Burn",
+          "Break off",
+          "Freeze",
+          "Magnetise"
+        ],
+        "optionsTraditional": [
+          "燃燒",
+          "脫落 / 分解",
+          "冷凍",
+          "磁化"
+        ],
+        "optionsSimplified": [
+          "燃烧",
+          "脱落 / 分解",
+          "冷冻",
+          "磁化"
+        ],
+        "correctAnswer": "Break off",
+        "correctAnswerTraditional": "脫落 / 分解",
+        "correctAnswerSimplified": "脱落 / 分解"
+      },
+      {
+        "id": "2-19",
+        "text": "When salt is dissolved, it is no longer visible because salt particles become:",
+        "textTraditional": "當鹽溶解後，肉眼不再看得到，是因為鹽微粒變為：",
+        "textSimplified": "当盐溶解后，肉眼不再看得见，是因为盐微粒变为：",
+        "options": [
+          "Larger",
+          "Far apart in the water",
+          "Heavier",
+          "Radioactive"
+        ],
+        "optionsTraditional": [
+          "更大的",
+          "分散在水中",
+          "更重的",
+          "放射性的"
+        ],
+        "optionsSimplified": [
+          "更大的",
+          "分散在水中",
+          "更重的",
+          "放射性的"
+        ],
+        "correctAnswer": "Far apart in the water",
+        "correctAnswerTraditional": "分散在水中",
+        "correctAnswerSimplified": "分散在水中"
+      },
+      {
+        "id": "2-20",
+        "text": "A liquid that is a solution must be:",
+        "textTraditional": "作為溶液的液體必須是：",
+        "textSimplified": "作为溶液的液体必须是：",
+        "options": [
+          "Opaque",
+          "Transparent",
+          "Always white",
+          "Always thick"
+        ],
+        "optionsTraditional": [
+          "不透明的",
+          "透明的",
+          "始終是白色的",
+          "始終是粘稠的"
+        ],
+        "optionsSimplified": [
+          "不透明的",
+          "透明的",
+          "始终是白色的",
+          "始终是粘稠的"
+        ],
+        "correctAnswer": "Transparent",
+        "correctAnswerTraditional": "透明的",
+        "correctAnswerSimplified": "透明的"
+      },
+      {
+        "id": "2-21",
+        "text": "Milk is usually classified as:",
+        "textTraditional": "牛奶通常被分類為：",
+        "textSimplified": "牛奶通常被分类为：",
+        "options": [
+          "A transparent solution",
+          "An opaque liquid, so not a solution",
+          "A pure substance",
+          "A gas"
+        ],
+        "optionsTraditional": [
+          "透明溶液",
+          "不透明液體，因此不是溶液",
+          "純物質",
+          "氣體"
+        ],
+        "optionsSimplified": [
+          "透明溶液",
+          "不透明液体，因此不是溶液",
+          "纯物质",
+          "气体"
+        ],
+        "correctAnswer": "An opaque liquid, so not a solution",
+        "correctAnswerTraditional": "不透明液體，因此不是溶液",
+        "correctAnswerSimplified": "不透明液体，因此不是溶液"
+      },
+      {
+        "id": "2-22",
+        "text": "Gatorade is usually:",
+        "textTraditional": "佳得樂（Gatorade）通常是：",
+        "textSimplified": "佳得乐（Gatorade）通常是：",
+        "options": [
+          "Transparent, so it can be a solution",
+          "Opaque, so it must be a suspension",
+          "Always a pure substance",
+          "Not a liquid"
+        ],
+        "optionsTraditional": [
+          "透明的，所以它可以是溶液",
+          "不透明的，所以它肯定是懸浮液",
+          "始終是純物質",
+          "不是液體"
+        ],
+        "optionsSimplified": [
+          "透明的，所以它可以是溶液",
+          "不透明的，所以它肯定是悬浮液",
+          "始终是纯物质",
+          "不是液体"
+        ],
+        "correctAnswer": "Transparent, so it can be a solution",
+        "correctAnswerTraditional": "透明的，所以它可以是溶液",
+        "correctAnswerSimplified": "透明的，所以它可以是溶液"
+      },
+      {
+        "id": "2-23",
+        "text": "Straight tea (red tea) is usually:",
+        "textTraditional": "淨茶（紅茶）通常是：",
+        "textSimplified": "净茶（红茶）通常是：",
+        "options": [
+          "Opaque, so not a solution",
+          "Transparent, so it can be a solution",
+          "A solid",
+          "A gas"
+        ],
+        "optionsTraditional": [
+          "不透明的，所以不是溶液",
+          "透明的，所以可以是溶液",
+          "固體",
+          "氣體"
+        ],
+        "optionsSimplified": [
+          "不透明的，所以不是溶液",
+          "透明的，所以可以是溶液",
+          "固体",
+          "气体"
+        ],
+        "correctAnswer": "Transparent, so it can be a solution",
+        "correctAnswerTraditional": "透明的，所以可以是溶液",
+        "correctAnswerSimplified": "透明的，所以可以是溶液"
+      },
+      {
+        "id": "2-24",
+        "text": "Dissolving is different from melting because dissolving involves:",
+        "textTraditional": "溶解與熔化不同，因為溶解涉及：",
+        "textSimplified": "溶解与熔化不同，因为溶解涉及：",
+        "options": [
+          "Two substances (solute and solvent)",
+          "Only one substance",
+          "Fire",
+          "A chemical reaction"
+        ],
+        "optionsTraditional": [
+          "兩種物質（溶質和溶劑）",
+          "只有一種物質",
+          "火",
+          "化學反應"
+        ],
+        "optionsSimplified": [
+          "两种物质（溶质和溶剂）",
+          "只有一种物质",
+          "火",
+          "化学反应"
+        ],
+        "correctAnswer": "Two substances (solute and solvent)",
+        "correctAnswerTraditional": "兩種物質（溶質和溶劑）",
+        "correctAnswerSimplified": "两种物质（溶质和溶剂）"
+      },
+      {
+        "id": "2-25",
+        "text": "Melting involves:",
+        "textTraditional": "熔化涉及：",
+        "textSimplified": "熔化涉及：",
+        "options": [
+          "Two substances",
+          "Only one substance",
+          "Filtration",
+          "Evaporation"
+        ],
+        "optionsTraditional": [
+          "兩種物質",
+          "只有一種物質",
+          "過濾法",
+          "蒸發"
+        ],
+        "optionsSimplified": [
+          "两种物质",
+          "只有一种物质",
+          "过滤法",
+          "蒸发"
+        ],
+        "correctAnswer": "Only one substance",
+        "correctAnswerTraditional": "只有一種物質",
+        "correctAnswerSimplified": "只有一种物质"
+      },
+      {
+        "id": "2-26",
+        "text": "Honey mixed into water is an example of:",
+        "options": [
+          "Melting",
+          "Dissolving",
+          "Burning",
+          "Freezing"
+        ],
+        "correctAnswer": "Dissolving"
+      },
+      {
+        "id": "2-27",
+        "text": "Wax melting on a candle is an example of:",
+        "options": [
+          "Dissolving",
+          "Melting",
+          "Filtration",
+          "Rusting"
+        ],
+        "correctAnswer": "Melting"
+      },
+      {
+        "id": "2-28",
+        "text": "Ice turning into water on a hot day is:",
+        "options": [
+          "Dissolving",
+          "Melting",
+          "Condensing",
+          "Reacting"
+        ],
+        "correctAnswer": "Melting"
+      },
+      {
+        "id": "2-29",
+        "text": "Dissolving is a physical change because:",
+        "options": [
+          "New substances are formed",
+          "No new substances are formed",
+          "Heat is always produced",
+          "Light is always produced"
+        ],
+        "correctAnswer": "No new substances are formed"
+      },
+      {
+        "id": "2-30",
+        "text": "Physical changes are often:",
+        "options": [
+          "Irreversible",
+          "Reversible",
+          "Explosive",
+          "Always dangerous"
+        ],
+        "correctAnswer": "Reversible"
+      },
+      {
+        "id": "2-31",
+        "text": "A chemical change usually forms:",
+        "options": [
+          "No new substances",
+          "New substances",
+          "Only mixtures",
+          "Only solutions"
+        ],
+        "correctAnswer": "New substances"
+      },
+      {
+        "id": "2-32",
+        "text": "Crushing a can is:",
+        "options": [
+          "Chemical change",
+          "Physical change",
+          "Nuclear change",
+          "Biological change"
+        ],
+        "correctAnswer": "Physical change"
+      },
+      {
+        "id": "2-33",
+        "text": "An iron nail turning brown (rusting) is:",
+        "options": [
+          "Physical change",
+          "Chemical change",
+          "Freezing",
+          "Melting"
+        ],
+        "correctAnswer": "Chemical change"
+      },
+      {
+        "id": "2-34",
+        "text": "Cooking an egg is:",
+        "options": [
+          "Physical change",
+          "Chemical change",
+          "Dissolving",
+          "Filtering"
+        ],
+        "correctAnswer": "Chemical change"
+      },
+      {
+        "id": "2-35",
+        "text": "When dissolving occurs, mass is conserved. This means the mass before and after dissolving:",
+        "options": [
+          "Is always zero",
+          "Remains the same",
+          "Doubles",
+          "Disappears"
+        ],
+        "correctAnswer": "Remains the same"
+      },
+      {
+        "id": "2-36",
+        "text": "A concentrated solution contains:",
+        "options": [
+          "No solute",
+          "Lots of solute dissolved",
+          "Only solvent",
+          "Only solid"
+        ],
+        "correctAnswer": "Lots of solute dissolved"
+      },
+      {
+        "id": "2-37",
+        "text": "A dilute solution contains:",
+        "options": [
+          "Very little solute dissolved",
+          "Lots of solute dissolved",
+          "No solvent",
+          "Only gas"
+        ],
+        "correctAnswer": "Very little solute dissolved"
+      },
+      {
+        "id": "2-38",
+        "text": "Pure water contains:",
+        "options": [
+          "Many different solutes",
+          "No solute added",
+          "Two layers",
+          "Only salt"
+        ],
+        "correctAnswer": "No solute added"
+      },
+      {
+        "id": "2-39",
+        "text": "In a food dye experiment where total volume is kept at 10 cm³, the most concentrated mixture is the one with:",
+        "options": [
+          "The least dye",
+          "The most dye",
+          "The most water",
+          "No water"
+        ],
+        "correctAnswer": "The most dye"
+      },
+      {
+        "id": "2-40",
+        "text": "In the set A (10 cm³ dye + 0 cm³ water) to E (2 cm³ dye + 8 cm³ water), the most concentrated is:",
+        "options": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "correctAnswer": "A"
+      },
+      {
+        "id": "2-41",
+        "text": "Salt solutions are hard to compare by sight because they are usually:",
+        "options": [
+          "Colored",
+          "Opaque",
+          "Colorless",
+          "Solid"
+        ],
+        "correctAnswer": "Colorless"
+      },
+      {
+        "id": "2-42",
+        "text": "Measuring volumes accurately is important because it ensures:",
+        "options": [
+          "The total volume and concentration are correct and fair",
+          "The solution becomes opaque",
+          "The solute becomes insoluble",
+          "The solvent freezes"
+        ],
+        "correctAnswer": "The total volume and concentration are correct and fair"
+      },
+      {
+        "id": "2-43",
+        "text": "Using a 100 cm³ measuring cylinder to measure small volumes (like 2–10 cm³) is usually:",
+        "options": [
+          "More accurate",
+          "Less accurate",
+          "The same accuracy",
+          "Impossible"
+        ],
+        "correctAnswer": "Less accurate"
+      },
+      {
+        "id": "2-44",
+        "text": "Insoluble substances can be separated from water by:",
+        "options": [
+          "Filtration",
+          "Evaporation",
+          "Freezing",
+          "Melting"
+        ],
+        "correctAnswer": "Filtration"
+      },
+      {
+        "id": "2-45",
+        "text": "A soluble substance dissolved in water can be separated by:",
+        "options": [
+          "Filtration",
+          "Evaporation",
+          "Magnetism",
+          "Sieving"
+        ],
+        "correctAnswer": "Evaporation"
+      },
+      {
+        "id": "2-46",
+        "text": "A saturated solution is one that:",
+        "options": [
+          "Has no solute",
+          "Cannot dissolve any more solute at that temperature",
+          "Is always colored",
+          "Is always opaque"
+        ],
+        "correctAnswer": "Cannot dissolve any more solute at that temperature"
+      },
+      {
+        "id": "2-47",
+        "text": "If extra solid is added after a solution becomes saturated, the extra solid can be removed by:",
+        "options": [
+          "Filtration",
+          "Condensation",
+          "Burning",
+          "Freezing"
+        ],
+        "correctAnswer": "Filtration"
+      },
+      {
+        "id": "2-48",
+        "text": "Solubility is defined as the mass of solute that dissolves in:",
+        "options": [
+          "10 g of solvent",
+          "100 g of solvent",
+          "1 kg of solvent",
+          "Any mass of solvent"
+        ],
+        "correctAnswer": "100 g of solvent"
+      },
+      {
+        "id": "2-49",
+        "text": "If copper(II) sulfate has a solubility of 32 g per 100 g water at 20°C, then in 200 g water at 20°C it can dissolve:",
+        "options": [
+          "16 g",
+          "32 g",
+          "64 g",
+          "320 g"
+        ],
+        "correctAnswer": "64 g"
+      },
+      {
+        "id": "2-50",
+        "text": "Water is sometimes called a “universal solvent” because it:",
+        "options": [
+          "Dissolves every substance",
+          "Dissolves many (but not all) solutes",
+          "Never dissolves salt",
+          "Only dissolves gases"
+        ],
+        "correctAnswer": "Dissolves many (but not all) solutes"
+      }
     ]
   },
   {
-    id: 3,
-    title: "Forces and energy",
-    titleTraditional: "力與能量",
-    titleSimplified: "力与能量",
-    description: "Understanding motion, energy transfer, and balance.",
-    descriptionTraditional: "了解運動、能量轉移和平衡。",
-    descriptionSimplified: "了解运动、能量转移和平衡。",
-    color: "bg-orange-500",
-    concepts: [
+    "id": 3,
+    "title": "Forces and energy",
+    "titleTraditional": "力與能量",
+    "titleSimplified": "力与能量",
+    "description": "Understanding motion, energy transfer, and balance.",
+    "descriptionTraditional": "了解運動、能量轉移和平衡。",
+    "descriptionSimplified": "了解运动、能量转移和平衡。",
+    "color": "bg-orange-500",
+    "concepts": [
       "A force is a push or pull that can change an object's motion or shape.",
       "Weight is the force pulling objects toward Earth's centre due to gravity.",
       "Contact (normal) force acts perpendicular to the surface when an object rests on it.",
@@ -459,7 +3057,7 @@ export const units: Unit[] = [
       "Concentration is the number of particles in a given volume.",
       "Diffusion is faster when the concentration gradient is bigger or the temperature is higher."
     ],
-    conceptsTraditional: [
+    "conceptsTraditional": [
       "力是推力或拉力，可以改變物體的運動或形狀。",
       "重量是由於重力將物體拉向地心的力。",
       "接觸力（法向力）在物體停留在表面時垂直於表面作用。",
@@ -488,7 +3086,7 @@ export const units: Unit[] = [
       "濃度是給定體積中的粒子數。",
       "當濃度梯度更大或溫度更高時，擴散速度更快。"
     ],
-    conceptsSimplified: [
+    "conceptsSimplified": [
       "力是推力或拉力，可以改变物体的运动或形状。",
       "重量是由于重力将物体拉向地心的力。",
       "接触力（法向力）在物体停留在表面时垂直于表面作用。",
@@ -517,204 +3115,1575 @@ export const units: Unit[] = [
       "浓度是给定体积中的粒子数。",
       "当浓度梯度更大或温度更高时，扩散速度更快。"
     ],
-    keyTerms: {
-      "speed": "#3b82f6", "速率": "#3b82f6",
-      "distance": "#ef4444", "距離": "#ef4444", "距离": "#ef4444",
-      "time": "#10b981", "時間": "#10b981", "时间": "#10b981",
-      "friction": "#f59e0b", "摩擦力": "#f59e0b",
-      "gravity": "#8b5cf6", "重力": "#8b5cf6",
-      "tension": "#ec4899", "張力": "#ec4899", "张力": "#ec4899",
-      "moment": "#06b6d4", "力矩": "#06b6d4",
-      "pivot": "#14b8a6", "支點": "#14b8a6", "支点": "#14b8a6",
-      "pressure": "#f97316", "壓力": "#f97316", "压力": "#f97316",
-      "diffusion": "#10b981", "擴散作用": "#10b981", "扩散作用": "#10b981"
+    "keyTerms": {
+      "speed": "#3b82f6",
+      "速率": "#3b82f6",
+      "distance": "#ef4444",
+      "距離": "#ef4444",
+      "距离": "#ef4444",
+      "time": "#10b981",
+      "時間": "#10b981",
+      "时间": "#10b981",
+      "friction": "#f59e0b",
+      "摩擦力": "#f59e0b",
+      "gravity": "#8b5cf6",
+      "重力": "#8b5cf6",
+      "tension": "#ec4899",
+      "張力": "#ec4899",
+      "张力": "#ec4899",
+      "moment": "#06b6d4",
+      "力矩": "#06b6d4",
+      "pivot": "#14b8a6",
+      "支點": "#14b8a6",
+      "支点": "#14b8a6",
+      "pressure": "#f97316",
+      "壓力": "#f97316",
+      "压力": "#f97316",
+      "diffusion": "#10b981",
+      "擴散作用": "#10b981",
+      "扩散作用": "#10b981"
     },
-    vocab: [
-      { term: "Force", traditional: "力", simplified: "力", definition: "A push or pull acting upon an object as a result of its interaction with another object." },
-      { term: "Motion", traditional: "運動", simplified: "运动", definition: "The action or process of moving or being moved." },
-      { term: "Mass", traditional: "質量", simplified: "质量", definition: "The amount of matter in an object, usually measured in kilograms." },
-      { term: "Weight", traditional: "重量", simplified: "重量", definition: "The force of gravity acting on an object's mass." },
-      { term: "Gravity", traditional: "重力 / 地心引力", simplified: "重力 / 地心引力", definition: "The force that attracts a body toward the center of the earth, or toward any other physical body having mass." },
-      { term: "Satellite", traditional: "衛星", simplified: "卫星", definition: "An object that orbits a planet or star." },
-      { term: "Contact force", traditional: "接觸力", simplified: "接触力", definition: "A force that acts at the point of contact between two objects." },
-      { term: "Perpendicular", traditional: "垂直", simplified: "垂直", definition: "At an angle of 90° to a given line, plane, or surface." },
-      { term: "Friction", traditional: "摩擦力", simplified: "摩擦力", definition: "The resistance that one surface or object encounters when moving over another." },
-      { term: "Oppose", traditional: "抵抗", simplified: "抵抗", definition: "To act against or provide resistance to something." },
-      { term: "Tension", traditional: "張力", simplified: "张力", definition: "The pulling force transmitted through a string, rope, cable or wire when it is pulled tight by forces acting from opposite ends." },
-      { term: "Pull", traditional: "拉扯", simplified: "拉扯", definition: "To exert force on someone or something so as to cause movement towards oneself." },
-      { term: "Stationary", traditional: "靜止不動", simplified: "静止不动", definition: "Not moving or not intended to be moved." },
-      { term: "Parachute", traditional: "降落傘", simplified: "降落伞", definition: "A device used to slow the motion of an object through an atmosphere by creating drag." },
-      { term: "Grip", traditional: "抓地力", simplified: "抓地力", definition: "The friction between a body and the surface on which it moves." },
-      { term: "Free body diagram", traditional: "受力圖", simplified: "受力图", definition: "A graphical illustration used to visualize the applied forces on a body." },
-      { term: "Isolate", traditional: "孤立", simplified: "孤立", definition: "To set apart from others." },
-      { term: "Balanced", traditional: "平衡", simplified: "平衡", definition: "When all the forces acting on an object are equal and opposite, resulting in no change in motion." },
-      { term: "Unbalanced", traditional: "不平衡", simplified: "不平衡", definition: "When the forces acting on an object are not equal, resulting in a change in the object's motion." },
-      { term: "Magnetic levitation", traditional: "磁浮", simplified: "磁浮", definition: "A method by which an object is suspended with no support other than magnetic fields." },
-      { term: "Speed", traditional: "速率 / 速度", simplified: "速率 / 速度", definition: "The rate at which someone or something is able to move or operate." },
-      { term: "Distance", traditional: "距離", simplified: "距离", definition: "The amount of space between two things or people." },
-      { term: "Time", traditional: "時間", simplified: "时间", definition: "The indefinite continued progress of existence and events in the past, present, and future." },
-      { term: "Light year", traditional: "光年", simplified: "光年", definition: "A unit of astronomical distance equivalent to the distance that light travels in one year." },
-      { term: "Stargazing", traditional: "觀星", simplified: "观星", definition: "The action or practice of looking at or studying the stars." },
-      { term: "Distance-time graph", traditional: "位移-時間圖", simplified: "位移-时间图", definition: "A graph showing the distance traveled by an object over a period of time." },
-      { term: "Point of reference", traditional: "參考點", simplified: "参考点", definition: "A place or object used for comparison to determine if an object is in motion." },
-      { term: "Tilted", traditional: "斜的", simplified: "斜的", definition: "Moved into a sloping position." },
-      { term: "Horizontal", traditional: "水平的", simplified: "水平的", definition: "Parallel to the plane of the horizon; at right angles to the vertical." },
-      { term: "Slope / Gradient", traditional: "斜度", simplified: "斜度", definition: "The degree of steepness of a line on a graph." },
-      { term: "Turning force", traditional: "轉動力", simplified: "转动力", definition: "A force that causes an object to rotate around a pivot." },
-      { term: "Lever", traditional: "槓桿", simplified: "杠杆", definition: "A simple machine consisting of a beam or rigid rod pivoted at a fixed hinge, or fulcrum." },
-      { term: "Lever system", traditional: "槓桿系統", simplified: "杠杆系统", definition: "A system of levers used to transmit or enhance force." },
-      { term: "Pivot", traditional: "支點", simplified: "支点", definition: "The central point, pin, or shaft on which a mechanism turns or oscillates." },
-      { term: "Moment", traditional: "力矩", simplified: "力矩", definition: "The turning effect of a force." },
-      { term: "Clockwise", traditional: "順時針", simplified: "顺时针", definition: "In a direction corresponding to that of the hands of a clock." },
-      { term: "Anti-clockwise", traditional: "逆時針", simplified: "逆时针", definition: "In the opposite direction to the hands of a clock." },
-      { term: "Efficient", traditional: "效率", simplified: "效率", definition: "Achieving maximum productivity with minimum wasted effort or expense." },
-      { term: "Pressure", traditional: "壓力", simplified: "压力", definition: "The continuous physical force exerted on or against an object by something in contact with it." },
-      { term: "Solid", traditional: "固體", simplified: "固体", definition: "Firm and stable in shape; not liquid or fluid." },
-      { term: "Blunt", traditional: "鈍", simplified: "钝", definition: "Not having a sharp edge or point." },
-      { term: "Sharp", traditional: "鋒利", simplified: "锋利", definition: "Having an edge or point that is able to cut or pierce something." },
-      { term: "Area", traditional: "面積", simplified: "面积", definition: "The extent or measurement of a surface." },
-      { term: "Numerator", traditional: "分子", simplified: "分子", definition: "The number above the line in a common fraction." },
-      { term: "Denominator", traditional: "分母", simplified: "分母", definition: "The number below the line in a common fraction." },
-      { term: "Cuboid", traditional: "立方", simplified: "立方", definition: "A solid which has six rectangular faces at right angles to each other." },
-      { term: "Cylindrical", traditional: "圓柱", simplified: "圆柱", definition: "Having the shape of a cylinder." },
-      { term: "Diameter", traditional: "直徑", simplified: "直径", definition: "A straight line passing from side to side through the center of a body or figure, especially a circle or sphere." },
-      { term: "Radius", traditional: "半徑", simplified: "半径", definition: "A straight line from the center to the circumference of a circle or sphere." },
-      { term: "Liquid", traditional: "液體", simplified: "液体", definition: "A substance that flows freely but is of constant volume, having a consistency like that of water or oil." },
-      { term: "Gas", traditional: "氣體", simplified: "气体", definition: "An air-like fluid substance which expands freely to fill any space available, irrespective of its quantity." },
-      { term: "Depth", traditional: "深度", simplified: "深度", definition: "The distance from the top or surface to the bottom of something." },
-      { term: "Submarine", traditional: "潛水艇", simplified: "潜水艇", definition: "A watercraft capable of independent operation underwater." },
-      { term: "Periscope", traditional: "潛望鏡", simplified: "潜望镜", definition: "An apparatus consisting of a tube attached to a set of mirrors or prisms, by which an observer can see things that are otherwise out of sight." },
-      { term: "Altitude", traditional: "海拔", simplified: "海拔", definition: "The height of an object or point in relation to sea level or ground level." },
-      { term: "Atmosphere", traditional: "大氣層", simplified: "大气层", definition: "The envelope of gases surrounding the earth or another planet." },
-      { term: "Vacuum", traditional: "真空", simplified: "真空", definition: "A space entirely devoid of matter." },
-      { term: "Temperature", traditional: "溫度", simplified: "温度", definition: "The degree or intensity of heat present in a substance or object." },
-      { term: "Collision", traditional: "碰撞", simplified: "碰撞", definition: "An instance of one moving object or person striking violently against another." },
-      { term: "Steam", traditional: "水蒸氣", simplified: "水蒸气", definition: "The vapor into which water is converted when heated, forming a white mist of minute water droplets in the air." },
-      { term: "Pressure cooker", traditional: "壓力煲", simplified: "压力煲", definition: "An airtight pot in which food can be cooked quickly under steam pressure." },
-      { term: "Particle", traditional: "粒子", simplified: "粒子", definition: "A minute portion of matter." },
-      { term: "Brownian motion", traditional: "布朗運動", simplified: "布朗运动", definition: "The erratic random movement of microscopic particles in a fluid, as a result of continuous bombardment from molecules of the surrounding medium." },
-      { term: "Random", traditional: "隨機", simplified: "随机", definition: "Made, done, happening, or chosen without method or conscious decision." },
-      { term: "Diffusion", traditional: "擴散作用", simplified: "扩散作用", definition: "The spreading of something more widely." },
-      { term: "Concentration", traditional: "濃度", simplified: "浓度", definition: "The amount of a particular substance in a given amount of another substance, especially a solution or mixture." },
-      { term: "Solute", traditional: "溶質", simplified: "溶质", definition: "The minor component in a solution, dissolved in the solvent." },
-      { term: "Volume of solution", traditional: "溶液容量", simplified: "溶液容量", definition: "The total amount of space occupied by a solution." },
-      { term: "Concentration gradient", traditional: "濃度梯度", simplified: "浓度梯度", definition: "The process of particles moving through a solution or gas from an area with a higher number of particles to an area with a lower number of particles." },
-      { term: "Dilute", traditional: "稀", simplified: "稀", definition: "Make (a liquid) thinner or weaker by adding water or another solvent to it." },
-      { term: "Concentrated", traditional: "濃", simplified: "浓", definition: "Present in high proportion relative to other substances; having had water or other diluting agent removed or reduced." }
+    "vocab": [
+      {
+        "term": "Force",
+        "traditional": "力",
+        "simplified": "力",
+        "definition": "A push or pull acting upon an object as a result of its interaction with another object."
+      },
+      {
+        "term": "Motion",
+        "traditional": "運動",
+        "simplified": "运动",
+        "definition": "The action or process of moving or being moved."
+      },
+      {
+        "term": "Mass",
+        "traditional": "質量",
+        "simplified": "质量",
+        "definition": "The amount of matter in an object, usually measured in kilograms."
+      },
+      {
+        "term": "Weight",
+        "traditional": "重量",
+        "simplified": "重量",
+        "definition": "The force of gravity acting on an object's mass."
+      },
+      {
+        "term": "Gravity",
+        "traditional": "重力 / 地心引力",
+        "simplified": "重力 / 地心引力",
+        "definition": "The force that attracts a body toward the center of the earth, or toward any other physical body having mass."
+      },
+      {
+        "term": "Satellite",
+        "traditional": "衛星",
+        "simplified": "卫星",
+        "definition": "An object that orbits a planet or star."
+      },
+      {
+        "term": "Contact force",
+        "traditional": "接觸力",
+        "simplified": "接触力",
+        "definition": "A force that acts at the point of contact between two objects."
+      },
+      {
+        "term": "Perpendicular",
+        "traditional": "垂直",
+        "simplified": "垂直",
+        "definition": "At an angle of 90° to a given line, plane, or surface."
+      },
+      {
+        "term": "Friction",
+        "traditional": "摩擦力",
+        "simplified": "摩擦力",
+        "definition": "The resistance that one surface or object encounters when moving over another."
+      },
+      {
+        "term": "Oppose",
+        "traditional": "抵抗",
+        "simplified": "抵抗",
+        "definition": "To act against or provide resistance to something."
+      },
+      {
+        "term": "Tension",
+        "traditional": "張力",
+        "simplified": "张力",
+        "definition": "The pulling force transmitted through a string, rope, cable or wire when it is pulled tight by forces acting from opposite ends."
+      },
+      {
+        "term": "Pull",
+        "traditional": "拉扯",
+        "simplified": "拉扯",
+        "definition": "To exert force on someone or something so as to cause movement towards oneself."
+      },
+      {
+        "term": "Stationary",
+        "traditional": "靜止不動",
+        "simplified": "静止不动",
+        "definition": "Not moving or not intended to be moved."
+      },
+      {
+        "term": "Parachute",
+        "traditional": "降落傘",
+        "simplified": "降落伞",
+        "definition": "A device used to slow the motion of an object through an atmosphere by creating drag."
+      },
+      {
+        "term": "Grip",
+        "traditional": "抓地力",
+        "simplified": "抓地力",
+        "definition": "The friction between a body and the surface on which it moves."
+      },
+      {
+        "term": "Free body diagram",
+        "traditional": "受力圖",
+        "simplified": "受力图",
+        "definition": "A graphical illustration used to visualize the applied forces on a body."
+      },
+      {
+        "term": "Isolate",
+        "traditional": "孤立",
+        "simplified": "孤立",
+        "definition": "To set apart from others."
+      },
+      {
+        "term": "Balanced",
+        "traditional": "平衡",
+        "simplified": "平衡",
+        "definition": "When all the forces acting on an object are equal and opposite, resulting in no change in motion."
+      },
+      {
+        "term": "Unbalanced",
+        "traditional": "不平衡",
+        "simplified": "不平衡",
+        "definition": "When the forces acting on an object are not equal, resulting in a change in the object's motion."
+      },
+      {
+        "term": "Magnetic levitation",
+        "traditional": "磁浮",
+        "simplified": "磁浮",
+        "definition": "A method by which an object is suspended with no support other than magnetic fields."
+      },
+      {
+        "term": "Speed",
+        "traditional": "速率 / 速度",
+        "simplified": "速率 / 速度",
+        "definition": "The rate at which someone or something is able to move or operate."
+      },
+      {
+        "term": "Distance",
+        "traditional": "距離",
+        "simplified": "距离",
+        "definition": "The amount of space between two things or people."
+      },
+      {
+        "term": "Time",
+        "traditional": "時間",
+        "simplified": "时间",
+        "definition": "The indefinite continued progress of existence and events in the past, present, and future."
+      },
+      {
+        "term": "Light year",
+        "traditional": "光年",
+        "simplified": "光年",
+        "definition": "A unit of astronomical distance equivalent to the distance that light travels in one year."
+      },
+      {
+        "term": "Stargazing",
+        "traditional": "觀星",
+        "simplified": "观星",
+        "definition": "The action or practice of looking at or studying the stars."
+      },
+      {
+        "term": "Distance-time graph",
+        "traditional": "位移-時間圖",
+        "simplified": "位移-时间图",
+        "definition": "A graph showing the distance traveled by an object over a period of time."
+      },
+      {
+        "term": "Point of reference",
+        "traditional": "參考點",
+        "simplified": "参考点",
+        "definition": "A place or object used for comparison to determine if an object is in motion."
+      },
+      {
+        "term": "Tilted",
+        "traditional": "斜的",
+        "simplified": "斜的",
+        "definition": "Moved into a sloping position."
+      },
+      {
+        "term": "Horizontal",
+        "traditional": "水平的",
+        "simplified": "水平的",
+        "definition": "Parallel to the plane of the horizon; at right angles to the vertical."
+      },
+      {
+        "term": "Slope / Gradient",
+        "traditional": "斜度",
+        "simplified": "斜度",
+        "definition": "The degree of steepness of a line on a graph."
+      },
+      {
+        "term": "Turning force",
+        "traditional": "轉動力",
+        "simplified": "转动力",
+        "definition": "A force that causes an object to rotate around a pivot."
+      },
+      {
+        "term": "Lever",
+        "traditional": "槓桿",
+        "simplified": "杠杆",
+        "definition": "A simple machine consisting of a beam or rigid rod pivoted at a fixed hinge, or fulcrum."
+      },
+      {
+        "term": "Lever system",
+        "traditional": "槓桿系統",
+        "simplified": "杠杆系统",
+        "definition": "A system of levers used to transmit or enhance force."
+      },
+      {
+        "term": "Pivot",
+        "traditional": "支點",
+        "simplified": "支点",
+        "definition": "The central point, pin, or shaft on which a mechanism turns or oscillates."
+      },
+      {
+        "term": "Moment",
+        "traditional": "力矩",
+        "simplified": "力矩",
+        "definition": "The turning effect of a force."
+      },
+      {
+        "term": "Clockwise",
+        "traditional": "順時針",
+        "simplified": "顺时针",
+        "definition": "In a direction corresponding to that of the hands of a clock."
+      },
+      {
+        "term": "Anti-clockwise",
+        "traditional": "逆時針",
+        "simplified": "逆时针",
+        "definition": "In the opposite direction to the hands of a clock."
+      },
+      {
+        "term": "Efficient",
+        "traditional": "效率",
+        "simplified": "效率",
+        "definition": "Achieving maximum productivity with minimum wasted effort or expense."
+      },
+      {
+        "term": "Pressure",
+        "traditional": "壓力",
+        "simplified": "压力",
+        "definition": "The continuous physical force exerted on or against an object by something in contact with it."
+      },
+      {
+        "term": "Solid",
+        "traditional": "固體",
+        "simplified": "固体",
+        "definition": "Firm and stable in shape; not liquid or fluid."
+      },
+      {
+        "term": "Blunt",
+        "traditional": "鈍",
+        "simplified": "钝",
+        "definition": "Not having a sharp edge or point."
+      },
+      {
+        "term": "Sharp",
+        "traditional": "鋒利",
+        "simplified": "锋利",
+        "definition": "Having an edge or point that is able to cut or pierce something."
+      },
+      {
+        "term": "Area",
+        "traditional": "面積",
+        "simplified": "面积",
+        "definition": "The extent or measurement of a surface."
+      },
+      {
+        "term": "Numerator",
+        "traditional": "分子",
+        "simplified": "分子",
+        "definition": "The number above the line in a common fraction."
+      },
+      {
+        "term": "Denominator",
+        "traditional": "分母",
+        "simplified": "分母",
+        "definition": "The number below the line in a common fraction."
+      },
+      {
+        "term": "Cuboid",
+        "traditional": "立方",
+        "simplified": "立方",
+        "definition": "A solid which has six rectangular faces at right angles to each other."
+      },
+      {
+        "term": "Cylindrical",
+        "traditional": "圓柱",
+        "simplified": "圆柱",
+        "definition": "Having the shape of a cylinder."
+      },
+      {
+        "term": "Diameter",
+        "traditional": "直徑",
+        "simplified": "直径",
+        "definition": "A straight line passing from side to side through the center of a body or figure, especially a circle or sphere."
+      },
+      {
+        "term": "Radius",
+        "traditional": "半徑",
+        "simplified": "半径",
+        "definition": "A straight line from the center to the circumference of a circle or sphere."
+      },
+      {
+        "term": "Liquid",
+        "traditional": "液體",
+        "simplified": "液体",
+        "definition": "A substance that flows freely but is of constant volume, having a consistency like that of water or oil."
+      },
+      {
+        "term": "Gas",
+        "traditional": "氣體",
+        "simplified": "气体",
+        "definition": "An air-like fluid substance which expands freely to fill any space available, irrespective of its quantity."
+      },
+      {
+        "term": "Depth",
+        "traditional": "深度",
+        "simplified": "深度",
+        "definition": "The distance from the top or surface to the bottom of something."
+      },
+      {
+        "term": "Submarine",
+        "traditional": "潛水艇",
+        "simplified": "潜水艇",
+        "definition": "A watercraft capable of independent operation underwater."
+      },
+      {
+        "term": "Periscope",
+        "traditional": "潛望鏡",
+        "simplified": "潜望镜",
+        "definition": "An apparatus consisting of a tube attached to a set of mirrors or prisms, by which an observer can see things that are otherwise out of sight."
+      },
+      {
+        "term": "Altitude",
+        "traditional": "海拔",
+        "simplified": "海拔",
+        "definition": "The height of an object or point in relation to sea level or ground level."
+      },
+      {
+        "term": "Atmosphere",
+        "traditional": "大氣層",
+        "simplified": "大气层",
+        "definition": "The envelope of gases surrounding the earth or another planet."
+      },
+      {
+        "term": "Vacuum",
+        "traditional": "真空",
+        "simplified": "真空",
+        "definition": "A space entirely devoid of matter."
+      },
+      {
+        "term": "Temperature",
+        "traditional": "溫度",
+        "simplified": "温度",
+        "definition": "The degree or intensity of heat present in a substance or object."
+      },
+      {
+        "term": "Collision",
+        "traditional": "碰撞",
+        "simplified": "碰撞",
+        "definition": "An instance of one moving object or person striking violently against another."
+      },
+      {
+        "term": "Steam",
+        "traditional": "水蒸氣",
+        "simplified": "水蒸气",
+        "definition": "The vapor into which water is converted when heated, forming a white mist of minute water droplets in the air."
+      },
+      {
+        "term": "Pressure cooker",
+        "traditional": "壓力煲",
+        "simplified": "压力煲",
+        "definition": "An airtight pot in which food can be cooked quickly under steam pressure."
+      },
+      {
+        "term": "Particle",
+        "traditional": "粒子",
+        "simplified": "粒子",
+        "definition": "A minute portion of matter."
+      },
+      {
+        "term": "Brownian motion",
+        "traditional": "布朗運動",
+        "simplified": "布朗运动",
+        "definition": "The erratic random movement of microscopic particles in a fluid, as a result of continuous bombardment from molecules of the surrounding medium."
+      },
+      {
+        "term": "Random",
+        "traditional": "隨機",
+        "simplified": "随机",
+        "definition": "Made, done, happening, or chosen without method or conscious decision."
+      },
+      {
+        "term": "Diffusion",
+        "traditional": "擴散作用",
+        "simplified": "扩散作用",
+        "definition": "The spreading of something more widely."
+      },
+      {
+        "term": "Concentration",
+        "traditional": "濃度",
+        "simplified": "浓度",
+        "definition": "The amount of a particular substance in a given amount of another substance, especially a solution or mixture."
+      },
+      {
+        "term": "Solute",
+        "traditional": "溶質",
+        "simplified": "溶质",
+        "definition": "The minor component in a solution, dissolved in the solvent."
+      },
+      {
+        "term": "Volume of solution",
+        "traditional": "溶液容量",
+        "simplified": "溶液容量",
+        "definition": "The total amount of space occupied by a solution."
+      },
+      {
+        "term": "Concentration gradient",
+        "traditional": "濃度梯度",
+        "simplified": "浓度梯度",
+        "definition": "The process of particles moving through a solution or gas from an area with a higher number of particles to an area with a lower number of particles."
+      },
+      {
+        "term": "Dilute",
+        "traditional": "稀",
+        "simplified": "稀",
+        "definition": "Make (a liquid) thinner or weaker by adding water or another solvent to it."
+      },
+      {
+        "term": "Concentrated",
+        "traditional": "濃",
+        "simplified": "浓",
+        "definition": "Present in high proportion relative to other substances; having had water or other diluting agent removed or reduced."
+      }
     ],
-    questions: [
-      { id: "3-1", text: "What is speed?", options: ["How heavy something is", "How fast something travels", "How loud something is", "How hot something is"], correctAnswer: "How fast something travels" },
-      { id: "3-2", text: "The scientific formula for speed is:", options: ["Speed = Time ÷ Distance", "Speed = Distance × Time", "Speed = Distance ÷ Time", "Speed = Distance - Time"], correctAnswer: "Speed = Distance ÷ Time" },
-      { id: "3-3", text: "The standard (SI) unit of speed is:", options: ["km/h", "m/s", "m", "s"], correctAnswer: "m/s" },
-      { id: "3-4", text: "Weight is a force that pulls objects toward Earth due to:", options: ["friction", "electricity", "gravity", "magnetism"], correctAnswer: "gravity" },
-      { id: "3-5", text: "A contact force acts when an object rests on a surface and it acts:", options: ["parallel to the surface", "perpendicular to the surface", "toward the centre of Earth", "in the direction of motion"], correctAnswer: "perpendicular to the surface" },
-      { id: "3-6", text: "Friction is a force that:", options: ["increases motion", "opposes motion", "pulls objects upward", "makes objects heavier"], correctAnswer: "opposes motion" },
-      { id: "3-7", text: "Which statement about friction is correct (based on the notes)?", options: ["Only stationary objects experience friction", "Only moving objects experience friction", "Only objects in water experience friction", "Only objects in air experience friction"], correctAnswer: "Only moving objects experience friction" },
-      { id: "3-8", text: "Friction arises because the boundary between two objects is:", options: ["perfectly smooth", "rough", "made of metal", "very hot"], correctAnswer: "rough" },
-      { id: "3-9", text: "Tension is a force that:", options: ["pushes two objects apart", "pulls on two objects connected by a rope/thread/string", "only exists underwater", "only acts on magnets"], correctAnswer: "pulls on two objects connected by a rope/thread/string" },
-      { id: "3-10", text: "In a free body diagram, forces are drawn as:", options: ["circles", "arrows", "triangles", "graphs"], correctAnswer: "arrows" },
-      { id: "3-11", text: "In a free body diagram, the length of the arrow shows the:", options: ["direction of the force only", "size (magnitude) of the force", "colour of the force", "speed of the object"], correctAnswer: "size (magnitude) of the force" },
-      { id: "3-12", text: "Forces are balanced when they are:", options: ["in the same direction and equal in size", "in opposite directions and equal in size", "in opposite directions and different in size", "in the same direction and different in size"], correctAnswer: "in opposite directions and equal in size" },
-      { id: "3-13", text: "If forces on an object are balanced, the object:", options: ["must speed up", "must slow down", "has no change in motion", "must change direction"], correctAnswer: "has no change in motion" },
-      { id: "3-14", text: "When an unbalanced force acts on an object, one possible change in motion is that:", options: ["the direction may change", "the object must become heavier", "time stops", "distance becomes zero"], correctAnswer: "the direction may change" },
-      { id: "3-15", text: "If an object travels 20 m in 4 s, its speed is:", options: ["0.2 m/s", "5 m/s", "16 m/s", "80 m/s"], correctAnswer: "5 m/s" },
-      { id: "3-16", text: "A snail travels 24 m in 24 h. Its speed in m/h is:", options: ["0.5 m/h", "1 m/h", "24 m/h", "48 m/h"], correctAnswer: "1 m/h" },
-      { id: "3-17", text: "24 m in 24 h is equal to 1 m/h. In cm/s, this is closest to:", options: ["2.8 cm/s", "0.028 cm/s", "28 cm/s", "0.28 cm/s"], correctAnswer: "0.028 cm/s" },
-      { id: "3-18", text: "The Concorde travels 5000 km in 2 h. Its speed in km/h is:", options: ["250 km/h", "500 km/h", "2500 km/h", "10,000 km/h"], correctAnswer: "2500 km/h" },
-      { id: "3-19", text: "2500 km/h is approximately how many m/s?", options: ["6.94 m/s", "69.4 m/s", "694 m/s", "6940 m/s"], correctAnswer: "694 m/s" },
-      { id: "3-20", text: "Which triangle relationship is correct?", options: ["Distance = Speed × Time", "Speed = Distance × Time", "Time = Distance × Speed", "Distance = Speed ÷ Time"], correctAnswer: "Distance = Speed × Time" },
-      { id: "3-21", text: "If speed is 8 m/s and time is 5 s, distance is:", options: ["1.6 m", "13 m", "40 m", "400 m"], correctAnswer: "40 m" },
-      { id: "3-22", text: "If distance is 120 m and speed is 6 m/s, time is:", options: ["20 s", "60 s", "720 s", "0.05 s"], correctAnswer: "20 s" },
-      { id: "3-23", text: "Which of the following is a valid unit of speed?", options: ["m", "s", "m/s", "kg"], correctAnswer: "m/s" },
-      { id: "3-24", text: "Sound travels about 300 m/s and light travels about 3 x 10^8 m/s. Light is about how many times faster than sound?", options: ["100 times", "1000 times", "1,000,000 times", "3,000,000 times"], correctAnswer: "1,000,000 times" },
-      { id: "3-25", text: "You see lightning and hear thunder at almost the same time. This suggests the lightning is:", options: ["very far away", "very near", "underground", "in the ocean"], correctAnswer: "very near" },
-      { id: "3-26", text: "You see lightning and hear thunder much later. This suggests the lightning is:", options: ["very far away", "very near", "inside your house", "moving at 300,000,000 m/s"], correctAnswer: "very far away" },
-      { id: "3-27", text: "Student A runs 100 m in 15 s and Student B runs 200 m in 28 s. Who is faster?", options: ["Student A", "Student B", "Same speed", "Cannot tell without their mass"], correctAnswer: "Student B" },
-      { id: "3-28", text: "Which comparison correctly decides who is faster (A vs B)?", options: ["Compare their distances only", "Compare their times only", "Compare their speeds (distance ÷ time)", "Compare their shoe size"], correctAnswer: "Compare their speeds (distance ÷ time)" },
-      { id: "3-29", text: "We draw graphs to show how two terms/variables are related.", options: ["countries", "terms/variables", "colours", "magnets"], correctAnswer: "terms/variables" },
-      { id: "3-30", text: "A distance–time graph can be used to track the motion of an object.", options: ["mass", "motion", "temperature", "electricity"], correctAnswer: "motion" },
-      { id: "3-31", text: "On a distance–time graph, the y-axis is usually:", options: ["time", "distance", "speed", "force"], correctAnswer: "distance" },
-      { id: "3-32", text: "On a distance–time graph, the x-axis is usually:", options: ["distance", "speed", "time", "weight"], correctAnswer: "time" },
-      { id: "3-33", text: "The origin on a distance–time graph represents the:", options: ["final point", "pivot", "point of reference (starting point)", "force of friction"], correctAnswer: "point of reference (starting point)" },
-      { id: "3-34", text: "On a distance–time graph, a horizontal line means the object is:", options: ["speeding up", "moving at constant speed", "stationary", "moving backwards at constant speed"], correctAnswer: "stationary" },
-      { id: "3-35", text: "On a distance–time graph, a straight tilted (sloping) line means the object is:", options: ["stationary", "moving at constant speed", "changing direction", "changing mass"], correctAnswer: "moving at constant speed" },
-      { id: "3-36", text: "The steepness of a line is called the:", options: ["pivot", "slope/gradient", "friction", "tension"], correctAnswer: "slope/gradient" },
-      { id: "3-37", text: "The steeper the line, the bigger the slope and the faster the object moves.", options: ["smaller, slower", "bigger, faster", "bigger, slower", "smaller, faster"], correctAnswer: "bigger, faster" },
-      { id: "3-38", text: "On a distance–time graph, the speed of the object can be found by calculating the:", options: ["area under the line", "slope (distance ÷ time)", "colour of the axes", "length of the x-axis only"], correctAnswer: "slope (distance ÷ time)" },
-      { id: "3-39", text: "If an object travels 100 m in 2 min at constant speed, its speed is:", options: ["2 m/min", "50 m/min", "200 m/min", "0.02 m/min"], correctAnswer: "50 m/min" },
-      { id: "3-40", text: "If the line slopes downward (distance decreases as time increases), the object is:", options: ["moving back toward the point of reference", "stationary", "moving faster than light", "changing into a different material"], correctAnswer: "moving back toward the point of reference" },
-      { id: "3-41", text: "Any object that turns when a force is applied is called a:", options: ["resistor", "lever", "capacitor", "thermometer"], correctAnswer: "lever" },
-      { id: "3-42", text: "The point around which a lever turns is called the:", options: ["slope", "pivot", "distance", "speed"], correctAnswer: "pivot" },
-      { id: "3-43", text: "The turning effect produced when a force is applied to a lever is called the:", options: ["weight", "moment", "friction", "energy unit"], correctAnswer: "moment" },
-      { id: "3-44", text: "The formula for moment is:", options: ["Moment = Force ÷ Distance", "Moment = Force + Distance", "Moment = Force × Distance", "Moment = Distance ÷ Force"], correctAnswer: "Moment = Force × Distance" },
-      { id: "3-45", text: "The moment of a force depends on:", options: ["force size only", "distance from pivot only", "both force size and distance from pivot", "colour of the lever"], correctAnswer: "both force size and distance from pivot" },
-      { id: "3-46", text: "To increase the moment, you can:", options: ["decrease the force and decrease the distance", "increase the force or increase the distance from the pivot", "move the pivot closer to the force and reduce force", "make the lever shorter every time"], correctAnswer: "increase the force or increase the distance from the pivot" },
-      { id: "3-47", text: "If force is measured in newtons (N) and distance in meters (m), the unit of moment is:", options: ["N/m", "Nm", "m/N", "N²m"], correctAnswer: "Nm" },
-      { id: "3-48", text: "A 35 N force is applied 0.8 m from the pivot. The moment is:", options: ["4.375 Nm", "28 Nm", "35.8 Nm", "280 Nm"], correctAnswer: "28 Nm" },
-      { id: "3-49", text: "A 20 N force is applied 0.25 m from the pivot. The moment is:", options: ["0.8 Nm", "5 Nm", "20.25 Nm", "80 Nm"], correctAnswer: "5 Nm" },
-      { id: "3-50", text: "A seesaw is balanced when the clockwise moment is:", options: ["greater than the anticlockwise moment", "less than the anticlockwise moment", "equal to the anticlockwise moment", "zero regardless of the other side"], correctAnswer: "equal to the anticlockwise moment" },
-      { id: "3-51", text: "Pressure is defined as:", options: ["force × area", "force ÷ area", "area ÷ force", "distance ÷ time"], correctAnswer: "force ÷ area" },
-      { id: "3-52", text: "The formula for pressure is:", options: ["P = F × A", "P = F ÷ A", "P = A ÷ F", "P = F ÷ t"], correctAnswer: "P = F ÷ A" },
-      { id: "3-53", text: "To cut more easily with a knife, you can:", options: ["use a smaller force and a blunter knife", "use a smaller force and a sharper knife", "use a greater force or use a sharper object", "use a greater force and use a blunter object"], correctAnswer: "use a greater force or use a sharper object" },
-      { id: "3-54", text: "For the same force, a smaller contact area gives:", options: ["smaller pressure", "larger pressure", "zero pressure", "unchanged pressure"], correctAnswer: "larger pressure" },
-      { id: "3-55", text: "We can increase pressure by:", options: ["decreasing force", "increasing area", "increasing force", "decreasing both force and area"], correctAnswer: "increasing force" },
-      { id: "3-56", text: "We can increase pressure by:", options: ["increasing surface area", "decreasing surface area", "decreasing force only", "increasing time"], correctAnswer: "decreasing surface area" },
-      { id: "3-57", text: "If force is in newtons (N) and area is in square meters (m²), pressure is in:", options: ["N·m", "N/m²", "m²/N", "N/m"], correctAnswer: "N/m²" },
-      { id: "3-58", text: "1 N/m² is also known as:", options: ["1 watt", "1 joule", "1 pascal (Pa)", "1 volt"], correctAnswer: "1 pascal (Pa)" },
-      { id: "3-59", text: "A force of 600 N acts on an area of 30 m². The pressure is:", options: ["20 N/m²", "200 N/m²", "18 N/m²", "630 N/m²"], correctAnswer: "20 N/m²" },
-      { id: "3-60", text: "An object exerts a pressure of 15 N/m² over an area of 3 m². The force is:", options: ["5 N", "12 N", "45 N", "60 N"], correctAnswer: "45 N" },
-      { id: "3-61", text: "A box exerts 240 N on a table and the pressure is 80 N/m². The contact area is:", options: ["1 m²", "2 m²", "3 m²", "320 m²"], correctAnswer: "3 m²" },
-      { id: "3-62", text: "A force of 72 N acts on an area of 6 m². The pressure is:", options: ["12 N/m²", "66 N/m²", "432 N/m²", "0.083 N/m²"], correctAnswer: "12 N/m²" },
-      { id: "3-63", text: "An object exerts 800 N on the floor. The pressure is 160 N/m². The area is:", options: ["0.2 m²", "5 m²", "640 m²", "960 m²"], correctAnswer: "5 m²" },
-      { id: "3-64", text: "An object has contact area 1.8 m² and exerts pressure 60 N/m². The force is:", options: ["33.3 N", "61.8 N", "108 N", "180 N"], correctAnswer: "108 N" },
-      { id: "3-65", text: "A crate exerts 1200 N on an area of 16 m². The pressure is:", options: ["75 N/m²", "19200 N/m²", "1200 N/m²", "0.013 N/m²"], correctAnswer: "75 N/m²" },
-      { id: "3-66", text: "Camels have broad feet mainly to:", options: ["increase pressure so they sink into sand", "decrease pressure so they don’t sink into sand", "increase friction so they slide", "decrease mass"], correctAnswer: "decrease pressure so they don’t sink into sand" },
-      { id: "3-67", text: "Push pins have pointy ends mainly to:", options: ["increase the contact area so pressure is lower", "decrease the contact area so pressure is higher", "decrease force so pressure is lower", "increase volume so concentration is higher"], correctAnswer: "decrease the contact area so pressure is higher" },
-      { id: "3-68", text: "Sharp scissors cut more easily mainly because they:", options: ["have a smaller contact area at the edge, producing higher pressure", "have a larger contact area at the edge, producing higher pressure", "reduce the force to zero", "reduce friction in air"], correctAnswer: "have a smaller contact area at the edge, producing higher pressure" },
-      { id: "3-69", text: "Water pressure changes with:", options: ["colour", "depth", "smell", "mass of the container only"], correctAnswer: "depth" },
-      { id: "3-70", text: "The greater the depth in water, the greater the:", options: ["temperature", "pressure", "concentration", "altitude"], correctAnswer: "pressure" },
-      { id: "3-71", text: "At shallower depths, there is less water pushing, so pressure is lower.", options: ["more, higher", "less, lower", "less, higher", "more, lower"], correctAnswer: "less, lower" },
-      { id: "3-72", text: "At greater depths, there is more water pushing, so pressure is higher.", options: ["more, higher", "less, lower", "less, higher", "more, lower"], correctAnswer: "more, higher" },
-      { id: "3-73", text: "When you blow more air into a balloon, it expands because:", options: ["the air particles stop moving", "collisions with the balloon wall happen more often, increasing pressure", "gravity decreases", "the air turns into liquid"], correctAnswer: "collisions with the balloon wall happen more often, increasing pressure" },
-      { id: "3-74", text: "Altitude means the:", options: ["distance below sea level only", "height above sea level", "distance from the Sun", "area of a surface"], correctAnswer: "height above sea level" },
-      { id: "3-75", text: "At higher altitude, the column of air above you is:", options: ["taller, so air pressure is higher", "shorter, so air pressure is lower", "shorter, so air pressure is higher", "taller, so air pressure is lower"], correctAnswer: "shorter, so air pressure is lower" },
-      { id: "3-76", text: "At lower altitude, the column of air above you is:", options: ["taller, so air pressure is higher", "shorter, so air pressure is lower", "shorter, so air pressure is higher", "zero, so air pressure is zero"], correctAnswer: "taller, so air pressure is higher" },
-      { id: "3-77", text: "Atmospheric pressure is about:", options: ["100 N/m²", "1000 N/m²", "100,000 N/m²", "50,000 N/m²"], correctAnswer: "100,000 N/m²" },
-      { id: "3-78", text: "A vacuum is a state where:", options: ["there are no particles (no air)", "there are more particles", "temperature is always 0°C", "pressure is always 100,000 N/m²"], correctAnswer: "there are no particles (no air)" },
-      { id: "3-79", text: "The pressure in a vacuum is zero mainly because:", options: ["particles move faster", "there are no particles to collide with surfaces", "gravity is stronger", "the area is very large"], correctAnswer: "there are no particles to collide with surfaces" },
-      { id: "3-80", text: "A metal container can collapse when a vacuum forms inside because:", options: ["there is higher pressure outside than inside", "there is higher pressure inside than outside", "the container becomes heavier", "pressure becomes negative"], correctAnswer: "there is higher pressure outside than inside" },
-      { id: "3-81", text: "When temperature increases, gas pressure generally:", options: ["decreases", "stays the same", "increases", "becomes zero"], correctAnswer: "increases" },
-      { id: "3-82", text: "When temperature increases, gas particles:", options: ["move slower", "move faster", "stop moving", "become solids"], correctAnswer: "move faster" },
-      { id: "3-83", text: "At higher temperature, particles collide with the container wall:", options: ["less frequently, so pressure decreases", "more frequently, so pressure increases", "less frequently, so pressure increases", "more frequently, so pressure decreases"], correctAnswer: "more frequently, so pressure increases" },
-      { id: "3-84", text: "A pressure cooker works because the cooker is closed so steam cannot escape and the pressure inside increases.", options: ["open, decreases", "closed, increases", "cold, decreases", "soft, increases"], correctAnswer: "closed, increases" },
-      { id: "3-85", text: "The normal boiling point of water is:", options: ["0°C", "50°C", "100°C", "120°C"], correctAnswer: "100°C" },
-      { id: "3-86", text: "In a pressure cooker, when pressure increases, the boiling point of water will:", options: ["decrease", "increase", "become 0°C", "become negative"], correctAnswer: "increase" },
-      { id: "3-87", text: "In Brownian motion, air particles move in a random manner.", options: ["straight", "random", "circular", "stationary"], correctAnswer: "random" },
-      { id: "3-88", text: "Air particles travel in a zig-zag/random path mainly because they:", options: ["bump into other particles many times, changing direction", "are pulled by magnets", "are heavier than liquids", "have no energy"], correctAnswer: "bump into other particles many times, changing direction" },
-      { id: "3-89", text: "Diffusion is the overall movement of particles from:", options: ["low to high concentration", "high to low concentration", "high to high concentration", "solid to solid only"], correctAnswer: "high to low concentration" },
-      { id: "3-90", text: "Concentration means the number of particles in a particular volume.", options: ["forces, time", "particles, volume", "metres, seconds", "levers, pivots"], correctAnswer: "particles, volume" },
-      { id: "3-91", text: "Concentration can be calculated by:", options: ["Concentration = Volume ÷ Number of particles", "Concentration = Number of particles ÷ Volume", "Concentration = Force ÷ Area", "Concentration = Distance ÷ Time"], correctAnswer: "Concentration = Number of particles ÷ Volume" },
-      { id: "3-92", text: "Concentration is higher when there are:", options: ["fewer solutes", "more solutes", "more volume", "lower temperature only"], correctAnswer: "more solutes" },
-      { id: "3-93", text: "Concentration is higher when the volume is:", options: ["larger", "smaller", "infinite", "unrelated"], correctAnswer: "smaller" },
-      { id: "3-94", text: "Diffusion can happen in:", options: ["solids only", "liquids and gases", "liquids only", "gases only"], correctAnswer: "liquids and gases" },
-      { id: "3-95", text: "Diffusion cannot occur in solids mainly because particles in solids:", options: ["do not exist", "can only vibrate and cannot move freely past each other", "move faster than in gases", "have no mass"], correctAnswer: "can only vibrate and cannot move freely past each other" },
-      { id: "3-96", text: "The speed of diffusion increases when the temperature is:", options: ["lower", "higher", "zero", "unrelated"], correctAnswer: "higher" },
-      { id: "3-97", text: "The difference in concentration is also called the:", options: ["pivot", "concentration gradient", "contact force", "slope"], correctAnswer: "concentration gradient" },
-      { id: "3-98", text: "Diffusion is faster when the concentration gradient is:", options: ["smaller", "greater (bigger)", "zero", "negative only"], correctAnswer: "greater (bigger)" },
-      { id: "3-99", text: "Which of the following will result in diffusion?", options: ["Adding milk to coffee", "Adding sand to water", "Adding salty water to pure water", "Allowing gas from a cylinder to escape into air"], correctAnswer: "Allowing gas from a cylinder to escape into air" },
-      { id: "3-100", text: "When the orange colour in a drink has stopped spreading, the particles have:", options: ["stopped moving completely", "stopped diffusing because concentrations are even, but particles still move", "frozen into a solid", "become lighter"], correctAnswer: "stopped diffusing because concentrations are even, but particles still move" }
+    "questions": [
+      {
+        "id": "3-1",
+        "text": "What is speed?",
+        "options": [
+          "How heavy something is",
+          "How fast something travels",
+          "How loud something is",
+          "How hot something is"
+        ],
+        "correctAnswer": "How fast something travels"
+      },
+      {
+        "id": "3-2",
+        "text": "The scientific formula for speed is:",
+        "options": [
+          "Speed = Time ÷ Distance",
+          "Speed = Distance × Time",
+          "Speed = Distance ÷ Time",
+          "Speed = Distance - Time"
+        ],
+        "correctAnswer": "Speed = Distance ÷ Time"
+      },
+      {
+        "id": "3-3",
+        "text": "The standard (SI) unit of speed is:",
+        "options": [
+          "km/h",
+          "m/s",
+          "m",
+          "s"
+        ],
+        "correctAnswer": "m/s"
+      },
+      {
+        "id": "3-4",
+        "text": "Weight is a force that pulls objects toward Earth due to:",
+        "options": [
+          "friction",
+          "electricity",
+          "gravity",
+          "magnetism"
+        ],
+        "correctAnswer": "gravity"
+      },
+      {
+        "id": "3-5",
+        "text": "A contact force acts when an object rests on a surface and it acts:",
+        "options": [
+          "parallel to the surface",
+          "perpendicular to the surface",
+          "toward the centre of Earth",
+          "in the direction of motion"
+        ],
+        "correctAnswer": "perpendicular to the surface"
+      },
+      {
+        "id": "3-6",
+        "text": "Friction is a force that:",
+        "options": [
+          "increases motion",
+          "opposes motion",
+          "pulls objects upward",
+          "makes objects heavier"
+        ],
+        "correctAnswer": "opposes motion"
+      },
+      {
+        "id": "3-7",
+        "text": "Which statement about friction is correct (based on the notes)?",
+        "options": [
+          "Only stationary objects experience friction",
+          "Only moving objects experience friction",
+          "Only objects in water experience friction",
+          "Only objects in air experience friction"
+        ],
+        "correctAnswer": "Only moving objects experience friction"
+      },
+      {
+        "id": "3-8",
+        "text": "Friction arises because the boundary between two objects is:",
+        "options": [
+          "perfectly smooth",
+          "rough",
+          "made of metal",
+          "very hot"
+        ],
+        "correctAnswer": "rough"
+      },
+      {
+        "id": "3-9",
+        "text": "Tension is a force that:",
+        "options": [
+          "pushes two objects apart",
+          "pulls on two objects connected by a rope/thread/string",
+          "only exists underwater",
+          "only acts on magnets"
+        ],
+        "correctAnswer": "pulls on two objects connected by a rope/thread/string"
+      },
+      {
+        "id": "3-10",
+        "text": "In a free body diagram, forces are drawn as:",
+        "options": [
+          "circles",
+          "arrows",
+          "triangles",
+          "graphs"
+        ],
+        "correctAnswer": "arrows"
+      },
+      {
+        "id": "3-11",
+        "text": "In a free body diagram, the length of the arrow shows the:",
+        "options": [
+          "direction of the force only",
+          "size (magnitude) of the force",
+          "colour of the force",
+          "speed of the object"
+        ],
+        "correctAnswer": "size (magnitude) of the force"
+      },
+      {
+        "id": "3-12",
+        "text": "Forces are balanced when they are:",
+        "options": [
+          "in the same direction and equal in size",
+          "in opposite directions and equal in size",
+          "in opposite directions and different in size",
+          "in the same direction and different in size"
+        ],
+        "correctAnswer": "in opposite directions and equal in size"
+      },
+      {
+        "id": "3-13",
+        "text": "If forces on an object are balanced, the object:",
+        "options": [
+          "must speed up",
+          "must slow down",
+          "has no change in motion",
+          "must change direction"
+        ],
+        "correctAnswer": "has no change in motion"
+      },
+      {
+        "id": "3-14",
+        "text": "When an unbalanced force acts on an object, one possible change in motion is that:",
+        "options": [
+          "the direction may change",
+          "the object must become heavier",
+          "time stops",
+          "distance becomes zero"
+        ],
+        "correctAnswer": "the direction may change"
+      },
+      {
+        "id": "3-15",
+        "text": "If an object travels 20 m in 4 s, its speed is:",
+        "options": [
+          "0.2 m/s",
+          "5 m/s",
+          "16 m/s",
+          "80 m/s"
+        ],
+        "correctAnswer": "5 m/s"
+      },
+      {
+        "id": "3-16",
+        "text": "A snail travels 24 m in 24 h. Its speed in m/h is:",
+        "options": [
+          "0.5 m/h",
+          "1 m/h",
+          "24 m/h",
+          "48 m/h"
+        ],
+        "correctAnswer": "1 m/h"
+      },
+      {
+        "id": "3-17",
+        "text": "24 m in 24 h is equal to 1 m/h. In cm/s, this is closest to:",
+        "options": [
+          "2.8 cm/s",
+          "0.028 cm/s",
+          "28 cm/s",
+          "0.28 cm/s"
+        ],
+        "correctAnswer": "0.028 cm/s"
+      },
+      {
+        "id": "3-18",
+        "text": "The Concorde travels 5000 km in 2 h. Its speed in km/h is:",
+        "options": [
+          "250 km/h",
+          "500 km/h",
+          "2500 km/h",
+          "10,000 km/h"
+        ],
+        "correctAnswer": "2500 km/h"
+      },
+      {
+        "id": "3-19",
+        "text": "2500 km/h is approximately how many m/s?",
+        "options": [
+          "6.94 m/s",
+          "69.4 m/s",
+          "694 m/s",
+          "6940 m/s"
+        ],
+        "correctAnswer": "694 m/s"
+      },
+      {
+        "id": "3-20",
+        "text": "Which triangle relationship is correct?",
+        "options": [
+          "Distance = Speed × Time",
+          "Speed = Distance × Time",
+          "Time = Distance × Speed",
+          "Distance = Speed ÷ Time"
+        ],
+        "correctAnswer": "Distance = Speed × Time"
+      },
+      {
+        "id": "3-21",
+        "text": "If speed is 8 m/s and time is 5 s, distance is:",
+        "options": [
+          "1.6 m",
+          "13 m",
+          "40 m",
+          "400 m"
+        ],
+        "correctAnswer": "40 m"
+      },
+      {
+        "id": "3-22",
+        "text": "If distance is 120 m and speed is 6 m/s, time is:",
+        "options": [
+          "20 s",
+          "60 s",
+          "720 s",
+          "0.05 s"
+        ],
+        "correctAnswer": "20 s"
+      },
+      {
+        "id": "3-23",
+        "text": "Which of the following is a valid unit of speed?",
+        "options": [
+          "m",
+          "s",
+          "m/s",
+          "kg"
+        ],
+        "correctAnswer": "m/s"
+      },
+      {
+        "id": "3-24",
+        "text": "Sound travels about 300 m/s and light travels about 3 x 10^8 m/s. Light is about how many times faster than sound?",
+        "options": [
+          "100 times",
+          "1000 times",
+          "1,000,000 times",
+          "3,000,000 times"
+        ],
+        "correctAnswer": "1,000,000 times"
+      },
+      {
+        "id": "3-25",
+        "text": "You see lightning and hear thunder at almost the same time. This suggests the lightning is:",
+        "options": [
+          "very far away",
+          "very near",
+          "underground",
+          "in the ocean"
+        ],
+        "correctAnswer": "very near"
+      },
+      {
+        "id": "3-26",
+        "text": "You see lightning and hear thunder much later. This suggests the lightning is:",
+        "options": [
+          "very far away",
+          "very near",
+          "inside your house",
+          "moving at 300,000,000 m/s"
+        ],
+        "correctAnswer": "very far away"
+      },
+      {
+        "id": "3-27",
+        "text": "Student A runs 100 m in 15 s and Student B runs 200 m in 28 s. Who is faster?",
+        "options": [
+          "Student A",
+          "Student B",
+          "Same speed",
+          "Cannot tell without their mass"
+        ],
+        "correctAnswer": "Student B"
+      },
+      {
+        "id": "3-28",
+        "text": "Which comparison correctly decides who is faster (A vs B)?",
+        "options": [
+          "Compare their distances only",
+          "Compare their times only",
+          "Compare their speeds (distance ÷ time)",
+          "Compare their shoe size"
+        ],
+        "correctAnswer": "Compare their speeds (distance ÷ time)"
+      },
+      {
+        "id": "3-29",
+        "text": "We draw graphs to show how two terms/variables are related.",
+        "options": [
+          "countries",
+          "terms/variables",
+          "colours",
+          "magnets"
+        ],
+        "correctAnswer": "terms/variables"
+      },
+      {
+        "id": "3-30",
+        "text": "A distance–time graph can be used to track the motion of an object.",
+        "options": [
+          "mass",
+          "motion",
+          "temperature",
+          "electricity"
+        ],
+        "correctAnswer": "motion"
+      },
+      {
+        "id": "3-31",
+        "text": "On a distance–time graph, the y-axis is usually:",
+        "options": [
+          "time",
+          "distance",
+          "speed",
+          "force"
+        ],
+        "correctAnswer": "distance"
+      },
+      {
+        "id": "3-32",
+        "text": "On a distance–time graph, the x-axis is usually:",
+        "options": [
+          "distance",
+          "speed",
+          "time",
+          "weight"
+        ],
+        "correctAnswer": "time"
+      },
+      {
+        "id": "3-33",
+        "text": "The origin on a distance–time graph represents the:",
+        "options": [
+          "final point",
+          "pivot",
+          "point of reference (starting point)",
+          "force of friction"
+        ],
+        "correctAnswer": "point of reference (starting point)"
+      },
+      {
+        "id": "3-34",
+        "text": "On a distance–time graph, a horizontal line means the object is:",
+        "options": [
+          "speeding up",
+          "moving at constant speed",
+          "stationary",
+          "moving backwards at constant speed"
+        ],
+        "correctAnswer": "stationary"
+      },
+      {
+        "id": "3-35",
+        "text": "On a distance–time graph, a straight tilted (sloping) line means the object is:",
+        "options": [
+          "stationary",
+          "moving at constant speed",
+          "changing direction",
+          "changing mass"
+        ],
+        "correctAnswer": "moving at constant speed"
+      },
+      {
+        "id": "3-36",
+        "text": "The steepness of a line is called the:",
+        "options": [
+          "pivot",
+          "slope/gradient",
+          "friction",
+          "tension"
+        ],
+        "correctAnswer": "slope/gradient"
+      },
+      {
+        "id": "3-37",
+        "text": "The steeper the line, the bigger the slope and the faster the object moves.",
+        "options": [
+          "smaller, slower",
+          "bigger, faster",
+          "bigger, slower",
+          "smaller, faster"
+        ],
+        "correctAnswer": "bigger, faster"
+      },
+      {
+        "id": "3-38",
+        "text": "On a distance–time graph, the speed of the object can be found by calculating the:",
+        "options": [
+          "area under the line",
+          "slope (distance ÷ time)",
+          "colour of the axes",
+          "length of the x-axis only"
+        ],
+        "correctAnswer": "slope (distance ÷ time)"
+      },
+      {
+        "id": "3-39",
+        "text": "If an object travels 100 m in 2 min at constant speed, its speed is:",
+        "options": [
+          "2 m/min",
+          "50 m/min",
+          "200 m/min",
+          "0.02 m/min"
+        ],
+        "correctAnswer": "50 m/min"
+      },
+      {
+        "id": "3-40",
+        "text": "If the line slopes downward (distance decreases as time increases), the object is:",
+        "options": [
+          "moving back toward the point of reference",
+          "stationary",
+          "moving faster than light",
+          "changing into a different material"
+        ],
+        "correctAnswer": "moving back toward the point of reference"
+      },
+      {
+        "id": "3-41",
+        "text": "Any object that turns when a force is applied is called a:",
+        "options": [
+          "resistor",
+          "lever",
+          "capacitor",
+          "thermometer"
+        ],
+        "correctAnswer": "lever"
+      },
+      {
+        "id": "3-42",
+        "text": "The point around which a lever turns is called the:",
+        "options": [
+          "slope",
+          "pivot",
+          "distance",
+          "speed"
+        ],
+        "correctAnswer": "pivot"
+      },
+      {
+        "id": "3-43",
+        "text": "The turning effect produced when a force is applied to a lever is called the:",
+        "options": [
+          "weight",
+          "moment",
+          "friction",
+          "energy unit"
+        ],
+        "correctAnswer": "moment"
+      },
+      {
+        "id": "3-44",
+        "text": "The formula for moment is:",
+        "options": [
+          "Moment = Force ÷ Distance",
+          "Moment = Force + Distance",
+          "Moment = Force × Distance",
+          "Moment = Distance ÷ Force"
+        ],
+        "correctAnswer": "Moment = Force × Distance"
+      },
+      {
+        "id": "3-45",
+        "text": "The moment of a force depends on:",
+        "options": [
+          "force size only",
+          "distance from pivot only",
+          "both force size and distance from pivot",
+          "colour of the lever"
+        ],
+        "correctAnswer": "both force size and distance from pivot"
+      },
+      {
+        "id": "3-46",
+        "text": "To increase the moment, you can:",
+        "options": [
+          "decrease the force and decrease the distance",
+          "increase the force or increase the distance from the pivot",
+          "move the pivot closer to the force and reduce force",
+          "make the lever shorter every time"
+        ],
+        "correctAnswer": "increase the force or increase the distance from the pivot"
+      },
+      {
+        "id": "3-47",
+        "text": "If force is measured in newtons (N) and distance in meters (m), the unit of moment is:",
+        "options": [
+          "N/m",
+          "Nm",
+          "m/N",
+          "N²m"
+        ],
+        "correctAnswer": "Nm"
+      },
+      {
+        "id": "3-48",
+        "text": "A 35 N force is applied 0.8 m from the pivot. The moment is:",
+        "options": [
+          "4.375 Nm",
+          "28 Nm",
+          "35.8 Nm",
+          "280 Nm"
+        ],
+        "correctAnswer": "28 Nm"
+      },
+      {
+        "id": "3-49",
+        "text": "A 20 N force is applied 0.25 m from the pivot. The moment is:",
+        "options": [
+          "0.8 Nm",
+          "5 Nm",
+          "20.25 Nm",
+          "80 Nm"
+        ],
+        "correctAnswer": "5 Nm"
+      },
+      {
+        "id": "3-50",
+        "text": "A seesaw is balanced when the clockwise moment is:",
+        "options": [
+          "greater than the anticlockwise moment",
+          "less than the anticlockwise moment",
+          "equal to the anticlockwise moment",
+          "zero regardless of the other side"
+        ],
+        "correctAnswer": "equal to the anticlockwise moment"
+      },
+      {
+        "id": "3-51",
+        "text": "Pressure is defined as:",
+        "options": [
+          "force × area",
+          "force ÷ area",
+          "area ÷ force",
+          "distance ÷ time"
+        ],
+        "correctAnswer": "force ÷ area"
+      },
+      {
+        "id": "3-52",
+        "text": "The formula for pressure is:",
+        "options": [
+          "P = F × A",
+          "P = F ÷ A",
+          "P = A ÷ F",
+          "P = F ÷ t"
+        ],
+        "correctAnswer": "P = F ÷ A"
+      },
+      {
+        "id": "3-53",
+        "text": "To cut more easily with a knife, you can:",
+        "options": [
+          "use a smaller force and a blunter knife",
+          "use a smaller force and a sharper knife",
+          "use a greater force or use a sharper object",
+          "use a greater force and use a blunter object"
+        ],
+        "correctAnswer": "use a greater force or use a sharper object"
+      },
+      {
+        "id": "3-54",
+        "text": "For the same force, a smaller contact area gives:",
+        "options": [
+          "smaller pressure",
+          "larger pressure",
+          "zero pressure",
+          "unchanged pressure"
+        ],
+        "correctAnswer": "larger pressure"
+      },
+      {
+        "id": "3-55",
+        "text": "We can increase pressure by:",
+        "options": [
+          "decreasing force",
+          "increasing area",
+          "increasing force",
+          "decreasing both force and area"
+        ],
+        "correctAnswer": "increasing force"
+      },
+      {
+        "id": "3-56",
+        "text": "We can increase pressure by:",
+        "options": [
+          "increasing surface area",
+          "decreasing surface area",
+          "decreasing force only",
+          "increasing time"
+        ],
+        "correctAnswer": "decreasing surface area"
+      },
+      {
+        "id": "3-57",
+        "text": "If force is in newtons (N) and area is in square meters (m²), pressure is in:",
+        "options": [
+          "N·m",
+          "N/m²",
+          "m²/N",
+          "N/m"
+        ],
+        "correctAnswer": "N/m²"
+      },
+      {
+        "id": "3-58",
+        "text": "1 N/m² is also known as:",
+        "options": [
+          "1 watt",
+          "1 joule",
+          "1 pascal (Pa)",
+          "1 volt"
+        ],
+        "correctAnswer": "1 pascal (Pa)"
+      },
+      {
+        "id": "3-59",
+        "text": "A force of 600 N acts on an area of 30 m². The pressure is:",
+        "options": [
+          "20 N/m²",
+          "200 N/m²",
+          "18 N/m²",
+          "630 N/m²"
+        ],
+        "correctAnswer": "20 N/m²"
+      },
+      {
+        "id": "3-60",
+        "text": "An object exerts a pressure of 15 N/m² over an area of 3 m². The force is:",
+        "options": [
+          "5 N",
+          "12 N",
+          "45 N",
+          "60 N"
+        ],
+        "correctAnswer": "45 N"
+      },
+      {
+        "id": "3-61",
+        "text": "A box exerts 240 N on a table and the pressure is 80 N/m². The contact area is:",
+        "options": [
+          "1 m²",
+          "2 m²",
+          "3 m²",
+          "320 m²"
+        ],
+        "correctAnswer": "3 m²"
+      },
+      {
+        "id": "3-62",
+        "text": "A force of 72 N acts on an area of 6 m². The pressure is:",
+        "options": [
+          "12 N/m²",
+          "66 N/m²",
+          "432 N/m²",
+          "0.083 N/m²"
+        ],
+        "correctAnswer": "12 N/m²"
+      },
+      {
+        "id": "3-63",
+        "text": "An object exerts 800 N on the floor. The pressure is 160 N/m². The area is:",
+        "options": [
+          "0.2 m²",
+          "5 m²",
+          "640 m²",
+          "960 m²"
+        ],
+        "correctAnswer": "5 m²"
+      },
+      {
+        "id": "3-64",
+        "text": "An object has contact area 1.8 m² and exerts pressure 60 N/m². The force is:",
+        "options": [
+          "33.3 N",
+          "61.8 N",
+          "108 N",
+          "180 N"
+        ],
+        "correctAnswer": "108 N"
+      },
+      {
+        "id": "3-65",
+        "text": "A crate exerts 1200 N on an area of 16 m². The pressure is:",
+        "options": [
+          "75 N/m²",
+          "19200 N/m²",
+          "1200 N/m²",
+          "0.013 N/m²"
+        ],
+        "correctAnswer": "75 N/m²"
+      },
+      {
+        "id": "3-66",
+        "text": "Camels have broad feet mainly to:",
+        "options": [
+          "increase pressure so they sink into sand",
+          "decrease pressure so they don’t sink into sand",
+          "increase friction so they slide",
+          "decrease mass"
+        ],
+        "correctAnswer": "decrease pressure so they don’t sink into sand"
+      },
+      {
+        "id": "3-67",
+        "text": "Push pins have pointy ends mainly to:",
+        "options": [
+          "increase the contact area so pressure is lower",
+          "decrease the contact area so pressure is higher",
+          "decrease force so pressure is lower",
+          "increase volume so concentration is higher"
+        ],
+        "correctAnswer": "decrease the contact area so pressure is higher"
+      },
+      {
+        "id": "3-68",
+        "text": "Sharp scissors cut more easily mainly because they:",
+        "options": [
+          "have a smaller contact area at the edge, producing higher pressure",
+          "have a larger contact area at the edge, producing higher pressure",
+          "reduce the force to zero",
+          "reduce friction in air"
+        ],
+        "correctAnswer": "have a smaller contact area at the edge, producing higher pressure"
+      },
+      {
+        "id": "3-69",
+        "text": "Water pressure changes with:",
+        "options": [
+          "colour",
+          "depth",
+          "smell",
+          "mass of the container only"
+        ],
+        "correctAnswer": "depth"
+      },
+      {
+        "id": "3-70",
+        "text": "The greater the depth in water, the greater the:",
+        "options": [
+          "temperature",
+          "pressure",
+          "concentration",
+          "altitude"
+        ],
+        "correctAnswer": "pressure"
+      },
+      {
+        "id": "3-71",
+        "text": "At shallower depths, there is less water pushing, so pressure is lower.",
+        "options": [
+          "more, higher",
+          "less, lower",
+          "less, higher",
+          "more, lower"
+        ],
+        "correctAnswer": "less, lower"
+      },
+      {
+        "id": "3-72",
+        "text": "At greater depths, there is more water pushing, so pressure is higher.",
+        "options": [
+          "more, higher",
+          "less, lower",
+          "less, higher",
+          "more, lower"
+        ],
+        "correctAnswer": "more, higher"
+      },
+      {
+        "id": "3-73",
+        "text": "When you blow more air into a balloon, it expands because:",
+        "options": [
+          "the air particles stop moving",
+          "collisions with the balloon wall happen more often, increasing pressure",
+          "gravity decreases",
+          "the air turns into liquid"
+        ],
+        "correctAnswer": "collisions with the balloon wall happen more often, increasing pressure"
+      },
+      {
+        "id": "3-74",
+        "text": "Altitude means the:",
+        "options": [
+          "distance below sea level only",
+          "height above sea level",
+          "distance from the Sun",
+          "area of a surface"
+        ],
+        "correctAnswer": "height above sea level"
+      },
+      {
+        "id": "3-75",
+        "text": "At higher altitude, the column of air above you is:",
+        "options": [
+          "taller, so air pressure is higher",
+          "shorter, so air pressure is lower",
+          "shorter, so air pressure is higher",
+          "taller, so air pressure is lower"
+        ],
+        "correctAnswer": "shorter, so air pressure is lower"
+      },
+      {
+        "id": "3-76",
+        "text": "At lower altitude, the column of air above you is:",
+        "options": [
+          "taller, so air pressure is higher",
+          "shorter, so air pressure is lower",
+          "shorter, so air pressure is higher",
+          "zero, so air pressure is zero"
+        ],
+        "correctAnswer": "taller, so air pressure is higher"
+      },
+      {
+        "id": "3-77",
+        "text": "Atmospheric pressure is about:",
+        "options": [
+          "100 N/m²",
+          "1000 N/m²",
+          "100,000 N/m²",
+          "50,000 N/m²"
+        ],
+        "correctAnswer": "100,000 N/m²"
+      },
+      {
+        "id": "3-78",
+        "text": "A vacuum is a state where:",
+        "options": [
+          "there are no particles (no air)",
+          "there are more particles",
+          "temperature is always 0°C",
+          "pressure is always 100,000 N/m²"
+        ],
+        "correctAnswer": "there are no particles (no air)"
+      },
+      {
+        "id": "3-79",
+        "text": "The pressure in a vacuum is zero mainly because:",
+        "options": [
+          "particles move faster",
+          "there are no particles to collide with surfaces",
+          "gravity is stronger",
+          "the area is very large"
+        ],
+        "correctAnswer": "there are no particles to collide with surfaces"
+      },
+      {
+        "id": "3-80",
+        "text": "A metal container can collapse when a vacuum forms inside because:",
+        "options": [
+          "there is higher pressure outside than inside",
+          "there is higher pressure inside than outside",
+          "the container becomes heavier",
+          "pressure becomes negative"
+        ],
+        "correctAnswer": "there is higher pressure outside than inside"
+      },
+      {
+        "id": "3-81",
+        "text": "When temperature increases, gas pressure generally:",
+        "options": [
+          "decreases",
+          "stays the same",
+          "increases",
+          "becomes zero"
+        ],
+        "correctAnswer": "increases"
+      },
+      {
+        "id": "3-82",
+        "text": "When temperature increases, gas particles:",
+        "options": [
+          "move slower",
+          "move faster",
+          "stop moving",
+          "become solids"
+        ],
+        "correctAnswer": "move faster"
+      },
+      {
+        "id": "3-83",
+        "text": "At higher temperature, particles collide with the container wall:",
+        "options": [
+          "less frequently, so pressure decreases",
+          "more frequently, so pressure increases",
+          "less frequently, so pressure increases",
+          "more frequently, so pressure decreases"
+        ],
+        "correctAnswer": "more frequently, so pressure increases"
+      },
+      {
+        "id": "3-84",
+        "text": "A pressure cooker works because the cooker is closed so steam cannot escape and the pressure inside increases.",
+        "options": [
+          "open, decreases",
+          "closed, increases",
+          "cold, decreases",
+          "soft, increases"
+        ],
+        "correctAnswer": "closed, increases"
+      },
+      {
+        "id": "3-85",
+        "text": "The normal boiling point of water is:",
+        "options": [
+          "0°C",
+          "50°C",
+          "100°C",
+          "120°C"
+        ],
+        "correctAnswer": "100°C"
+      },
+      {
+        "id": "3-86",
+        "text": "In a pressure cooker, when pressure increases, the boiling point of water will:",
+        "options": [
+          "decrease",
+          "increase",
+          "become 0°C",
+          "become negative"
+        ],
+        "correctAnswer": "increase"
+      },
+      {
+        "id": "3-87",
+        "text": "In Brownian motion, air particles move in a random manner.",
+        "options": [
+          "straight",
+          "random",
+          "circular",
+          "stationary"
+        ],
+        "correctAnswer": "random"
+      },
+      {
+        "id": "3-88",
+        "text": "Air particles travel in a zig-zag/random path mainly because they:",
+        "options": [
+          "bump into other particles many times, changing direction",
+          "are pulled by magnets",
+          "are heavier than liquids",
+          "have no energy"
+        ],
+        "correctAnswer": "bump into other particles many times, changing direction"
+      },
+      {
+        "id": "3-89",
+        "text": "Diffusion is the overall movement of particles from:",
+        "options": [
+          "low to high concentration",
+          "high to low concentration",
+          "high to high concentration",
+          "solid to solid only"
+        ],
+        "correctAnswer": "high to low concentration"
+      },
+      {
+        "id": "3-90",
+        "text": "Concentration means the number of particles in a particular volume.",
+        "options": [
+          "forces, time",
+          "particles, volume",
+          "metres, seconds",
+          "levers, pivots"
+        ],
+        "correctAnswer": "particles, volume"
+      },
+      {
+        "id": "3-91",
+        "text": "Concentration can be calculated by:",
+        "options": [
+          "Concentration = Volume ÷ Number of particles",
+          "Concentration = Number of particles ÷ Volume",
+          "Concentration = Force ÷ Area",
+          "Concentration = Distance ÷ Time"
+        ],
+        "correctAnswer": "Concentration = Number of particles ÷ Volume"
+      },
+      {
+        "id": "3-92",
+        "text": "Concentration is higher when there are:",
+        "options": [
+          "fewer solutes",
+          "more solutes",
+          "more volume",
+          "lower temperature only"
+        ],
+        "correctAnswer": "more solutes"
+      },
+      {
+        "id": "3-93",
+        "text": "Concentration is higher when the volume is:",
+        "options": [
+          "larger",
+          "smaller",
+          "infinite",
+          "unrelated"
+        ],
+        "correctAnswer": "smaller"
+      },
+      {
+        "id": "3-94",
+        "text": "Diffusion can happen in:",
+        "options": [
+          "solids only",
+          "liquids and gases",
+          "liquids only",
+          "gases only"
+        ],
+        "correctAnswer": "liquids and gases"
+      },
+      {
+        "id": "3-95",
+        "text": "Diffusion cannot occur in solids mainly because particles in solids:",
+        "options": [
+          "do not exist",
+          "can only vibrate and cannot move freely past each other",
+          "move faster than in gases",
+          "have no mass"
+        ],
+        "correctAnswer": "can only vibrate and cannot move freely past each other"
+      },
+      {
+        "id": "3-96",
+        "text": "The speed of diffusion increases when the temperature is:",
+        "options": [
+          "lower",
+          "higher",
+          "zero",
+          "unrelated"
+        ],
+        "correctAnswer": "higher"
+      },
+      {
+        "id": "3-97",
+        "text": "The difference in concentration is also called the:",
+        "options": [
+          "pivot",
+          "concentration gradient",
+          "contact force",
+          "slope"
+        ],
+        "correctAnswer": "concentration gradient"
+      },
+      {
+        "id": "3-98",
+        "text": "Diffusion is faster when the concentration gradient is:",
+        "options": [
+          "smaller",
+          "greater (bigger)",
+          "zero",
+          "negative only"
+        ],
+        "correctAnswer": "greater (bigger)"
+      },
+      {
+        "id": "3-99",
+        "text": "Which of the following will result in diffusion?",
+        "options": [
+          "Adding milk to coffee",
+          "Adding sand to water",
+          "Adding salty water to pure water",
+          "Allowing gas from a cylinder to escape into air"
+        ],
+        "correctAnswer": "Allowing gas from a cylinder to escape into air"
+      },
+      {
+        "id": "3-100",
+        "text": "When the orange colour in a drink has stopped spreading, the particles have:",
+        "options": [
+          "stopped moving completely",
+          "stopped diffusing because concentrations are even, but particles still move",
+          "frozen into a solid",
+          "become lighter"
+        ],
+        "correctAnswer": "stopped diffusing because concentrations are even, but particles still move"
+      }
     ]
   },
   {
-    id: 4,
-    title: "Ecosystems",
-    titleTraditional: "生態系統",
-    titleSimplified: "生态系统",
-    description: "Interactions of living things in their environments.",
-    descriptionTraditional: "生物與其環境之間的相互作用。",
-    descriptionSimplified: "生物与其环境之间的相互作用。",
-    color: "bg-lime-500",
-    concepts: [
+    "id": 4,
+    "title": "Ecosystems",
+    "titleTraditional": "生態系統",
+    "titleSimplified": "生态系统",
+    "description": "Interactions of living things in their environments.",
+    "descriptionTraditional": "生物與其環境之間的相互作用。",
+    "descriptionSimplified": "生物与其环境之间的相互作用。",
+    "color": "bg-lime-500",
+    "concepts": [
       "The Sonoran Desert is a hostile environment because it is very dry and has extreme temperatures.",
       "An ecosystem is the complex interaction between living (biotic) and non-living (abiotic) things in an environment.",
       "Living factors include plants, animals, bacteria, and fungi, while non-living factors include light, temperature, water, air, and soil.",
@@ -739,7 +4708,7 @@ export const units: Unit[] = [
       "DDT is a persistent insecticide that can cause thin eggshells in birds, leading to reproductive failure.",
       "Concentration is the amount of a substance in a given volume or mass, often measured in ppm (parts per million)."
     ],
-    conceptsTraditional: [
+    "conceptsTraditional": [
       "索諾蘭沙漠是一個惡劣的環境，因為它非常乾燥且有極端溫度。",
       "生態系統是環境中生物（生物因素）與非生物（非生物因素）之間複雜的相互作用。",
       "生物因素包括植物、動物、細菌和真菌；非生物因素包括光、溫度、水、空氣和土壤。",
@@ -764,7 +4733,7 @@ export const units: Unit[] = [
       "DDT 是一種持久性殺蟲劑，會導致鳥類蛋殼變薄，導致繁殖失敗。",
       "濃度是指給定體積或質量中物質的量，通常以 ppm（百萬分率）衡量。"
     ],
-    conceptsSimplified: [
+    "conceptsSimplified": [
       "索诺兰沙漠是一个恶劣的环境，因为它非常干燥且有极端温度。",
       "生态系统是环境中生物（生物因素）与非生物（非生物因素）之间复杂的相互作用。",
       "生物因素包括植物、动物、细菌和真菌；非生物因素包括光、温度、水、空气和土壤。",
@@ -789,156 +4758,1042 @@ export const units: Unit[] = [
       "DDT 是一种持久性杀虫剂，会导致鸟类蛋壳变薄，导致繁殖失败。",
       "浓度是指给定体积或质量中物质的量，通常以 ppm（百万分率）衡量。"
     ],
-    keyTerms: {
-      "ecosystem": "#10b981", "生態系統": "#10b981", "生态系统": "#10b981",
-      "producers": "#22c55e", "生產者": "#22c55e", "生产者": "#22c55e",
-      "consumers": "#f59e0b", "消費者": "#f59e0b", "消费者": "#f59e0b",
-      "photosynthesis": "#10b981", "光合作用": "#10b981",
-      "food chain": "#ef4444", "食物鏈": "#ef4444", "食物链": "#ef4444",
-      "food web": "#ef4444", "食物網": "#ef4444", "食物网": "#ef4444",
-      "adaptations": "#3b82f6", "適應特徵": "#3b82f6", "适应特征": "#3b82f6",
-      "invasive species": "#991b1b", "入侵物種": "#991b1b", "入侵物种": "#991b1b",
-      "biomagnification": "#7c3aed", "生物放大作用": "#7c3aed"
+    "keyTerms": {
+      "ecosystem": "#10b981",
+      "生態系統": "#10b981",
+      "生态系统": "#10b981",
+      "producers": "#22c55e",
+      "生產者": "#22c55e",
+      "生产者": "#22c55e",
+      "consumers": "#f59e0b",
+      "消費者": "#f59e0b",
+      "消费者": "#f59e0b",
+      "photosynthesis": "#10b981",
+      "光合作用": "#10b981",
+      "food chain": "#ef4444",
+      "食物鏈": "#ef4444",
+      "食物链": "#ef4444",
+      "food web": "#ef4444",
+      "食物網": "#ef4444",
+      "食物网": "#ef4444",
+      "adaptations": "#3b82f6",
+      "適應特徵": "#3b82f6",
+      "适应特征": "#3b82f6",
+      "invasive species": "#991b1b",
+      "入侵物種": "#991b1b",
+      "入侵物种": "#991b1b",
+      "biomagnification": "#7c3aed",
+      "生物放大作用": "#7c3aed"
     },
-    vocab: [
-      { term: "Ecosystem", traditional: "生態系統", simplified: "生态系统", definition: "A biological community of interacting organisms and their physical environment." },
-      { term: "Ecology", traditional: "生態學", simplified: "生态学", definition: "The branch of biology that deals with the relations of organisms to one another and to their physical surroundings." },
-      { term: "Ecologist", traditional: "生態學家", simplified: "生态学家", definition: "A scientist who studies the relationships between living things and their environment." },
-      { term: "Living things / Organisms", traditional: "生物", simplified: "生物", definition: "An individual animal, plant, or single-celled life form." },
-      { term: "Non-living things", traditional: "非生物", simplified: "非生物", definition: "Components of an ecosystem that are not alive, such as sunlight, air, and water." },
-      { term: "Hostile environment", traditional: "惡劣環境", simplified: "恶劣环境", definition: "An environment that is difficult for organisms to survive in due to extreme conditions." },
-      { term: "Desert", traditional: "沙漠", simplified: "沙漠", definition: "A barren area of landscape where little precipitation occurs and, consequently, living conditions are hostile for plant and animal life." },
-      { term: "Oasis", traditional: "綠洲", simplified: "绿洲", definition: "A fertile spot in a desert where water is found." },
-      { term: "Extreme", traditional: "極端", simplified: "极端", definition: "Reaching a high or the highest degree; very great." },
-      { term: "Dry", traditional: "乾 / 干", simplified: "干", definition: "Free from moisture or liquid; not wet or moist." },
-      { term: "Nocturnal", traditional: "夜行的", simplified: "夜行的", definition: "Done, occurring, or active at night." },
-      { term: "Diurnal", traditional: "日行的", simplified: "日行的", definition: "Done, occurring, or active during the day." },
-      { term: "Herbivore", traditional: "草食性動物", simplified: "草食性动物", definition: "An animal that feeds on plants." },
-      { term: "Carnivore", traditional: "肉食性動物", simplified: "肉食性动物", definition: "An animal that feeds on flesh." },
-      { term: "Omnivore", traditional: "雜食性動物", simplified: "杂食性动物", definition: "An animal or person that eats food of both plant and animal origin." },
-      { term: "Producer", traditional: "生產者", simplified: "生产者", definition: "An organism, either a green plant or bacterium, which is part of the first level of a food chain." },
-      { term: "Consumer", traditional: "消費者", simplified: "消费者", definition: "An organism that derives the organic compounds and energy it needs from the consumption of other organisms." },
-      { term: "Photosynthesis", traditional: "光合作用", simplified: "光合作用", definition: "The process by which green plants and some other organisms use sunlight to synthesize foods from carbon dioxide and water." },
-      { term: "Chlorophyll", traditional: "葉綠素", simplified: "叶绿素", definition: "A green pigment, present in all green plants, responsible for the absorption of light to provide energy for photosynthesis." },
-      { term: "Habitat", traditional: "居所 / 棲息地", simplified: "居所 / 栖息地", definition: "The natural home or environment of an animal, plant, or other organism." },
-      { term: "Adaptation", traditional: "適應", simplified: "适应", definition: "The process of change by which an organism or species becomes better suited to its environment." },
-      { term: "Evaporation", traditional: "蒸發", simplified: "蒸发", definition: "The process of turning from liquid into vapor." },
-      { term: "Food chain", traditional: "食物鏈", simplified: "食物链", definition: "A hierarchical series of organisms each dependent on the next as a source of food." },
-      { term: "Food web", traditional: "食物網", simplified: "食物网", definition: "A system of interlocking and interdependent food chains." },
-      { term: "Predator", traditional: "掠食者", simplified: "掠食者", definition: "An animal that naturally preys on others." },
-      { term: "Prey", traditional: "獵物", simplified: "猎物", definition: "An animal that is hunted and killed by another for food." },
-      { term: "Apex predator", traditional: "頂級掠食者", simplified: "顶级掠食者", definition: "A predator at the top of a food chain upon which no other creatures prey." },
-      { term: "Trophic levels", traditional: "營養級", simplified: "营养级", definition: "Each of several hierarchical levels in an ecosystem, comprising organisms that share the same function in the food chain." },
-      { term: "Linear", traditional: "線性的", simplified: "线性的", definition: "Arranged in or extending along a straight or nearly straight line." },
-      { term: "Complex", traditional: "複雜的", simplified: "复杂的", definition: "Consisting of many different and connected parts." },
-      { term: "Equator", traditional: "赤道", simplified: "赤道", definition: "An imaginary line drawn around the earth equally distant from both poles, dividing the earth into northern and southern hemispheres." },
-      { term: "Polar regions", traditional: "極地", simplified: "极地", definition: "The regions of the Earth surrounding its geographical poles." },
-      { term: "Mangrove forest", traditional: "紅樹林", simplified: "红树林", definition: "A forest or shrubland habitat found in tropical and subtropical coastal areas." },
-      { term: "Decompose / Break down", traditional: "分解", simplified: "分解", definition: "To decay or cause to decay." },
-      { term: "Ice sheet", traditional: "冰層", simplified: "冰层", definition: "A mass of glacial ice covering surrounding terrain and greater than 50,000 km²." },
-      { term: "Algae", traditional: "藻類", simplified: "藻类", definition: "A simple, non-flowering, and typically aquatic plant of a large group that includes the seaweeds and many single-celled forms." },
-      { term: "Penetrate", traditional: "穿透", simplified: "穿透", definition: "Go into or through (something), especially with force or effort." },
-      { term: "Artificial ecosystem", traditional: "人造生態系統", simplified: "人造生态系统", definition: "An ecosystem created and maintained by humans." },
-      { term: "Irrigation", traditional: "灌溉", simplified: "灌溉", definition: "The supply of water to land or crops to help growth, typically by means of channels." },
-      { term: "Fertilizers", traditional: "肥料", simplified: "肥料", definition: "A chemical or natural substance added to soil or land to increase its fertility." },
-      { term: "Zoologist", traditional: "動物學家", simplified: "动物学家", definition: "An expert in or student of the behavior, physiology, classification, and distribution of animals." },
-      { term: "Botanist", traditional: "植物學家", simplified: "植物学家", definition: "An expert in or student of the scientific study of plants." },
-      { term: "Invasive species", traditional: "入侵性物種", simplified: "入侵性物种", definition: "A species that is not native to a specific location and has a tendency to spread to a degree believed to cause damage to the environment." },
-      { term: "Native species", traditional: "原生物種", simplified: "原生物种", definition: "A species that normally lives and thrives in a particular ecosystem." },
-      { term: "Isolated", traditional: "隔離", simplified: "隔离", definition: "Far away from other places, buildings, or people; remote." },
-      { term: "Uninhabited", traditional: "無人居住", simplified: "无人居住", definition: "(of a place) without inhabitants." },
-      { term: "Survive", traditional: "存活", simplified: "存活", definition: "Continue to live or exist, especially in spite of danger or hardship." },
-      { term: "Sternum", traditional: "胸骨", simplified: "胸骨", definition: "The breastbone." },
-      { term: "Vulnerable", traditional: "易受...影響", simplified: "易受...影响", definition: "Susceptible to physical or emotional attack or harm." },
-      { term: "Insulation", traditional: "絕熱 / 保溫", simplified: "绝热 / 保温", definition: "The action of insulating something." },
-      { term: "Breeding / Reproduce", traditional: "繁殖", simplified: "繁殖", definition: "The production of offspring." },
-      { term: "Extinct", traditional: "滅絕", simplified: "灭绝", definition: "(of a species, family, or other larger group) having no living members." },
-      { term: "Eradicate", traditional: "根除 / 根治", simplified: "根除 / 根治", definition: "Destroy completely; put an end to." },
-      { term: "Glacier", traditional: "冰川", simplified: "冰川", definition: "A slowly moving mass or river of ice formed by the accumulation and compaction of snow on mountains or near the poles." },
-      { term: "Surrogate", traditional: "代母", simplified: "代母", definition: "A substitute, especially a person deputizing for another in a specific role or office." },
-      { term: "Bioaccumulation", traditional: "生物累積", simplified: "生物累积", definition: "The accumulation of substances, such as pesticides, or other chemicals in an organism." },
-      { term: "Biomagnification", traditional: "生物放大作用", simplified: "生物放大作用", definition: "The concentration of toxins in an organism as a result of its ingesting other plants or animals in which the toxins are more widely disbursed." },
-      { term: "Pests", traditional: "害蟲", simplified: "害虫", definition: "A destructive insect or other animal that attacks crops, food, livestock, etc." },
-      { term: "Compete", traditional: "競爭", simplified: "竞争", definition: "Strive to gain or win something by defeating or establishing superiority over others who are trying to do the same." },
-      { term: "Pesticides", traditional: "除害劑 / 農藥", simplified: "除害剂 / 农药", definition: "A substance used for destroying insects or other organisms harmful to cultivated plants or to animals." },
-      { term: "Insecticide", traditional: "殺蟲劑", simplified: "杀虫剂", definition: "A substance used for killing insects." },
-      { term: "Herbicide", traditional: "除草劑", simplified: "除草剂", definition: "A substance that is toxic to plants, used to destroy unwanted vegetation." },
-      { term: "Fungicide", traditional: "殺菌劑", simplified: "杀菌剂", definition: "A chemical that destroys fungus." },
-      { term: "Natural enemy", traditional: "天敵", simplified: "天敌", definition: "An organism that naturally preys on or is parasitic to another." },
-      { term: "Chemist", traditional: "化學家", simplified: "化学家", definition: "An expert in chemistry; a person engaged in chemical research or experiments." },
-      { term: "Persistent", traditional: "持久的", simplified: "持久的", definition: "Continuing to exist or endure over a prolonged period." },
-      { term: "Concentration", traditional: "濃度", simplified: "浓度", definition: "The relative amount of a given substance contained within a solution or in a particular volume of space." },
-      { term: "Toxic / Lethal dose", traditional: "致死劑量", simplified: "致死剂量", definition: "An amount of a drug or other substance that is large enough to cause death." },
-      { term: "Biotic", traditional: "生物因素", simplified: "生物因素", definition: "Relating to or resulting from living things, especially in their ecological relations." },
-      { term: "Abiotic", traditional: "非生物因素", simplified: "非生物因素", definition: "Physical rather than biological; not derived from living organisms." },
-      { term: "Glucose", traditional: "葡萄糖", simplified: "葡萄糖", definition: "A simple sugar which is an important energy source in living organisms." },
-      { term: "Pitfall trap", traditional: "陷阱", simplified: "陷阱", definition: "A trapping device for small animals, such as insects, that consists of a container buried in the ground." },
-      { term: "Sweep net", traditional: "掃網", simplified: "扫网", definition: "A net used to collect insects from long grass or other vegetation." },
-      { term: "ppm", traditional: "百萬分率", simplified: "百万分率", definition: "Parts per million, a unit of concentration." }
+    "vocab": [
+      {
+        "term": "Ecosystem",
+        "traditional": "生態系統",
+        "simplified": "生态系统",
+        "definition": "A biological community of interacting organisms and their physical environment."
+      },
+      {
+        "term": "Ecology",
+        "traditional": "生態學",
+        "simplified": "生态学",
+        "definition": "The branch of biology that deals with the relations of organisms to one another and to their physical surroundings."
+      },
+      {
+        "term": "Ecologist",
+        "traditional": "生態學家",
+        "simplified": "生态学家",
+        "definition": "A scientist who studies the relationships between living things and their environment."
+      },
+      {
+        "term": "Living things / Organisms",
+        "traditional": "生物",
+        "simplified": "生物",
+        "definition": "An individual animal, plant, or single-celled life form."
+      },
+      {
+        "term": "Non-living things",
+        "traditional": "非生物",
+        "simplified": "非生物",
+        "definition": "Components of an ecosystem that are not alive, such as sunlight, air, and water."
+      },
+      {
+        "term": "Hostile environment",
+        "traditional": "惡劣環境",
+        "simplified": "恶劣环境",
+        "definition": "An environment that is difficult for organisms to survive in due to extreme conditions."
+      },
+      {
+        "term": "Desert",
+        "traditional": "沙漠",
+        "simplified": "沙漠",
+        "definition": "A barren area of landscape where little precipitation occurs and, consequently, living conditions are hostile for plant and animal life."
+      },
+      {
+        "term": "Oasis",
+        "traditional": "綠洲",
+        "simplified": "绿洲",
+        "definition": "A fertile spot in a desert where water is found."
+      },
+      {
+        "term": "Extreme",
+        "traditional": "極端",
+        "simplified": "极端",
+        "definition": "Reaching a high or the highest degree; very great."
+      },
+      {
+        "term": "Dry",
+        "traditional": "乾 / 干",
+        "simplified": "干",
+        "definition": "Free from moisture or liquid; not wet or moist."
+      },
+      {
+        "term": "Nocturnal",
+        "traditional": "夜行的",
+        "simplified": "夜行的",
+        "definition": "Done, occurring, or active at night."
+      },
+      {
+        "term": "Diurnal",
+        "traditional": "日行的",
+        "simplified": "日行的",
+        "definition": "Done, occurring, or active during the day."
+      },
+      {
+        "term": "Herbivore",
+        "traditional": "草食性動物",
+        "simplified": "草食性动物",
+        "definition": "An animal that feeds on plants."
+      },
+      {
+        "term": "Carnivore",
+        "traditional": "肉食性動物",
+        "simplified": "肉食性动物",
+        "definition": "An animal that feeds on flesh."
+      },
+      {
+        "term": "Omnivore",
+        "traditional": "雜食性動物",
+        "simplified": "杂食性动物",
+        "definition": "An animal or person that eats food of both plant and animal origin."
+      },
+      {
+        "term": "Producer",
+        "traditional": "生產者",
+        "simplified": "生产者",
+        "definition": "An organism, either a green plant or bacterium, which is part of the first level of a food chain."
+      },
+      {
+        "term": "Consumer",
+        "traditional": "消費者",
+        "simplified": "消费者",
+        "definition": "An organism that derives the organic compounds and energy it needs from the consumption of other organisms."
+      },
+      {
+        "term": "Photosynthesis",
+        "traditional": "光合作用",
+        "simplified": "光合作用",
+        "definition": "The process by which green plants and some other organisms use sunlight to synthesize foods from carbon dioxide and water."
+      },
+      {
+        "term": "Chlorophyll",
+        "traditional": "葉綠素",
+        "simplified": "叶绿素",
+        "definition": "A green pigment, present in all green plants, responsible for the absorption of light to provide energy for photosynthesis."
+      },
+      {
+        "term": "Habitat",
+        "traditional": "居所 / 棲息地",
+        "simplified": "居所 / 栖息地",
+        "definition": "The natural home or environment of an animal, plant, or other organism."
+      },
+      {
+        "term": "Adaptation",
+        "traditional": "適應",
+        "simplified": "适应",
+        "definition": "The process of change by which an organism or species becomes better suited to its environment."
+      },
+      {
+        "term": "Evaporation",
+        "traditional": "蒸發",
+        "simplified": "蒸发",
+        "definition": "The process of turning from liquid into vapor."
+      },
+      {
+        "term": "Food chain",
+        "traditional": "食物鏈",
+        "simplified": "食物链",
+        "definition": "A hierarchical series of organisms each dependent on the next as a source of food."
+      },
+      {
+        "term": "Food web",
+        "traditional": "食物網",
+        "simplified": "食物网",
+        "definition": "A system of interlocking and interdependent food chains."
+      },
+      {
+        "term": "Predator",
+        "traditional": "掠食者",
+        "simplified": "掠食者",
+        "definition": "An animal that naturally preys on others."
+      },
+      {
+        "term": "Prey",
+        "traditional": "獵物",
+        "simplified": "猎物",
+        "definition": "An animal that is hunted and killed by another for food."
+      },
+      {
+        "term": "Apex predator",
+        "traditional": "頂級掠食者",
+        "simplified": "顶级掠食者",
+        "definition": "A predator at the top of a food chain upon which no other creatures prey."
+      },
+      {
+        "term": "Trophic levels",
+        "traditional": "營養級",
+        "simplified": "营养级",
+        "definition": "Each of several hierarchical levels in an ecosystem, comprising organisms that share the same function in the food chain."
+      },
+      {
+        "term": "Linear",
+        "traditional": "線性的",
+        "simplified": "线性的",
+        "definition": "Arranged in or extending along a straight or nearly straight line."
+      },
+      {
+        "term": "Complex",
+        "traditional": "複雜的",
+        "simplified": "复杂的",
+        "definition": "Consisting of many different and connected parts."
+      },
+      {
+        "term": "Equator",
+        "traditional": "赤道",
+        "simplified": "赤道",
+        "definition": "An imaginary line drawn around the earth equally distant from both poles, dividing the earth into northern and southern hemispheres."
+      },
+      {
+        "term": "Polar regions",
+        "traditional": "極地",
+        "simplified": "极地",
+        "definition": "The regions of the Earth surrounding its geographical poles."
+      },
+      {
+        "term": "Mangrove forest",
+        "traditional": "紅樹林",
+        "simplified": "红树林",
+        "definition": "A forest or shrubland habitat found in tropical and subtropical coastal areas."
+      },
+      {
+        "term": "Decompose / Break down",
+        "traditional": "分解",
+        "simplified": "分解",
+        "definition": "To decay or cause to decay."
+      },
+      {
+        "term": "Ice sheet",
+        "traditional": "冰層",
+        "simplified": "冰层",
+        "definition": "A mass of glacial ice covering surrounding terrain and greater than 50,000 km²."
+      },
+      {
+        "term": "Algae",
+        "traditional": "藻類",
+        "simplified": "藻类",
+        "definition": "A simple, non-flowering, and typically aquatic plant of a large group that includes the seaweeds and many single-celled forms."
+      },
+      {
+        "term": "Penetrate",
+        "traditional": "穿透",
+        "simplified": "穿透",
+        "definition": "Go into or through (something), especially with force or effort."
+      },
+      {
+        "term": "Artificial ecosystem",
+        "traditional": "人造生態系統",
+        "simplified": "人造生态系统",
+        "definition": "An ecosystem created and maintained by humans."
+      },
+      {
+        "term": "Irrigation",
+        "traditional": "灌溉",
+        "simplified": "灌溉",
+        "definition": "The supply of water to land or crops to help growth, typically by means of channels."
+      },
+      {
+        "term": "Fertilizers",
+        "traditional": "肥料",
+        "simplified": "肥料",
+        "definition": "A chemical or natural substance added to soil or land to increase its fertility."
+      },
+      {
+        "term": "Zoologist",
+        "traditional": "動物學家",
+        "simplified": "动物学家",
+        "definition": "An expert in or student of the behavior, physiology, classification, and distribution of animals."
+      },
+      {
+        "term": "Botanist",
+        "traditional": "植物學家",
+        "simplified": "植物学家",
+        "definition": "An expert in or student of the scientific study of plants."
+      },
+      {
+        "term": "Invasive species",
+        "traditional": "入侵性物種",
+        "simplified": "入侵性物种",
+        "definition": "A species that is not native to a specific location and has a tendency to spread to a degree believed to cause damage to the environment."
+      },
+      {
+        "term": "Native species",
+        "traditional": "原生物種",
+        "simplified": "原生物种",
+        "definition": "A species that normally lives and thrives in a particular ecosystem."
+      },
+      {
+        "term": "Isolated",
+        "traditional": "隔離",
+        "simplified": "隔离",
+        "definition": "Far away from other places, buildings, or people; remote."
+      },
+      {
+        "term": "Uninhabited",
+        "traditional": "無人居住",
+        "simplified": "无人居住",
+        "definition": "(of a place) without inhabitants."
+      },
+      {
+        "term": "Survive",
+        "traditional": "存活",
+        "simplified": "存活",
+        "definition": "Continue to live or exist, especially in spite of danger or hardship."
+      },
+      {
+        "term": "Sternum",
+        "traditional": "胸骨",
+        "simplified": "胸骨",
+        "definition": "The breastbone."
+      },
+      {
+        "term": "Vulnerable",
+        "traditional": "易受...影響",
+        "simplified": "易受...影响",
+        "definition": "Susceptible to physical or emotional attack or harm."
+      },
+      {
+        "term": "Insulation",
+        "traditional": "絕熱 / 保溫",
+        "simplified": "绝热 / 保温",
+        "definition": "The action of insulating something."
+      },
+      {
+        "term": "Breeding / Reproduce",
+        "traditional": "繁殖",
+        "simplified": "繁殖",
+        "definition": "The production of offspring."
+      },
+      {
+        "term": "Extinct",
+        "traditional": "滅絕",
+        "simplified": "灭绝",
+        "definition": "(of a species, family, or other larger group) having no living members."
+      },
+      {
+        "term": "Eradicate",
+        "traditional": "根除 / 根治",
+        "simplified": "根除 / 根治",
+        "definition": "Destroy completely; put an end to."
+      },
+      {
+        "term": "Glacier",
+        "traditional": "冰川",
+        "simplified": "冰川",
+        "definition": "A slowly moving mass or river of ice formed by the accumulation and compaction of snow on mountains or near the poles."
+      },
+      {
+        "term": "Surrogate",
+        "traditional": "代母",
+        "simplified": "代母",
+        "definition": "A substitute, especially a person deputizing for another in a specific role or office."
+      },
+      {
+        "term": "Bioaccumulation",
+        "traditional": "生物累積",
+        "simplified": "生物累积",
+        "definition": "The accumulation of substances, such as pesticides, or other chemicals in an organism."
+      },
+      {
+        "term": "Biomagnification",
+        "traditional": "生物放大作用",
+        "simplified": "生物放大作用",
+        "definition": "The concentration of toxins in an organism as a result of its ingesting other plants or animals in which the toxins are more widely disbursed."
+      },
+      {
+        "term": "Pests",
+        "traditional": "害蟲",
+        "simplified": "害虫",
+        "definition": "A destructive insect or other animal that attacks crops, food, livestock, etc."
+      },
+      {
+        "term": "Compete",
+        "traditional": "競爭",
+        "simplified": "竞争",
+        "definition": "Strive to gain or win something by defeating or establishing superiority over others who are trying to do the same."
+      },
+      {
+        "term": "Pesticides",
+        "traditional": "除害劑 / 農藥",
+        "simplified": "除害剂 / 农药",
+        "definition": "A substance used for destroying insects or other organisms harmful to cultivated plants or to animals."
+      },
+      {
+        "term": "Insecticide",
+        "traditional": "殺蟲劑",
+        "simplified": "杀虫剂",
+        "definition": "A substance used for killing insects."
+      },
+      {
+        "term": "Herbicide",
+        "traditional": "除草劑",
+        "simplified": "除草剂",
+        "definition": "A substance that is toxic to plants, used to destroy unwanted vegetation."
+      },
+      {
+        "term": "Fungicide",
+        "traditional": "殺菌劑",
+        "simplified": "杀菌剂",
+        "definition": "A chemical that destroys fungus."
+      },
+      {
+        "term": "Natural enemy",
+        "traditional": "天敵",
+        "simplified": "天敌",
+        "definition": "An organism that naturally preys on or is parasitic to another."
+      },
+      {
+        "term": "Chemist",
+        "traditional": "化學家",
+        "simplified": "化学家",
+        "definition": "An expert in chemistry; a person engaged in chemical research or experiments."
+      },
+      {
+        "term": "Persistent",
+        "traditional": "持久的",
+        "simplified": "持久的",
+        "definition": "Continuing to exist or endure over a prolonged period."
+      },
+      {
+        "term": "Concentration",
+        "traditional": "濃度",
+        "simplified": "浓度",
+        "definition": "The relative amount of a given substance contained within a solution or in a particular volume of space."
+      },
+      {
+        "term": "Toxic / Lethal dose",
+        "traditional": "致死劑量",
+        "simplified": "致死剂量",
+        "definition": "An amount of a drug or other substance that is large enough to cause death."
+      },
+      {
+        "term": "Biotic",
+        "traditional": "生物因素",
+        "simplified": "生物因素",
+        "definition": "Relating to or resulting from living things, especially in their ecological relations."
+      },
+      {
+        "term": "Abiotic",
+        "traditional": "非生物因素",
+        "simplified": "非生物因素",
+        "definition": "Physical rather than biological; not derived from living organisms."
+      },
+      {
+        "term": "Glucose",
+        "traditional": "葡萄糖",
+        "simplified": "葡萄糖",
+        "definition": "A simple sugar which is an important energy source in living organisms."
+      },
+      {
+        "term": "Pitfall trap",
+        "traditional": "陷阱",
+        "simplified": "陷阱",
+        "definition": "A trapping device for small animals, such as insects, that consists of a container buried in the ground."
+      },
+      {
+        "term": "Sweep net",
+        "traditional": "掃網",
+        "simplified": "扫网",
+        "definition": "A net used to collect insects from long grass or other vegetation."
+      },
+      {
+        "term": "ppm",
+        "traditional": "百萬分率",
+        "simplified": "百万分率",
+        "definition": "Parts per million, a unit of concentration."
+      }
     ],
-    questions: [
-      { id: "4-1", text: "The Sonoran Desert is considered a hostile environment mainly because it is:", options: ["always rainy and cold", "very dry with extreme temperatures", "full of deep oceans", "covered with thick ice sheets"], correctAnswer: "very dry with extreme temperatures" },
-      { id: "4-2", text: "An ecosystem is the ____ between living and non-living things in an environment.", options: ["competition", "complex interaction", "speed", "pressure"], correctAnswer: "complex interaction" },
-      { id: "4-3", text: "Living things in an ecosystem are also called living:", options: ["elements", "organisms", "rocks", "gases"], correctAnswer: "organisms" },
-      { id: "4-4", text: "Living things may be:", options: ["plants or animals", "soil or light", "water or air", "temperature or sunlight"], correctAnswer: "plants or animals" },
-      { id: "4-5", text: "Non-living things may be anything in the:", options: ["stomach", "environment", "nest only", "food chain only"], correctAnswer: "environment" },
-      { id: "4-6", text: "In Biology, the study of ecosystems is called:", options: ["geology", "ecology", "chemistry", "astronomy"], correctAnswer: "ecology" },
-      { id: "4-7", text: "Scientists who study ecosystems are called:", options: ["ecologists", "engineers", "poets", "athletes"], correctAnswer: "ecologists" },
-      { id: "4-8", text: "During hot days, many desert animals rest in the ____ because it is cooler.", options: ["clouds", "caves", "rivers", "trees"], correctAnswer: "caves" },
-      { id: "4-9", text: "Animals that are active at night are described as:", options: ["diurnal", "nocturnal", "aquatic", "artificial"], correctAnswer: "nocturnal" },
-      { id: "4-10", text: "Predators are living things that:", options: ["make their own food", "eat other living things", "only eat sunlight", "never hunt"], correctAnswer: "eat other living things" },
-      { id: "4-11", text: "Plants are producers because they:", options: ["eat other animals", "make food available in the ecosystem", "cannot photosynthesize", "only live in water"], correctAnswer: "make food available in the ecosystem" },
-      { id: "4-12", text: "The ultimate source of energy for most ecosystems on Earth is the:", options: ["Moon", "Sun", "soil", "ocean waves"], correctAnswer: "Sun" },
-      { id: "4-13", text: "Photosynthesis uses sunlight energy to make glucose and oxygen from:", options: ["nitrogen and water", "carbon dioxide and water", "oxygen and glucose", "salt and water"], correctAnswer: "carbon dioxide and water" },
-      { id: "4-14", text: "The word equation for photosynthesis is:", options: ["glucose + oxygen → carbon dioxide + water", "carbon dioxide + water → glucose + oxygen", "oxygen + water → glucose + carbon dioxide", "carbon dioxide + oxygen → glucose + water"], correctAnswer: "carbon dioxide + water → glucose + oxygen" },
-      { id: "4-15", text: "The pigment used in photosynthesis is called:", options: ["melanin", "chlorophyll", "hemoglobin", "keratin"], correctAnswer: "chlorophyll" },
-      { id: "4-16", text: "Plants usually appear green because they contain:", options: ["chlorophyll", "oxygen gas", "carbon dioxide", "pesticides"], correctAnswer: "chlorophyll" },
-      { id: "4-17", text: "Animals are consumers because they:", options: ["can make their own food", "cannot make their own food and must feed on other organisms", "are always producers", "only absorb sunlight"], correctAnswer: "cannot make their own food and must feed on other organisms" },
-      { id: "4-18", text: "An animal that feeds on both plants and animals is called an:", options: ["herbivore", "carnivore", "omnivore", "decomposer"], correctAnswer: "omnivore" },
-      { id: "4-19", text: "A habitat is where an organism:", options: ["is made in a factory", "naturally lives in an ecosystem", "always migrates to in winter", "is kept only by humans"], correctAnswer: "naturally lives in an ecosystem" },
-      { id: "4-20", text: "Daytime light allows plants to:", options: ["respire to make oxygen", "photosynthesize to make food", "increase pressure", "diffuse faster"], correctAnswer: "photosynthesize to make food" },
-      { id: "4-21", text: "During daytime, desert temperature is often very:", options: ["low", "high", "constant at 0°C", "impossible to measure"], correctAnswer: "high" },
-      { id: "4-22", text: "Organisms active during the day are:", options: ["diurnal", "nocturnal", "extinct", "invasive"], correctAnswer: "diurnal" },
-      { id: "4-23", text: "Many organisms avoid the desert heat by being active only at night. This helps avoid:", options: ["overheating", "photosynthesis", "gravity", "diffusion"], correctAnswer: "overheating" },
-      { id: "4-24", text: "Adaptations are body features or behaviours that help organisms:", options: ["evaporate more", "survive better in the environment", "become producers", "stop breathing"], correctAnswer: "survive better in the environment" },
-      { id: "4-25", text: "All organisms need ____ to survive.", options: ["sand", "water", "pesticides", "ice sheets"], correctAnswer: "water" },
-      { id: "4-26", text: "Organisms may lose water when they:", options: ["sweat or urinate", "photosynthesize", "hunt at night", "freeze"], correctAnswer: "sweat or urinate" },
-      { id: "4-27", text: "Desert organisms may have adaptations to lose ____ water.", options: ["more", "less", "infinite", "exactly the same"], correctAnswer: "less" },
-      { id: "4-28", text: "Air provides ____ for plants to carry out photosynthesis and ____ for animals to carry out respiration.", options: ["oxygen, carbon dioxide", "carbon dioxide, oxygen", "nitrogen, hydrogen", "glucose, water"], correctAnswer: "carbon dioxide, oxygen" },
-      { id: "4-29", text: "Gas exchange in ecosystems is helped by:", options: ["plants making oxygen and animals using oxygen", "animals making oxygen and plants using oxygen", "soil producing oxygen", "sunlight producing carbon dioxide"], correctAnswer: "plants making oxygen and animals using oxygen" },
-      { id: "4-30", text: "A food chain always begins with a:", options: ["consumer", "producer", "apex predator", "parasite"], correctAnswer: "producer" },
-      { id: "4-31", text: "Food chains show the ____ relationship between living things.", options: ["sleeping", "feeding", "colour", "speed"], correctAnswer: "feeding" },
-      { id: "4-32", text: "In the arrow A → B in a food chain, it means:", options: ["A eats B", "B eats A", "A and B are the same species", "A is a non-living thing"], correctAnswer: "B eats A" },
-      { id: "4-33", text: "In a food chain, an animal that is eaten is called the:", options: ["predator", "prey", "producer", "ecologist"], correctAnswer: "prey" },
-      { id: "4-34", text: "The animal that eats another animal is called the:", options: ["prey", "predator", "herbicide", "chlorophyll"], correctAnswer: "predator" },
-      { id: "4-35", text: "Food chains are ____ so they are often drawn like a line.", options: ["linear", "circular", "random", "frozen"], correctAnswer: "linear" },
-      { id: "4-36", text: "A food web is more useful than a food chain because feeding relationships are more:", options: ["simple", "complex", "slow", "invisible"], correctAnswer: "complex" },
-      { id: "4-37", text: "The highest predator at the top of a food chain is called the:", options: ["primary consumer", "apex predator", "producer", "prey"], correctAnswer: "apex predator" },
-      { id: "4-38", text: "Which is a correct food chain (from producer upwards)?", options: ["hawk → snake → grass → rabbit", "grass → grasshopper → lizard → hawk", "rabbit → grass → hawk → snake", "lizard → grasshopper → grass → hawk"], correctAnswer: "grass → grasshopper → lizard → hawk" },
-      { id: "4-39", text: "In the example: rabbit, grasshopper and mouse eat grass. This means they are:", options: ["producers", "consumers (primary consumers)", "decomposers", "non-living factors"], correctAnswer: "consumers (primary consumers)" },
-      { id: "4-40", text: "If a hawk eats rabbit, mouse and snake, the hawk is most likely an:", options: ["producer", "herbivore", "apex predator", "algae"], correctAnswer: "apex predator" },
-      { id: "4-41", text: "Mangroves are special trees that can grow in:", options: ["pure ice", "sea water", "molten rock", "vacuum"], correctAnswer: "sea water" },
-      { id: "4-42", text: "In the Arctic Ocean, sea water can freeze to form an:", options: ["oasis", "ice sheet", "desert dune", "rice paddy"], correctAnswer: "ice sheet" },
-      { id: "4-43", text: "An artificial ecosystem is:", options: ["always underwater", "man-made and not natural", "found only in deserts", "made only by bacteria"], correctAnswer: "man-made and not natural" },
-      { id: "4-44", text: "A rice paddy is an example of a(n):", options: ["natural ecosystem", "artificial ecosystem", "desert ecosystem", "arctic ecosystem"], correctAnswer: "artificial ecosystem" },
-      { id: "4-45", text: "A pitfall trap is used to trap small:", options: ["flying animals", "crawling animals (e.g., beetles)", "fish", "whales"], correctAnswer: "crawling animals (e.g., beetles)" },
-      { id: "4-46", text: "A sweep net is used to trap small:", options: ["crawling animals only", "flying animals (e.g., insects)", "large mammals", "plants"], correctAnswer: "flying animals (e.g., insects)" },
-      { id: "4-47", text: "In a “stick and sheet” method, you use a stick to hit branches and a sheet to:", options: ["heat the insects", "collect the insects that fall", "increase pressure", "measure speed"], correctAnswer: "collect the insects that fall" },
-      { id: "4-48", text: "Species brought from other places that harm a natural ecosystem are called:", options: ["native species", "invasive species", "producers", "pigments"], correctAnswer: "invasive species" },
-      { id: "4-49", text: "DDT is an example of a(n):", options: ["herbicide", "insecticide", "fertilizer", "oxygen"], correctAnswer: "insecticide" },
-      { id: "4-50", text: "DDT concentration can increase along a food chain to dangerously high levels. This increase is called:", options: ["diffusion", "biomagnification", "photosynthesis", "evaporation"], correctAnswer: "biomagnification" }
+    "questions": [
+      {
+        "id": "4-1",
+        "text": "The Sonoran Desert is considered a hostile environment mainly because it is:",
+        "options": [
+          "always rainy and cold",
+          "very dry with extreme temperatures",
+          "full of deep oceans",
+          "covered with thick ice sheets"
+        ],
+        "correctAnswer": "very dry with extreme temperatures"
+      },
+      {
+        "id": "4-2",
+        "text": "An ecosystem is the ____ between living and non-living things in an environment.",
+        "options": [
+          "competition",
+          "complex interaction",
+          "speed",
+          "pressure"
+        ],
+        "correctAnswer": "complex interaction"
+      },
+      {
+        "id": "4-3",
+        "text": "Living things in an ecosystem are also called living:",
+        "options": [
+          "elements",
+          "organisms",
+          "rocks",
+          "gases"
+        ],
+        "correctAnswer": "organisms"
+      },
+      {
+        "id": "4-4",
+        "text": "Living things may be:",
+        "options": [
+          "plants or animals",
+          "soil or light",
+          "water or air",
+          "temperature or sunlight"
+        ],
+        "correctAnswer": "plants or animals"
+      },
+      {
+        "id": "4-5",
+        "text": "Non-living things may be anything in the:",
+        "options": [
+          "stomach",
+          "environment",
+          "nest only",
+          "food chain only"
+        ],
+        "correctAnswer": "environment"
+      },
+      {
+        "id": "4-6",
+        "text": "In Biology, the study of ecosystems is called:",
+        "options": [
+          "geology",
+          "ecology",
+          "chemistry",
+          "astronomy"
+        ],
+        "correctAnswer": "ecology"
+      },
+      {
+        "id": "4-7",
+        "text": "Scientists who study ecosystems are called:",
+        "options": [
+          "ecologists",
+          "engineers",
+          "poets",
+          "athletes"
+        ],
+        "correctAnswer": "ecologists"
+      },
+      {
+        "id": "4-8",
+        "text": "During hot days, many desert animals rest in the ____ because it is cooler.",
+        "options": [
+          "clouds",
+          "caves",
+          "rivers",
+          "trees"
+        ],
+        "correctAnswer": "caves"
+      },
+      {
+        "id": "4-9",
+        "text": "Animals that are active at night are described as:",
+        "options": [
+          "diurnal",
+          "nocturnal",
+          "aquatic",
+          "artificial"
+        ],
+        "correctAnswer": "nocturnal"
+      },
+      {
+        "id": "4-10",
+        "text": "Predators are living things that:",
+        "options": [
+          "make their own food",
+          "eat other living things",
+          "only eat sunlight",
+          "never hunt"
+        ],
+        "correctAnswer": "eat other living things"
+      },
+      {
+        "id": "4-11",
+        "text": "Plants are producers because they:",
+        "options": [
+          "eat other animals",
+          "make food available in the ecosystem",
+          "cannot photosynthesize",
+          "only live in water"
+        ],
+        "correctAnswer": "make food available in the ecosystem"
+      },
+      {
+        "id": "4-12",
+        "text": "The ultimate source of energy for most ecosystems on Earth is the:",
+        "options": [
+          "Moon",
+          "Sun",
+          "soil",
+          "ocean waves"
+        ],
+        "correctAnswer": "Sun"
+      },
+      {
+        "id": "4-13",
+        "text": "Photosynthesis uses sunlight energy to make glucose and oxygen from:",
+        "options": [
+          "nitrogen and water",
+          "carbon dioxide and water",
+          "oxygen and glucose",
+          "salt and water"
+        ],
+        "correctAnswer": "carbon dioxide and water"
+      },
+      {
+        "id": "4-14",
+        "text": "The word equation for photosynthesis is:",
+        "options": [
+          "glucose + oxygen → carbon dioxide + water",
+          "carbon dioxide + water → glucose + oxygen",
+          "oxygen + water → glucose + carbon dioxide",
+          "carbon dioxide + oxygen → glucose + water"
+        ],
+        "correctAnswer": "carbon dioxide + water → glucose + oxygen"
+      },
+      {
+        "id": "4-15",
+        "text": "The pigment used in photosynthesis is called:",
+        "options": [
+          "melanin",
+          "chlorophyll",
+          "hemoglobin",
+          "keratin"
+        ],
+        "correctAnswer": "chlorophyll"
+      },
+      {
+        "id": "4-16",
+        "text": "Plants usually appear green because they contain:",
+        "options": [
+          "chlorophyll",
+          "oxygen gas",
+          "carbon dioxide",
+          "pesticides"
+        ],
+        "correctAnswer": "chlorophyll"
+      },
+      {
+        "id": "4-17",
+        "text": "Animals are consumers because they:",
+        "options": [
+          "can make their own food",
+          "cannot make their own food and must feed on other organisms",
+          "are always producers",
+          "only absorb sunlight"
+        ],
+        "correctAnswer": "cannot make their own food and must feed on other organisms"
+      },
+      {
+        "id": "4-18",
+        "text": "An animal that feeds on both plants and animals is called an:",
+        "options": [
+          "herbivore",
+          "carnivore",
+          "omnivore",
+          "decomposer"
+        ],
+        "correctAnswer": "omnivore"
+      },
+      {
+        "id": "4-19",
+        "text": "A habitat is where an organism:",
+        "options": [
+          "is made in a factory",
+          "naturally lives in an ecosystem",
+          "always migrates to in winter",
+          "is kept only by humans"
+        ],
+        "correctAnswer": "naturally lives in an ecosystem"
+      },
+      {
+        "id": "4-20",
+        "text": "Daytime light allows plants to:",
+        "options": [
+          "respire to make oxygen",
+          "photosynthesize to make food",
+          "increase pressure",
+          "diffuse faster"
+        ],
+        "correctAnswer": "photosynthesize to make food"
+      },
+      {
+        "id": "4-21",
+        "text": "During daytime, desert temperature is often very:",
+        "options": [
+          "low",
+          "high",
+          "constant at 0°C",
+          "impossible to measure"
+        ],
+        "correctAnswer": "high"
+      },
+      {
+        "id": "4-22",
+        "text": "Organisms active during the day are:",
+        "options": [
+          "diurnal",
+          "nocturnal",
+          "extinct",
+          "invasive"
+        ],
+        "correctAnswer": "diurnal"
+      },
+      {
+        "id": "4-23",
+        "text": "Many organisms avoid the desert heat by being active only at night. This helps avoid:",
+        "options": [
+          "overheating",
+          "photosynthesis",
+          "gravity",
+          "diffusion"
+        ],
+        "correctAnswer": "overheating"
+      },
+      {
+        "id": "4-24",
+        "text": "Adaptations are body features or behaviours that help organisms:",
+        "options": [
+          "evaporate more",
+          "survive better in the environment",
+          "become producers",
+          "stop breathing"
+        ],
+        "correctAnswer": "survive better in the environment"
+      },
+      {
+        "id": "4-25",
+        "text": "All organisms need ____ to survive.",
+        "options": [
+          "sand",
+          "water",
+          "pesticides",
+          "ice sheets"
+        ],
+        "correctAnswer": "water"
+      },
+      {
+        "id": "4-26",
+        "text": "Organisms may lose water when they:",
+        "options": [
+          "sweat or urinate",
+          "photosynthesize",
+          "hunt at night",
+          "freeze"
+        ],
+        "correctAnswer": "sweat or urinate"
+      },
+      {
+        "id": "4-27",
+        "text": "Desert organisms may have adaptations to lose ____ water.",
+        "options": [
+          "more",
+          "less",
+          "infinite",
+          "exactly the same"
+        ],
+        "correctAnswer": "less"
+      },
+      {
+        "id": "4-28",
+        "text": "Air provides ____ for plants to carry out photosynthesis and ____ for animals to carry out respiration.",
+        "options": [
+          "oxygen, carbon dioxide",
+          "carbon dioxide, oxygen",
+          "nitrogen, hydrogen",
+          "glucose, water"
+        ],
+        "correctAnswer": "carbon dioxide, oxygen"
+      },
+      {
+        "id": "4-29",
+        "text": "Gas exchange in ecosystems is helped by:",
+        "options": [
+          "plants making oxygen and animals using oxygen",
+          "animals making oxygen and plants using oxygen",
+          "soil producing oxygen",
+          "sunlight producing carbon dioxide"
+        ],
+        "correctAnswer": "plants making oxygen and animals using oxygen"
+      },
+      {
+        "id": "4-30",
+        "text": "A food chain always begins with a:",
+        "options": [
+          "consumer",
+          "producer",
+          "apex predator",
+          "parasite"
+        ],
+        "correctAnswer": "producer"
+      },
+      {
+        "id": "4-31",
+        "text": "Food chains show the ____ relationship between living things.",
+        "options": [
+          "sleeping",
+          "feeding",
+          "colour",
+          "speed"
+        ],
+        "correctAnswer": "feeding"
+      },
+      {
+        "id": "4-32",
+        "text": "In the arrow A → B in a food chain, it means:",
+        "options": [
+          "A eats B",
+          "B eats A",
+          "A and B are the same species",
+          "A is a non-living thing"
+        ],
+        "correctAnswer": "B eats A"
+      },
+      {
+        "id": "4-33",
+        "text": "In a food chain, an animal that is eaten is called the:",
+        "options": [
+          "predator",
+          "prey",
+          "producer",
+          "ecologist"
+        ],
+        "correctAnswer": "prey"
+      },
+      {
+        "id": "4-34",
+        "text": "The animal that eats another animal is called the:",
+        "options": [
+          "prey",
+          "predator",
+          "herbicide",
+          "chlorophyll"
+        ],
+        "correctAnswer": "predator"
+      },
+      {
+        "id": "4-35",
+        "text": "Food chains are ____ so they are often drawn like a line.",
+        "options": [
+          "linear",
+          "circular",
+          "random",
+          "frozen"
+        ],
+        "correctAnswer": "linear"
+      },
+      {
+        "id": "4-36",
+        "text": "A food web is more useful than a food chain because feeding relationships are more:",
+        "options": [
+          "simple",
+          "complex",
+          "slow",
+          "invisible"
+        ],
+        "correctAnswer": "complex"
+      },
+      {
+        "id": "4-37",
+        "text": "The highest predator at the top of a food chain is called the:",
+        "options": [
+          "primary consumer",
+          "apex predator",
+          "producer",
+          "prey"
+        ],
+        "correctAnswer": "apex predator"
+      },
+      {
+        "id": "4-38",
+        "text": "Which is a correct food chain (from producer upwards)?",
+        "options": [
+          "hawk → snake → grass → rabbit",
+          "grass → grasshopper → lizard → hawk",
+          "rabbit → grass → hawk → snake",
+          "lizard → grasshopper → grass → hawk"
+        ],
+        "correctAnswer": "grass → grasshopper → lizard → hawk"
+      },
+      {
+        "id": "4-39",
+        "text": "In the example: rabbit, grasshopper and mouse eat grass. This means they are:",
+        "options": [
+          "producers",
+          "consumers (primary consumers)",
+          "decomposers",
+          "non-living factors"
+        ],
+        "correctAnswer": "consumers (primary consumers)"
+      },
+      {
+        "id": "4-40",
+        "text": "If a hawk eats rabbit, mouse and snake, the hawk is most likely an:",
+        "options": [
+          "producer",
+          "herbivore",
+          "apex predator",
+          "algae"
+        ],
+        "correctAnswer": "apex predator"
+      },
+      {
+        "id": "4-41",
+        "text": "Mangroves are special trees that can grow in:",
+        "options": [
+          "pure ice",
+          "sea water",
+          "molten rock",
+          "vacuum"
+        ],
+        "correctAnswer": "sea water"
+      },
+      {
+        "id": "4-42",
+        "text": "In the Arctic Ocean, sea water can freeze to form an:",
+        "options": [
+          "oasis",
+          "ice sheet",
+          "desert dune",
+          "rice paddy"
+        ],
+        "correctAnswer": "ice sheet"
+      },
+      {
+        "id": "4-43",
+        "text": "An artificial ecosystem is:",
+        "options": [
+          "always underwater",
+          "man-made and not natural",
+          "found only in deserts",
+          "made only by bacteria"
+        ],
+        "correctAnswer": "man-made and not natural"
+      },
+      {
+        "id": "4-44",
+        "text": "A rice paddy is an example of a(n):",
+        "options": [
+          "natural ecosystem",
+          "artificial ecosystem",
+          "desert ecosystem",
+          "arctic ecosystem"
+        ],
+        "correctAnswer": "artificial ecosystem"
+      },
+      {
+        "id": "4-45",
+        "text": "A pitfall trap is used to trap small:",
+        "options": [
+          "flying animals",
+          "crawling animals (e.g., beetles)",
+          "fish",
+          "whales"
+        ],
+        "correctAnswer": "crawling animals (e.g., beetles)"
+      },
+      {
+        "id": "4-46",
+        "text": "A sweep net is used to trap small:",
+        "options": [
+          "crawling animals only",
+          "flying animals (e.g., insects)",
+          "large mammals",
+          "plants"
+        ],
+        "correctAnswer": "flying animals (e.g., insects)"
+      },
+      {
+        "id": "4-47",
+        "text": "In a “stick and sheet” method, you use a stick to hit branches and a sheet to:",
+        "options": [
+          "heat the insects",
+          "collect the insects that fall",
+          "increase pressure",
+          "measure speed"
+        ],
+        "correctAnswer": "collect the insects that fall"
+      },
+      {
+        "id": "4-48",
+        "text": "Species brought from other places that harm a natural ecosystem are called:",
+        "options": [
+          "native species",
+          "invasive species",
+          "producers",
+          "pigments"
+        ],
+        "correctAnswer": "invasive species"
+      },
+      {
+        "id": "4-49",
+        "text": "DDT is an example of a(n):",
+        "options": [
+          "herbicide",
+          "insecticide",
+          "fertilizer",
+          "oxygen"
+        ],
+        "correctAnswer": "insecticide"
+      },
+      {
+        "id": "4-50",
+        "text": "DDT concentration can increase along a food chain to dangerously high levels. This increase is called:",
+        "options": [
+          "diffusion",
+          "biomagnification",
+          "photosynthesis",
+          "evaporation"
+        ],
+        "correctAnswer": "biomagnification"
+      }
     ]
   },
   {
-    id: 5,
-    title: "Materials and cycles on Earth",
-    titleTraditional: "地球上的物質與循環",
-    titleSimplified: "地球上的物质与循环",
-    description: "Atomic structure, purity, and Earth's climate cycles.",
-    descriptionTraditional: "原子結構、純度以及地球的氣候循環。",
-    descriptionSimplified: "原子结构、纯度以及地球的气候循环。",
-    color: "bg-amber-700",
-    concepts: [
+    "id": 5,
+    "title": "Materials and cycles on Earth",
+    "titleTraditional": "地球上的物質與循環",
+    "titleSimplified": "地球上的物质与循环",
+    "description": "Atomic structure, purity, and Earth's climate cycles.",
+    "descriptionTraditional": "原子結構、純度以及地球的氣候循環。",
+    "descriptionSimplified": "原子结构、纯度以及地球的气候循环。",
+    "color": "bg-amber-700",
+    "concepts": [
       "Elements are pure substances made of one type of atom.",
       "Compounds are chemically bonded atoms; mixtures are physically mixed.",
       "Atoms consist of a nucleus (protons, neutrons) and electron shells.",
@@ -947,7 +5802,7 @@ export const units: Unit[] = [
       "Meteorology is the study of weather; Climatology is the study of long-term climate.",
       "Glaciers and peat bogs provide evidence of past climate changes."
     ],
-    conceptsTraditional: [
+    "conceptsTraditional": [
       "元素是由一種原子組成的純淨物質。",
       "化合物是化學結合的原子；混合物是物理混合的物質。",
       "原子由原子核（質子、中子）和電子殼層組成。",
@@ -956,7 +5811,7 @@ export const units: Unit[] = [
       "氣象學是研究天氣的學科；氣候學是研究長期氣候的學科。",
       "冰川和泥炭沼澤提供了過去氣候變遷的證據。"
     ],
-    conceptsSimplified: [
+    "conceptsSimplified": [
       "元素是由一种原子组成的纯净物质。",
       "化合物是化学结合的原子；混合物是物理混合的物质。",
       "原子由原子核（质子、中子）和电子壳层组成。",
@@ -965,140 +5820,950 @@ export const units: Unit[] = [
       "气象学是研究天气的学科；气候学是研究长期气候的学科。",
       "冰川和泥炭沼泽提供了过去气候变迁的证据。"
     ],
-    keyTerms: {
-      "elements": "#3b82f6", "元素": "#3b82f6",
-      "atoms": "#ef4444", "原子": "#ef4444",
-      "compounds": "#10b981", "化合物": "#10b981",
-      "nucleus": "#7c3aed", "原子核": "#7c3aed",
-      "purity": "#f59e0b", "純度": "#f59e0b", "纯度": "#f59e0b",
-      "meteorology": "#06b6d4", "氣象學": "#06b6d4", "气象学": "#06b6d4",
-      "climatology": "#0891b2", "氣候學": "#0891b2", "气候学": "#0891b2"
+    "keyTerms": {
+      "elements": "#3b82f6",
+      "元素": "#3b82f6",
+      "atoms": "#ef4444",
+      "原子": "#ef4444",
+      "compounds": "#10b981",
+      "化合物": "#10b981",
+      "nucleus": "#7c3aed",
+      "原子核": "#7c3aed",
+      "purity": "#f59e0b",
+      "純度": "#f59e0b",
+      "纯度": "#f59e0b",
+      "meteorology": "#06b6d4",
+      "氣象學": "#06b6d4",
+      "气象学": "#06b6d4",
+      "climatology": "#0891b2",
+      "氣候學": "#0891b2",
+      "气候学": "#0891b2"
     },
-    vocab: [
-      { term: "Element", traditional: "元素", simplified: "元素", definition: "A substance that cannot be broken down into simpler substances by chemical means." },
-      { term: "Atom", traditional: "原子", simplified: "原子", definition: "The smallest unit of an element that maintains the properties of that element." },
-      { term: "Metals", traditional: "金屬", simplified: "金属", definition: "Elements that are typically shiny, good conductors of heat and electricity, and malleable." },
-      { term: "Non-metals", traditional: "非金屬", simplified: "非金属", definition: "Elements that are typically poor conductors of heat and electricity and are not malleable." },
-      { term: "Semi-metals", traditional: "半金屬", simplified: "半金属", definition: "Elements that have properties of both metals and non-metals." },
-      { term: "Pure / Pure substance", traditional: "純淨", simplified: "纯净", definition: "A substance made of only one type of particle (atom or molecule)." },
-      { term: "Periodic table", traditional: "周期表", simplified: "周期表", definition: "A tabular arrangement of chemical elements, ordered by atomic number." },
-      { term: "Sub-atomic particles", traditional: "亞原子粒子", simplified: "亚原子粒子", definition: "Particles smaller than an atom, such as protons, neutrons, and electrons." },
-      { term: "Protons", traditional: "質子", simplified: "质子", definition: "Positively charged sub-atomic particles found in the nucleus of an atom." },
-      { term: "Electrons", traditional: "電子", simplified: "电子", definition: "Negatively charged sub-atomic particles that orbit the nucleus of an atom." },
-      { term: "Neutrons", traditional: "中子", simplified: "中子", definition: "Sub-atomic particles with no charge found in the nucleus of an atom." },
-      { term: "Nucleus", traditional: "原子核", simplified: "原子核", definition: "The small, dense, positively charged center of an atom." },
-      { term: "Vacuum", traditional: "眞空", simplified: "真空", definition: "A space entirely devoid of matter." },
-      { term: "Relative mass", traditional: "相對質量", simplified: "相对质量", definition: "The mass of a sub-atomic particle compared to the mass of a proton." },
-      { term: "Relative charge", traditional: "相對電荷", simplified: "相对电荷", definition: "The electric charge of a sub-atomic particle compared to the charge of a proton." },
-      { term: "Neutral", traditional: "中性的", simplified: "中性的", definition: "Having no net electric charge." },
-      { term: "Electrostatic attraction", traditional: "靜電吸引力", simplified: "静电吸引力", definition: "The force of attraction between particles with opposite electric charges." },
-      { term: "Gravity", traditional: "重力", simplified: "重力", definition: "The force that attracts a body toward the center of the earth, or toward any other physical body having mass." },
-      { term: "Deflection", traditional: "偏轉", simplified: "偏转", definition: "The action of a particle or wave being turned aside from its straight path." },
-      { term: "Collaboration", traditional: "協同", simplified: "协同", definition: "The action of working with someone to produce or create something." },
-      { term: "Peer review", traditional: "校正 / 校對", simplified: "校正 / 校对", definition: "Evaluation of scientific, academic, or professional work by others working in the same field." },
-      { term: "Journal", traditional: "論文", simplified: "论文", definition: "A periodical publication in which current research is published." },
-      { term: "Half-life", traditional: "半衰期", simplified: "半衰期", definition: "The time taken for the radioactivity of a specified isotope to fall to half its original value." },
-      { term: "Purity", traditional: "純度", simplified: "纯度", definition: "The measure of the extent to which a substance is free from contaminants." },
-      { term: "Impure", traditional: "不純 / 雜質", simplified: "不纯 / 杂质", definition: "Containing substances that are not part of the main substance." },
-      { term: "Carat", traditional: "卡 / 卡數", simplified: "卡 / 卡数", definition: "A unit of weight for precious stones and pearls, or a measure of the purity of gold." },
-      { term: "Compound", traditional: "化合物", simplified: "化合物", definition: "A substance formed when two or more chemical elements are chemically bonded together." },
-      { term: "Mixture", traditional: "混合物", simplified: "混合物", definition: "A substance made by mixing other substances together without chemical bonding." },
-      { term: "Chemical bond", traditional: "化學鍵", simplified: "化学键", definition: "A lasting attraction between atoms that enables the formation of chemical compounds." },
-      { term: "Atmosphere", traditional: "大氣層", simplified: "大气层", definition: "The envelope of gases surrounding the earth or another planet." },
-      { term: "Weather forecast", traditional: "天氣預報", simplified: "天气预报", definition: "A prediction of future weather conditions." },
-      { term: "Humidity", traditional: "濕度", simplified: "湿度", definition: "The amount of water vapor in the atmosphere or in a gas." },
-      { term: "Visibility", traditional: "能見度", simplified: "能见度", definition: "The distance at which an object or light can be clearly discerned." },
-      { term: "Dehumidifier", traditional: "除濕機", simplified: "除湿机", definition: "A device that removes excess moisture from the air." },
-      { term: "Climate", traditional: "氣候", simplified: "气候", definition: "The weather conditions prevailing in an area in general or over a long period." },
-      { term: "Statistics", traditional: "統計", simplified: "统计", definition: "The practice or science of collecting and analyzing numerical data in large quantities." },
-      { term: "Equator", traditional: "赤道", simplified: "赤道", definition: "An imaginary line drawn around the earth equally distant from both poles." },
-      { term: "Temperate", traditional: "溫帶", simplified: "温带", definition: "Relating to or denoting a region or climate characterized by mild temperatures." },
-      { term: "Arid", traditional: "旱帶", simplified: "旱带", definition: "(of land or a climate) having little or no rain; too dry or barren to support vegetation." },
-      { term: "Mammoth", traditional: "長毛象", simplified: "长毛象", definition: "A large extinct elephant of the Pleistocene epoch, typically hairy with a sloping back and long curved tusks." },
-      { term: "Extinct", traditional: "滅絕", simplified: "灭绝", definition: "(of a species, family, or other larger group) having no living members." },
-      { term: "Adaptations", traditional: "適應特徵", simplified: "适应特征", definition: "Features or behaviors that help an organism survive in its environment." },
-      { term: "Northern hemisphere", traditional: "北半球", simplified: "北半球", definition: "The half of the earth north of the equator." },
-      { term: "Southern hemisphere", traditional: "南半球", simplified: "南半球", definition: "The half of the earth south of the equator." },
-      { term: "Decomposition", traditional: "分解", simplified: "分解", definition: "The state or process of rotting; decay." },
-      { term: "Fungi", traditional: "真菌", simplified: "真菌", definition: "A group of spore-producing organisms feeding on organic matter, including molds, yeast, mushrooms, and toadstools." },
-      { term: "Bacteria", traditional: "細菌", simplified: "细菌", definition: "A member of a large group of unicellular microorganisms which have cell walls but lack organelles and an organized nucleus." },
-      { term: "Glacier", traditional: "冰川", simplified: "冰川", definition: "A slowly moving mass or river of ice formed by the accumulation and compaction of snow." },
-      { term: "Erosion", traditional: "侵蝕", simplified: "侵蚀", definition: "The process of eroding or being eroded by wind, water, or other natural agents." },
-      { term: "Weathering", traditional: "風化", simplified: "风化", definition: "The wear away or change the appearance or texture of (something) by long exposure to the air." },
-      { term: "Pollen", traditional: "花粉", simplified: "花粉", definition: "A fine powdery substance, typically yellow, consisting of microscopic grains discharged from the male part of a flower." },
-      { term: "Fossil fuel", traditional: "化石燃料", simplified: "化石燃料", definition: "A natural fuel such as coal or gas, formed in the geological past from the remains of living organisms." },
-      { term: "Volcanic activities", traditional: "火山活動", simplified: "火山活动", definition: "The processes and phenomena associated with volcanoes and volcanic eruptions." },
-      { term: "Microorganism", traditional: "微生物", simplified: "微生物", definition: "A microscopic organism, especially a bacterium, virus, or fungus." },
-      { term: "Photosynthesis", traditional: "光合作用", simplified: "光合作用", definition: "The process by which green plants and some other organisms use sunlight to synthesize foods from carbon dioxide and water." },
-      { term: "Chloroplast", traditional: "葉綠體", simplified: "叶绿体", definition: "(in green plant cells) a plastid that contains chlorophyll and in which photosynthesis takes place." },
-      { term: "Concentration", traditional: "濃度", simplified: "浓度", definition: "The relative amount of a given substance contained within a solution or in a particular volume of space." },
-      { term: "Evidence", traditional: "證據", simplified: "证据", definition: "The available body of facts or information indicating whether a belief or proposition is true or valid." },
-      { term: "Deforestation", traditional: "伐木", simplified: "伐木", definition: "The action of clearing a wide area of trees." },
-      { term: "Fermentation", traditional: "發酵", simplified: "发酵", definition: "The chemical breakdown of a substance by bacteria, yeasts, or other microorganisms." }
+    "vocab": [
+      {
+        "term": "Element",
+        "traditional": "元素",
+        "simplified": "元素",
+        "definition": "A substance that cannot be broken down into simpler substances by chemical means."
+      },
+      {
+        "term": "Atom",
+        "traditional": "原子",
+        "simplified": "原子",
+        "definition": "The smallest unit of an element that maintains the properties of that element."
+      },
+      {
+        "term": "Metals",
+        "traditional": "金屬",
+        "simplified": "金属",
+        "definition": "Elements that are typically shiny, good conductors of heat and electricity, and malleable."
+      },
+      {
+        "term": "Non-metals",
+        "traditional": "非金屬",
+        "simplified": "非金属",
+        "definition": "Elements that are typically poor conductors of heat and electricity and are not malleable."
+      },
+      {
+        "term": "Semi-metals",
+        "traditional": "半金屬",
+        "simplified": "半金属",
+        "definition": "Elements that have properties of both metals and non-metals."
+      },
+      {
+        "term": "Pure / Pure substance",
+        "traditional": "純淨",
+        "simplified": "纯净",
+        "definition": "A substance made of only one type of particle (atom or molecule)."
+      },
+      {
+        "term": "Periodic table",
+        "traditional": "周期表",
+        "simplified": "周期表",
+        "definition": "A tabular arrangement of chemical elements, ordered by atomic number."
+      },
+      {
+        "term": "Sub-atomic particles",
+        "traditional": "亞原子粒子",
+        "simplified": "亚原子粒子",
+        "definition": "Particles smaller than an atom, such as protons, neutrons, and electrons."
+      },
+      {
+        "term": "Protons",
+        "traditional": "質子",
+        "simplified": "质子",
+        "definition": "Positively charged sub-atomic particles found in the nucleus of an atom."
+      },
+      {
+        "term": "Electrons",
+        "traditional": "電子",
+        "simplified": "电子",
+        "definition": "Negatively charged sub-atomic particles that orbit the nucleus of an atom."
+      },
+      {
+        "term": "Neutrons",
+        "traditional": "中子",
+        "simplified": "中子",
+        "definition": "Sub-atomic particles with no charge found in the nucleus of an atom."
+      },
+      {
+        "term": "Nucleus",
+        "traditional": "原子核",
+        "simplified": "原子核",
+        "definition": "The small, dense, positively charged center of an atom."
+      },
+      {
+        "term": "Vacuum",
+        "traditional": "眞空",
+        "simplified": "真空",
+        "definition": "A space entirely devoid of matter."
+      },
+      {
+        "term": "Relative mass",
+        "traditional": "相對質量",
+        "simplified": "相对质量",
+        "definition": "The mass of a sub-atomic particle compared to the mass of a proton."
+      },
+      {
+        "term": "Relative charge",
+        "traditional": "相對電荷",
+        "simplified": "相对电荷",
+        "definition": "The electric charge of a sub-atomic particle compared to the charge of a proton."
+      },
+      {
+        "term": "Neutral",
+        "traditional": "中性的",
+        "simplified": "中性的",
+        "definition": "Having no net electric charge."
+      },
+      {
+        "term": "Electrostatic attraction",
+        "traditional": "靜電吸引力",
+        "simplified": "静电吸引力",
+        "definition": "The force of attraction between particles with opposite electric charges."
+      },
+      {
+        "term": "Gravity",
+        "traditional": "重力",
+        "simplified": "重力",
+        "definition": "The force that attracts a body toward the center of the earth, or toward any other physical body having mass."
+      },
+      {
+        "term": "Deflection",
+        "traditional": "偏轉",
+        "simplified": "偏转",
+        "definition": "The action of a particle or wave being turned aside from its straight path."
+      },
+      {
+        "term": "Collaboration",
+        "traditional": "協同",
+        "simplified": "协同",
+        "definition": "The action of working with someone to produce or create something."
+      },
+      {
+        "term": "Peer review",
+        "traditional": "校正 / 校對",
+        "simplified": "校正 / 校对",
+        "definition": "Evaluation of scientific, academic, or professional work by others working in the same field."
+      },
+      {
+        "term": "Journal",
+        "traditional": "論文",
+        "simplified": "论文",
+        "definition": "A periodical publication in which current research is published."
+      },
+      {
+        "term": "Half-life",
+        "traditional": "半衰期",
+        "simplified": "半衰期",
+        "definition": "The time taken for the radioactivity of a specified isotope to fall to half its original value."
+      },
+      {
+        "term": "Purity",
+        "traditional": "純度",
+        "simplified": "纯度",
+        "definition": "The measure of the extent to which a substance is free from contaminants."
+      },
+      {
+        "term": "Impure",
+        "traditional": "不純 / 雜質",
+        "simplified": "不纯 / 杂质",
+        "definition": "Containing substances that are not part of the main substance."
+      },
+      {
+        "term": "Carat",
+        "traditional": "卡 / 卡數",
+        "simplified": "卡 / 卡数",
+        "definition": "A unit of weight for precious stones and pearls, or a measure of the purity of gold."
+      },
+      {
+        "term": "Compound",
+        "traditional": "化合物",
+        "simplified": "化合物",
+        "definition": "A substance formed when two or more chemical elements are chemically bonded together."
+      },
+      {
+        "term": "Mixture",
+        "traditional": "混合物",
+        "simplified": "混合物",
+        "definition": "A substance made by mixing other substances together without chemical bonding."
+      },
+      {
+        "term": "Chemical bond",
+        "traditional": "化學鍵",
+        "simplified": "化学键",
+        "definition": "A lasting attraction between atoms that enables the formation of chemical compounds."
+      },
+      {
+        "term": "Atmosphere",
+        "traditional": "大氣層",
+        "simplified": "大气层",
+        "definition": "The envelope of gases surrounding the earth or another planet."
+      },
+      {
+        "term": "Weather forecast",
+        "traditional": "天氣預報",
+        "simplified": "天气预报",
+        "definition": "A prediction of future weather conditions."
+      },
+      {
+        "term": "Humidity",
+        "traditional": "濕度",
+        "simplified": "湿度",
+        "definition": "The amount of water vapor in the atmosphere or in a gas."
+      },
+      {
+        "term": "Visibility",
+        "traditional": "能見度",
+        "simplified": "能见度",
+        "definition": "The distance at which an object or light can be clearly discerned."
+      },
+      {
+        "term": "Dehumidifier",
+        "traditional": "除濕機",
+        "simplified": "除湿机",
+        "definition": "A device that removes excess moisture from the air."
+      },
+      {
+        "term": "Climate",
+        "traditional": "氣候",
+        "simplified": "气候",
+        "definition": "The weather conditions prevailing in an area in general or over a long period."
+      },
+      {
+        "term": "Statistics",
+        "traditional": "統計",
+        "simplified": "统计",
+        "definition": "The practice or science of collecting and analyzing numerical data in large quantities."
+      },
+      {
+        "term": "Equator",
+        "traditional": "赤道",
+        "simplified": "赤道",
+        "definition": "An imaginary line drawn around the earth equally distant from both poles."
+      },
+      {
+        "term": "Temperate",
+        "traditional": "溫帶",
+        "simplified": "温带",
+        "definition": "Relating to or denoting a region or climate characterized by mild temperatures."
+      },
+      {
+        "term": "Arid",
+        "traditional": "旱帶",
+        "simplified": "旱带",
+        "definition": "(of land or a climate) having little or no rain; too dry or barren to support vegetation."
+      },
+      {
+        "term": "Mammoth",
+        "traditional": "長毛象",
+        "simplified": "长毛象",
+        "definition": "A large extinct elephant of the Pleistocene epoch, typically hairy with a sloping back and long curved tusks."
+      },
+      {
+        "term": "Extinct",
+        "traditional": "滅絕",
+        "simplified": "灭绝",
+        "definition": "(of a species, family, or other larger group) having no living members."
+      },
+      {
+        "term": "Adaptations",
+        "traditional": "適應特徵",
+        "simplified": "适应特征",
+        "definition": "Features or behaviors that help an organism survive in its environment."
+      },
+      {
+        "term": "Northern hemisphere",
+        "traditional": "北半球",
+        "simplified": "北半球",
+        "definition": "The half of the earth north of the equator."
+      },
+      {
+        "term": "Southern hemisphere",
+        "traditional": "南半球",
+        "simplified": "南半球",
+        "definition": "The half of the earth south of the equator."
+      },
+      {
+        "term": "Decomposition",
+        "traditional": "分解",
+        "simplified": "分解",
+        "definition": "The state or process of rotting; decay."
+      },
+      {
+        "term": "Fungi",
+        "traditional": "真菌",
+        "simplified": "真菌",
+        "definition": "A group of spore-producing organisms feeding on organic matter, including molds, yeast, mushrooms, and toadstools."
+      },
+      {
+        "term": "Bacteria",
+        "traditional": "細菌",
+        "simplified": "细菌",
+        "definition": "A member of a large group of unicellular microorganisms which have cell walls but lack organelles and an organized nucleus."
+      },
+      {
+        "term": "Glacier",
+        "traditional": "冰川",
+        "simplified": "冰川",
+        "definition": "A slowly moving mass or river of ice formed by the accumulation and compaction of snow."
+      },
+      {
+        "term": "Erosion",
+        "traditional": "侵蝕",
+        "simplified": "侵蚀",
+        "definition": "The process of eroding or being eroded by wind, water, or other natural agents."
+      },
+      {
+        "term": "Weathering",
+        "traditional": "風化",
+        "simplified": "风化",
+        "definition": "The wear away or change the appearance or texture of (something) by long exposure to the air."
+      },
+      {
+        "term": "Pollen",
+        "traditional": "花粉",
+        "simplified": "花粉",
+        "definition": "A fine powdery substance, typically yellow, consisting of microscopic grains discharged from the male part of a flower."
+      },
+      {
+        "term": "Fossil fuel",
+        "traditional": "化石燃料",
+        "simplified": "化石燃料",
+        "definition": "A natural fuel such as coal or gas, formed in the geological past from the remains of living organisms."
+      },
+      {
+        "term": "Volcanic activities",
+        "traditional": "火山活動",
+        "simplified": "火山活动",
+        "definition": "The processes and phenomena associated with volcanoes and volcanic eruptions."
+      },
+      {
+        "term": "Microorganism",
+        "traditional": "微生物",
+        "simplified": "微生物",
+        "definition": "A microscopic organism, especially a bacterium, virus, or fungus."
+      },
+      {
+        "term": "Photosynthesis",
+        "traditional": "光合作用",
+        "simplified": "光合作用",
+        "definition": "The process by which green plants and some other organisms use sunlight to synthesize foods from carbon dioxide and water."
+      },
+      {
+        "term": "Chloroplast",
+        "traditional": "葉綠體",
+        "simplified": "叶绿体",
+        "definition": "(in green plant cells) a plastid that contains chlorophyll and in which photosynthesis takes place."
+      },
+      {
+        "term": "Concentration",
+        "traditional": "濃度",
+        "simplified": "浓度",
+        "definition": "The relative amount of a given substance contained within a solution or in a particular volume of space."
+      },
+      {
+        "term": "Evidence",
+        "traditional": "證據",
+        "simplified": "证据",
+        "definition": "The available body of facts or information indicating whether a belief or proposition is true or valid."
+      },
+      {
+        "term": "Deforestation",
+        "traditional": "伐木",
+        "simplified": "伐木",
+        "definition": "The action of clearing a wide area of trees."
+      },
+      {
+        "term": "Fermentation",
+        "traditional": "發酵",
+        "simplified": "发酵",
+        "definition": "The chemical breakdown of a substance by bacteria, yeasts, or other microorganisms."
+      }
     ],
-    questions: [
-      { id: "5-1", text: "Which statement best describes an element?", options: ["Two or more types of atoms chemically bonded", "A pure substance made of only one type of atom", "Two or more substances physically mixed", "A substance that always contains water"], correctAnswer: "A pure substance made of only one type of atom" },
-      { id: "5-2", text: "Which substance is a compound?", options: ["Gold", "Oxygen", "Water", "Helium"], correctAnswer: "Water" },
-      { id: "5-3", text: "Air is best described as a:", options: ["Element", "Compound", "Mixture", "Pure substance only"], correctAnswer: "Mixture" },
-      { id: "5-4", text: "Which is a key difference between a compound and a mixture?", options: ["Compounds can be separated physically; mixtures cannot", "Compounds are chemically bonded; mixtures are physically mixed", "Mixtures have fixed ratios; compounds do not", "Mixtures are always 100% pure"], correctAnswer: "Compounds are chemically bonded; mixtures are physically mixed" },
-      { id: "5-5", text: "The smallest part of an element that still keeps the properties of that element is a:", options: ["Molecule", "Atom", "Cell", "Compound"], correctAnswer: "Atom" },
-      { id: "5-6", text: "The word “atom” comes from a Greek term meaning:", options: ["Very heavy", "Divisible", "Uncuttable/indivisible", "Magnetic"], correctAnswer: "Uncuttable/indivisible" },
-      { id: "5-7", text: "Which sub-atomic particle has a positive charge?", options: ["Electron", "Proton", "Neutron", "Nucleus"], correctAnswer: "Proton" },
-      { id: "5-8", text: "Which sub-atomic particle has no charge?", options: ["Electron", "Proton", "Neutron", "Ion"], correctAnswer: "Neutron" },
-      { id: "5-9", text: "Which sub-atomic particle has a negative charge?", options: ["Electron", "Proton", "Neutron", "Nucleus"], correctAnswer: "Electron" },
-      { id: "5-10", text: "The nucleus of an atom contains:", options: ["Electrons only", "Protons only", "Protons and neutrons", "Neutrons and electrons"], correctAnswer: "Protons and neutrons" },
-      { id: "5-11", text: "In the simple atomic model, electrons move around the nucleus in:", options: ["Shells", "Roots", "Layers of rock", "Lava"], correctAnswer: "Shells" },
-      { id: "5-12", text: "Most of the space inside an atom is:", options: ["Solid matter", "Water", "Empty space", "Oxygen gas"], correctAnswer: "Empty space" },
-      { id: "5-13", text: "An atom is electrically neutral because it has equal numbers of:", options: ["Protons and neutrons", "Neutrons and electrons", "Protons and electrons", "Electrons and shells"], correctAnswer: "Protons and electrons" },
-      { id: "5-14", text: "The relative mass of a proton is closest to:", options: ["0", "1", "1/2", "1/1840"], correctAnswer: "1" },
-      { id: "5-15", text: "The relative mass of an electron is approximately:", options: ["1", "2", "1/1840", "1840"], correctAnswer: "1/1840" },
-      { id: "5-16", text: "The nucleus has most of the mass of the atom because:", options: ["Electrons are very heavy", "Protons and neutrons are much heavier than electrons", "The nucleus contains air", "Neutrons have negative charge"], correctAnswer: "Protons and neutrons are much heavier than electrons" },
-      { id: "5-17", text: "The attraction between the nucleus and electrons is due to:", options: ["Gravity", "Electrostatic attraction", "Friction", "Magnetism only"], correctAnswer: "Electrostatic attraction" },
-      { id: "5-18", text: "Rutherford’s gold foil experiment showed that most alpha particles passed through because the atom is mostly:", options: ["Metal", "Water", "Empty space", "Neutrons"], correctAnswer: "Empty space" },
-      { id: "5-19", text: "Some alpha particles were deflected strongly in Rutherford’s experiment because the atom has:", options: ["Large electrons", "A small, dense, positively charged nucleus", "No nucleus", "Only neutrons"], correctAnswer: "A small, dense, positively charged nucleus" },
-      { id: "5-20", text: "In the discharge tube experiment, J.J. Thomson discovered:", options: ["Protons", "Neutrons", "Electrons", "Atoms"], correctAnswer: "Electrons" },
-      { id: "5-21", text: "Which statement about purity is correct?", options: ["A pure substance always has 0% purity", "Purity is the percentage of a substance in a sample", "Purity can only be measured for liquids", "A mixture is always 100% pure"], correctAnswer: "Purity is the percentage of a substance in a sample" },
-      { id: "5-22", text: "A pure element contains:", options: ["One type of atom only", "Two types of atoms bonded together", "Two types of substances mixed", "Only molecules, not atoms"], correctAnswer: "One type of atom only" },
-      { id: "5-23", text: "Pure gold is:", options: ["12-carat", "18-carat", "20-carat", "24-carat"], correctAnswer: "24-carat" },
-      { id: "5-24", text: "The purity of 18-carat gold is:", options: ["18%", "24%", "75%", "83.3%"], correctAnswer: "75%" },
-      { id: "5-25", text: "The purity of 20-carat gold is closest to:", options: ["20%", "50%", "75%", "83.3%"], correctAnswer: "83.3%" },
-      { id: "5-26", text: "The purity marking for silver commonly uses:", options: ["Carats out of 24", "A number out of 100", "A number out of 1000", "A percentage out of 10"], correctAnswer: "A number out of 1000" },
-      { id: "5-27", text: "925 silver has a purity of:", options: ["9.25%", "92.5%", "100%", "75%"], correctAnswer: "92.5%" },
-      { id: "5-28", text: "Pure silver is:", options: ["100 silver", "500 silver", "925 silver", "1000 silver"], correctAnswer: "1000 silver" },
-      { id: "5-29", text: "Impure substances contain:", options: ["Only one type of atom", "Impurities (other substances/atoms)", "Only electrons", "Only oxygen"], correctAnswer: "Impurities (other substances/atoms)" },
-      { id: "5-30", text: "A yellow diamond forms when some carbon atoms are replaced by:", options: ["Boron", "Nitrogen", "Oxygen", "Iron"], correctAnswer: "Nitrogen" },
-      { id: "5-31", text: "A blue diamond forms when some carbon atoms are replaced by:", options: ["Boron", "Nitrogen", "Chlorine", "Argon"], correctAnswer: "Boron" },
-      { id: "5-32", text: "Seawater is best described as:", options: ["A pure compound", "A pure element", "An impure mixture", "A single substance"], correctAnswer: "An impure mixture" },
-      { id: "5-33", text: "Many salts can ____ in seawater.", options: ["Melt", "Dissolve", "Condense", "Freeze"], correctAnswer: "Dissolve" },
-      { id: "5-34", text: "To obtain salts from seawater, we can remove the water by:", options: ["Filtration only", "Evaporation/boiling", "Freezing only", "Magnetism"], correctAnswer: "Evaporation/boiling" },
-      { id: "5-35", text: "Every 1000 g of seawater contains 35 g of salts. The percentage of salts is:", options: ["0.35%", "3.5%", "35%", "65%"], correctAnswer: "3.5%" },
-      { id: "5-36", text: "The most common salt found in seawater is:", options: ["Calcium carbonate", "Sodium chloride", "Sodium hydroxide", "Potassium nitrate"], correctAnswer: "Sodium chloride" },
-      { id: "5-37", text: "Weather is the state of the:", options: ["Ocean", "Atmosphere", "Core", "Mantle"], correctAnswer: "Atmosphere" },
-      { id: "5-38", text: "The study of weather is called:", options: ["Climatology", "Meteorology", "Geology", "Ecology"], correctAnswer: "Meteorology" },
-      { id: "5-39", text: "Scientists study patterns in weather to:", options: ["Predict the weather", "Change the weather", "Stop evaporation", "Make oxygen"], correctAnswer: "Predict the weather" },
-      { id: "5-40", text: "Climate describes how weather changes over a:", options: ["Few minutes", "Few hours", "Short period (less than a year)", "Long period (usually 30+ years)"], correctAnswer: "Long period (usually 30+ years)" },
-      { id: "5-41", text: "The collection and analysis of large amounts of climate data is called:", options: ["Statistics", "Sculpture", "Distillation", "Respiration"], correctAnswer: "Statistics" },
-      { id: "5-42", text: "The study of climate is called:", options: ["Meteorology", "Climatology", "Biology", "Astronomy"], correctAnswer: "Climatology" },
-      { id: "5-43", text: "Collecting weather information over a long period tells us what the ____ weather is like on average and how ____ it can be.", options: ["daily; windy", "normal; extreme", "sunny; cloudy", "tropical; polar"], correctAnswer: "normal; extreme" },
-      { id: "5-44", text: "Which is an example of information commonly included in a weather forecast?", options: ["Type of atoms in air", "Wind speed and precipitation", "Age of fossils", "Type of rock in the crust"], correctAnswer: "Wind speed and precipitation" },
-      { id: "5-45", text: "The period when Earth was “frozen” is called a:", options: ["Interglacial period", "Glacial period", "Meteorological period", "Tropical period"], correctAnswer: "Glacial period" },
-      { id: "5-46", text: "Today, Earth is in an:", options: ["Interglacial period", "Permanent glacial period", "No-ice period", "Volcanic period"], correctAnswer: "Interglacial period" },
-      { id: "5-47", text: "A glacier is best described as:", options: ["A river of ice formed by compressing snow that slowly flows over land", "A fast-moving river of lava", "A layer of gas around Earth", "A type of fossil fuel"], correctAnswer: "A river of ice formed by compressing snow that slowly flows over land" },
-      { id: "5-48", text: "When studying peat bog core samples, which statement is correct?", options: ["The deeper the layer, the younger it is", "The deeper the layer, the older it is", "The deeper the layer, the warmer it is", "Deeper layers contain no pollen"], correctAnswer: "The deeper the layer, the older it is" },
-      { id: "5-49", text: "Pollen is a powdery substance produced by plants for:", options: ["Respiration", "Reproduction", "Combustion", "Erosion"], correctAnswer: "Reproduction" },
-      { id: "5-50", text: "Which option best describes the atmosphere?", options: ["A layer of solid rock wrapped around Earth", "A layer of gas mixture that wraps around Earth", "A layer of liquid water that wraps around Earth", "A layer of ice only found at the equator"], correctAnswer: "A layer of gas mixture that wraps around Earth" }
+    "questions": [
+      {
+        "id": "5-1",
+        "text": "Which statement best describes an element?",
+        "options": [
+          "Two or more types of atoms chemically bonded",
+          "A pure substance made of only one type of atom",
+          "Two or more substances physically mixed",
+          "A substance that always contains water"
+        ],
+        "correctAnswer": "A pure substance made of only one type of atom"
+      },
+      {
+        "id": "5-2",
+        "text": "Which substance is a compound?",
+        "options": [
+          "Gold",
+          "Oxygen",
+          "Water",
+          "Helium"
+        ],
+        "correctAnswer": "Water"
+      },
+      {
+        "id": "5-3",
+        "text": "Air is best described as a:",
+        "options": [
+          "Element",
+          "Compound",
+          "Mixture",
+          "Pure substance only"
+        ],
+        "correctAnswer": "Mixture"
+      },
+      {
+        "id": "5-4",
+        "text": "Which is a key difference between a compound and a mixture?",
+        "options": [
+          "Compounds can be separated physically; mixtures cannot",
+          "Compounds are chemically bonded; mixtures are physically mixed",
+          "Mixtures have fixed ratios; compounds do not",
+          "Mixtures are always 100% pure"
+        ],
+        "correctAnswer": "Compounds are chemically bonded; mixtures are physically mixed"
+      },
+      {
+        "id": "5-5",
+        "text": "The smallest part of an element that still keeps the properties of that element is a:",
+        "options": [
+          "Molecule",
+          "Atom",
+          "Cell",
+          "Compound"
+        ],
+        "correctAnswer": "Atom"
+      },
+      {
+        "id": "5-6",
+        "text": "The word “atom” comes from a Greek term meaning:",
+        "options": [
+          "Very heavy",
+          "Divisible",
+          "Uncuttable/indivisible",
+          "Magnetic"
+        ],
+        "correctAnswer": "Uncuttable/indivisible"
+      },
+      {
+        "id": "5-7",
+        "text": "Which sub-atomic particle has a positive charge?",
+        "options": [
+          "Electron",
+          "Proton",
+          "Neutron",
+          "Nucleus"
+        ],
+        "correctAnswer": "Proton"
+      },
+      {
+        "id": "5-8",
+        "text": "Which sub-atomic particle has no charge?",
+        "options": [
+          "Electron",
+          "Proton",
+          "Neutron",
+          "Ion"
+        ],
+        "correctAnswer": "Neutron"
+      },
+      {
+        "id": "5-9",
+        "text": "Which sub-atomic particle has a negative charge?",
+        "options": [
+          "Electron",
+          "Proton",
+          "Neutron",
+          "Nucleus"
+        ],
+        "correctAnswer": "Electron"
+      },
+      {
+        "id": "5-10",
+        "text": "The nucleus of an atom contains:",
+        "options": [
+          "Electrons only",
+          "Protons only",
+          "Protons and neutrons",
+          "Neutrons and electrons"
+        ],
+        "correctAnswer": "Protons and neutrons"
+      },
+      {
+        "id": "5-11",
+        "text": "In the simple atomic model, electrons move around the nucleus in:",
+        "options": [
+          "Shells",
+          "Roots",
+          "Layers of rock",
+          "Lava"
+        ],
+        "correctAnswer": "Shells"
+      },
+      {
+        "id": "5-12",
+        "text": "Most of the space inside an atom is:",
+        "options": [
+          "Solid matter",
+          "Water",
+          "Empty space",
+          "Oxygen gas"
+        ],
+        "correctAnswer": "Empty space"
+      },
+      {
+        "id": "5-13",
+        "text": "An atom is electrically neutral because it has equal numbers of:",
+        "options": [
+          "Protons and neutrons",
+          "Neutrons and electrons",
+          "Protons and electrons",
+          "Electrons and shells"
+        ],
+        "correctAnswer": "Protons and electrons"
+      },
+      {
+        "id": "5-14",
+        "text": "The relative mass of a proton is closest to:",
+        "options": [
+          "0",
+          "1",
+          "1/2",
+          "1/1840"
+        ],
+        "correctAnswer": "1"
+      },
+      {
+        "id": "5-15",
+        "text": "The relative mass of an electron is approximately:",
+        "options": [
+          "1",
+          "2",
+          "1/1840",
+          "1840"
+        ],
+        "correctAnswer": "1/1840"
+      },
+      {
+        "id": "5-16",
+        "text": "The nucleus has most of the mass of the atom because:",
+        "options": [
+          "Electrons are very heavy",
+          "Protons and neutrons are much heavier than electrons",
+          "The nucleus contains air",
+          "Neutrons have negative charge"
+        ],
+        "correctAnswer": "Protons and neutrons are much heavier than electrons"
+      },
+      {
+        "id": "5-17",
+        "text": "The attraction between the nucleus and electrons is due to:",
+        "options": [
+          "Gravity",
+          "Electrostatic attraction",
+          "Friction",
+          "Magnetism only"
+        ],
+        "correctAnswer": "Electrostatic attraction"
+      },
+      {
+        "id": "5-18",
+        "text": "Rutherford’s gold foil experiment showed that most alpha particles passed through because the atom is mostly:",
+        "options": [
+          "Metal",
+          "Water",
+          "Empty space",
+          "Neutrons"
+        ],
+        "correctAnswer": "Empty space"
+      },
+      {
+        "id": "5-19",
+        "text": "Some alpha particles were deflected strongly in Rutherford’s experiment because the atom has:",
+        "options": [
+          "Large electrons",
+          "A small, dense, positively charged nucleus",
+          "No nucleus",
+          "Only neutrons"
+        ],
+        "correctAnswer": "A small, dense, positively charged nucleus"
+      },
+      {
+        "id": "5-20",
+        "text": "In the discharge tube experiment, J.J. Thomson discovered:",
+        "options": [
+          "Protons",
+          "Neutrons",
+          "Electrons",
+          "Atoms"
+        ],
+        "correctAnswer": "Electrons"
+      },
+      {
+        "id": "5-21",
+        "text": "Which statement about purity is correct?",
+        "options": [
+          "A pure substance always has 0% purity",
+          "Purity is the percentage of a substance in a sample",
+          "Purity can only be measured for liquids",
+          "A mixture is always 100% pure"
+        ],
+        "correctAnswer": "Purity is the percentage of a substance in a sample"
+      },
+      {
+        "id": "5-22",
+        "text": "A pure element contains:",
+        "options": [
+          "One type of atom only",
+          "Two types of atoms bonded together",
+          "Two types of substances mixed",
+          "Only molecules, not atoms"
+        ],
+        "correctAnswer": "One type of atom only"
+      },
+      {
+        "id": "5-23",
+        "text": "Pure gold is:",
+        "options": [
+          "12-carat",
+          "18-carat",
+          "20-carat",
+          "24-carat"
+        ],
+        "correctAnswer": "24-carat"
+      },
+      {
+        "id": "5-24",
+        "text": "The purity of 18-carat gold is:",
+        "options": [
+          "18%",
+          "24%",
+          "75%",
+          "83.3%"
+        ],
+        "correctAnswer": "75%"
+      },
+      {
+        "id": "5-25",
+        "text": "The purity of 20-carat gold is closest to:",
+        "options": [
+          "20%",
+          "50%",
+          "75%",
+          "83.3%"
+        ],
+        "correctAnswer": "83.3%"
+      },
+      {
+        "id": "5-26",
+        "text": "The purity marking for silver commonly uses:",
+        "options": [
+          "Carats out of 24",
+          "A number out of 100",
+          "A number out of 1000",
+          "A percentage out of 10"
+        ],
+        "correctAnswer": "A number out of 1000"
+      },
+      {
+        "id": "5-27",
+        "text": "925 silver has a purity of:",
+        "options": [
+          "9.25%",
+          "92.5%",
+          "100%",
+          "75%"
+        ],
+        "correctAnswer": "92.5%"
+      },
+      {
+        "id": "5-28",
+        "text": "Pure silver is:",
+        "options": [
+          "100 silver",
+          "500 silver",
+          "925 silver",
+          "1000 silver"
+        ],
+        "correctAnswer": "1000 silver"
+      },
+      {
+        "id": "5-29",
+        "text": "Impure substances contain:",
+        "options": [
+          "Only one type of atom",
+          "Impurities (other substances/atoms)",
+          "Only electrons",
+          "Only oxygen"
+        ],
+        "correctAnswer": "Impurities (other substances/atoms)"
+      },
+      {
+        "id": "5-30",
+        "text": "A yellow diamond forms when some carbon atoms are replaced by:",
+        "options": [
+          "Boron",
+          "Nitrogen",
+          "Oxygen",
+          "Iron"
+        ],
+        "correctAnswer": "Nitrogen"
+      },
+      {
+        "id": "5-31",
+        "text": "A blue diamond forms when some carbon atoms are replaced by:",
+        "options": [
+          "Boron",
+          "Nitrogen",
+          "Chlorine",
+          "Argon"
+        ],
+        "correctAnswer": "Boron"
+      },
+      {
+        "id": "5-32",
+        "text": "Seawater is best described as:",
+        "options": [
+          "A pure compound",
+          "A pure element",
+          "An impure mixture",
+          "A single substance"
+        ],
+        "correctAnswer": "An impure mixture"
+      },
+      {
+        "id": "5-33",
+        "text": "Many salts can ____ in seawater.",
+        "options": [
+          "Melt",
+          "Dissolve",
+          "Condense",
+          "Freeze"
+        ],
+        "correctAnswer": "Dissolve"
+      },
+      {
+        "id": "5-34",
+        "text": "To obtain salts from seawater, we can remove the water by:",
+        "options": [
+          "Filtration only",
+          "Evaporation/boiling",
+          "Freezing only",
+          "Magnetism"
+        ],
+        "correctAnswer": "Evaporation/boiling"
+      },
+      {
+        "id": "5-35",
+        "text": "Every 1000 g of seawater contains 35 g of salts. The percentage of salts is:",
+        "options": [
+          "0.35%",
+          "3.5%",
+          "35%",
+          "65%"
+        ],
+        "correctAnswer": "3.5%"
+      },
+      {
+        "id": "5-36",
+        "text": "The most common salt found in seawater is:",
+        "options": [
+          "Calcium carbonate",
+          "Sodium chloride",
+          "Sodium hydroxide",
+          "Potassium nitrate"
+        ],
+        "correctAnswer": "Sodium chloride"
+      },
+      {
+        "id": "5-37",
+        "text": "Weather is the state of the:",
+        "options": [
+          "Ocean",
+          "Atmosphere",
+          "Core",
+          "Mantle"
+        ],
+        "correctAnswer": "Atmosphere"
+      },
+      {
+        "id": "5-38",
+        "text": "The study of weather is called:",
+        "options": [
+          "Climatology",
+          "Meteorology",
+          "Geology",
+          "Ecology"
+        ],
+        "correctAnswer": "Meteorology"
+      },
+      {
+        "id": "5-39",
+        "text": "Scientists study patterns in weather to:",
+        "options": [
+          "Predict the weather",
+          "Change the weather",
+          "Stop evaporation",
+          "Make oxygen"
+        ],
+        "correctAnswer": "Predict the weather"
+      },
+      {
+        "id": "5-40",
+        "text": "Climate describes how weather changes over a:",
+        "options": [
+          "Few minutes",
+          "Few hours",
+          "Short period (less than a year)",
+          "Long period (usually 30+ years)"
+        ],
+        "correctAnswer": "Long period (usually 30+ years)"
+      },
+      {
+        "id": "5-41",
+        "text": "The collection and analysis of large amounts of climate data is called:",
+        "options": [
+          "Statistics",
+          "Sculpture",
+          "Distillation",
+          "Respiration"
+        ],
+        "correctAnswer": "Statistics"
+      },
+      {
+        "id": "5-42",
+        "text": "The study of climate is called:",
+        "options": [
+          "Meteorology",
+          "Climatology",
+          "Biology",
+          "Astronomy"
+        ],
+        "correctAnswer": "Climatology"
+      },
+      {
+        "id": "5-43",
+        "text": "Collecting weather information over a long period tells us what the ____ weather is like on average and how ____ it can be.",
+        "options": [
+          "daily; windy",
+          "normal; extreme",
+          "sunny; cloudy",
+          "tropical; polar"
+        ],
+        "correctAnswer": "normal; extreme"
+      },
+      {
+        "id": "5-44",
+        "text": "Which is an example of information commonly included in a weather forecast?",
+        "options": [
+          "Type of atoms in air",
+          "Wind speed and precipitation",
+          "Age of fossils",
+          "Type of rock in the crust"
+        ],
+        "correctAnswer": "Wind speed and precipitation"
+      },
+      {
+        "id": "5-45",
+        "text": "The period when Earth was “frozen” is called a:",
+        "options": [
+          "Interglacial period",
+          "Glacial period",
+          "Meteorological period",
+          "Tropical period"
+        ],
+        "correctAnswer": "Glacial period"
+      },
+      {
+        "id": "5-46",
+        "text": "Today, Earth is in an:",
+        "options": [
+          "Interglacial period",
+          "Permanent glacial period",
+          "No-ice period",
+          "Volcanic period"
+        ],
+        "correctAnswer": "Interglacial period"
+      },
+      {
+        "id": "5-47",
+        "text": "A glacier is best described as:",
+        "options": [
+          "A river of ice formed by compressing snow that slowly flows over land",
+          "A fast-moving river of lava",
+          "A layer of gas around Earth",
+          "A type of fossil fuel"
+        ],
+        "correctAnswer": "A river of ice formed by compressing snow that slowly flows over land"
+      },
+      {
+        "id": "5-48",
+        "text": "When studying peat bog core samples, which statement is correct?",
+        "options": [
+          "The deeper the layer, the younger it is",
+          "The deeper the layer, the older it is",
+          "The deeper the layer, the warmer it is",
+          "Deeper layers contain no pollen"
+        ],
+        "correctAnswer": "The deeper the layer, the older it is"
+      },
+      {
+        "id": "5-49",
+        "text": "Pollen is a powdery substance produced by plants for:",
+        "options": [
+          "Respiration",
+          "Reproduction",
+          "Combustion",
+          "Erosion"
+        ],
+        "correctAnswer": "Reproduction"
+      },
+      {
+        "id": "5-50",
+        "text": "Which option best describes the atmosphere?",
+        "options": [
+          "A layer of solid rock wrapped around Earth",
+          "A layer of gas mixture that wraps around Earth",
+          "A layer of liquid water that wraps around Earth",
+          "A layer of ice only found at the equator"
+        ],
+        "correctAnswer": "A layer of gas mixture that wraps around Earth"
+      }
     ]
   },
   {
-    id: 6,
-    title: "Light",
-    titleTraditional: "光",
-    titleSimplified: "光",
-    description: "Behavior of light, color theory, and celestial bodies.",
-    descriptionTraditional: "光的行為、色彩理論和天體。",
-    descriptionSimplified: "光的行为、色彩理论和天体。",
-    color: "bg-yellow-400",
-    concepts: [
+    "id": 6,
+    "title": "Light",
+    "titleTraditional": "光",
+    "titleSimplified": "光",
+    "description": "Behavior of light, color theory, and celestial bodies.",
+    "descriptionTraditional": "光的行為、色彩理論和天體。",
+    "descriptionSimplified": "光的行为、色彩理论和天体。",
+    "color": "bg-yellow-400",
+    "concepts": [
       "Light travels in straight lines called rays.",
       "Reflection follows the law: Angle of Incidence = Angle of Reflection.",
       "Refraction is the bending of light due to speed changes between media.",
@@ -1107,7 +6772,7 @@ export const units: Unit[] = [
       "The Solar System is in the Milky Way, a spiral galaxy.",
       "Asteroids, comets, and meteors are smaller celestial bodies in our Solar System."
     ],
-    conceptsTraditional: [
+    "conceptsTraditional": [
       "光以直線傳播，稱為光線。",
       "反射遵循定律：入射角 = 反射角。",
       "折射是光由於介質間的速度變化而產生的彎曲。",
@@ -1116,7 +6781,7 @@ export const units: Unit[] = [
       "太陽系位於銀河系，一個螺旋星系中。",
       "小行星、彗星和流星是我們太陽系中較小的天體。"
     ],
-    conceptsSimplified: [
+    "conceptsSimplified": [
       "光以直线传播，称为光线。",
       "反射遵循定律：入射角 = 反射角。",
       "折射是光由于介质间的速度变化而产生的弯曲。",
@@ -1125,167 +6790,1374 @@ export const units: Unit[] = [
       "太阳系位于银河系，一个螺旋星系中。",
       "小行星、彗星和流星是我们太阳系中较小的天体。"
     ],
-    keyTerms: {
-      "reflection": "#3b82f6", "反射": "#3b82f6",
-      "refraction": "#10b981", "折射": "#10b981",
-      "dispersion": "#f59e0b", "色散": "#f59e0b",
-      "spectrum": "#7c3aed", "光譜": "#7c3aed", "光谱": "#7c3aed",
-      "angle of incidence": "#ef4444", "入射角": "#ef4444",
-      "angle of reflection": "#ef4444", "反射角": "#ef4444",
-      "primary colors": "#3b82f6", "三原色": "#3b82f6",
-      "solar system": "#f97316", "太陽系": "#f97316", "太阳系": "#f97316",
-      "milky way": "#6366f1", "銀河系": "#6366f1", "银河系": "#6366f1"
+    "keyTerms": {
+      "reflection": "#3b82f6",
+      "反射": "#3b82f6",
+      "refraction": "#10b981",
+      "折射": "#10b981",
+      "dispersion": "#f59e0b",
+      "色散": "#f59e0b",
+      "spectrum": "#7c3aed",
+      "光譜": "#7c3aed",
+      "光谱": "#7c3aed",
+      "angle of incidence": "#ef4444",
+      "入射角": "#ef4444",
+      "angle of reflection": "#ef4444",
+      "反射角": "#ef4444",
+      "primary colors": "#3b82f6",
+      "三原色": "#3b82f6",
+      "solar system": "#f97316",
+      "太陽系": "#f97316",
+      "太阳系": "#f97316",
+      "milky way": "#6366f1",
+      "銀河系": "#6366f1",
+      "银河系": "#6366f1"
     },
-    vocab: [
-      { term: "Reflection", traditional: "反射", simplified: "反射", definition: "The bouncing back of light when it hits a surface." },
-      { term: "Pupil", traditional: "瞳孔", simplified: "瞳孔", definition: "The opening in the center of the iris that allows light to enter the eye." },
-      { term: "Retina", traditional: "視網膜", simplified: "视网膜", definition: "The light-sensitive layer at the back of the eye." },
-      { term: "Ray", traditional: "光束", simplified: "光束", definition: "A straight line representing the path of light." },
-      { term: "Normal", traditional: "法線", simplified: "法线", definition: "A line perpendicular to a reflective or refractive surface." },
-      { term: "Angle of incidence", traditional: "入射角", simplified: "入射角", definition: "The angle between the incident ray and the normal." },
-      { term: "Angle of reflection", traditional: "反射角", simplified: "反射角", definition: "The angle between the reflected ray and the normal." },
-      { term: "Incident ray", traditional: "入射線", simplified: "入射线", definition: "The light ray that hits a surface." },
-      { term: "Reflected ray", traditional: "反射線", simplified: "反射线", definition: "The light ray that bounces off a surface." },
-      { term: "Refraction", traditional: "折射", simplified: "折射", definition: "The bending of light as it passes from one medium to another." },
-      { term: "Distortion / Distorted", traditional: "扭曲", simplified: "扭曲", definition: "The change in the original shape or appearance of something." },
-      { term: "Phenomenon", traditional: "現象", simplified: "现象", definition: "A fact or situation that is observed to exist or happen." },
-      { term: "Medium", traditional: "介質", simplified: "介质", definition: "A material that light travels through." },
-      { term: "Vacuum", traditional: "眞空", simplified: "真空", definition: "A space entirely devoid of matter." },
-      { term: "Circumference", traditional: "圓周", simplified: "圆周", definition: "The distance around a circle." },
-      { term: "Spectrum", traditional: "光譜", simplified: "光谱", definition: "The range of colors produced when light is split." },
-      { term: "Continuous spectrum", traditional: "連續光譜", simplified: "连续光谱", definition: "A spectrum where colors merge into one another without gaps." },
-      { term: "Dispersion", traditional: "色散", simplified: "色散", definition: "The splitting of white light into its constituent colors." },
-      { term: "Diffraction", traditional: "衍射", simplified: "衍射", definition: "The bending of light around the corners of an obstacle." },
-      { term: "Ultraviolet (UV)", traditional: "紫外線", simplified: "紫外线", definition: "Invisible light with a wavelength shorter than violet light." },
-      { term: "Infra-red", traditional: "紅外線", simplified: "红外线", definition: "Invisible light with a wavelength longer than red light." },
-      { term: "Prism", traditional: "三稜鏡", simplified: "三棱镜", definition: "A transparent object that splits light into a spectrum." },
-      { term: "Paints", traditional: "顏料", simplified: "颜料", definition: "Colored substances used for coloring surfaces." },
-      { term: "Lights", traditional: "光", simplified: "光", definition: "Electromagnetic radiation that can be detected by the human eye." },
-      { term: "Primary colors", traditional: "三原色", simplified: "三原色", definition: "The three basic colors (Red, Green, Blue) used to create other colors of light." },
-      { term: "Luminous", traditional: "發光", simplified: "发光", definition: "An object that produces its own light." },
-      { term: "Non-luminous", traditional: "不發光", simplified: "不发光", definition: "An object that does not produce its own light but reflects it." },
-      { term: "Filter", traditional: "濾光片", simplified: "滤光片", definition: "A transparent material that allows only certain colors of light to pass through." },
-      { term: "Illusion", traditional: "錯覺", simplified: "错觉", definition: "A deceptive appearance or impression." },
-      { term: "Solar System", traditional: "太陽系", simplified: "太阳系", definition: "The Sun and all the objects that orbit around it." },
-      { term: "Milky Way", traditional: "銀河系", simplified: "银河系", definition: "The galaxy that contains our Solar System." },
-      { term: "Planet", traditional: "行星", simplified: "行星", definition: "A large celestial body that orbits a star." },
-      { term: "Star", traditional: "恆星", simplified: "恒星", definition: "A massive ball of gas that produces energy through nuclear fusion." },
-      { term: "Nuclear fusion", traditional: "核聚變", simplified: "核聚变", definition: "The process of combining atomic nuclei to release energy." },
-      { term: "Gravity", traditional: "重力", simplified: "重力", definition: "The force that attracts objects toward each other." },
-      { term: "Spiral", traditional: "螺旋形", simplified: "螺旋形", definition: "A shape that winds around a central point." },
-      { term: "Elliptical", traditional: "橢圓形", simplified: "椭圆形", definition: "A shape like an oval or a flattened circle." },
-      { term: "Black hole", traditional: "黑洞", simplified: "黑洞", definition: "A region of space with gravity so strong that nothing can escape." },
-      { term: "Universe", traditional: "宇宙", simplified: "宇宙", definition: "All of space and everything in it." }
+    "vocab": [
+      {
+        "term": "Reflection",
+        "traditional": "反射",
+        "simplified": "反射",
+        "definition": "The bouncing back of light when it hits a surface."
+      },
+      {
+        "term": "Pupil",
+        "traditional": "瞳孔",
+        "simplified": "瞳孔",
+        "definition": "The opening in the center of the iris that allows light to enter the eye."
+      },
+      {
+        "term": "Retina",
+        "traditional": "視網膜",
+        "simplified": "视网膜",
+        "definition": "The light-sensitive layer at the back of the eye."
+      },
+      {
+        "term": "Ray",
+        "traditional": "光束",
+        "simplified": "光束",
+        "definition": "A straight line representing the path of light."
+      },
+      {
+        "term": "Normal",
+        "traditional": "法線",
+        "simplified": "法线",
+        "definition": "A line perpendicular to a reflective or refractive surface."
+      },
+      {
+        "term": "Angle of incidence",
+        "traditional": "入射角",
+        "simplified": "入射角",
+        "definition": "The angle between the incident ray and the normal."
+      },
+      {
+        "term": "Angle of reflection",
+        "traditional": "反射角",
+        "simplified": "反射角",
+        "definition": "The angle between the reflected ray and the normal."
+      },
+      {
+        "term": "Incident ray",
+        "traditional": "入射線",
+        "simplified": "入射线",
+        "definition": "The light ray that hits a surface."
+      },
+      {
+        "term": "Reflected ray",
+        "traditional": "反射線",
+        "simplified": "反射线",
+        "definition": "The light ray that bounces off a surface."
+      },
+      {
+        "term": "Refraction",
+        "traditional": "折射",
+        "simplified": "折射",
+        "definition": "The bending of light as it passes from one medium to another."
+      },
+      {
+        "term": "Distortion / Distorted",
+        "traditional": "扭曲",
+        "simplified": "扭曲",
+        "definition": "The change in the original shape or appearance of something."
+      },
+      {
+        "term": "Phenomenon",
+        "traditional": "現象",
+        "simplified": "现象",
+        "definition": "A fact or situation that is observed to exist or happen."
+      },
+      {
+        "term": "Medium",
+        "traditional": "介質",
+        "simplified": "介质",
+        "definition": "A material that light travels through."
+      },
+      {
+        "term": "Vacuum",
+        "traditional": "眞空",
+        "simplified": "真空",
+        "definition": "A space entirely devoid of matter."
+      },
+      {
+        "term": "Circumference",
+        "traditional": "圓周",
+        "simplified": "圆周",
+        "definition": "The distance around a circle."
+      },
+      {
+        "term": "Spectrum",
+        "traditional": "光譜",
+        "simplified": "光谱",
+        "definition": "The range of colors produced when light is split."
+      },
+      {
+        "term": "Continuous spectrum",
+        "traditional": "連續光譜",
+        "simplified": "连续光谱",
+        "definition": "A spectrum where colors merge into one another without gaps."
+      },
+      {
+        "term": "Dispersion",
+        "traditional": "色散",
+        "simplified": "色散",
+        "definition": "The splitting of white light into its constituent colors."
+      },
+      {
+        "term": "Diffraction",
+        "traditional": "衍射",
+        "simplified": "衍射",
+        "definition": "The bending of light around the corners of an obstacle."
+      },
+      {
+        "term": "Ultraviolet (UV)",
+        "traditional": "紫外線",
+        "simplified": "紫外线",
+        "definition": "Invisible light with a wavelength shorter than violet light."
+      },
+      {
+        "term": "Infra-red",
+        "traditional": "紅外線",
+        "simplified": "红外线",
+        "definition": "Invisible light with a wavelength longer than red light."
+      },
+      {
+        "term": "Prism",
+        "traditional": "三稜鏡",
+        "simplified": "三棱镜",
+        "definition": "A transparent object that splits light into a spectrum."
+      },
+      {
+        "term": "Paints",
+        "traditional": "顏料",
+        "simplified": "颜料",
+        "definition": "Colored substances used for coloring surfaces."
+      },
+      {
+        "term": "Lights",
+        "traditional": "光",
+        "simplified": "光",
+        "definition": "Electromagnetic radiation that can be detected by the human eye."
+      },
+      {
+        "term": "Primary colors",
+        "traditional": "三原色",
+        "simplified": "三原色",
+        "definition": "The three basic colors (Red, Green, Blue) used to create other colors of light."
+      },
+      {
+        "term": "Luminous",
+        "traditional": "發光",
+        "simplified": "发光",
+        "definition": "An object that produces its own light."
+      },
+      {
+        "term": "Non-luminous",
+        "traditional": "不發光",
+        "simplified": "不发光",
+        "definition": "An object that does not produce its own light but reflects it."
+      },
+      {
+        "term": "Filter",
+        "traditional": "濾光片",
+        "simplified": "滤光片",
+        "definition": "A transparent material that allows only certain colors of light to pass through."
+      },
+      {
+        "term": "Illusion",
+        "traditional": "錯覺",
+        "simplified": "错觉",
+        "definition": "A deceptive appearance or impression."
+      },
+      {
+        "term": "Solar System",
+        "traditional": "太陽系",
+        "simplified": "太阳系",
+        "definition": "The Sun and all the objects that orbit around it."
+      },
+      {
+        "term": "Milky Way",
+        "traditional": "銀河系",
+        "simplified": "银河系",
+        "definition": "The galaxy that contains our Solar System."
+      },
+      {
+        "term": "Planet",
+        "traditional": "行星",
+        "simplified": "行星",
+        "definition": "A large celestial body that orbits a star."
+      },
+      {
+        "term": "Star",
+        "traditional": "恆星",
+        "simplified": "恒星",
+        "definition": "A massive ball of gas that produces energy through nuclear fusion."
+      },
+      {
+        "term": "Nuclear fusion",
+        "traditional": "核聚變",
+        "simplified": "核聚变",
+        "definition": "The process of combining atomic nuclei to release energy."
+      },
+      {
+        "term": "Gravity",
+        "traditional": "重力",
+        "simplified": "重力",
+        "definition": "The force that attracts objects toward each other."
+      },
+      {
+        "term": "Spiral",
+        "traditional": "螺旋形",
+        "simplified": "螺旋形",
+        "definition": "A shape that winds around a central point."
+      },
+      {
+        "term": "Elliptical",
+        "traditional": "橢圓形",
+        "simplified": "椭圆形",
+        "definition": "A shape like an oval or a flattened circle."
+      },
+      {
+        "term": "Black hole",
+        "traditional": "黑洞",
+        "simplified": "黑洞",
+        "definition": "A region of space with gravity so strong that nothing can escape."
+      },
+      {
+        "term": "Universe",
+        "traditional": "宇宙",
+        "simplified": "宇宙",
+        "definition": "All of space and everything in it."
+      }
     ],
-    questions: [
-      { id: "6-1", text: "When light bounces off a reflective surface like a mirror, what occurs?", options: ["Refraction", "Reflection", "Dispersion", "Absorption"], correctAnswer: "Reflection" },
-      { id: "6-2", text: "Which of the following is an example of a reflective surface?", options: ["Paper", "Surface of water", "Sponge", "Rubber"], correctAnswer: "Surface of water" },
-      { id: "6-3", text: "Light usually travels in straight lines called:", options: ["Rays", "Circles", "Currents", "Spectrums"], correctAnswer: "Rays" },
-      { id: "6-4", text: "Light-emitting objects (like the Sun or a candle) emit light in:", options: ["One direction only", "Two opposite directions only", "All directions", "Only upwards"], correctAnswer: "All directions" },
-      { id: "6-5", text: "We can only see light that enters our:", options: ["Ears", "Eyes", "Nose", "Skin"], correctAnswer: "Eyes" },
-      { id: "6-6", text: "A line perpendicular to a reflective surface is called the:", options: ["Normal", "Tangent", "Boundary", "Horizon"], correctAnswer: "Normal" },
-      { id: "6-7", text: "The light ray that hits a reflective surface is the:", options: ["Reflected ray", "Incident ray", "Refracted ray", "Dispersed ray"], correctAnswer: "Incident ray" },
-      { id: "6-8", text: "The light ray that bounces off a reflective surface is the:", options: ["Reflected ray", "Incident ray", "Normal ray", "Spectrum ray"], correctAnswer: "Reflected ray" },
-      { id: "6-9", text: "The angle between the normal and the incident ray is the:", options: ["Angle of reflection", "Angle of incidence", "Angle of refraction", "Critical angle"], correctAnswer: "Angle of incidence" },
-      { id: "6-10", text: "The angle between the normal and the reflected ray is the:", options: ["Angle of reflection", "Angle of incidence", "Angle of refraction", "Prism angle"], correctAnswer: "Angle of reflection" },
-      { id: "6-11", text: "The law of reflection states that:", options: ["Angle of incidence is always bigger than angle of reflection", "Angle of incidence = angle of reflection", "Light always bends towards the normal", "Light always slows down in air"], correctAnswer: "Angle of incidence = angle of reflection" },
-      { id: "6-12", text: "If the angle of incidence is 25°, what is the angle of reflection?", options: ["25°", "65°", "75°", "50°"], correctAnswer: "25°" },
-      { id: "6-13", text: "If the incident ray hits the mirror along the normal, the angle of incidence is:", options: ["0°", "45°", "90°", "180°"], correctAnswer: "0°" },
-      { id: "6-14", text: "In a ray diagram, light rays are drawn as:", options: ["Dots", "Arrows", "Circles", "Wavy lines"], correctAnswer: "Arrows" },
-      { id: "6-15", text: "In a ray diagram, light rays must be drawn in:", options: ["Curved lines", "Straight lines", "Spiral lines", "Broken dotted lines only"], correctAnswer: "Straight lines" },
-      { id: "6-16", text: "A ray diagram shows:", options: ["The mass of a ray", "The direction light travels and what happens at surfaces", "The colour of a mirror", "The temperature of light"], correctAnswer: "The direction light travels and what happens at surfaces" },
-      { id: "6-17", text: "When we look at a pencil half inserted into water and it appears bent, the phenomenon is:", options: ["Reflection", "Refraction", "Dispersion", "Diffraction"], correctAnswer: "Refraction" },
-      { id: "6-18", text: "Refraction happens when light passes through different:", options: ["Sounds", "Temperatures", "Materials (media)", "Shadows"], correctAnswer: "Materials (media)" },
-      { id: "6-19", text: "A material that light travels through (air, water, glass) is called a:", options: ["Prism", "Medium", "Mirror", "Spectrum"], correctAnswer: "Medium" },
-      { id: "6-20", text: "In a vacuum, light travels at about:", options: ["300,000 km/s", "30,000 km/s", "3,000 km/s", "3,000,000 km/s"], correctAnswer: "300,000 km/s" },
-      { id: "6-21", text: "Light travels in any medium (not vacuum) at a speed that is usually:", options: ["Faster than in vacuum", "Slower than in vacuum", "Exactly the same as in vacuum", "Zero"], correctAnswer: "Slower than in vacuum" },
-      { id: "6-22", text: "According to the notes, the approximate speed of light in air is:", options: ["200,000 km/s", "225,000 km/s", "300,000 km/s", "400,075 km/s"], correctAnswer: "300,000 km/s" },
-      { id: "6-23", text: "According to the notes, the approximate speed of light in water is:", options: ["200,000 km/s", "225,000 km/s", "300,000 km/s", "400,075 km/s"], correctAnswer: "225,000 km/s" },
-      { id: "6-24", text: "According to the notes, the approximate speed of light in glass is:", options: ["200,000 km/s", "225,000 km/s", "300,000 km/s", "40,075 km/s"], correctAnswer: "200,000 km/s" },
-      { id: "6-25", text: "Why does light bend when it moves from one medium to another?", options: ["It changes speed", "It changes temperature", "It becomes heavier", "It disappears"], correctAnswer: "It changes speed" },
-      { id: "6-26", text: "When light travels from a fast medium (air) to a slow medium (water), it bends:", options: ["Towards the normal", "Away from the normal", "Straight through without bending", "Only if it is green"], correctAnswer: "Towards the normal" },
-      { id: "6-27", text: "When light travels from a slow medium (water) to a fast medium (air), it bends:", options: ["Towards the normal", "Away from the normal", "Into a circle", "Only if it is red"], correctAnswer: "Away from the normal" },
-      { id: "6-28", text: "The “car on asphalt then grass” analogy helps explain refraction because:", options: ["Cars emit light", "Turning happens when one side slows down first across a boundary", "Grass reflects more light", "Asphalt is transparent"], correctAnswer: "Turning happens when one side slows down first across a boundary" },
-      { id: "6-29", text: "In the car analogy (asphalt to grass), the car turns mainly because:", options: ["Both sides speed up at the same time", "One side slows down first while the other keeps moving faster", "The car stops completely", "The car becomes lighter"], correctAnswer: "One side slows down first while the other keeps moving faster" },
-      { id: "6-30", text: "Refraction can make images look distorted because light rays:", options: ["Always travel faster in water", "Bend when they change speed", "Stop traveling in straight lines in air", "Become different colours automatically"], correctAnswer: "Bend when they change speed" },
-      { id: "6-31", text: "Water droplets on a windshield can make it hard to see clearly because they can cause:", options: ["Reflection only", "Distortion due to refraction", "Sound waves", "Magnetism"], correctAnswer: "Distortion due to refraction" },
-      { id: "6-32", text: "A device installed on a car to sweep away water droplets on a windshield is called:", options: ["Windscreen wipers", "Wind turbines", "Spotlights", "Magnifiers"], correctAnswer: "Windscreen wipers" },
-      { id: "6-33", text: "A lens is commonly used in glasses, cameras, and telescopes mainly to:", options: ["Produce sound", "Bend light", "Absorb light", "Stop reflection"], correctAnswer: "Bend light" },
-      { id: "6-34", text: "A short-sighted person can see which objects clearly (according to the notes)?", options: ["Near objects", "Distant objects", "Only blue objects", "Only objects in water"], correctAnswer: "Near objects" },
-      { id: "6-35", text: "A long-sighted person can see which objects clearly (according to the notes)?", options: ["Near objects", "Distant objects", "Only red objects", "Only objects in mirrors"], correctAnswer: "Distant objects" },
-      { id: "6-36", text: "Sir Isaac Newton discovered in 1666 that white light can be split into many different:", options: ["Temperatures", "Colours", "Shadows", "Sounds"], correctAnswer: "Colours" },
-      { id: "6-37", text: "In Newton’s experiment, sunlight first passed through a:", options: ["Lens", "Hole (small opening)", "Mirror", "Water droplet"], correctAnswer: "Hole (small opening)" },
-      { id: "6-38", text: "In Newton’s experiment, the beam of light was then passed through a:", options: ["Prism", "Spoon", "Candle", "Magnet"], correctAnswer: "Prism" },
-      { id: "6-39", text: "Newton shone the split light onto a _ to study it.", options: ["Thermometer", "Screen (backdrop)", "Battery", "Microscope"], correctAnswer: "Screen (backdrop)" },
-      { id: "6-40", text: "The visible light spectrum is the _ of colours seen when light is split.", options: ["Range", "Number", "Mass", "Volume"], correctAnswer: "Range" },
-      { id: "6-41", text: "The visible spectrum is said to be continuous because:", options: ["It only has 3 colours", "The colours merge into one another seamlessly", "The colours are separated by large gaps", "It only appears at night"], correctAnswer: "The colours merge into one another seamlessly" },
-      { id: "6-42", text: "Which set lists the main colours in the visible spectrum in order (as in the notes)?", options: ["R O Y G B I V", "R Y O G B I V", "R O Y B G I V", "V I B G Y O R"], correctAnswer: "R O Y G B I V" },
-      { id: "6-43", text: "“White” light is not a single colour; it is the result of:", options: ["Mixing all colours in the visible spectrum", "Removing all colours from the spectrum", "Only red + green mixing", "Reflection from a mirror only"], correctAnswer: "Mixing all colours in the visible spectrum" },
-      { id: "6-44", text: "Dispersion is the _ of light into different colours.", options: ["Freezing", "Splitting", "Absorbing", "Dimming"], correctAnswer: "Splitting" },
-      { id: "6-45", text: "Dispersion happens because of light:", options: ["Refraction", "Heating", "Evaporation", "Magnetism"], correctAnswer: "Refraction" },
-      { id: "6-46", text: "Sunlight can be split into many colours because different colours are refracted:", options: ["The same amount", "Differently", "Only at night", "Only in mirrors"], correctAnswer: "Differently" },
-      { id: "6-47", text: "Which colour is refracted more by a prism (red or purple), according to the notes?", options: ["Red", "Purple", "They refract the same amount", "Neither refracts"], correctAnswer: "Purple" },
-      { id: "6-48", text: "A rainbow forms because a(n) _ acts like a prism.", options: ["Mirror", "Raindrop", "Spoon", "Cloud"], correctAnswer: "Raindrop" },
-      { id: "6-49", text: "In the rainbow diagram, sunlight is first _ at point A when it enters the raindrop.", options: ["Reflected", "Refracted", "Absorbed", "Blocked"], correctAnswer: "Refracted" },
-      { id: "6-50", text: "In the rainbow diagram, the light is _ at point B and then _ again at point C.", options: ["Refracted; reflected", "Reflected; refracted", "Absorbed; refracted", "Dispersed; absorbed"], correctAnswer: "Reflected; refracted" },
-      { id: "6-51", text: "Paints work in a subtractive manner, which means that the more paints you add:", options: ["The brighter the colour becomes", "The darker the colour becomes", "The more transparent it becomes", "The heavier it becomes"], correctAnswer: "The darker the colour becomes" },
-      { id: "6-52", text: "Lights work in an additive manner, meaning that the more lights you add:", options: ["The brighter the colour becomes", "The darker the colour becomes", "The more invisible it becomes", "The slower the light travels"], correctAnswer: "The brighter the colour becomes" },
-      { id: "6-53", text: "The three primary colours of light are:", options: ["Red, yellow, and blue", "Cyan, magenta, and yellow", "Red, green, and blue", "Orange, green, and violet"], correctAnswer: "Red, green, and blue" },
-      { id: "6-54", text: "When red and blue lights are mixed together, they produce:", options: ["Yellow", "Cyan", "White", "Magenta"], correctAnswer: "Magenta" },
-      { id: "6-55", text: "When green and blue lights are mixed together, they produce:", options: ["Yellow", "Cyan", "Magenta", "Black"], correctAnswer: "Cyan" },
-      { id: "6-56", text: "When red and green lights are mixed together, they produce:", options: ["Yellow", "Cyan", "Magenta", "White"], correctAnswer: "Yellow" },
-      { id: "6-57", text: "When red, green, and blue lights are mixed together in equal proportions, they produce:", options: ["Black", "White", "Brown", "Grey"], correctAnswer: "White" },
-      { id: "6-58", text: "A computer or phone screen is made up of many tiny dots called:", options: ["Pixels", "Prisms", "Filters", "Photons"], correctAnswer: "Pixels" },
-      { id: "6-59", text: "Each pixel on a screen contains which three colours?", options: ["Red, Yellow, Blue", "Red, Green, Blue", "Cyan, Magenta, Yellow", "Black, White, Grey"], correctAnswer: "Red, Green, Blue" },
-      { id: "6-60", text: "We can subtract (remove) colours from white light by applying a:", options: ["Mirror", "Transparent colour filter", "Magnifying glass", "Prism"], correctAnswer: "Transparent colour filter" },
-      { id: "6-61", text: "If you place a red filter in front of a white torch light, what light passes through?", options: ["All colours", "Only blue light", "Only red light", "No light at all"], correctAnswer: "Only red light" },
-      { id: "6-62", text: "Objects that can produce their own light are called:", options: ["Non-luminous objects", "Luminous objects", "Transparent objects", "Opaque objects"], correctAnswer: "Luminous objects" },
-      { id: "6-63", text: "Which of the following is an example of a luminous object?", options: ["The Moon", "A tree", "A firefly", "A piece of cloth"], correctAnswer: "A firefly" },
-      { id: "6-64", text: "We can see non-luminous objects like the Moon because they:", options: ["Produce their own light", "Reflect light into our eyes", "Absorb all light", "Refract light heavily"], correctAnswer: "Reflect light into our eyes" },
-      { id: "6-65", text: "A red ball appears red under white sunlight because it:", options: ["Absorbs red light and reflects all other lights", "Reflects red light and absorbs all other lights", "Emits its own red light", "Reflects all colours of light"], correctAnswer: "Reflects red light and absorbs all other lights" },
-      { id: "6-66", text: "A white ball appears white under sunlight because it:", options: ["Absorbs all colours of light", "Reflects light of all colours", "Absorb only white light", "Produces its own white light"], correctAnswer: "Reflects light of all colours" },
-      { id: "6-67", text: "A black ball appears black because it:", options: ["Reflects all colours of light", "Absorbs all colours of light so no light is reflected", "Emits black light", "Only reflects black light"], correctAnswer: "Absorbs all colours of light so no light is reflected" },
-      { id: "6-68", text: "If you shine only a blue light on a red box, what colour does the box appear?", options: ["Red", "Blue", "Black", "Magenta"], correctAnswer: "Black" },
-      { id: "6-69", text: "The Earth is part of the Solar System, which is located in the:", options: ["Canis Major Dwarf Galaxy", "Andromeda Galaxy", "Milky Way Galaxy", "Triangulum Galaxy"], correctAnswer: "Milky Way Galaxy" },
-      { id: "6-70", text: "A planet is defined as a celestial body that orbits around a:", options: ["Moon", "Comet", "Star", "Black hole"], correctAnswer: "Star" },
-      { id: "6-71", text: "The Sun produces energy in its core through a reaction called:", options: ["Nuclear fission", "Nuclear fusion", "Chemical combustion", "Photosynthesis"], correctAnswer: "Nuclear fusion" },
-      { id: "6-72", text: "Our Solar System consists of the Sun and how many planets?", options: ["7", "8", "9", "10"], correctAnswer: "8" },
-      { id: "6-73", text: "A collection of stars, solar systems, gases, and dust held together by gravity is called a:", options: ["Universe", "Galaxy", "Constellation", "Asteroid belt"], correctAnswer: "Galaxy" },
-      { id: "6-74", text: "According to its shape, our Milky Way is classified as a:", options: ["Spiral galaxy", "Elliptical galaxy", "Lenticular galaxy", "Irregular galaxy"], correctAnswer: "Spiral galaxy" },
-      { id: "6-75", text: "Which type of galaxy has a round shape similar to a ball?", options: ["Spiral", "Lenticular", "Irregular", "Elliptical"], correctAnswer: "Elliptical" },
-      { id: "6-76", text: "Stellar dust particles are released into space when:", options: ["A new star is born", "Dying stars explode at the end of their lives", "Planets collide", "Black holes evaporate"], correctAnswer: "Dying stars explode at the end of their lives" },
-      { id: "6-77", text: "The concentration of stellar dust in space is very low. Sometimes you can only find one dust particle in every:", options: ["1 cubic metre", "100 cubic metres", "1,000,000 cubic metres", "1 billion cubic metres"], correctAnswer: "1,000,000 cubic metres" },
-      { id: "6-78", text: "The force holding a galaxy together is super strong because of its:", options: ["High temperature", "Large mass", "Fast rotation", "Magnetic field"], correctAnswer: "Large mass" },
-      { id: "6-79", text: "Many scientists believe that the centre of the Milky Way and many other galaxies contains a:", options: ["Supergiant planet", "Black hole", "Neutron star", "Massive comet"], correctAnswer: "Black hole" },
-      { id: "6-80", text: "Black holes are mysterious celestial objects that have such strong gravity they suck in nearby stars and planets, releasing powerful:", options: ["Radiation", "Ice particles", "Oxygen", "Sound waves"], correctAnswer: "Radiation" },
-      { id: "6-81", text: "When a star runs out of fuel, the outward force drops and it collapses under its own gravity, often leading to:", options: ["It becoming a planet", "An explosion releasing stellar dust", "It turning into a comet", "It freezing into ice"], correctAnswer: "An explosion releasing stellar dust" },
-      { id: "6-82", text: "Which of the following lists objects in ascending order of size (smallest to largest)?", options: ["Sun, Planet, Moon, Universe, Galaxy", "Moon, Planet, Sun, Galaxy, Universe", "Planet, Moon, Sun, Universe, Galaxy", "Galaxy, Universe, Sun, Planet, Moon"], correctAnswer: "Moon, Planet, Sun, Galaxy, Universe" },
-      { id: "6-83", text: "Asteroids are mostly rocky objects that orbit the Sun. Most of them are concentrated in the asteroid belt between:", options: ["Earth and Mars", "Mars and Jupiter", "Jupiter and Saturn", "Uranus and Neptune"], correctAnswer: "Mars and Jupiter" },
-      { id: "6-84", text: "What is the typical shape of most asteroids?", options: ["Perfectly spherical", "Potato-shaped", "Cube-shaped", "Ring-shaped"], correctAnswer: "Potato-shaped" },
-      { id: "6-85", text: "Ceres is considered a very large asteroid or a \"failed planet\" because it:", options: ["Is made entirely of ice", "Didn't get enough mass to become a proper planet", "Was destroyed by a black hole", "Does not orbit the Sun"], correctAnswer: "Didn't get enough mass to become a proper planet" },
-      { id: "6-86", text: "Unlike Ceres, the small asteroid Itokawa is not a single solid rock, but rather:", options: ["A solid ball of ice", "A cloud of gas", "Many pieces of rocks held together by weak gravity", "A chunk of pure metal"], correctAnswer: "Many pieces of rocks held together by weak gravity" },
-      { id: "6-87", text: "Itokawa contains rocks from other small planets and moons that have been broken down by:", options: ["Melting", "Collision/impact", "Freezing", "Solar wind"], correctAnswer: "Collision/impact" },
-      { id: "6-88", text: "Small asteroids have a very weak gravity because of their:", options: ["Small mass/sizes", "Fast speed", "High temperature", "Ice content"], correctAnswer: "Small mass/sizes" },
-      { id: "6-89", text: "Scientists believe the extinction of the dinosaurs was caused by an asteroid impact known as the:", options: ["Ceres impactor", "Itokawa impactor", "Chicxulub impactor", "Tunguska event"], correctAnswer: "Chicxulub impactor" },
-      { id: "6-90", text: "The massive asteroid impact that wiped out the dinosaurs sent a lot of dust into the atmosphere, which blocked the Sun and caused the temperature to:", options: ["Rise dramatically", "Fall significantly for about 15 years", "Fluctuate rapidly every day", "Stay exactly the same"], correctAnswer: "Fall significantly for about 15 years" },
-      { id: "6-91", text: "The impact of the Chicxulub asteroid also caused:", options: ["The Moon to form", "Mega tsunamis over 100m tall and massive forest fires", "The Earth to stop rotating", "Jupiter to lose its rings"], correctAnswer: "Mega tsunamis over 100m tall and massive forest fires" },
-      { id: "6-92", text: "Big asteroid impacts like the Chicxulub impact happen on average every:", options: ["100 years", "1,000 years", "130,000 years", "10 million years"], correctAnswer: "130,000 years" },
-      { id: "6-93", text: "A comet also orbits the Sun, but unlike most asteroids, it is largely composed of:", options: ["Liquid water and salt", "Metal and lava", "Ice and dust", "Pure iron"], correctAnswer: "Ice and dust" },
-      { id: "6-94", text: "When a comet moves close to the Sun, its ice starts to vaporize, which gives it a:", options: ["Perfectly round shape", "Fuzzy appearance and a tail", "Solid rocky crust", "Dark black color"], correctAnswer: "Fuzzy appearance and a tail" },
-      { id: "6-95", text: "A pebble-sized object formed from the collision of an asteroid or comet floating in space is called a:", options: ["Meteor", "Meteorite", "Meteoroid", "Mini-moon"], correctAnswer: "Meteoroid" },
-      { id: "6-96", text: "When a meteoroid enters the Earth's atmosphere, it burns up and creates a streak of light. At this stage, it is called a:", options: ["Meteorite", "Meteor", "Comet", "Black hole"], correctAnswer: "Meteor" },
-      { id: "6-97", text: "A \"shooting star\" is the common name for a:", options: ["Comet", "Meteor shower", "Meteor", "Supernova"], correctAnswer: "Meteor" },
-      { id: "6-98", text: "If a meteoroid survives the intense heat of burning up in the atmosphere and actually lands on Earth's surface, it is then called a:", options: ["Meteor", "Meteoroid", "Meteorite", "Asteroid"], correctAnswer: "Meteorite" },
-      { id: "6-99", text: "When many meteors enter the Earth's atmosphere at the same time, it produces a spectacular display known as a:", options: ["Solar flare", "Meteor shower", "Comet tail", "Supernova"], correctAnswer: "Meteor shower" },
-      { id: "6-100", text: "Small asteroids impact the Earth way more frequently than large ones, but most of the time they:", options: ["Destroy entire cities", "Never quite reach the surface of the Earth", "Bounce back into space", "Turn into comets"], correctAnswer: "Never quite reach the surface of the Earth" }
+    "questions": [
+      {
+        "id": "6-1",
+        "text": "When light bounces off a reflective surface like a mirror, what occurs?",
+        "options": [
+          "Refraction",
+          "Reflection",
+          "Dispersion",
+          "Absorption"
+        ],
+        "correctAnswer": "Reflection"
+      },
+      {
+        "id": "6-2",
+        "text": "Which of the following is an example of a reflective surface?",
+        "options": [
+          "Paper",
+          "Surface of water",
+          "Sponge",
+          "Rubber"
+        ],
+        "correctAnswer": "Surface of water"
+      },
+      {
+        "id": "6-3",
+        "text": "Light usually travels in straight lines called:",
+        "options": [
+          "Rays",
+          "Circles",
+          "Currents",
+          "Spectrums"
+        ],
+        "correctAnswer": "Rays"
+      },
+      {
+        "id": "6-4",
+        "text": "Light-emitting objects (like the Sun or a candle) emit light in:",
+        "options": [
+          "One direction only",
+          "Two opposite directions only",
+          "All directions",
+          "Only upwards"
+        ],
+        "correctAnswer": "All directions"
+      },
+      {
+        "id": "6-5",
+        "text": "We can only see light that enters our:",
+        "options": [
+          "Ears",
+          "Eyes",
+          "Nose",
+          "Skin"
+        ],
+        "correctAnswer": "Eyes"
+      },
+      {
+        "id": "6-6",
+        "text": "A line perpendicular to a reflective surface is called the:",
+        "options": [
+          "Normal",
+          "Tangent",
+          "Boundary",
+          "Horizon"
+        ],
+        "correctAnswer": "Normal"
+      },
+      {
+        "id": "6-7",
+        "text": "The light ray that hits a reflective surface is the:",
+        "options": [
+          "Reflected ray",
+          "Incident ray",
+          "Refracted ray",
+          "Dispersed ray"
+        ],
+        "correctAnswer": "Incident ray"
+      },
+      {
+        "id": "6-8",
+        "text": "The light ray that bounces off a reflective surface is the:",
+        "options": [
+          "Reflected ray",
+          "Incident ray",
+          "Normal ray",
+          "Spectrum ray"
+        ],
+        "correctAnswer": "Reflected ray"
+      },
+      {
+        "id": "6-9",
+        "text": "The angle between the normal and the incident ray is the:",
+        "options": [
+          "Angle of reflection",
+          "Angle of incidence",
+          "Angle of refraction",
+          "Critical angle"
+        ],
+        "correctAnswer": "Angle of incidence"
+      },
+      {
+        "id": "6-10",
+        "text": "The angle between the normal and the reflected ray is the:",
+        "options": [
+          "Angle of reflection",
+          "Angle of incidence",
+          "Angle of refraction",
+          "Prism angle"
+        ],
+        "correctAnswer": "Angle of reflection"
+      },
+      {
+        "id": "6-11",
+        "text": "The law of reflection states that:",
+        "options": [
+          "Angle of incidence is always bigger than angle of reflection",
+          "Angle of incidence = angle of reflection",
+          "Light always bends towards the normal",
+          "Light always slows down in air"
+        ],
+        "correctAnswer": "Angle of incidence = angle of reflection"
+      },
+      {
+        "id": "6-12",
+        "text": "If the angle of incidence is 25°, what is the angle of reflection?",
+        "options": [
+          "25°",
+          "65°",
+          "75°",
+          "50°"
+        ],
+        "correctAnswer": "25°"
+      },
+      {
+        "id": "6-13",
+        "text": "If the incident ray hits the mirror along the normal, the angle of incidence is:",
+        "options": [
+          "0°",
+          "45°",
+          "90°",
+          "180°"
+        ],
+        "correctAnswer": "0°"
+      },
+      {
+        "id": "6-14",
+        "text": "In a ray diagram, light rays are drawn as:",
+        "options": [
+          "Dots",
+          "Arrows",
+          "Circles",
+          "Wavy lines"
+        ],
+        "correctAnswer": "Arrows"
+      },
+      {
+        "id": "6-15",
+        "text": "In a ray diagram, light rays must be drawn in:",
+        "options": [
+          "Curved lines",
+          "Straight lines",
+          "Spiral lines",
+          "Broken dotted lines only"
+        ],
+        "correctAnswer": "Straight lines"
+      },
+      {
+        "id": "6-16",
+        "text": "A ray diagram shows:",
+        "options": [
+          "The mass of a ray",
+          "The direction light travels and what happens at surfaces",
+          "The colour of a mirror",
+          "The temperature of light"
+        ],
+        "correctAnswer": "The direction light travels and what happens at surfaces"
+      },
+      {
+        "id": "6-17",
+        "text": "When we look at a pencil half inserted into water and it appears bent, the phenomenon is:",
+        "options": [
+          "Reflection",
+          "Refraction",
+          "Dispersion",
+          "Diffraction"
+        ],
+        "correctAnswer": "Refraction"
+      },
+      {
+        "id": "6-18",
+        "text": "Refraction happens when light passes through different:",
+        "options": [
+          "Sounds",
+          "Temperatures",
+          "Materials (media)",
+          "Shadows"
+        ],
+        "correctAnswer": "Materials (media)"
+      },
+      {
+        "id": "6-19",
+        "text": "A material that light travels through (air, water, glass) is called a:",
+        "options": [
+          "Prism",
+          "Medium",
+          "Mirror",
+          "Spectrum"
+        ],
+        "correctAnswer": "Medium"
+      },
+      {
+        "id": "6-20",
+        "text": "In a vacuum, light travels at about:",
+        "options": [
+          "300,000 km/s",
+          "30,000 km/s",
+          "3,000 km/s",
+          "3,000,000 km/s"
+        ],
+        "correctAnswer": "300,000 km/s"
+      },
+      {
+        "id": "6-21",
+        "text": "Light travels in any medium (not vacuum) at a speed that is usually:",
+        "options": [
+          "Faster than in vacuum",
+          "Slower than in vacuum",
+          "Exactly the same as in vacuum",
+          "Zero"
+        ],
+        "correctAnswer": "Slower than in vacuum"
+      },
+      {
+        "id": "6-22",
+        "text": "According to the notes, the approximate speed of light in air is:",
+        "options": [
+          "200,000 km/s",
+          "225,000 km/s",
+          "300,000 km/s",
+          "400,075 km/s"
+        ],
+        "correctAnswer": "300,000 km/s"
+      },
+      {
+        "id": "6-23",
+        "text": "According to the notes, the approximate speed of light in water is:",
+        "options": [
+          "200,000 km/s",
+          "225,000 km/s",
+          "300,000 km/s",
+          "400,075 km/s"
+        ],
+        "correctAnswer": "225,000 km/s"
+      },
+      {
+        "id": "6-24",
+        "text": "According to the notes, the approximate speed of light in glass is:",
+        "options": [
+          "200,000 km/s",
+          "225,000 km/s",
+          "300,000 km/s",
+          "40,075 km/s"
+        ],
+        "correctAnswer": "200,000 km/s"
+      },
+      {
+        "id": "6-25",
+        "text": "Why does light bend when it moves from one medium to another?",
+        "options": [
+          "It changes speed",
+          "It changes temperature",
+          "It becomes heavier",
+          "It disappears"
+        ],
+        "correctAnswer": "It changes speed"
+      },
+      {
+        "id": "6-26",
+        "text": "When light travels from a fast medium (air) to a slow medium (water), it bends:",
+        "options": [
+          "Towards the normal",
+          "Away from the normal",
+          "Straight through without bending",
+          "Only if it is green"
+        ],
+        "correctAnswer": "Towards the normal"
+      },
+      {
+        "id": "6-27",
+        "text": "When light travels from a slow medium (water) to a fast medium (air), it bends:",
+        "options": [
+          "Towards the normal",
+          "Away from the normal",
+          "Into a circle",
+          "Only if it is red"
+        ],
+        "correctAnswer": "Away from the normal"
+      },
+      {
+        "id": "6-28",
+        "text": "The “car on asphalt then grass” analogy helps explain refraction because:",
+        "options": [
+          "Cars emit light",
+          "Turning happens when one side slows down first across a boundary",
+          "Grass reflects more light",
+          "Asphalt is transparent"
+        ],
+        "correctAnswer": "Turning happens when one side slows down first across a boundary"
+      },
+      {
+        "id": "6-29",
+        "text": "In the car analogy (asphalt to grass), the car turns mainly because:",
+        "options": [
+          "Both sides speed up at the same time",
+          "One side slows down first while the other keeps moving faster",
+          "The car stops completely",
+          "The car becomes lighter"
+        ],
+        "correctAnswer": "One side slows down first while the other keeps moving faster"
+      },
+      {
+        "id": "6-30",
+        "text": "Refraction can make images look distorted because light rays:",
+        "options": [
+          "Always travel faster in water",
+          "Bend when they change speed",
+          "Stop traveling in straight lines in air",
+          "Become different colours automatically"
+        ],
+        "correctAnswer": "Bend when they change speed"
+      },
+      {
+        "id": "6-31",
+        "text": "Water droplets on a windshield can make it hard to see clearly because they can cause:",
+        "options": [
+          "Reflection only",
+          "Distortion due to refraction",
+          "Sound waves",
+          "Magnetism"
+        ],
+        "correctAnswer": "Distortion due to refraction"
+      },
+      {
+        "id": "6-32",
+        "text": "A device installed on a car to sweep away water droplets on a windshield is called:",
+        "options": [
+          "Windscreen wipers",
+          "Wind turbines",
+          "Spotlights",
+          "Magnifiers"
+        ],
+        "correctAnswer": "Windscreen wipers"
+      },
+      {
+        "id": "6-33",
+        "text": "A lens is commonly used in glasses, cameras, and telescopes mainly to:",
+        "options": [
+          "Produce sound",
+          "Bend light",
+          "Absorb light",
+          "Stop reflection"
+        ],
+        "correctAnswer": "Bend light"
+      },
+      {
+        "id": "6-34",
+        "text": "A short-sighted person can see which objects clearly (according to the notes)?",
+        "options": [
+          "Near objects",
+          "Distant objects",
+          "Only blue objects",
+          "Only objects in water"
+        ],
+        "correctAnswer": "Near objects"
+      },
+      {
+        "id": "6-35",
+        "text": "A long-sighted person can see which objects clearly (according to the notes)?",
+        "options": [
+          "Near objects",
+          "Distant objects",
+          "Only red objects",
+          "Only objects in mirrors"
+        ],
+        "correctAnswer": "Distant objects"
+      },
+      {
+        "id": "6-36",
+        "text": "Sir Isaac Newton discovered in 1666 that white light can be split into many different:",
+        "options": [
+          "Temperatures",
+          "Colours",
+          "Shadows",
+          "Sounds"
+        ],
+        "correctAnswer": "Colours"
+      },
+      {
+        "id": "6-37",
+        "text": "In Newton’s experiment, sunlight first passed through a:",
+        "options": [
+          "Lens",
+          "Hole (small opening)",
+          "Mirror",
+          "Water droplet"
+        ],
+        "correctAnswer": "Hole (small opening)"
+      },
+      {
+        "id": "6-38",
+        "text": "In Newton’s experiment, the beam of light was then passed through a:",
+        "options": [
+          "Prism",
+          "Spoon",
+          "Candle",
+          "Magnet"
+        ],
+        "correctAnswer": "Prism"
+      },
+      {
+        "id": "6-39",
+        "text": "Newton shone the split light onto a _ to study it.",
+        "options": [
+          "Thermometer",
+          "Screen (backdrop)",
+          "Battery",
+          "Microscope"
+        ],
+        "correctAnswer": "Screen (backdrop)"
+      },
+      {
+        "id": "6-40",
+        "text": "The visible light spectrum is the _ of colours seen when light is split.",
+        "options": [
+          "Range",
+          "Number",
+          "Mass",
+          "Volume"
+        ],
+        "correctAnswer": "Range"
+      },
+      {
+        "id": "6-41",
+        "text": "The visible spectrum is said to be continuous because:",
+        "options": [
+          "It only has 3 colours",
+          "The colours merge into one another seamlessly",
+          "The colours are separated by large gaps",
+          "It only appears at night"
+        ],
+        "correctAnswer": "The colours merge into one another seamlessly"
+      },
+      {
+        "id": "6-42",
+        "text": "Which set lists the main colours in the visible spectrum in order (as in the notes)?",
+        "options": [
+          "R O Y G B I V",
+          "R Y O G B I V",
+          "R O Y B G I V",
+          "V I B G Y O R"
+        ],
+        "correctAnswer": "R O Y G B I V"
+      },
+      {
+        "id": "6-43",
+        "text": "“White” light is not a single colour; it is the result of:",
+        "options": [
+          "Mixing all colours in the visible spectrum",
+          "Removing all colours from the spectrum",
+          "Only red + green mixing",
+          "Reflection from a mirror only"
+        ],
+        "correctAnswer": "Mixing all colours in the visible spectrum"
+      },
+      {
+        "id": "6-44",
+        "text": "Dispersion is the _ of light into different colours.",
+        "options": [
+          "Freezing",
+          "Splitting",
+          "Absorbing",
+          "Dimming"
+        ],
+        "correctAnswer": "Splitting"
+      },
+      {
+        "id": "6-45",
+        "text": "Dispersion happens because of light:",
+        "options": [
+          "Refraction",
+          "Heating",
+          "Evaporation",
+          "Magnetism"
+        ],
+        "correctAnswer": "Refraction"
+      },
+      {
+        "id": "6-46",
+        "text": "Sunlight can be split into many colours because different colours are refracted:",
+        "options": [
+          "The same amount",
+          "Differently",
+          "Only at night",
+          "Only in mirrors"
+        ],
+        "correctAnswer": "Differently"
+      },
+      {
+        "id": "6-47",
+        "text": "Which colour is refracted more by a prism (red or purple), according to the notes?",
+        "options": [
+          "Red",
+          "Purple",
+          "They refract the same amount",
+          "Neither refracts"
+        ],
+        "correctAnswer": "Purple"
+      },
+      {
+        "id": "6-48",
+        "text": "A rainbow forms because a(n) _ acts like a prism.",
+        "options": [
+          "Mirror",
+          "Raindrop",
+          "Spoon",
+          "Cloud"
+        ],
+        "correctAnswer": "Raindrop"
+      },
+      {
+        "id": "6-49",
+        "text": "In the rainbow diagram, sunlight is first _ at point A when it enters the raindrop.",
+        "options": [
+          "Reflected",
+          "Refracted",
+          "Absorbed",
+          "Blocked"
+        ],
+        "correctAnswer": "Refracted"
+      },
+      {
+        "id": "6-50",
+        "text": "In the rainbow diagram, the light is _ at point B and then _ again at point C.",
+        "options": [
+          "Refracted; reflected",
+          "Reflected; refracted",
+          "Absorbed; refracted",
+          "Dispersed; absorbed"
+        ],
+        "correctAnswer": "Reflected; refracted"
+      },
+      {
+        "id": "6-51",
+        "text": "Paints work in a subtractive manner, which means that the more paints you add:",
+        "options": [
+          "The brighter the colour becomes",
+          "The darker the colour becomes",
+          "The more transparent it becomes",
+          "The heavier it becomes"
+        ],
+        "correctAnswer": "The darker the colour becomes"
+      },
+      {
+        "id": "6-52",
+        "text": "Lights work in an additive manner, meaning that the more lights you add:",
+        "options": [
+          "The brighter the colour becomes",
+          "The darker the colour becomes",
+          "The more invisible it becomes",
+          "The slower the light travels"
+        ],
+        "correctAnswer": "The brighter the colour becomes"
+      },
+      {
+        "id": "6-53",
+        "text": "The three primary colours of light are:",
+        "options": [
+          "Red, yellow, and blue",
+          "Cyan, magenta, and yellow",
+          "Red, green, and blue",
+          "Orange, green, and violet"
+        ],
+        "correctAnswer": "Red, green, and blue"
+      },
+      {
+        "id": "6-54",
+        "text": "When red and blue lights are mixed together, they produce:",
+        "options": [
+          "Yellow",
+          "Cyan",
+          "White",
+          "Magenta"
+        ],
+        "correctAnswer": "Magenta"
+      },
+      {
+        "id": "6-55",
+        "text": "When green and blue lights are mixed together, they produce:",
+        "options": [
+          "Yellow",
+          "Cyan",
+          "Magenta",
+          "Black"
+        ],
+        "correctAnswer": "Cyan"
+      },
+      {
+        "id": "6-56",
+        "text": "When red and green lights are mixed together, they produce:",
+        "options": [
+          "Yellow",
+          "Cyan",
+          "Magenta",
+          "White"
+        ],
+        "correctAnswer": "Yellow"
+      },
+      {
+        "id": "6-57",
+        "text": "When red, green, and blue lights are mixed together in equal proportions, they produce:",
+        "options": [
+          "Black",
+          "White",
+          "Brown",
+          "Grey"
+        ],
+        "correctAnswer": "White"
+      },
+      {
+        "id": "6-58",
+        "text": "A computer or phone screen is made up of many tiny dots called:",
+        "options": [
+          "Pixels",
+          "Prisms",
+          "Filters",
+          "Photons"
+        ],
+        "correctAnswer": "Pixels"
+      },
+      {
+        "id": "6-59",
+        "text": "Each pixel on a screen contains which three colours?",
+        "options": [
+          "Red, Yellow, Blue",
+          "Red, Green, Blue",
+          "Cyan, Magenta, Yellow",
+          "Black, White, Grey"
+        ],
+        "correctAnswer": "Red, Green, Blue"
+      },
+      {
+        "id": "6-60",
+        "text": "We can subtract (remove) colours from white light by applying a:",
+        "options": [
+          "Mirror",
+          "Transparent colour filter",
+          "Magnifying glass",
+          "Prism"
+        ],
+        "correctAnswer": "Transparent colour filter"
+      },
+      {
+        "id": "6-61",
+        "text": "If you place a red filter in front of a white torch light, what light passes through?",
+        "options": [
+          "All colours",
+          "Only blue light",
+          "Only red light",
+          "No light at all"
+        ],
+        "correctAnswer": "Only red light"
+      },
+      {
+        "id": "6-62",
+        "text": "Objects that can produce their own light are called:",
+        "options": [
+          "Non-luminous objects",
+          "Luminous objects",
+          "Transparent objects",
+          "Opaque objects"
+        ],
+        "correctAnswer": "Luminous objects"
+      },
+      {
+        "id": "6-63",
+        "text": "Which of the following is an example of a luminous object?",
+        "options": [
+          "The Moon",
+          "A tree",
+          "A firefly",
+          "A piece of cloth"
+        ],
+        "correctAnswer": "A firefly"
+      },
+      {
+        "id": "6-64",
+        "text": "We can see non-luminous objects like the Moon because they:",
+        "options": [
+          "Produce their own light",
+          "Reflect light into our eyes",
+          "Absorb all light",
+          "Refract light heavily"
+        ],
+        "correctAnswer": "Reflect light into our eyes"
+      },
+      {
+        "id": "6-65",
+        "text": "A red ball appears red under white sunlight because it:",
+        "options": [
+          "Absorbs red light and reflects all other lights",
+          "Reflects red light and absorbs all other lights",
+          "Emits its own red light",
+          "Reflects all colours of light"
+        ],
+        "correctAnswer": "Reflects red light and absorbs all other lights"
+      },
+      {
+        "id": "6-66",
+        "text": "A white ball appears white under sunlight because it:",
+        "options": [
+          "Absorbs all colours of light",
+          "Reflects light of all colours",
+          "Absorb only white light",
+          "Produces its own white light"
+        ],
+        "correctAnswer": "Reflects light of all colours"
+      },
+      {
+        "id": "6-67",
+        "text": "A black ball appears black because it:",
+        "options": [
+          "Reflects all colours of light",
+          "Absorbs all colours of light so no light is reflected",
+          "Emits black light",
+          "Only reflects black light"
+        ],
+        "correctAnswer": "Absorbs all colours of light so no light is reflected"
+      },
+      {
+        "id": "6-68",
+        "text": "If you shine only a blue light on a red box, what colour does the box appear?",
+        "options": [
+          "Red",
+          "Blue",
+          "Black",
+          "Magenta"
+        ],
+        "correctAnswer": "Black"
+      },
+      {
+        "id": "6-69",
+        "text": "The Earth is part of the Solar System, which is located in the:",
+        "options": [
+          "Canis Major Dwarf Galaxy",
+          "Andromeda Galaxy",
+          "Milky Way Galaxy",
+          "Triangulum Galaxy"
+        ],
+        "correctAnswer": "Milky Way Galaxy"
+      },
+      {
+        "id": "6-70",
+        "text": "A planet is defined as a celestial body that orbits around a:",
+        "options": [
+          "Moon",
+          "Comet",
+          "Star",
+          "Black hole"
+        ],
+        "correctAnswer": "Star"
+      },
+      {
+        "id": "6-71",
+        "text": "The Sun produces energy in its core through a reaction called:",
+        "options": [
+          "Nuclear fission",
+          "Nuclear fusion",
+          "Chemical combustion",
+          "Photosynthesis"
+        ],
+        "correctAnswer": "Nuclear fusion"
+      },
+      {
+        "id": "6-72",
+        "text": "Our Solar System consists of the Sun and how many planets?",
+        "options": [
+          "7",
+          "8",
+          "9",
+          "10"
+        ],
+        "correctAnswer": "8"
+      },
+      {
+        "id": "6-73",
+        "text": "A collection of stars, solar systems, gases, and dust held together by gravity is called a:",
+        "options": [
+          "Universe",
+          "Galaxy",
+          "Constellation",
+          "Asteroid belt"
+        ],
+        "correctAnswer": "Galaxy"
+      },
+      {
+        "id": "6-74",
+        "text": "According to its shape, our Milky Way is classified as a:",
+        "options": [
+          "Spiral galaxy",
+          "Elliptical galaxy",
+          "Lenticular galaxy",
+          "Irregular galaxy"
+        ],
+        "correctAnswer": "Spiral galaxy"
+      },
+      {
+        "id": "6-75",
+        "text": "Which type of galaxy has a round shape similar to a ball?",
+        "options": [
+          "Spiral",
+          "Lenticular",
+          "Irregular",
+          "Elliptical"
+        ],
+        "correctAnswer": "Elliptical"
+      },
+      {
+        "id": "6-76",
+        "text": "Stellar dust particles are released into space when:",
+        "options": [
+          "A new star is born",
+          "Dying stars explode at the end of their lives",
+          "Planets collide",
+          "Black holes evaporate"
+        ],
+        "correctAnswer": "Dying stars explode at the end of their lives"
+      },
+      {
+        "id": "6-77",
+        "text": "The concentration of stellar dust in space is very low. Sometimes you can only find one dust particle in every:",
+        "options": [
+          "1 cubic metre",
+          "100 cubic metres",
+          "1,000,000 cubic metres",
+          "1 billion cubic metres"
+        ],
+        "correctAnswer": "1,000,000 cubic metres"
+      },
+      {
+        "id": "6-78",
+        "text": "The force holding a galaxy together is super strong because of its:",
+        "options": [
+          "High temperature",
+          "Large mass",
+          "Fast rotation",
+          "Magnetic field"
+        ],
+        "correctAnswer": "Large mass"
+      },
+      {
+        "id": "6-79",
+        "text": "Many scientists believe that the centre of the Milky Way and many other galaxies contains a:",
+        "options": [
+          "Supergiant planet",
+          "Black hole",
+          "Neutron star",
+          "Massive comet"
+        ],
+        "correctAnswer": "Black hole"
+      },
+      {
+        "id": "6-80",
+        "text": "Black holes are mysterious celestial objects that have such strong gravity they suck in nearby stars and planets, releasing powerful:",
+        "options": [
+          "Radiation",
+          "Ice particles",
+          "Oxygen",
+          "Sound waves"
+        ],
+        "correctAnswer": "Radiation"
+      },
+      {
+        "id": "6-81",
+        "text": "When a star runs out of fuel, the outward force drops and it collapses under its own gravity, often leading to:",
+        "options": [
+          "It becoming a planet",
+          "An explosion releasing stellar dust",
+          "It turning into a comet",
+          "It freezing into ice"
+        ],
+        "correctAnswer": "An explosion releasing stellar dust"
+      },
+      {
+        "id": "6-82",
+        "text": "Which of the following lists objects in ascending order of size (smallest to largest)?",
+        "options": [
+          "Sun, Planet, Moon, Universe, Galaxy",
+          "Moon, Planet, Sun, Galaxy, Universe",
+          "Planet, Moon, Sun, Universe, Galaxy",
+          "Galaxy, Universe, Sun, Planet, Moon"
+        ],
+        "correctAnswer": "Moon, Planet, Sun, Galaxy, Universe"
+      },
+      {
+        "id": "6-83",
+        "text": "Asteroids are mostly rocky objects that orbit the Sun. Most of them are concentrated in the asteroid belt between:",
+        "options": [
+          "Earth and Mars",
+          "Mars and Jupiter",
+          "Jupiter and Saturn",
+          "Uranus and Neptune"
+        ],
+        "correctAnswer": "Mars and Jupiter"
+      },
+      {
+        "id": "6-84",
+        "text": "What is the typical shape of most asteroids?",
+        "options": [
+          "Perfectly spherical",
+          "Potato-shaped",
+          "Cube-shaped",
+          "Ring-shaped"
+        ],
+        "correctAnswer": "Potato-shaped"
+      },
+      {
+        "id": "6-85",
+        "text": "Ceres is considered a very large asteroid or a \"failed planet\" because it:",
+        "options": [
+          "Is made entirely of ice",
+          "Didn't get enough mass to become a proper planet",
+          "Was destroyed by a black hole",
+          "Does not orbit the Sun"
+        ],
+        "correctAnswer": "Didn't get enough mass to become a proper planet"
+      },
+      {
+        "id": "6-86",
+        "text": "Unlike Ceres, the small asteroid Itokawa is not a single solid rock, but rather:",
+        "options": [
+          "A solid ball of ice",
+          "A cloud of gas",
+          "Many pieces of rocks held together by weak gravity",
+          "A chunk of pure metal"
+        ],
+        "correctAnswer": "Many pieces of rocks held together by weak gravity"
+      },
+      {
+        "id": "6-87",
+        "text": "Itokawa contains rocks from other small planets and moons that have been broken down by:",
+        "options": [
+          "Melting",
+          "Collision/impact",
+          "Freezing",
+          "Solar wind"
+        ],
+        "correctAnswer": "Collision/impact"
+      },
+      {
+        "id": "6-88",
+        "text": "Small asteroids have a very weak gravity because of their:",
+        "options": [
+          "Small mass/sizes",
+          "Fast speed",
+          "High temperature",
+          "Ice content"
+        ],
+        "correctAnswer": "Small mass/sizes"
+      },
+      {
+        "id": "6-89",
+        "text": "Scientists believe the extinction of the dinosaurs was caused by an asteroid impact known as the:",
+        "options": [
+          "Ceres impactor",
+          "Itokawa impactor",
+          "Chicxulub impactor",
+          "Tunguska event"
+        ],
+        "correctAnswer": "Chicxulub impactor"
+      },
+      {
+        "id": "6-90",
+        "text": "The massive asteroid impact that wiped out the dinosaurs sent a lot of dust into the atmosphere, which blocked the Sun and caused the temperature to:",
+        "options": [
+          "Rise dramatically",
+          "Fall significantly for about 15 years",
+          "Fluctuate rapidly every day",
+          "Stay exactly the same"
+        ],
+        "correctAnswer": "Fall significantly for about 15 years"
+      },
+      {
+        "id": "6-91",
+        "text": "The impact of the Chicxulub asteroid also caused:",
+        "options": [
+          "The Moon to form",
+          "Mega tsunamis over 100m tall and massive forest fires",
+          "The Earth to stop rotating",
+          "Jupiter to lose its rings"
+        ],
+        "correctAnswer": "Mega tsunamis over 100m tall and massive forest fires"
+      },
+      {
+        "id": "6-92",
+        "text": "Big asteroid impacts like the Chicxulub impact happen on average every:",
+        "options": [
+          "100 years",
+          "1,000 years",
+          "130,000 years",
+          "10 million years"
+        ],
+        "correctAnswer": "130,000 years"
+      },
+      {
+        "id": "6-93",
+        "text": "A comet also orbits the Sun, but unlike most asteroids, it is largely composed of:",
+        "options": [
+          "Liquid water and salt",
+          "Metal and lava",
+          "Ice and dust",
+          "Pure iron"
+        ],
+        "correctAnswer": "Ice and dust"
+      },
+      {
+        "id": "6-94",
+        "text": "When a comet moves close to the Sun, its ice starts to vaporize, which gives it a:",
+        "options": [
+          "Perfectly round shape",
+          "Fuzzy appearance and a tail",
+          "Solid rocky crust",
+          "Dark black color"
+        ],
+        "correctAnswer": "Fuzzy appearance and a tail"
+      },
+      {
+        "id": "6-95",
+        "text": "A pebble-sized object formed from the collision of an asteroid or comet floating in space is called a:",
+        "options": [
+          "Meteor",
+          "Meteorite",
+          "Meteoroid",
+          "Mini-moon"
+        ],
+        "correctAnswer": "Meteoroid"
+      },
+      {
+        "id": "6-96",
+        "text": "When a meteoroid enters the Earth's atmosphere, it burns up and creates a streak of light. At this stage, it is called a:",
+        "options": [
+          "Meteorite",
+          "Meteor",
+          "Comet",
+          "Black hole"
+        ],
+        "correctAnswer": "Meteor"
+      },
+      {
+        "id": "6-97",
+        "text": "A \"shooting star\" is the common name for a:",
+        "options": [
+          "Comet",
+          "Meteor shower",
+          "Meteor",
+          "Supernova"
+        ],
+        "correctAnswer": "Meteor"
+      },
+      {
+        "id": "6-98",
+        "text": "If a meteoroid survives the intense heat of burning up in the atmosphere and actually lands on Earth's surface, it is then called a:",
+        "options": [
+          "Meteor",
+          "Meteoroid",
+          "Meteorite",
+          "Asteroid"
+        ],
+        "correctAnswer": "Meteorite"
+      },
+      {
+        "id": "6-99",
+        "text": "When many meteors enter the Earth's atmosphere at the same time, it produces a spectacular display known as a:",
+        "options": [
+          "Solar flare",
+          "Meteor shower",
+          "Comet tail",
+          "Supernova"
+        ],
+        "correctAnswer": "Meteor shower"
+      },
+      {
+        "id": "6-100",
+        "text": "Small asteroids impact the Earth way more frequently than large ones, but most of the time they:",
+        "options": [
+          "Destroy entire cities",
+          "Never quite reach the surface of the Earth",
+          "Bounce back into space",
+          "Turn into comets"
+        ],
+        "correctAnswer": "Never quite reach the surface of the Earth"
+      }
     ]
   },
   {
-    id: 7,
-    title: "Diet and growth",
-    description: "Nutrition, human development, and the skeletal system.",
-    color: "bg-pink-500",
-    concepts: [
+    "id": 7,
+    "title": "Diet and growth",
+    "description": "Nutrition, human development, and the skeletal system.",
+    "color": "bg-pink-500",
+    "concepts": [
       "A balanced diet includes 6 major types of nutrients: carbohydrates, proteins, fats, vitamins, minerals, and water.",
       "BMI (Body Mass Index) is used to assess if a person is underweight, healthy, overweight, or obese.",
       "Human life begins as a zygote, which divides to form an embryo and then a foetus.",
@@ -1294,156 +8166,1101 @@ export const units: Unit[] = [
       "The human skeleton consists of the axial (skull, spine) and appendicular (limbs) skeletons.",
       "Muscles work in antagonistic pairs (like biceps and triceps) to move bones at joints."
     ],
-    vocab: [
-      { term: "Diet", traditional: "飲食", simplified: "饮食", definition: "The sum of food consumed by a person or other organism." },
-      { term: "Nutrients", traditional: "營養", simplified: "营养", definition: "Substances that provide nourishment essential for growth and the maintenance of life." },
-      { term: "Carbohydrates", traditional: "碳水化合物", simplified: "碳水化合物", definition: "Large group of organic compounds occurring in foods and living tissues and including sugars, starch, and cellulose." },
-      { term: "Fats and oils / Lipids", traditional: "脂肪", simplified: "脂肪", definition: "A group of naturally occurring molecules that include fats, waxes, sterols, fat-soluble vitamins." },
-      { term: "Proteins", traditional: "蛋白質", simplified: "蛋白质", definition: "Large biomolecules, or macromolecules, consisting of one or more long chains of amino acid residues." },
-      { term: "Minerals", traditional: "礦物質", simplified: "矿物质", definition: "Solid, inorganic substances that the body needs to function properly." },
-      { term: "Vitamins", traditional: "維生素", simplified: "维生素", definition: "Organic compounds that are essential for normal growth and nutrition and are required in small quantities in the diet." },
-      { term: "Balanced diet", traditional: "平衡飲食", simplified: "平衡饮食", definition: "A diet consisting of the proper quantities and proportions of foods in order to maintain health or growth." },
-      { term: "Malnutrition", traditional: "營養不良", simplified: "营养不良", definition: "Lack of proper nutrition, caused by not having enough to eat, or not eating enough of the right things." },
-      { term: "Obese", traditional: "肥胖", simplified: "肥胖", definition: "Grossly fat or overweight." },
-      { term: "Underweight", traditional: "過輕", simplified: "过轻", definition: "Below a weight considered normal or desirable." },
-      { term: "Body Mass Index / BMI", traditional: "身體質量指數", simplified: "身体质量指数", definition: "A value derived from the mass and height of a person." },
-      { term: "Metabolism", traditional: "新陳代謝", simplified: "新陈代谢", definition: "The chemical processes that occur within a living organism in order to maintain life." },
-      { term: "Energy reserve", traditional: "能量儲備", simplified: "能量储备", definition: "Stored energy in the body for later use." },
-      { term: "Glycogen", traditional: "肝糖", simplified: "肝糖", definition: "A substance deposited in bodily tissues as a store of carbohydrates." },
-      { term: "Heat insulation", traditional: "隔熱", simplified: "隔热", definition: "The reduction of heat transfer between objects." },
-      { term: "Shock absorption", traditional: "吸震", simplified: "吸震", definition: "The process of absorbing the energy of an impact or vibration." },
-      { term: "Macronutrients", traditional: "巨量營養素", simplified: "巨量营养素", definition: "Nutrients required in large amounts that provide the bulk energy an organism's metabolic system needs to function." },
-      { term: "Micronutrients", traditional: "微量營養素", simplified: "微量营养素", definition: "Nutrients required by organisms throughout life in small quantities to orchestrate a range of physiological functions." },
-      { term: "Immune system", traditional: "免疫系統", simplified: "免疫系统", definition: "A complex network of cells, tissues, organs, and the substances they make that helps the body fight infections and other diseases." },
-      { term: "Night blindness", traditional: "夜盲症", simplified: "夜盲症", definition: "The inability to see well in a dark environment or at night." },
-      { term: "Scurvy", traditional: "壞血病", simplified: "坏血病", definition: "A disease caused by a deficiency of vitamin C." },
-      { term: "Scab", traditional: "結痂 / 痂", simplified: "结痂 / 痂", definition: "A dry, rough protective crust that forms over a cut or wound during healing." },
-      { term: "Rickets", traditional: "佝僂病", simplified: "佝偻病", definition: "A disease of children caused by vitamin D deficiency, characterized by imperfect calcification, softening, and distortion of the bones." },
-      { term: "Calcium", traditional: "鈣", simplified: "钙", definition: "A mineral that is necessary for life, especially for building bones and keeping them healthy." },
-      { term: "Iron", traditional: "鐵", simplified: "铁", definition: "A mineral that the body needs for growth and development, used to make hemoglobin." },
-      { term: "Haemoglobin", traditional: "血紅素", simplified: "血红素", definition: "A protein in red blood cells that carries oxygen throughout the body." },
-      { term: "Osteoporosis", traditional: "骨質疏鬆", simplified: "骨质疏松", definition: "A medical condition in which the bones become brittle and fragile from loss of tissue." },
-      { term: "Anaemia", traditional: "貧血", simplified: "贫血", definition: "A condition in which there is a deficiency of red cells or of haemoglobin in the blood." },
-      { term: "Ion", traditional: "離子", simplified: "离子", definition: "An atom or molecule with a net electric charge due to the loss or gain of one or more electrons." },
-      { term: "Zygote", traditional: "受精卵", simplified: "受精卵", definition: "A diploid cell resulting from the fusion of two haploid gametes; a fertilized ovum." },
-      { term: "Sperm", traditional: "精子", simplified: "精子", definition: "The male reproductive cell." },
-      { term: "Egg / Ovum", traditional: "卵子", simplified: "卵子", definition: "The female reproductive cell." },
-      { term: "Fertilization", traditional: "受精作用", simplified: "受精作用", definition: "The action or process of fertilizing an egg, involving the fusion of male and female gametes to form a zygote." },
-      { term: "Oviduct", traditional: "輸卵管", simplified: "输卵管", definition: "The tube through which an ovum or egg passes from an ovary." },
-      { term: "Uterus", traditional: "子宮", simplified: "子宫", definition: "The organ in the lower body of a woman or female mammal where offspring are conceived and in which they gestate before birth." },
-      { term: "Cell division", traditional: "細胞分裂", simplified: "细胞分裂", definition: "The division of a cell into two daughter cells with the same genetic material." },
-      { term: "Mitosis", traditional: "有絲分裂", simplified: "有丝分裂", definition: "A type of cell division that results in two daughter cells each having the same number and kind of chromosomes as the parent nucleus." },
-      { term: "Embryo", traditional: "胚胎", simplified: "胚胎", definition: "An unborn or unhatched offspring in the process of development." },
-      { term: "Habit", traditional: "習慣 / 常規地", simplified: "习惯 / 常规地", definition: "A settled or regular tendency or practice, especially one that is hard to give up." },
-      { term: "Nicotine", traditional: "尼古丁", simplified: "尼古丁", definition: "A toxic colorless or yellowish oily liquid that is the chief active constituent of tobacco." },
-      { term: "Tar", traditional: "焦油", simplified: "焦油", definition: "A dark, thick, flammable liquid distilled from wood or coal, consisting of a mixture of hydrocarbons, resins, alcohols, and other compounds." },
-      { term: "Carbon monoxide", traditional: "一氧化碳", simplified: "一氧化碳", definition: "A colorless, odorless toxic flammable gas formed by incomplete combustion of carbon." },
-      { term: "Poisonous", traditional: "有毒", simplified: "有毒", definition: "(of a substance or plant) causing or capable of causing death or illness if taken into the body." },
-      { term: "Particulate", traditional: "微粒", simplified: "微粒", definition: "Relating to or in the form of minute separate particles." },
-      { term: "Alveoli", traditional: "肺泡", simplified: "肺泡", definition: "Tiny air sacs in the lungs where the exchange of oxygen and carbon dioxide takes place." },
-      { term: "Cardiovascular", traditional: "心血管", simplified: "心血管", definition: "Relating to the heart and blood vessels." },
-      { term: "Heart attack", traditional: "心臟病發", simplified: "心脏病发", definition: "A sudden and sometimes fatal occurrence of coronary thrombosis, typically resulting in the death of part of a heart muscle." },
-      { term: "Metastasize / Spread", traditional: "擴散", simplified: "扩散", definition: "(of a cancer) spread to other sites in the body by metastasis." },
-      { term: "Radiotherapy", traditional: "放射治療", simplified: "放射治疗", definition: "The treatment of disease, especially cancer, using X-rays or similar forms of radiation." },
-      { term: "Chemotherapy", traditional: "化學治療", simplified: "化学治疗", definition: "The treatment of disease by the use of chemical substances, especially the treatment of cancer by cytotoxic and other drugs." },
-      { term: "Centrifuge", traditional: "離心機", simplified: "离心机", definition: "A machine with a rapidly rotating container that applies centrifugal force to its contents, typically to separate fluids of different densities." },
-      { term: "Separation", traditional: "分離", simplified: "分离", definition: "The action or state of moving or being moved apart." },
-      { term: "Plasma", traditional: "血漿", simplified: "血浆", definition: "The colorless fluid part of blood, lymph, or milk, in which corpuscles or fat globules are suspended." },
-      { term: "Red blood cells", traditional: "紅血球", simplified: "红血球", definition: "Blood cells that carry oxygen from the lungs to the body's tissues and take carbon dioxide back to the lungs." },
-      { term: "White blood cells", traditional: "白血球", simplified: "白血球", definition: "Blood cells that are part of the body's immune system and help the body fight infection and other diseases." },
-      { term: "Platelets", traditional: "血小板", simplified: "血小板", definition: "Small colorless disk-shaped cell fragments without a nucleus, found in large numbers in blood and involved in clotting." },
-      { term: "Respiration", traditional: "呼吸作用", simplified: "呼吸作用", definition: "The action of breathing." },
-      { term: "Circulatory system", traditional: "循環系統", simplified: "循环系统", definition: "The system that circulates blood and lymph through the body, consisting of the heart, blood vessels, blood, lymph, and the lymphatic vessels and glands." },
-      { term: "Stroke", traditional: "中風", simplified: "中风", definition: "A sudden disabling attack or loss of consciousness caused by an interruption in the blood supply to the brain." },
-      { term: "Mucus", traditional: "黏液", simplified: "黏液", definition: "A slippery substance produced by the mucous membranes and other glands." },
-      { term: "Windpipe / Trachea", traditional: "氣管", simplified: "气管", definition: "A large membranous tube reinforced by rings of cartilage, extending from the larynx to the bronchial tubes and conveying air to and from the lungs." },
-      { term: "Bronchus", traditional: "支氣管", simplified: "支气管", definition: "Any of the major air passages of the lungs which diverge from the windpipe." },
-      { term: "Bronchiole", traditional: "小支氣管", simplified: "小支气管", definition: "Any of the minute branches into which a bronchus divides." },
-      { term: "Identical twins", traditional: "同卵雙胞胎", simplified: "同卵双胞胎", definition: "Twins who develop from a single fertilized egg that splits into two." },
-      { term: "Fraternal twins", traditional: "異卵雙胞胎", simplified: "异卵双胞胎", definition: "Twins who develop from two separate eggs fertilized by two separate sperm." },
-      { term: "Reproductive isolation", traditional: "生殖隔離", simplified: "生殖隔离", definition: "The inability of a species to breed successfully with related species due to geographical, behavioral, physiological, or genetic barriers or differences." },
-      { term: "Sterile", traditional: "不育", simplified: "不育", definition: "(of a person, animal, or plant) unable to produce offspring." },
-      { term: "Skeleton", traditional: "骨骼", simplified: "骨骼", definition: "An internal or external framework of bone, cartilage, or other rigid material supporting or containing the body of an animal or plant." },
-      { term: "Support", traditional: "支撐", simplified: "支撑", definition: "Bear all or part of the weight of; hold up." },
-      { term: "Exoskeleton", traditional: "外骨骼", simplified: "外骨骼", definition: "A rigid external covering for the body in some invertebrate animals, especially arthropods, providing both support and protection." },
-      { term: "Endoskeleton", traditional: "內骨骼", simplified: "内骨骼", definition: "An internal skeleton, such as the bony or cartilaginous skeleton of vertebrates." },
-      { term: "Axial skeleton", traditional: "中軸骨骼", simplified: "中轴骨骼", definition: "The part of the skeleton that consists of the bones of the head and trunk of a vertebrate." },
-      { term: "Appendicular skeleton", traditional: "附肢骨骼", simplified: "附肢骨骼", definition: "The portion of the skeleton of vertebrates consisting of the bones that support the appendages." },
-      { term: "Muscles", traditional: "肌肉", simplified: "肌肉", definition: "A band or bundle of fibrous tissue in a human or animal body that has the ability to contract, producing movement in or maintaining the position of parts of the body." },
-      { term: "Lever system", traditional: "槓桿系統", simplified: "杠杆系统", definition: "A simple machine consisting of a rigid bar pivoted on a fixed point and used to transmit force." },
-      { term: "Effort", traditional: "施力", simplified: "施力", definition: "The force applied to a simple machine." },
-      { term: "Pivot / Fulcrum", traditional: "支點", simplified: "支点", definition: "The point on which a lever rests or is supported and on which it pivots." },
-      { term: "Load", traditional: "負載", simplified: "负载", definition: "The weight or resistance that is moved or overcome by a machine." },
-      { term: "Ligaments", traditional: "韌帶", simplified: "韧带", definition: "A short band of tough, flexible fibrous connective tissue which connects two bones or cartilages or holds together a joint." },
-      { term: "Tendons", traditional: "肌腱", simplified: "肌腱", definition: "A flexible but inelastic cord of strong fibrous collagen tissue attaching a muscle to a bone." },
-      { term: "Joints", traditional: "關節", simplified: "关节", definition: "A structure in the human or animal body at which two parts of the skeleton are fitted together." },
-      { term: "Ball-and-socket joint", traditional: "球窩關節", simplified: "球窝关节", definition: "A joint in which the rounded surface of one bone moves within a cup-shaped depression on another bone." },
-      { term: "Hinge joint", traditional: "鉸鏈關節", simplified: "铰链关节", definition: "A joint that allows movement in only one plane." },
-      { term: "Shoulder joint", traditional: "肩關節", simplified: "肩关节", definition: "The joint between the humerus and the scapula." },
-      { term: "Elbow joint", traditional: "肘關節", simplified: "肘关节", definition: "The joint between the humerus and the radius and ulna." },
-      { term: "Biceps", traditional: "二頭肌", simplified: "二头肌", definition: "A muscle having two points of attachment at one end, in particular the large muscle in the upper arm that flexes the elbow." },
-      { term: "Triceps", traditional: "三頭肌", simplified: "三头肌", definition: "A muscle having three points of attachment at one end, in particular the large muscle at the back of the upper arm." },
-      { term: "Antagonistic pair", traditional: "拮抗肌對", simplified: "拮抗肌对", definition: "A pair of muscles that work together to produce movement, where one muscle contracts while the other relaxes." }
+    "vocab": [
+      {
+        "term": "Diet",
+        "traditional": "飲食",
+        "simplified": "饮食",
+        "definition": "The sum of food consumed by a person or other organism."
+      },
+      {
+        "term": "Nutrients",
+        "traditional": "營養",
+        "simplified": "营养",
+        "definition": "Substances that provide nourishment essential for growth and the maintenance of life."
+      },
+      {
+        "term": "Carbohydrates",
+        "traditional": "碳水化合物",
+        "simplified": "碳水化合物",
+        "definition": "Large group of organic compounds occurring in foods and living tissues and including sugars, starch, and cellulose."
+      },
+      {
+        "term": "Fats and oils / Lipids",
+        "traditional": "脂肪",
+        "simplified": "脂肪",
+        "definition": "A group of naturally occurring molecules that include fats, waxes, sterols, fat-soluble vitamins."
+      },
+      {
+        "term": "Proteins",
+        "traditional": "蛋白質",
+        "simplified": "蛋白质",
+        "definition": "Large biomolecules, or macromolecules, consisting of one or more long chains of amino acid residues."
+      },
+      {
+        "term": "Minerals",
+        "traditional": "礦物質",
+        "simplified": "矿物质",
+        "definition": "Solid, inorganic substances that the body needs to function properly."
+      },
+      {
+        "term": "Vitamins",
+        "traditional": "維生素",
+        "simplified": "维生素",
+        "definition": "Organic compounds that are essential for normal growth and nutrition and are required in small quantities in the diet."
+      },
+      {
+        "term": "Balanced diet",
+        "traditional": "平衡飲食",
+        "simplified": "平衡饮食",
+        "definition": "A diet consisting of the proper quantities and proportions of foods in order to maintain health or growth."
+      },
+      {
+        "term": "Malnutrition",
+        "traditional": "營養不良",
+        "simplified": "营养不良",
+        "definition": "Lack of proper nutrition, caused by not having enough to eat, or not eating enough of the right things."
+      },
+      {
+        "term": "Obese",
+        "traditional": "肥胖",
+        "simplified": "肥胖",
+        "definition": "Grossly fat or overweight."
+      },
+      {
+        "term": "Underweight",
+        "traditional": "過輕",
+        "simplified": "过轻",
+        "definition": "Below a weight considered normal or desirable."
+      },
+      {
+        "term": "Body Mass Index / BMI",
+        "traditional": "身體質量指數",
+        "simplified": "身体质量指数",
+        "definition": "A value derived from the mass and height of a person."
+      },
+      {
+        "term": "Metabolism",
+        "traditional": "新陳代謝",
+        "simplified": "新陈代谢",
+        "definition": "The chemical processes that occur within a living organism in order to maintain life."
+      },
+      {
+        "term": "Energy reserve",
+        "traditional": "能量儲備",
+        "simplified": "能量储备",
+        "definition": "Stored energy in the body for later use."
+      },
+      {
+        "term": "Glycogen",
+        "traditional": "肝糖",
+        "simplified": "肝糖",
+        "definition": "A substance deposited in bodily tissues as a store of carbohydrates."
+      },
+      {
+        "term": "Heat insulation",
+        "traditional": "隔熱",
+        "simplified": "隔热",
+        "definition": "The reduction of heat transfer between objects."
+      },
+      {
+        "term": "Shock absorption",
+        "traditional": "吸震",
+        "simplified": "吸震",
+        "definition": "The process of absorbing the energy of an impact or vibration."
+      },
+      {
+        "term": "Macronutrients",
+        "traditional": "巨量營養素",
+        "simplified": "巨量营养素",
+        "definition": "Nutrients required in large amounts that provide the bulk energy an organism's metabolic system needs to function."
+      },
+      {
+        "term": "Micronutrients",
+        "traditional": "微量營養素",
+        "simplified": "微量营养素",
+        "definition": "Nutrients required by organisms throughout life in small quantities to orchestrate a range of physiological functions."
+      },
+      {
+        "term": "Immune system",
+        "traditional": "免疫系統",
+        "simplified": "免疫系统",
+        "definition": "A complex network of cells, tissues, organs, and the substances they make that helps the body fight infections and other diseases."
+      },
+      {
+        "term": "Night blindness",
+        "traditional": "夜盲症",
+        "simplified": "夜盲症",
+        "definition": "The inability to see well in a dark environment or at night."
+      },
+      {
+        "term": "Scurvy",
+        "traditional": "壞血病",
+        "simplified": "坏血病",
+        "definition": "A disease caused by a deficiency of vitamin C."
+      },
+      {
+        "term": "Scab",
+        "traditional": "結痂 / 痂",
+        "simplified": "结痂 / 痂",
+        "definition": "A dry, rough protective crust that forms over a cut or wound during healing."
+      },
+      {
+        "term": "Rickets",
+        "traditional": "佝僂病",
+        "simplified": "佝偻病",
+        "definition": "A disease of children caused by vitamin D deficiency, characterized by imperfect calcification, softening, and distortion of the bones."
+      },
+      {
+        "term": "Calcium",
+        "traditional": "鈣",
+        "simplified": "钙",
+        "definition": "A mineral that is necessary for life, especially for building bones and keeping them healthy."
+      },
+      {
+        "term": "Iron",
+        "traditional": "鐵",
+        "simplified": "铁",
+        "definition": "A mineral that the body needs for growth and development, used to make hemoglobin."
+      },
+      {
+        "term": "Haemoglobin",
+        "traditional": "血紅素",
+        "simplified": "血红素",
+        "definition": "A protein in red blood cells that carries oxygen throughout the body."
+      },
+      {
+        "term": "Osteoporosis",
+        "traditional": "骨質疏鬆",
+        "simplified": "骨质疏松",
+        "definition": "A medical condition in which the bones become brittle and fragile from loss of tissue."
+      },
+      {
+        "term": "Anaemia",
+        "traditional": "貧血",
+        "simplified": "贫血",
+        "definition": "A condition in which there is a deficiency of red cells or of haemoglobin in the blood."
+      },
+      {
+        "term": "Ion",
+        "traditional": "離子",
+        "simplified": "离子",
+        "definition": "An atom or molecule with a net electric charge due to the loss or gain of one or more electrons."
+      },
+      {
+        "term": "Zygote",
+        "traditional": "受精卵",
+        "simplified": "受精卵",
+        "definition": "A diploid cell resulting from the fusion of two haploid gametes; a fertilized ovum."
+      },
+      {
+        "term": "Sperm",
+        "traditional": "精子",
+        "simplified": "精子",
+        "definition": "The male reproductive cell."
+      },
+      {
+        "term": "Egg / Ovum",
+        "traditional": "卵子",
+        "simplified": "卵子",
+        "definition": "The female reproductive cell."
+      },
+      {
+        "term": "Fertilization",
+        "traditional": "受精作用",
+        "simplified": "受精作用",
+        "definition": "The action or process of fertilizing an egg, involving the fusion of male and female gametes to form a zygote."
+      },
+      {
+        "term": "Oviduct",
+        "traditional": "輸卵管",
+        "simplified": "输卵管",
+        "definition": "The tube through which an ovum or egg passes from an ovary."
+      },
+      {
+        "term": "Uterus",
+        "traditional": "子宮",
+        "simplified": "子宫",
+        "definition": "The organ in the lower body of a woman or female mammal where offspring are conceived and in which they gestate before birth."
+      },
+      {
+        "term": "Cell division",
+        "traditional": "細胞分裂",
+        "simplified": "细胞分裂",
+        "definition": "The division of a cell into two daughter cells with the same genetic material."
+      },
+      {
+        "term": "Mitosis",
+        "traditional": "有絲分裂",
+        "simplified": "有丝分裂",
+        "definition": "A type of cell division that results in two daughter cells each having the same number and kind of chromosomes as the parent nucleus."
+      },
+      {
+        "term": "Embryo",
+        "traditional": "胚胎",
+        "simplified": "胚胎",
+        "definition": "An unborn or unhatched offspring in the process of development."
+      },
+      {
+        "term": "Habit",
+        "traditional": "習慣 / 常規地",
+        "simplified": "习惯 / 常规地",
+        "definition": "A settled or regular tendency or practice, especially one that is hard to give up."
+      },
+      {
+        "term": "Nicotine",
+        "traditional": "尼古丁",
+        "simplified": "尼古丁",
+        "definition": "A toxic colorless or yellowish oily liquid that is the chief active constituent of tobacco."
+      },
+      {
+        "term": "Tar",
+        "traditional": "焦油",
+        "simplified": "焦油",
+        "definition": "A dark, thick, flammable liquid distilled from wood or coal, consisting of a mixture of hydrocarbons, resins, alcohols, and other compounds."
+      },
+      {
+        "term": "Carbon monoxide",
+        "traditional": "一氧化碳",
+        "simplified": "一氧化碳",
+        "definition": "A colorless, odorless toxic flammable gas formed by incomplete combustion of carbon."
+      },
+      {
+        "term": "Poisonous",
+        "traditional": "有毒",
+        "simplified": "有毒",
+        "definition": "(of a substance or plant) causing or capable of causing death or illness if taken into the body."
+      },
+      {
+        "term": "Particulate",
+        "traditional": "微粒",
+        "simplified": "微粒",
+        "definition": "Relating to or in the form of minute separate particles."
+      },
+      {
+        "term": "Alveoli",
+        "traditional": "肺泡",
+        "simplified": "肺泡",
+        "definition": "Tiny air sacs in the lungs where the exchange of oxygen and carbon dioxide takes place."
+      },
+      {
+        "term": "Cardiovascular",
+        "traditional": "心血管",
+        "simplified": "心血管",
+        "definition": "Relating to the heart and blood vessels."
+      },
+      {
+        "term": "Heart attack",
+        "traditional": "心臟病發",
+        "simplified": "心脏病发",
+        "definition": "A sudden and sometimes fatal occurrence of coronary thrombosis, typically resulting in the death of part of a heart muscle."
+      },
+      {
+        "term": "Metastasize / Spread",
+        "traditional": "擴散",
+        "simplified": "扩散",
+        "definition": "(of a cancer) spread to other sites in the body by metastasis."
+      },
+      {
+        "term": "Radiotherapy",
+        "traditional": "放射治療",
+        "simplified": "放射治疗",
+        "definition": "The treatment of disease, especially cancer, using X-rays or similar forms of radiation."
+      },
+      {
+        "term": "Chemotherapy",
+        "traditional": "化學治療",
+        "simplified": "化学治疗",
+        "definition": "The treatment of disease by the use of chemical substances, especially the treatment of cancer by cytotoxic and other drugs."
+      },
+      {
+        "term": "Centrifuge",
+        "traditional": "離心機",
+        "simplified": "离心机",
+        "definition": "A machine with a rapidly rotating container that applies centrifugal force to its contents, typically to separate fluids of different densities."
+      },
+      {
+        "term": "Separation",
+        "traditional": "分離",
+        "simplified": "分离",
+        "definition": "The action or state of moving or being moved apart."
+      },
+      {
+        "term": "Plasma",
+        "traditional": "血漿",
+        "simplified": "血浆",
+        "definition": "The colorless fluid part of blood, lymph, or milk, in which corpuscles or fat globules are suspended."
+      },
+      {
+        "term": "Red blood cells",
+        "traditional": "紅血球",
+        "simplified": "红血球",
+        "definition": "Blood cells that carry oxygen from the lungs to the body's tissues and take carbon dioxide back to the lungs."
+      },
+      {
+        "term": "White blood cells",
+        "traditional": "白血球",
+        "simplified": "白血球",
+        "definition": "Blood cells that are part of the body's immune system and help the body fight infection and other diseases."
+      },
+      {
+        "term": "Platelets",
+        "traditional": "血小板",
+        "simplified": "血小板",
+        "definition": "Small colorless disk-shaped cell fragments without a nucleus, found in large numbers in blood and involved in clotting."
+      },
+      {
+        "term": "Respiration",
+        "traditional": "呼吸作用",
+        "simplified": "呼吸作用",
+        "definition": "The action of breathing."
+      },
+      {
+        "term": "Circulatory system",
+        "traditional": "循環系統",
+        "simplified": "循环系统",
+        "definition": "The system that circulates blood and lymph through the body, consisting of the heart, blood vessels, blood, lymph, and the lymphatic vessels and glands."
+      },
+      {
+        "term": "Stroke",
+        "traditional": "中風",
+        "simplified": "中风",
+        "definition": "A sudden disabling attack or loss of consciousness caused by an interruption in the blood supply to the brain."
+      },
+      {
+        "term": "Mucus",
+        "traditional": "黏液",
+        "simplified": "黏液",
+        "definition": "A slippery substance produced by the mucous membranes and other glands."
+      },
+      {
+        "term": "Windpipe / Trachea",
+        "traditional": "氣管",
+        "simplified": "气管",
+        "definition": "A large membranous tube reinforced by rings of cartilage, extending from the larynx to the bronchial tubes and conveying air to and from the lungs."
+      },
+      {
+        "term": "Bronchus",
+        "traditional": "支氣管",
+        "simplified": "支气管",
+        "definition": "Any of the major air passages of the lungs which diverge from the windpipe."
+      },
+      {
+        "term": "Bronchiole",
+        "traditional": "小支氣管",
+        "simplified": "小支气管",
+        "definition": "Any of the minute branches into which a bronchus divides."
+      },
+      {
+        "term": "Identical twins",
+        "traditional": "同卵雙胞胎",
+        "simplified": "同卵双胞胎",
+        "definition": "Twins who develop from a single fertilized egg that splits into two."
+      },
+      {
+        "term": "Fraternal twins",
+        "traditional": "異卵雙胞胎",
+        "simplified": "异卵双胞胎",
+        "definition": "Twins who develop from two separate eggs fertilized by two separate sperm."
+      },
+      {
+        "term": "Reproductive isolation",
+        "traditional": "生殖隔離",
+        "simplified": "生殖隔离",
+        "definition": "The inability of a species to breed successfully with related species due to geographical, behavioral, physiological, or genetic barriers or differences."
+      },
+      {
+        "term": "Sterile",
+        "traditional": "不育",
+        "simplified": "不育",
+        "definition": "(of a person, animal, or plant) unable to produce offspring."
+      },
+      {
+        "term": "Skeleton",
+        "traditional": "骨骼",
+        "simplified": "骨骼",
+        "definition": "An internal or external framework of bone, cartilage, or other rigid material supporting or containing the body of an animal or plant."
+      },
+      {
+        "term": "Support",
+        "traditional": "支撐",
+        "simplified": "支撑",
+        "definition": "Bear all or part of the weight of; hold up."
+      },
+      {
+        "term": "Exoskeleton",
+        "traditional": "外骨骼",
+        "simplified": "外骨骼",
+        "definition": "A rigid external covering for the body in some invertebrate animals, especially arthropods, providing both support and protection."
+      },
+      {
+        "term": "Endoskeleton",
+        "traditional": "內骨骼",
+        "simplified": "内骨骼",
+        "definition": "An internal skeleton, such as the bony or cartilaginous skeleton of vertebrates."
+      },
+      {
+        "term": "Axial skeleton",
+        "traditional": "中軸骨骼",
+        "simplified": "中轴骨骼",
+        "definition": "The part of the skeleton that consists of the bones of the head and trunk of a vertebrate."
+      },
+      {
+        "term": "Appendicular skeleton",
+        "traditional": "附肢骨骼",
+        "simplified": "附肢骨骼",
+        "definition": "The portion of the skeleton of vertebrates consisting of the bones that support the appendages."
+      },
+      {
+        "term": "Muscles",
+        "traditional": "肌肉",
+        "simplified": "肌肉",
+        "definition": "A band or bundle of fibrous tissue in a human or animal body that has the ability to contract, producing movement in or maintaining the position of parts of the body."
+      },
+      {
+        "term": "Lever system",
+        "traditional": "槓桿系統",
+        "simplified": "杠杆系统",
+        "definition": "A simple machine consisting of a rigid bar pivoted on a fixed point and used to transmit force."
+      },
+      {
+        "term": "Effort",
+        "traditional": "施力",
+        "simplified": "施力",
+        "definition": "The force applied to a simple machine."
+      },
+      {
+        "term": "Pivot / Fulcrum",
+        "traditional": "支點",
+        "simplified": "支点",
+        "definition": "The point on which a lever rests or is supported and on which it pivots."
+      },
+      {
+        "term": "Load",
+        "traditional": "負載",
+        "simplified": "负载",
+        "definition": "The weight or resistance that is moved or overcome by a machine."
+      },
+      {
+        "term": "Ligaments",
+        "traditional": "韌帶",
+        "simplified": "韧带",
+        "definition": "A short band of tough, flexible fibrous connective tissue which connects two bones or cartilages or holds together a joint."
+      },
+      {
+        "term": "Tendons",
+        "traditional": "肌腱",
+        "simplified": "肌腱",
+        "definition": "A flexible but inelastic cord of strong fibrous collagen tissue attaching a muscle to a bone."
+      },
+      {
+        "term": "Joints",
+        "traditional": "關節",
+        "simplified": "关节",
+        "definition": "A structure in the human or animal body at which two parts of the skeleton are fitted together."
+      },
+      {
+        "term": "Ball-and-socket joint",
+        "traditional": "球窩關節",
+        "simplified": "球窝关节",
+        "definition": "A joint in which the rounded surface of one bone moves within a cup-shaped depression on another bone."
+      },
+      {
+        "term": "Hinge joint",
+        "traditional": "鉸鏈關節",
+        "simplified": "铰链关节",
+        "definition": "A joint that allows movement in only one plane."
+      },
+      {
+        "term": "Shoulder joint",
+        "traditional": "肩關節",
+        "simplified": "肩关节",
+        "definition": "The joint between the humerus and the scapula."
+      },
+      {
+        "term": "Elbow joint",
+        "traditional": "肘關節",
+        "simplified": "肘关节",
+        "definition": "The joint between the humerus and the radius and ulna."
+      },
+      {
+        "term": "Biceps",
+        "traditional": "二頭肌",
+        "simplified": "二头肌",
+        "definition": "A muscle having two points of attachment at one end, in particular the large muscle in the upper arm that flexes the elbow."
+      },
+      {
+        "term": "Triceps",
+        "traditional": "三頭肌",
+        "simplified": "三头肌",
+        "definition": "A muscle having three points of attachment at one end, in particular the large muscle at the back of the upper arm."
+      },
+      {
+        "term": "Antagonistic pair",
+        "traditional": "拮抗肌對",
+        "simplified": "拮抗肌对",
+        "definition": "A pair of muscles that work together to produce movement, where one muscle contracts while the other relaxes."
+      }
     ],
-    questions: [
-      { id: "7-1", text: "What is a diet?", options: ["A plan to lose weight", "The sum of all food consumed by a living organism", "A type of medicine", "A disease"], correctAnswer: "The sum of all food consumed by a living organism" },
-      { id: "7-2", text: "Which of the following is NOT one of the 6 major types of nutrients?", options: ["Carbohydrates", "Proteins", "Energy", "Minerals"], correctAnswer: "Energy" },
-      { id: "7-3", text: "What happens if you have too much or too little nutrients in your diet?", options: ["Malnutrition", "Fitness", "Balanced diet", "Growth"], correctAnswer: "Malnutrition" },
-      { id: "7-4", text: "According to the food pyramid, which of the following should you eat the least?", options: ["Carbohydrates", "Vegetables", "Fats/oils/candies", "Proteins"], correctAnswer: "Fats/oils/candies" },
-      { id: "7-5", text: "Which BMI range is considered healthy?", options: ["Below 18.5", "18.5 - 25", "25 - 30", "Above 30"], correctAnswer: "18.5 - 25" },
-      { id: "7-6", text: "If a person's BMI is below 18.5, they are considered:", options: ["Obese", "Overweight", "Healthy", "Underweight"], correctAnswer: "Underweight" },
-      { id: "7-7", text: "What does the body use as a short-term energy reserve?", options: ["Glycogen in muscles and liver", "Fat under the skin", "Proteins in the blood", "Minerals in bones"], correctAnswer: "Glycogen in muscles and liver" },
-      { id: "7-8", text: "What is the role of fat stored under the skin for animals in cold environments?", options: ["Heat insulation", "Transporting oxygen", "Building muscles", "Absorbing shock"], correctAnswer: "Heat insulation" },
-      { id: "7-9", text: "Which of the following is a macronutrient?", options: ["Vitamin C", "Iron", "Carbohydrates", "Calcium"], correctAnswer: "Carbohydrates" },
-      { id: "7-10", text: "Which vitamin is important for low light vision?", options: ["Vitamin A", "Vitamin C", "Vitamin D", "Vitamin B"], correctAnswer: "Vitamin A" },
-      { id: "7-11", text: "Scurvy is caused by a deficiency in:", options: ["Iron", "Vitamin C", "Calcium", "Vitamin D"], correctAnswer: "Vitamin C" },
-      { id: "7-12", text: "Which mineral is important for building stronger bones and teeth?", options: ["Iron", "Zinc", "Calcium", "Potassium"], correctAnswer: "Calcium" },
-      { id: "7-13", text: "A deficiency in Iron can lead to:", options: ["Scurvy", "Anaemia", "Night blindness", "Osteoporosis"], correctAnswer: "Anaemia" },
-      { id: "7-14", text: "What pigment in the blood gives it a red color and is made using Iron?", options: ["Plasma", "Haemoglobin", "Melanin", "Chlorophyll"], correctAnswer: "Haemoglobin" },
-      { id: "7-15", text: "What percentage of water makes up an adult human body?", options: ["20%", "40%", "60%", "90%"], correctAnswer: "60%" },
-      { id: "7-16", text: "Which nutrient can your body make when exposed to the sun?", options: ["Vitamin C", "Vitamin D", "Vitamin A", "Calcium"], correctAnswer: "Vitamin D" },
-      { id: "7-17", text: "Which of the following is a good source of Vitamin C?", options: ["Carrots", "Meat", "Citrus fruits", "Milk"], correctAnswer: "Citrus fruits" },
-      { id: "7-18", text: "Everyone's life begins as a single cell called a:", options: ["Embryo", "Zygote", "Foetus", "Sperm"], correctAnswer: "Zygote" },
-      { id: "7-19", text: "Fertilization occurs when a sperm combines with an:", options: ["Ovary", "Egg (ovum)", "Oviduct", "Uterus"], correctAnswer: "Egg (ovum)" },
-      { id: "7-20", text: "What process does a zygote undergo to form an embryo?", options: ["Fertilization", "Cell division (mitosis)", "Respiration", "Digestion"], correctAnswer: "Cell division (mitosis)" },
-      { id: "7-21", text: "Which nutrient is highly required by a pregnant woman for the growth of the embryo?", options: ["Vitamin C", "Fat", "Protein", "Carbohydrates"], correctAnswer: "Protein" },
-      { id: "7-22", text: "When a cell divides, it becomes:", options: ["Four identical cells", "Two identical cells", "Two different cells", "Four different cells"], correctAnswer: "Two identical cells" },
-      { id: "7-23", text: "The stages of human development are in which order?", options: ["Toddler -> Baby -> Child -> Adolescent -> Adult -> Elderly", "Baby -> Toddler -> Child -> Adolescent -> Adult -> Elderly", "Child -> Baby -> Toddler -> Adult -> Adolescent -> Elderly", "Baby -> Child -> Toddler -> Adolescent -> Adult -> Elderly"], correctAnswer: "Baby -> Toddler -> Child -> Adolescent -> Adult -> Elderly" },
-      { id: "7-24", text: "Which of the following is an example of a good habit?", options: ["Sleeping till 11am", "Drinking alcohol", "Brushing teeth twice a day", "Smoking"], correctAnswer: "Brushing teeth twice a day" },
-      { id: "7-25", text: "What happens to the heart muscles of people who exercise regularly?", options: ["They become weaker", "They become stronger", "They become smaller", "They stop pumping"], correctAnswer: "They become stronger" },
-      { id: "7-26", text: "Which chemical does the brain produce during exercise that makes people feel cheerful?", options: ["Adrenaline", "Nicotine", "Endorphin", "Haemoglobin"], correctAnswer: "Endorphin" },
-      { id: "7-27", text: "Nicotine is an addictive chemical that:", options: ["Causes lung cancer", "Makes blood vessels narrower", "Transports oxygen", "Produces a sticky mixture in the lungs"], correctAnswer: "Makes blood vessels narrower" },
-      { id: "7-28", text: "Which substance in cigarettes is a dark, sticky mixture that contains many cancer-causing chemicals?", options: ["Nicotine", "Tar", "Carbon monoxide", "Carbon particulate"], correctAnswer: "Tar" },
-      { id: "7-29", text: "Carbon monoxide is a poisonous gas because it:", options: ["Narrows blood vessels", "Traps oxygen in the alveoli", "Combines with haemoglobin and prevents oxygen transport", "Causes lung cancer"], correctAnswer: "Combines with haemoglobin and prevents oxygen transport" },
-      { id: "7-30", text: "Carbon particulates can become trapped in a smoker's:", options: ["Heart", "Liver", "Alveoli", "Stomach"], correctAnswer: "Alveoli" },
-      { id: "7-31", text: "What process separates blood into layers using a machine?", options: ["Filtration", "Centrifugation", "Evaporation", "Distillation"], correctAnswer: "Centrifugation" },
-      { id: "7-32", text: "Blood can be separated into blood cells and a yellowish liquid called:", options: ["Plasma", "Water", "Haemoglobin", "Platelets"], correctAnswer: "Plasma" },
-      { id: "7-33", text: "Which blood cells contain haemoglobin to pick up oxygen?", options: ["White blood cells", "Red blood cells", "Platelets", "Plasma"], correctAnswer: "Red blood cells" },
-      { id: "7-34", text: "What are the products of respiration?", options: ["Glucose and Oxygen", "Carbon dioxide, Water, and Energy", "Glucose, Water, and Energy", "Oxygen and Carbon dioxide"], correctAnswer: "Carbon dioxide, Water, and Energy" },
-      { id: "7-35", text: "A skeleton found on the outside of an organism is called an:", options: ["Endoskeleton", "Axial skeleton", "Appendicular skeleton", "Exoskeleton"], correctAnswer: "Exoskeleton" },
-      { id: "7-36", text: "Which part of the human skeleton consists of the skull and the spine?", options: ["Axial skeleton", "Appendicular skeleton", "Exoskeleton", "Endoskeleton"], correctAnswer: "Axial skeleton" },
-      { id: "7-37", text: "How many bones are there in the adult human body?", options: ["106", "206", "300", "306"], correctAnswer: "206" },
-      { id: "7-38", text: "Bones are very hard and strong because they contain a lot of which mineral?", options: ["Iron", "Potassium", "Sodium", "Calcium"], correctAnswer: "Calcium" },
-      { id: "7-39", text: "What is the condition where bones become porous and brittle?", options: ["Anaemia", "Osteoporosis", "Scurvy", "Rickets"], correctAnswer: "Osteoporosis" },
-      { id: "7-40", text: "Movement occurs when muscles:", options: ["Contract or relax", "Break or bend", "Divide or multiply", "Stop or start"], correctAnswer: "Contract or relax" },
-      { id: "7-41", text: "What connects a muscle to a bone?", options: ["Ligament", "Cartilage", "Tendon", "Joint"], correctAnswer: "Tendon" },
-      { id: "7-42", text: "What connects two bones together?", options: ["Ligament", "Tendon", "Muscle", "Skin"], correctAnswer: "Ligament" },
-      { id: "7-43", text: "Which joint allows bones to move in a complete circle?", options: ["Hinge joint", "Ball-and-socket joint", "Fixed joint", "Pivot joint"], correctAnswer: "Ball-and-socket joint" },
-      { id: "7-44", text: "The elbow joint is an example of a:", options: ["Ball-and-socket joint", "Hinge joint", "Fixed joint", "Gliding joint"], correctAnswer: "Hinge joint" },
-      { id: "7-45", text: "The movement at the elbow joint is controlled by which two groups of muscles?", options: ["Biceps and triceps", "Quadriceps and hamstrings", "Pectorals and calves", "Glutes and abs"], correctAnswer: "Biceps and triceps" },
-      { id: "7-46", text: "Biceps and triceps are an antagonistic pair of muscles, meaning when they contract, they produce:", options: ["The same movements", "Opposite movements", "Circular movements", "No movement"], correctAnswer: "Opposite movements" },
-      { id: "7-47", text: "Which lever class has the fulcrum (pivot) between the applied force (effort) and the load?", options: ["Class 1 Lever", "Class 2 Lever", "Class 3 Lever", "Class 4 Lever"], correctAnswer: "Class 1 Lever" },
-      { id: "7-48", text: "For muscles to contract, they need energy from which reaction?", options: ["Photosynthesis", "Respiration", "Digestion", "Fertilization"], correctAnswer: "Respiration" },
-      { id: "7-49", text: "Which of the following is an example of an organism with an exoskeleton?", options: ["Fish", "Mammal", "Crab", "Bird"], correctAnswer: "Crab" },
-      { id: "7-50", text: "Where do bones meet?", options: ["Tendons", "Ligaments", "Joints", "Muscles"], correctAnswer: "Joints" }
+    "questions": [
+      {
+        "id": "7-1",
+        "text": "What is a diet?",
+        "options": [
+          "A plan to lose weight",
+          "The sum of all food consumed by a living organism",
+          "A type of medicine",
+          "A disease"
+        ],
+        "correctAnswer": "The sum of all food consumed by a living organism"
+      },
+      {
+        "id": "7-2",
+        "text": "Which of the following is NOT one of the 6 major types of nutrients?",
+        "options": [
+          "Carbohydrates",
+          "Proteins",
+          "Energy",
+          "Minerals"
+        ],
+        "correctAnswer": "Energy"
+      },
+      {
+        "id": "7-3",
+        "text": "What happens if you have too much or too little nutrients in your diet?",
+        "options": [
+          "Malnutrition",
+          "Fitness",
+          "Balanced diet",
+          "Growth"
+        ],
+        "correctAnswer": "Malnutrition"
+      },
+      {
+        "id": "7-4",
+        "text": "According to the food pyramid, which of the following should you eat the least?",
+        "options": [
+          "Carbohydrates",
+          "Vegetables",
+          "Fats/oils/candies",
+          "Proteins"
+        ],
+        "correctAnswer": "Fats/oils/candies"
+      },
+      {
+        "id": "7-5",
+        "text": "Which BMI range is considered healthy?",
+        "options": [
+          "Below 18.5",
+          "18.5 - 25",
+          "25 - 30",
+          "Above 30"
+        ],
+        "correctAnswer": "18.5 - 25"
+      },
+      {
+        "id": "7-6",
+        "text": "If a person's BMI is below 18.5, they are considered:",
+        "options": [
+          "Obese",
+          "Overweight",
+          "Healthy",
+          "Underweight"
+        ],
+        "correctAnswer": "Underweight"
+      },
+      {
+        "id": "7-7",
+        "text": "What does the body use as a short-term energy reserve?",
+        "options": [
+          "Glycogen in muscles and liver",
+          "Fat under the skin",
+          "Proteins in the blood",
+          "Minerals in bones"
+        ],
+        "correctAnswer": "Glycogen in muscles and liver"
+      },
+      {
+        "id": "7-8",
+        "text": "What is the role of fat stored under the skin for animals in cold environments?",
+        "options": [
+          "Heat insulation",
+          "Transporting oxygen",
+          "Building muscles",
+          "Absorbing shock"
+        ],
+        "correctAnswer": "Heat insulation"
+      },
+      {
+        "id": "7-9",
+        "text": "Which of the following is a macronutrient?",
+        "options": [
+          "Vitamin C",
+          "Iron",
+          "Carbohydrates",
+          "Calcium"
+        ],
+        "correctAnswer": "Carbohydrates"
+      },
+      {
+        "id": "7-10",
+        "text": "Which vitamin is important for low light vision?",
+        "options": [
+          "Vitamin A",
+          "Vitamin C",
+          "Vitamin D",
+          "Vitamin B"
+        ],
+        "correctAnswer": "Vitamin A"
+      },
+      {
+        "id": "7-11",
+        "text": "Scurvy is caused by a deficiency in:",
+        "options": [
+          "Iron",
+          "Vitamin C",
+          "Calcium",
+          "Vitamin D"
+        ],
+        "correctAnswer": "Vitamin C"
+      },
+      {
+        "id": "7-12",
+        "text": "Which mineral is important for building stronger bones and teeth?",
+        "options": [
+          "Iron",
+          "Zinc",
+          "Calcium",
+          "Potassium"
+        ],
+        "correctAnswer": "Calcium"
+      },
+      {
+        "id": "7-13",
+        "text": "A deficiency in Iron can lead to:",
+        "options": [
+          "Scurvy",
+          "Anaemia",
+          "Night blindness",
+          "Osteoporosis"
+        ],
+        "correctAnswer": "Anaemia"
+      },
+      {
+        "id": "7-14",
+        "text": "What pigment in the blood gives it a red color and is made using Iron?",
+        "options": [
+          "Plasma",
+          "Haemoglobin",
+          "Melanin",
+          "Chlorophyll"
+        ],
+        "correctAnswer": "Haemoglobin"
+      },
+      {
+        "id": "7-15",
+        "text": "What percentage of water makes up an adult human body?",
+        "options": [
+          "20%",
+          "40%",
+          "60%",
+          "90%"
+        ],
+        "correctAnswer": "60%"
+      },
+      {
+        "id": "7-16",
+        "text": "Which nutrient can your body make when exposed to the sun?",
+        "options": [
+          "Vitamin C",
+          "Vitamin D",
+          "Vitamin A",
+          "Calcium"
+        ],
+        "correctAnswer": "Vitamin D"
+      },
+      {
+        "id": "7-17",
+        "text": "Which of the following is a good source of Vitamin C?",
+        "options": [
+          "Carrots",
+          "Meat",
+          "Citrus fruits",
+          "Milk"
+        ],
+        "correctAnswer": "Citrus fruits"
+      },
+      {
+        "id": "7-18",
+        "text": "Everyone's life begins as a single cell called a:",
+        "options": [
+          "Embryo",
+          "Zygote",
+          "Foetus",
+          "Sperm"
+        ],
+        "correctAnswer": "Zygote"
+      },
+      {
+        "id": "7-19",
+        "text": "Fertilization occurs when a sperm combines with an:",
+        "options": [
+          "Ovary",
+          "Egg (ovum)",
+          "Oviduct",
+          "Uterus"
+        ],
+        "correctAnswer": "Egg (ovum)"
+      },
+      {
+        "id": "7-20",
+        "text": "What process does a zygote undergo to form an embryo?",
+        "options": [
+          "Fertilization",
+          "Cell division (mitosis)",
+          "Respiration",
+          "Digestion"
+        ],
+        "correctAnswer": "Cell division (mitosis)"
+      },
+      {
+        "id": "7-21",
+        "text": "Which nutrient is highly required by a pregnant woman for the growth of the embryo?",
+        "options": [
+          "Vitamin C",
+          "Fat",
+          "Protein",
+          "Carbohydrates"
+        ],
+        "correctAnswer": "Protein"
+      },
+      {
+        "id": "7-22",
+        "text": "When a cell divides, it becomes:",
+        "options": [
+          "Four identical cells",
+          "Two identical cells",
+          "Two different cells",
+          "Four different cells"
+        ],
+        "correctAnswer": "Two identical cells"
+      },
+      {
+        "id": "7-23",
+        "text": "The stages of human development are in which order?",
+        "options": [
+          "Toddler -> Baby -> Child -> Adolescent -> Adult -> Elderly",
+          "Baby -> Toddler -> Child -> Adolescent -> Adult -> Elderly",
+          "Child -> Baby -> Toddler -> Adult -> Adolescent -> Elderly",
+          "Baby -> Child -> Toddler -> Adolescent -> Adult -> Elderly"
+        ],
+        "correctAnswer": "Baby -> Toddler -> Child -> Adolescent -> Adult -> Elderly"
+      },
+      {
+        "id": "7-24",
+        "text": "Which of the following is an example of a good habit?",
+        "options": [
+          "Sleeping till 11am",
+          "Drinking alcohol",
+          "Brushing teeth twice a day",
+          "Smoking"
+        ],
+        "correctAnswer": "Brushing teeth twice a day"
+      },
+      {
+        "id": "7-25",
+        "text": "What happens to the heart muscles of people who exercise regularly?",
+        "options": [
+          "They become weaker",
+          "They become stronger",
+          "They become smaller",
+          "They stop pumping"
+        ],
+        "correctAnswer": "They become stronger"
+      },
+      {
+        "id": "7-26",
+        "text": "Which chemical does the brain produce during exercise that makes people feel cheerful?",
+        "options": [
+          "Adrenaline",
+          "Nicotine",
+          "Endorphin",
+          "Haemoglobin"
+        ],
+        "correctAnswer": "Endorphin"
+      },
+      {
+        "id": "7-27",
+        "text": "Nicotine is an addictive chemical that:",
+        "options": [
+          "Causes lung cancer",
+          "Makes blood vessels narrower",
+          "Transports oxygen",
+          "Produces a sticky mixture in the lungs"
+        ],
+        "correctAnswer": "Makes blood vessels narrower"
+      },
+      {
+        "id": "7-28",
+        "text": "Which substance in cigarettes is a dark, sticky mixture that contains many cancer-causing chemicals?",
+        "options": [
+          "Nicotine",
+          "Tar",
+          "Carbon monoxide",
+          "Carbon particulate"
+        ],
+        "correctAnswer": "Tar"
+      },
+      {
+        "id": "7-29",
+        "text": "Carbon monoxide is a poisonous gas because it:",
+        "options": [
+          "Narrows blood vessels",
+          "Traps oxygen in the alveoli",
+          "Combines with haemoglobin and prevents oxygen transport",
+          "Causes lung cancer"
+        ],
+        "correctAnswer": "Combines with haemoglobin and prevents oxygen transport"
+      },
+      {
+        "id": "7-30",
+        "text": "Carbon particulates can become trapped in a smoker's:",
+        "options": [
+          "Heart",
+          "Liver",
+          "Alveoli",
+          "Stomach"
+        ],
+        "correctAnswer": "Alveoli"
+      },
+      {
+        "id": "7-31",
+        "text": "What process separates blood into layers using a machine?",
+        "options": [
+          "Filtration",
+          "Centrifugation",
+          "Evaporation",
+          "Distillation"
+        ],
+        "correctAnswer": "Centrifugation"
+      },
+      {
+        "id": "7-32",
+        "text": "Blood can be separated into blood cells and a yellowish liquid called:",
+        "options": [
+          "Plasma",
+          "Water",
+          "Haemoglobin",
+          "Platelets"
+        ],
+        "correctAnswer": "Plasma"
+      },
+      {
+        "id": "7-33",
+        "text": "Which blood cells contain haemoglobin to pick up oxygen?",
+        "options": [
+          "White blood cells",
+          "Red blood cells",
+          "Platelets",
+          "Plasma"
+        ],
+        "correctAnswer": "Red blood cells"
+      },
+      {
+        "id": "7-34",
+        "text": "What are the products of respiration?",
+        "options": [
+          "Glucose and Oxygen",
+          "Carbon dioxide, Water, and Energy",
+          "Glucose, Water, and Energy",
+          "Oxygen and Carbon dioxide"
+        ],
+        "correctAnswer": "Carbon dioxide, Water, and Energy"
+      },
+      {
+        "id": "7-35",
+        "text": "A skeleton found on the outside of an organism is called an:",
+        "options": [
+          "Endoskeleton",
+          "Axial skeleton",
+          "Appendicular skeleton",
+          "Exoskeleton"
+        ],
+        "correctAnswer": "Exoskeleton"
+      },
+      {
+        "id": "7-36",
+        "text": "Which part of the human skeleton consists of the skull and the spine?",
+        "options": [
+          "Axial skeleton",
+          "Appendicular skeleton",
+          "Exoskeleton",
+          "Endoskeleton"
+        ],
+        "correctAnswer": "Axial skeleton"
+      },
+      {
+        "id": "7-37",
+        "text": "How many bones are there in the adult human body?",
+        "options": [
+          "106",
+          "206",
+          "300",
+          "306"
+        ],
+        "correctAnswer": "206"
+      },
+      {
+        "id": "7-38",
+        "text": "Bones are very hard and strong because they contain a lot of which mineral?",
+        "options": [
+          "Iron",
+          "Potassium",
+          "Sodium",
+          "Calcium"
+        ],
+        "correctAnswer": "Calcium"
+      },
+      {
+        "id": "7-39",
+        "text": "What is the condition where bones become porous and brittle?",
+        "options": [
+          "Anaemia",
+          "Osteoporosis",
+          "Scurvy",
+          "Rickets"
+        ],
+        "correctAnswer": "Osteoporosis"
+      },
+      {
+        "id": "7-40",
+        "text": "Movement occurs when muscles:",
+        "options": [
+          "Contract or relax",
+          "Break or bend",
+          "Divide or multiply",
+          "Stop or start"
+        ],
+        "correctAnswer": "Contract or relax"
+      },
+      {
+        "id": "7-41",
+        "text": "What connects a muscle to a bone?",
+        "options": [
+          "Ligament",
+          "Cartilage",
+          "Tendon",
+          "Joint"
+        ],
+        "correctAnswer": "Tendon"
+      },
+      {
+        "id": "7-42",
+        "text": "What connects two bones together?",
+        "options": [
+          "Ligament",
+          "Tendon",
+          "Muscle",
+          "Skin"
+        ],
+        "correctAnswer": "Ligament"
+      },
+      {
+        "id": "7-43",
+        "text": "Which joint allows bones to move in a complete circle?",
+        "options": [
+          "Hinge joint",
+          "Ball-and-socket joint",
+          "Fixed joint",
+          "Pivot joint"
+        ],
+        "correctAnswer": "Ball-and-socket joint"
+      },
+      {
+        "id": "7-44",
+        "text": "The elbow joint is an example of a:",
+        "options": [
+          "Ball-and-socket joint",
+          "Hinge joint",
+          "Fixed joint",
+          "Gliding joint"
+        ],
+        "correctAnswer": "Hinge joint"
+      },
+      {
+        "id": "7-45",
+        "text": "The movement at the elbow joint is controlled by which two groups of muscles?",
+        "options": [
+          "Biceps and triceps",
+          "Quadriceps and hamstrings",
+          "Pectorals and calves",
+          "Glutes and abs"
+        ],
+        "correctAnswer": "Biceps and triceps"
+      },
+      {
+        "id": "7-46",
+        "text": "Biceps and triceps are an antagonistic pair of muscles, meaning when they contract, they produce:",
+        "options": [
+          "The same movements",
+          "Opposite movements",
+          "Circular movements",
+          "No movement"
+        ],
+        "correctAnswer": "Opposite movements"
+      },
+      {
+        "id": "7-47",
+        "text": "Which lever class has the fulcrum (pivot) between the applied force (effort) and the load?",
+        "options": [
+          "Class 1 Lever",
+          "Class 2 Lever",
+          "Class 3 Lever",
+          "Class 4 Lever"
+        ],
+        "correctAnswer": "Class 1 Lever"
+      },
+      {
+        "id": "7-48",
+        "text": "For muscles to contract, they need energy from which reaction?",
+        "options": [
+          "Photosynthesis",
+          "Respiration",
+          "Digestion",
+          "Fertilization"
+        ],
+        "correctAnswer": "Respiration"
+      },
+      {
+        "id": "7-49",
+        "text": "Which of the following is an example of an organism with an exoskeleton?",
+        "options": [
+          "Fish",
+          "Mammal",
+          "Crab",
+          "Bird"
+        ],
+        "correctAnswer": "Crab"
+      },
+      {
+        "id": "7-50",
+        "text": "Where do bones meet?",
+        "options": [
+          "Tendons",
+          "Ligaments",
+          "Joints",
+          "Muscles"
+        ],
+        "correctAnswer": "Joints"
+      }
     ]
   },
   {
-    id: 8,
-    title: "Chemical Reactions & Energy",
-    description: "Chemical changes, energy transformations, and properties of metals.",
-    color: "bg-purple-600",
-    concepts: [
+    "id": 8,
+    "title": "Chemical Reactions & Energy",
+    "description": "Chemical changes, energy transformations, and properties of metals.",
+    "color": "bg-purple-600",
+    "concepts": [
       "Physical vs Chemical Changes: Physical changes (e.g. melting, dissolving) are usually reversible and produce no new substances. Chemical changes (e.g. burning, rusting) are usually irreversible and form new substances (products) from reactants.",
       "Combustion & Energy: Burning is a chemical reaction with oxygen that requires fuel, heat, and oxygen (fire triangle). According to the law of conservation of energy, energy is never destroyed but transformed (e.g. chemical energy into light and thermal energy).",
       "Oxidation: Reactions where chemicals combine with oxygen.",
@@ -1455,138 +9272,993 @@ export const units: Unit[] = [
       "Metal Reactions with Acids: Metals more reactive than copper react with dilute acids to produce a salt and hydrogen gas (a flammable gas that gives a 'squeaky pop' test). Hydrochloric acid forms chloride salts. Sulfuric acid forms sulfate salts. Ethanoic acid forms ethanoate salts.",
       "Acids & Concentration: Acids donate H⁺ particles. A concentrated acid has a high number of solutes per volume of solution, whereas a dilute acid has a low number."
     ],
-    vocab: [
-      { term: "Physical change", traditional: "物理變化", simplified: "物理变化", definition: "A change in which no new substances are formed." },
-      { term: "Chemical change / Chemical reaction", traditional: "化學變化 / 化學反應", simplified: "化学变化 / 化学反应", definition: "A change in which one or more new substances are formed." },
-      { term: "Reversible", traditional: "可逆的", simplified: "可逆的", definition: "Capable of being reversed so that the original state is restored." },
-      { term: "Irreversible", traditional: "不可逆的", simplified: "不可逆的", definition: "Not able to be undone or altered." },
-      { term: "Reactant", traditional: "反應物", simplified: "反应物", definition: "A substance that takes part in and undergoes change during a reaction." },
-      { term: "Product", traditional: "產物 / 生成物", simplified: "产物 / 生成物", definition: "A substance that is formed as the result of a chemical reaction." },
-      { term: "Chemical equation", traditional: "化學方程式", simplified: "化学方程式", definition: "A representation of a chemical reaction using symbols of the elements to indicate the amount of substance." },
-      { term: "Combustion (Burning)", traditional: "燃燒", simplified: "燃烧", definition: "A chemical reaction between a fuel and an oxidant, accompanied by the production of heat and light." },
-      { term: "Fuel", traditional: "燃料", simplified: "燃料", definition: "A material such as coal, gas, or oil that is burned to produce heat or power." },
-      { term: "Heat", traditional: "熱", simplified: "热", definition: "Energy that is transferred from one body to another as the result of a difference in temperature." },
-      { term: "Oxygen", traditional: "氧氣", simplified: "氧气", definition: "A colorless, odorless reactive gas, the life-supporting component of the air." },
-      { term: "Fire triangle", traditional: "燃燒三角", simplified: "燃烧三角", definition: "A simple model for understanding the necessary ingredients for most fires: heat, fuel, and an oxidizing agent (usually oxygen)." },
-      { term: "Conservation of energy", traditional: "能量守恆", simplified: "能量守恒", definition: "A principle stating that energy cannot be created or destroyed, but can be altered from one form to another." },
-      { term: "Chemical energy", traditional: "化學能", simplified: "化学能", definition: "Energy stored in the bonds of chemical compounds." },
-      { term: "Light energy", traditional: "光能", simplified: "光能", definition: "A form of electromagnetic radiation that is visible to the human eye." },
-      { term: "Thermal energy", traditional: "熱能", simplified: "热能", definition: "The energy that comes from heat." },
-      { term: "Kinetic energy", traditional: "動能", simplified: "动能", definition: "Energy which a body possesses by virtue of being in motion." },
-      { term: "Potential energy", traditional: "勢能 / 位能", simplified: "势能 / 位能", definition: "The energy possessed by a body by virtue of its position relative to others, stresses within itself, electric charge, and other factors." },
-      { term: "Electrical energy", traditional: "電能", simplified: "电能", definition: "Energy derived from electric potential energy or kinetic energy." },
-      { term: "Energy transformation", traditional: "能量轉換", simplified: "能量转换", definition: "The process of changing one form of energy into another." },
-      { term: "Oxidation", traditional: "氧化作用", simplified: "氧化作用", definition: "The process or result of oxidizing or being oxidized." },
-      { term: "Carbon dioxide", traditional: "二氧化碳", simplified: "二氧化碳", definition: "A colorless, odorless gas produced by burning carbon and organic compounds and by respiration." },
-      { term: "Water", traditional: "水", simplified: "水", definition: "A colorless, transparent, odorless liquid that forms the seas, lakes, rivers, and rain and is the basis of the fluids of living organisms." },
-      { term: "Exothermic reaction", traditional: "放熱反應", simplified: "放热反应", definition: "A chemical reaction that releases energy by light or heat." },
-      { term: "Endothermic reaction", traditional: "吸熱反應", simplified: "吸热反应", definition: "A process or reaction in which the system absorbs energy from its surroundings, usually in the form of heat." },
-      { term: "Metals", traditional: "金屬", simplified: "金属", definition: "A solid material that is typically hard, shiny, malleable, fusible, and ductile, with good electrical and thermal conductivity." },
-      { term: "Malleable", traditional: "具展性的", simplified: "具展性的", definition: "Able to be hammered or pressed permanently out of shape without breaking or cracking." },
-      { term: "Ductile", traditional: "具延性的", simplified: "具延性的", definition: "Able to be drawn out into a thin wire." },
-      { term: "Conductor", traditional: "導體", simplified: "导体", definition: "A material or device that conducts or transmits heat, electricity, or sound." },
-      { term: "Insulator", traditional: "絕緣體", simplified: "绝缘体", definition: "A substance which does not readily allow the passage of heat or sound." },
-      { term: "Lustrous", traditional: "有光澤的", simplified: "有光泽的", definition: "Having luster; shining." },
-      { term: "Sonorous", traditional: "鏗鏘的 / 發聲的", simplified: "铿锵的 / 发声的", definition: "Capable of producing a deep or ringing sound." },
-      { term: "Reactivity", traditional: "反應性 (活潑性)", simplified: "反应性 (活泼性)", definition: "The impetus for which a chemical substance undergoes a chemical reaction." },
-      { term: "Reactive", traditional: "活躍的", simplified: "活跃的", definition: "Showing a response to a stimulus." },
-      { term: "Inert", traditional: "惰性的", simplified: "惰性的", definition: "Chemically inactive." },
-      { term: "Tarnish", traditional: "失去光澤 / 褪色", simplified: "失去光泽 / 褪色", definition: "Lose or cause to lose luster, especially as a result of exposure to air or moisture." },
-      { term: "Rust", traditional: "鐵鏽 (生鏽)", simplified: "铁锈 (生锈)", definition: "A reddish- or yellowish-brown flaky coating of iron oxide that is formed on iron or steel by oxidation, especially in the presence of moisture." },
-      { term: "Hydrated iron oxide", traditional: "水合氧化鐵", simplified: "水合氧化铁", definition: "The chemical name for rust." },
-      { term: "Moisture", traditional: "水分 / 濕氣", simplified: "水分 / 湿气", definition: "Water or other liquid diffused in a small quantity as vapor, within a solid, or condensed on a surface." },
-      { term: "Barrier method", traditional: "屏障法", simplified: "屏障法", definition: "A method of preventing rust by coating the metal with a substance that blocks air and water." },
-      { term: "Galvanization", traditional: "鍍鋅", simplified: "镀锌", definition: "The process of applying a protective zinc coating to steel or iron, to prevent rusting." },
-      { term: "Zinc", traditional: "鋅", simplified: "锌", definition: "A silvery-white metal that is used to coat iron or steel to protect it from corrosion." },
-      { term: "Potassium", traditional: "鉀", simplified: "钾", definition: "A soft silvery-white reactive alkali metal." },
-      { term: "Sodium", traditional: "鈉", simplified: "钠", definition: "A soft silvery-white reactive alkali metal." },
-      { term: "Calcium", traditional: "鈣", simplified: "钙", definition: "A soft gray reactive alkaline earth metal." },
-      { term: "Magnesium", traditional: "鎂", simplified: "镁", definition: "A shiny gray solid which bears a close physical resemblance to the other five elements in the second column of the periodic table." },
-      { term: "Aluminium", traditional: "鋁", simplified: "铝", definition: "A silvery-white, soft, non-magnetic and ductile metal in the boron group." },
-      { term: "Iron", traditional: "鐵", simplified: "铁", definition: "A strong, hard magnetic silvery-gray metal, much used as a material for construction and manufacturing, especially in the form of steel." },
-      { term: "Lead", traditional: "鉛", simplified: "铅", definition: "A heavy, bluish-gray, soft, ductile metal." },
-      { term: "Copper", traditional: "銅", simplified: "铜", definition: "A red-brown metal, the first to be used by man, now used for wire and in alloys such as brass and bronze." },
-      { term: "Silver", simplified: "银", traditional: "銀", definition: "A precious shiny grayish-white metal." },
-      { term: "Gold", simplified: "金", traditional: "金", definition: "A yellow precious metal, the chemical element of atomic number 79, valued especially for use in jewelry and decoration, and to guarantee the value of currencies." },
-      { term: "Steam", traditional: "蒸汽", simplified: "蒸汽", definition: "The vapor into which water is converted when heated, forming a white mist of minute water droplets in the air." },
-      { term: "Hydrogen gas", traditional: "氫氣", simplified: "氢气", definition: "A colorless, odorless, highly flammable gas, the chemical element of atomic number 1." },
-      { term: "Oxide", traditional: "氧化物", simplified: "氧化物", definition: "A binary compound of oxygen with another element or group." },
-      { term: "Hydroxide", traditional: "氫氧化物", simplified: "氢氧化物", definition: "A compound of a metal with the hydroxide ion (OH-)." },
-      { term: "Acid", traditional: "酸", simplified: "酸", definition: "A chemical substance that neutralizes alkalis, dissolves some metals, and turns litmus red; typically, a corrosive or sour-tasting liquid of this kind." },
-      { term: "Hydrochloric acid", traditional: "氫氯酸 / 鹽酸", simplified: "氢氯酸 / 盐酸", definition: "A strongly acidic solution of the gas hydrogen chloride in water." },
-      { term: "Ethanoic acid", traditional: "乙酸 / 醋酸", simplified: "乙酸 / 醋酸", definition: "A colorless liquid acid with a pungent smell, which is the main component of vinegar." },
-      { term: "Sulfuric acid", traditional: "硫酸", simplified: "硫酸", definition: "A strong acid made by oxidizing sulfur dioxide and dissolving it in water." },
-      { term: "Dissolve", traditional: "溶解", simplified: "溶解", definition: "(with reference to a solid) become or cause to become incorporated into a liquid so as to form a solution." },
-      { term: "Solution", traditional: "溶液", simplified: "溶液", definition: "A liquid mixture in which the minor component (the solute) is uniformly distributed within the major component (the solvent)." },
-      { term: "Solute", traditional: "溶質", simplified: "溶质", definition: "The minor component in a solution, dissolved in the solvent." },
-      { term: "Solvent", traditional: "溶劑", simplified: "溶剂", definition: "The major component in a solution, in which the solute is dissolved." },
-      { term: "Concentration", traditional: "濃度", simplified: "浓度", definition: "The relative amount of a given substance contained within a solution or in a particular volume of space." },
-      { term: "Dilute acid", traditional: "稀酸", simplified: "稀酸", definition: "An acid that has a low concentration of acid molecules." },
-      { term: "Concentrated acid", traditional: "濃酸", simplified: "浓酸", definition: "An acid that has a high concentration of acid molecules." },
-      { term: "Salt", traditional: "鹽", simplified: "盐", definition: "A white crystalline substance which gives seawater its characteristic taste and is used for seasoning or preserving food." },
-      { term: "Soluble", traditional: "可溶的", simplified: "可溶的", definition: "(of a substance) able to be dissolved, especially in water." },
-      { term: "Insoluble", traditional: "不可溶的", simplified: "不可溶的", definition: "(of a substance) incapable of being dissolved, especially in water." },
-      { term: "Flammable", traditional: "易燃的", simplified: "易燃的", definition: "Easily set on fire." }
+    "vocab": [
+      {
+        "term": "Physical change",
+        "traditional": "物理變化",
+        "simplified": "物理变化",
+        "definition": "A change in which no new substances are formed."
+      },
+      {
+        "term": "Chemical change / Chemical reaction",
+        "traditional": "化學變化 / 化學反應",
+        "simplified": "化学变化 / 化学反应",
+        "definition": "A change in which one or more new substances are formed."
+      },
+      {
+        "term": "Reversible",
+        "traditional": "可逆的",
+        "simplified": "可逆的",
+        "definition": "Capable of being reversed so that the original state is restored."
+      },
+      {
+        "term": "Irreversible",
+        "traditional": "不可逆的",
+        "simplified": "不可逆的",
+        "definition": "Not able to be undone or altered."
+      },
+      {
+        "term": "Reactant",
+        "traditional": "反應物",
+        "simplified": "反应物",
+        "definition": "A substance that takes part in and undergoes change during a reaction."
+      },
+      {
+        "term": "Product",
+        "traditional": "產物 / 生成物",
+        "simplified": "产物 / 生成物",
+        "definition": "A substance that is formed as the result of a chemical reaction."
+      },
+      {
+        "term": "Chemical equation",
+        "traditional": "化學方程式",
+        "simplified": "化学方程式",
+        "definition": "A representation of a chemical reaction using symbols of the elements to indicate the amount of substance."
+      },
+      {
+        "term": "Combustion (Burning)",
+        "traditional": "燃燒",
+        "simplified": "燃烧",
+        "definition": "A chemical reaction between a fuel and an oxidant, accompanied by the production of heat and light."
+      },
+      {
+        "term": "Fuel",
+        "traditional": "燃料",
+        "simplified": "燃料",
+        "definition": "A material such as coal, gas, or oil that is burned to produce heat or power."
+      },
+      {
+        "term": "Heat",
+        "traditional": "熱",
+        "simplified": "热",
+        "definition": "Energy that is transferred from one body to another as the result of a difference in temperature."
+      },
+      {
+        "term": "Oxygen",
+        "traditional": "氧氣",
+        "simplified": "氧气",
+        "definition": "A colorless, odorless reactive gas, the life-supporting component of the air."
+      },
+      {
+        "term": "Fire triangle",
+        "traditional": "燃燒三角",
+        "simplified": "燃烧三角",
+        "definition": "A simple model for understanding the necessary ingredients for most fires: heat, fuel, and an oxidizing agent (usually oxygen)."
+      },
+      {
+        "term": "Conservation of energy",
+        "traditional": "能量守恆",
+        "simplified": "能量守恒",
+        "definition": "A principle stating that energy cannot be created or destroyed, but can be altered from one form to another."
+      },
+      {
+        "term": "Chemical energy",
+        "traditional": "化學能",
+        "simplified": "化学能",
+        "definition": "Energy stored in the bonds of chemical compounds."
+      },
+      {
+        "term": "Light energy",
+        "traditional": "光能",
+        "simplified": "光能",
+        "definition": "A form of electromagnetic radiation that is visible to the human eye."
+      },
+      {
+        "term": "Thermal energy",
+        "traditional": "熱能",
+        "simplified": "热能",
+        "definition": "The energy that comes from heat."
+      },
+      {
+        "term": "Kinetic energy",
+        "traditional": "動能",
+        "simplified": "动能",
+        "definition": "Energy which a body possesses by virtue of being in motion."
+      },
+      {
+        "term": "Potential energy",
+        "traditional": "勢能 / 位能",
+        "simplified": "势能 / 位能",
+        "definition": "The energy possessed by a body by virtue of its position relative to others, stresses within itself, electric charge, and other factors."
+      },
+      {
+        "term": "Electrical energy",
+        "traditional": "電能",
+        "simplified": "电能",
+        "definition": "Energy derived from electric potential energy or kinetic energy."
+      },
+      {
+        "term": "Energy transformation",
+        "traditional": "能量轉換",
+        "simplified": "能量转换",
+        "definition": "The process of changing one form of energy into another."
+      },
+      {
+        "term": "Oxidation",
+        "traditional": "氧化作用",
+        "simplified": "氧化作用",
+        "definition": "The process or result of oxidizing or being oxidized."
+      },
+      {
+        "term": "Carbon dioxide",
+        "traditional": "二氧化碳",
+        "simplified": "二氧化碳",
+        "definition": "A colorless, odorless gas produced by burning carbon and organic compounds and by respiration."
+      },
+      {
+        "term": "Water",
+        "traditional": "水",
+        "simplified": "水",
+        "definition": "A colorless, transparent, odorless liquid that forms the seas, lakes, rivers, and rain and is the basis of the fluids of living organisms."
+      },
+      {
+        "term": "Exothermic reaction",
+        "traditional": "放熱反應",
+        "simplified": "放热反应",
+        "definition": "A chemical reaction that releases energy by light or heat."
+      },
+      {
+        "term": "Endothermic reaction",
+        "traditional": "吸熱反應",
+        "simplified": "吸热反应",
+        "definition": "A process or reaction in which the system absorbs energy from its surroundings, usually in the form of heat."
+      },
+      {
+        "term": "Metals",
+        "traditional": "金屬",
+        "simplified": "金属",
+        "definition": "A solid material that is typically hard, shiny, malleable, fusible, and ductile, with good electrical and thermal conductivity."
+      },
+      {
+        "term": "Malleable",
+        "traditional": "具展性的",
+        "simplified": "具展性的",
+        "definition": "Able to be hammered or pressed permanently out of shape without breaking or cracking."
+      },
+      {
+        "term": "Ductile",
+        "traditional": "具延性的",
+        "simplified": "具延性的",
+        "definition": "Able to be drawn out into a thin wire."
+      },
+      {
+        "term": "Conductor",
+        "traditional": "導體",
+        "simplified": "导体",
+        "definition": "A material or device that conducts or transmits heat, electricity, or sound."
+      },
+      {
+        "term": "Insulator",
+        "traditional": "絕緣體",
+        "simplified": "绝缘体",
+        "definition": "A substance which does not readily allow the passage of heat or sound."
+      },
+      {
+        "term": "Lustrous",
+        "traditional": "有光澤的",
+        "simplified": "有光泽的",
+        "definition": "Having luster; shining."
+      },
+      {
+        "term": "Sonorous",
+        "traditional": "鏗鏘的 / 發聲的",
+        "simplified": "铿锵的 / 发声的",
+        "definition": "Capable of producing a deep or ringing sound."
+      },
+      {
+        "term": "Reactivity",
+        "traditional": "反應性 (活潑性)",
+        "simplified": "反应性 (活泼性)",
+        "definition": "The impetus for which a chemical substance undergoes a chemical reaction."
+      },
+      {
+        "term": "Reactive",
+        "traditional": "活躍的",
+        "simplified": "活跃的",
+        "definition": "Showing a response to a stimulus."
+      },
+      {
+        "term": "Inert",
+        "traditional": "惰性的",
+        "simplified": "惰性的",
+        "definition": "Chemically inactive."
+      },
+      {
+        "term": "Tarnish",
+        "traditional": "失去光澤 / 褪色",
+        "simplified": "失去光泽 / 褪色",
+        "definition": "Lose or cause to lose luster, especially as a result of exposure to air or moisture."
+      },
+      {
+        "term": "Rust",
+        "traditional": "鐵鏽 (生鏽)",
+        "simplified": "铁锈 (生锈)",
+        "definition": "A reddish- or yellowish-brown flaky coating of iron oxide that is formed on iron or steel by oxidation, especially in the presence of moisture."
+      },
+      {
+        "term": "Hydrated iron oxide",
+        "traditional": "水合氧化鐵",
+        "simplified": "水合氧化铁",
+        "definition": "The chemical name for rust."
+      },
+      {
+        "term": "Moisture",
+        "traditional": "水分 / 濕氣",
+        "simplified": "水分 / 湿气",
+        "definition": "Water or other liquid diffused in a small quantity as vapor, within a solid, or condensed on a surface."
+      },
+      {
+        "term": "Barrier method",
+        "traditional": "屏障法",
+        "simplified": "屏障法",
+        "definition": "A method of preventing rust by coating the metal with a substance that blocks air and water."
+      },
+      {
+        "term": "Galvanization",
+        "traditional": "鍍鋅",
+        "simplified": "镀锌",
+        "definition": "The process of applying a protective zinc coating to steel or iron, to prevent rusting."
+      },
+      {
+        "term": "Zinc",
+        "traditional": "鋅",
+        "simplified": "锌",
+        "definition": "A silvery-white metal that is used to coat iron or steel to protect it from corrosion."
+      },
+      {
+        "term": "Potassium",
+        "traditional": "鉀",
+        "simplified": "钾",
+        "definition": "A soft silvery-white reactive alkali metal."
+      },
+      {
+        "term": "Sodium",
+        "traditional": "鈉",
+        "simplified": "钠",
+        "definition": "A soft silvery-white reactive alkali metal."
+      },
+      {
+        "term": "Calcium",
+        "traditional": "鈣",
+        "simplified": "钙",
+        "definition": "A soft gray reactive alkaline earth metal."
+      },
+      {
+        "term": "Magnesium",
+        "traditional": "鎂",
+        "simplified": "镁",
+        "definition": "A shiny gray solid which bears a close physical resemblance to the other five elements in the second column of the periodic table."
+      },
+      {
+        "term": "Aluminium",
+        "traditional": "鋁",
+        "simplified": "铝",
+        "definition": "A silvery-white, soft, non-magnetic and ductile metal in the boron group."
+      },
+      {
+        "term": "Iron",
+        "traditional": "鐵",
+        "simplified": "铁",
+        "definition": "A strong, hard magnetic silvery-gray metal, much used as a material for construction and manufacturing, especially in the form of steel."
+      },
+      {
+        "term": "Lead",
+        "traditional": "鉛",
+        "simplified": "铅",
+        "definition": "A heavy, bluish-gray, soft, ductile metal."
+      },
+      {
+        "term": "Copper",
+        "traditional": "銅",
+        "simplified": "铜",
+        "definition": "A red-brown metal, the first to be used by man, now used for wire and in alloys such as brass and bronze."
+      },
+      {
+        "term": "Silver",
+        "simplified": "银",
+        "traditional": "銀",
+        "definition": "A precious shiny grayish-white metal."
+      },
+      {
+        "term": "Gold",
+        "simplified": "金",
+        "traditional": "金",
+        "definition": "A yellow precious metal, the chemical element of atomic number 79, valued especially for use in jewelry and decoration, and to guarantee the value of currencies."
+      },
+      {
+        "term": "Steam",
+        "traditional": "蒸汽",
+        "simplified": "蒸汽",
+        "definition": "The vapor into which water is converted when heated, forming a white mist of minute water droplets in the air."
+      },
+      {
+        "term": "Hydrogen gas",
+        "traditional": "氫氣",
+        "simplified": "氢气",
+        "definition": "A colorless, odorless, highly flammable gas, the chemical element of atomic number 1."
+      },
+      {
+        "term": "Oxide",
+        "traditional": "氧化物",
+        "simplified": "氧化物",
+        "definition": "A binary compound of oxygen with another element or group."
+      },
+      {
+        "term": "Hydroxide",
+        "traditional": "氫氧化物",
+        "simplified": "氢氧化物",
+        "definition": "A compound of a metal with the hydroxide ion (OH-)."
+      },
+      {
+        "term": "Acid",
+        "traditional": "酸",
+        "simplified": "酸",
+        "definition": "A chemical substance that neutralizes alkalis, dissolves some metals, and turns litmus red; typically, a corrosive or sour-tasting liquid of this kind."
+      },
+      {
+        "term": "Hydrochloric acid",
+        "traditional": "氫氯酸 / 鹽酸",
+        "simplified": "氢氯酸 / 盐酸",
+        "definition": "A strongly acidic solution of the gas hydrogen chloride in water."
+      },
+      {
+        "term": "Ethanoic acid",
+        "traditional": "乙酸 / 醋酸",
+        "simplified": "乙酸 / 醋酸",
+        "definition": "A colorless liquid acid with a pungent smell, which is the main component of vinegar."
+      },
+      {
+        "term": "Sulfuric acid",
+        "traditional": "硫酸",
+        "simplified": "硫酸",
+        "definition": "A strong acid made by oxidizing sulfur dioxide and dissolving it in water."
+      },
+      {
+        "term": "Dissolve",
+        "traditional": "溶解",
+        "simplified": "溶解",
+        "definition": "(with reference to a solid) become or cause to become incorporated into a liquid so as to form a solution."
+      },
+      {
+        "term": "Solution",
+        "traditional": "溶液",
+        "simplified": "溶液",
+        "definition": "A liquid mixture in which the minor component (the solute) is uniformly distributed within the major component (the solvent)."
+      },
+      {
+        "term": "Solute",
+        "traditional": "溶質",
+        "simplified": "溶质",
+        "definition": "The minor component in a solution, dissolved in the solvent."
+      },
+      {
+        "term": "Solvent",
+        "traditional": "溶劑",
+        "simplified": "溶剂",
+        "definition": "The major component in a solution, in which the solute is dissolved."
+      },
+      {
+        "term": "Concentration",
+        "traditional": "濃度",
+        "simplified": "浓度",
+        "definition": "The relative amount of a given substance contained within a solution or in a particular volume of space."
+      },
+      {
+        "term": "Dilute acid",
+        "traditional": "稀酸",
+        "simplified": "稀酸",
+        "definition": "An acid that has a low concentration of acid molecules."
+      },
+      {
+        "term": "Concentrated acid",
+        "traditional": "濃酸",
+        "simplified": "浓酸",
+        "definition": "An acid that has a high concentration of acid molecules."
+      },
+      {
+        "term": "Salt",
+        "traditional": "鹽",
+        "simplified": "盐",
+        "definition": "A white crystalline substance which gives seawater its characteristic taste and is used for seasoning or preserving food."
+      },
+      {
+        "term": "Soluble",
+        "traditional": "可溶的",
+        "simplified": "可溶的",
+        "definition": "(of a substance) able to be dissolved, especially in water."
+      },
+      {
+        "term": "Insoluble",
+        "traditional": "不可溶的",
+        "simplified": "不可溶的",
+        "definition": "(of a substance) incapable of being dissolved, especially in water."
+      },
+      {
+        "term": "Flammable",
+        "traditional": "易燃的",
+        "simplified": "易燃的",
+        "definition": "Easily set on fire."
+      }
     ],
-    questions: [
-      { id: "8-1", text: "Which of the following is an example of a reversible physical change?", options: ["Baking cookies", "Freezing water", "Frying an egg", "Lighting a match"], correctAnswer: "Freezing water" },
-      { id: "8-2", text: "What are the substances required to start a chemical reaction called?", options: ["Products", "Reactants", "Mixtures", "Solutions"], correctAnswer: "Reactants" },
-      { id: "8-3", text: "Which of the following is a chemical change?", options: ["Crushing a soda can", "Dissolving sugar in water", "Rusting of an iron nail", "Breaking glass"], correctAnswer: "Rusting of an iron nail" },
-      { id: "8-4", text: "In the chemical equation A + B -> C + D, what do C and D represent?", options: ["Products", "Reactants", "Catalysts", "Solvents"], correctAnswer: "Products" },
-      { id: "8-5", text: "Which three components make up the \"fire triangle\" needed for combustion?", options: ["Fuel, Heat, Water", "Oxygen, Heat, Carbon dioxide", "Fuel, Heat, Oxygen", "Fuel, Light, Oxygen"], correctAnswer: "Fuel, Heat, Oxygen" },
-      { id: "8-6", text: "According to the law of conservation of energy, energy:", options: ["Can be created from nothing", "Can be destroyed easily", "Cannot be created or destroyed, only transformed", "Is completely lost during chemical reactions"], correctAnswer: "Cannot be created or destroyed, only transformed" },
-      { id: "8-7", text: "What type of energy is stored in the chemical bonds of food and fuels?", options: ["Kinetic energy", "Thermal energy", "Chemical energy", "Light energy"], correctAnswer: "Chemical energy" },
-      { id: "8-8", text: "When carbon combusts, it reacts with oxygen to form:", options: ["Carbon monoxide", "Carbon dioxide", "Methane", "Water"], correctAnswer: "Carbon dioxide" },
-      { id: "8-9", text: "An exothermic reaction causes the temperature of the surroundings to:", options: ["Rise", "Drop", "Stay exactly the same", "Fluctuate randomly"], correctAnswer: "Rise" },
-      { id: "8-10", text: "Which chemical is used in an instant cold pack due to its strongly endothermic reaction with water?", options: ["Calcium oxide", "Sodium chloride", "Ammonium nitrate", "Magnesium oxide"], correctAnswer: "Ammonium nitrate" },
-      { id: "8-11", text: "Which energy transformation occurs in a battery-powered torch?", options: ["Chemical -> Electrical -> Light", "Electrical -> Kinetic -> Light", "Chemical -> Thermal -> Kinetic", "Potential -> Electrical -> Sound"], correctAnswer: "Chemical -> Electrical -> Light" },
-      { id: "8-12", text: "Kinetic energy is the form of energy found in:", options: ["Stored objects like a stretched spring", "Moving objects", "Hot objects", "Light waves"], correctAnswer: "Moving objects" },
-      { id: "8-13", text: "The reaction inside a self-heating lunchbox using calcium oxide and water is an example of:", options: ["An endothermic reaction", "An exothermic reaction", "A physical change", "Evaporation"], correctAnswer: "An exothermic reaction" },
-      { id: "8-14", text: "What does the term \"malleable\" mean when describing metals?", options: ["They can be hammered into thin sheets", "They can be pulled into long wires", "They are good conductors of heat", "They produce a ringing sound when struck"], correctAnswer: "They can be hammered into thin sheets" },
-      { id: "8-15", text: "Which of the following is NOT a typical property of most metals?", options: ["Lustrous (shiny)", "Sonorous", "Poor conductor of electricity", "Ductile"], correctAnswer: "Poor conductor of electricity" },
-      { id: "8-16", text: "Which metal property makes copper very useful for making electrical cables?", options: ["It is sonorous and lustrous", "It is ductile and a good electrical conductor", "It is inert and insulates heat", "It is an insulator"], correctAnswer: "It is ductile and a good electrical conductor" },
-      { id: "8-17", text: "When a metal reacts with oxygen, it forms a:", options: ["Metal hydroxide", "Metal oxide", "Metal salt", "Metal hydride"], correctAnswer: "Metal oxide" },
-      { id: "8-18", text: "What is the process called when a shiny metal surface turns dull because it reacts with oxygen in the air?", options: ["Rusting", "Tarnishing", "Galvanizing", "Dissolving"], correctAnswer: "Tarnishing" },
-      { id: "8-19", text: "Which metal is considered inert and does not react with oxygen at all?", options: ["Sodium", "Potassium", "Iron", "Gold"], correctAnswer: "Gold" },
-      { id: "8-20", text: "What two substances must be present for iron to rust?", options: ["Oxygen and carbon dioxide", "Oxygen and water", "Water and salt", "Nitrogen and oxygen"], correctAnswer: "Oxygen and water" },
-      { id: "8-21", text: "Hydrated iron oxide is a brown, flaky substance commonly known as:", options: ["Tarnish", "Rust", "Ash", "Soot"], correctAnswer: "Rust" },
-      { id: "8-22", text: "How does rust affect the strength of an iron object?", options: ["It makes the iron stronger", "It has no effect on the iron's strength", "It is weaker and makes the iron crumble easily", "It turns the iron into a different metal"], correctAnswer: "It is weaker and makes the iron crumble easily" },
-      { id: "8-23", text: "Which method prevents rusting by coating iron with a layer of zinc?", options: ["Painting", "Oiling", "Galvanization", "Lubricating"], correctAnswer: "Galvanization" },
-      { id: "8-24", text: "In an experiment to investigate rusting, what is the purpose of adding calcium chloride to a test tube?", options: ["To provide extra oxygen", "To absorb moisture from the air", "To act as a catalyst", "To boil the water"], correctAnswer: "To absorb moisture from the air" },
-      { id: "8-25", text: "Boiling water before adding an iron nail in a rusting experiment serves to:", options: ["Remove all dissolved minerals", "Remove all dissolved oxygen gas", "Evaporate the water completely", "Speed up the rusting process"], correctAnswer: "Remove all dissolved oxygen gas" },
-      { id: "8-26", text: "In the iron nail rusting experiment, what is the dependent variable?", options: ["Whether water is present", "Whether oxygen is present", "Whether the iron nail rusted", "The temperature of the room"], correctAnswer: "Whether the iron nail rusted" },
-      { id: "8-27", text: "Which of the following metals reacts most vigorously with cold water?", options: ["Magnesium", "Zinc", "Potassium", "Iron"], correctAnswer: "Potassium" },
-      { id: "8-28", text: "When a reactive metal (like sodium) reacts with cold water, the products are:", options: ["Metal oxide and water", "Metal hydroxide and hydrogen gas", "Metal oxide and hydrogen gas", "Metal salt and water"], correctAnswer: "Metal hydroxide and hydrogen gas" },
-      { id: "8-29", text: "How can you test for the presence of hydrogen gas?", options: ["It turns limewater milky", "It relights a glowing splint", "It produces a \"squeaky pop\" sound with a burning splint", "It turns damp red litmus paper blue"], correctAnswer: "It produces a \"squeaky pop\" sound with a burning splint" },
-      { id: "8-30", text: "Less reactive metals like magnesium and zinc do not react with cold water, but they will react with:", options: ["Ice", "Hot steam", "Saltwater", "Oil"], correctAnswer: "Hot steam" },
-      { id: "8-31", text: "What products are formed when a metal reacts with hot steam?", options: ["Metal hydroxide and hydrogen", "Metal oxide and hydrogen", "Metal chloride and hydrogen", "Metal oxide and water"], correctAnswer: "Metal oxide and hydrogen" },
-      { id: "8-32", text: "Which of the following metals does NOT react with cold water or steam?", options: ["Sodium", "Calcium", "Copper", "Aluminium"], correctAnswer: "Copper" },
-      { id: "8-33", text: "Looking at the reactivity series, which of these metals is the LEAST reactive?", options: ["Potassium", "Magnesium", "Iron", "Gold"], correctAnswer: "Gold" },
-      { id: "8-34", text: "Which of the following represents a metal hydroxide?", options: ["Na2O", "Ca(OH)2", "NaOH", "Both B and C"], correctAnswer: "Both B and C" },
-      { id: "8-35", text: "What is the main difference between an oxide and a hydroxide?", options: ["Oxides contain oxygen, while hydroxides contain both hydrogen and oxygen", "Oxides contain hydrogen, while hydroxides contain oxygen", "Oxides dissolve in water, but hydroxides do not", "There is no difference"], correctAnswer: "Oxides contain oxygen, while hydroxides contain both hydrogen and oxygen" },
-      { id: "8-36", text: "Acids are described as chemicals that can donate:", options: ["OH⁻ particles", "H⁺ particles", "O²⁻ particles", "Na⁺ particles"], correctAnswer: "H⁺ particles" },
-      { id: "8-37", text: "Which common weak acid is found in vinegar?", options: ["Hydrochloric acid", "Sulfuric acid", "Ethanoic acid", "Nitric acid"], correctAnswer: "Ethanoic acid" },
-      { id: "8-38", text: "What does \"concentration\" of an acid refer to?", options: ["The total volume of the solvent", "The number of solutes in a certain volume of solution", "The type of metal it reacts with", "The temperature of the water"], correctAnswer: "The number of solutes in a certain volume of solution" },
-      { id: "8-39", text: "A dilute acid has:", options: ["A low concentration and a small number of solutes", "A high concentration and a large number of solutes", "No solutes at all", "Only solid metal particles"], correctAnswer: "A low concentration and a small number of solutes" },
-      { id: "8-40", text: "Metals that are more reactive than copper react with dilute acids to form:", options: ["A salt and water", "A metal salt and hydrogen gas", "A metal oxide and hydrogen gas", "A non-metal and water"], correctAnswer: "A metal salt and hydrogen gas" },
-      { id: "8-41", text: "Which salt is formed when magnesium reacts with sulfuric acid?", options: ["Magnesium chloride", "Magnesium ethanoate", "Magnesium sulfate", "Magnesium oxide"], correctAnswer: "Magnesium sulfate" },
-      { id: "8-42", text: "Which salt is formed when zinc reacts with ethanoic acid?", options: ["Zinc chloride", "Zinc ethanoate", "Zinc sulfate", "Zinc nitrate"], correctAnswer: "Zinc ethanoate" },
-      { id: "8-43", text: "What is the correct word equation for the reaction between aluminium and hydrochloric acid?", options: ["Aluminium + hydrochloric acid -> aluminium sulfate + water", "Aluminium + hydrochloric acid -> aluminium chloride + hydrogen", "Aluminium + hydrochloric acid -> aluminium oxide + hydrogen", "Aluminium + hydrochloric acid -> aluminium ethanoate + water"], correctAnswer: "Aluminium + hydrochloric acid -> aluminium chloride + hydrogen" },
-      { id: "8-44", text: "Which of the following metals will NOT react with dilute acids?", options: ["Iron", "Zinc", "Copper", "Magnesium"], correctAnswer: "Copper" },
-      { id: "8-45", text: "In a solution, the substance that gets dissolved is called the:", options: ["Solvent", "Solute", "Precipitate", "Reactant"], correctAnswer: "Solute" },
-      { id: "8-46", text: "Water is a common solvent. What happens to a soluble substance like table salt when added to water?", options: ["It breaks into smaller pieces and disappears to form a transparent solution", "It sinks to the bottom and stays solid", "It floats on the surface", "It produces hydrogen gas"], correctAnswer: "It breaks into smaller pieces and disappears to form a transparent solution" },
-      { id: "8-47", text: "Which of the following substances is generally insoluble in water?", options: ["Table salt", "Sugar", "Sand", "Most metal salts"], correctAnswer: "Sand" },
-      { id: "8-48", text: "What is the word equation for the reaction of sodium and sulfuric acid?", options: ["Sodium + sulfuric acid -> sodium ethanoate + hydrogen", "Sodium + sulfuric acid -> sodium chloride + hydrogen", "Sodium + sulfuric acid -> sodium sulfate + hydrogen", "Sodium + sulfuric acid -> sodium oxide + hydrogen"], correctAnswer: "Sodium + sulfuric acid -> sodium sulfate + hydrogen" },
-      { id: "8-49", text: "If hydrogen is formed in an acid-metal reaction, you should handle it carefully because it is:", options: ["Highly toxic", "Highly flammable", "Very heavy and sinks", "Unreactive"], correctAnswer: "Highly flammable" },
-      { id: "8-50", text: "What is formed when potassium reacts with ethanoic acid?", options: ["Potassium ethanoate + hydrogen", "Potassium sulfate + hydrogen", "Potassium chloride + hydrogen", "Potassium hydroxide + hydrogen"], correctAnswer: "Potassium ethanoate + hydrogen" }
+    "questions": [
+      {
+        "id": "8-1",
+        "text": "Which of the following is an example of a reversible physical change?",
+        "options": [
+          "Baking cookies",
+          "Freezing water",
+          "Frying an egg",
+          "Lighting a match"
+        ],
+        "correctAnswer": "Freezing water"
+      },
+      {
+        "id": "8-2",
+        "text": "What are the substances required to start a chemical reaction called?",
+        "options": [
+          "Products",
+          "Reactants",
+          "Mixtures",
+          "Solutions"
+        ],
+        "correctAnswer": "Reactants"
+      },
+      {
+        "id": "8-3",
+        "text": "Which of the following is a chemical change?",
+        "options": [
+          "Crushing a soda can",
+          "Dissolving sugar in water",
+          "Rusting of an iron nail",
+          "Breaking glass"
+        ],
+        "correctAnswer": "Rusting of an iron nail"
+      },
+      {
+        "id": "8-4",
+        "text": "In the chemical equation A + B -> C + D, what do C and D represent?",
+        "options": [
+          "Products",
+          "Reactants",
+          "Catalysts",
+          "Solvents"
+        ],
+        "correctAnswer": "Products"
+      },
+      {
+        "id": "8-5",
+        "text": "Which three components make up the \"fire triangle\" needed for combustion?",
+        "options": [
+          "Fuel, Heat, Water",
+          "Oxygen, Heat, Carbon dioxide",
+          "Fuel, Heat, Oxygen",
+          "Fuel, Light, Oxygen"
+        ],
+        "correctAnswer": "Fuel, Heat, Oxygen"
+      },
+      {
+        "id": "8-6",
+        "text": "According to the law of conservation of energy, energy:",
+        "options": [
+          "Can be created from nothing",
+          "Can be destroyed easily",
+          "Cannot be created or destroyed, only transformed",
+          "Is completely lost during chemical reactions"
+        ],
+        "correctAnswer": "Cannot be created or destroyed, only transformed"
+      },
+      {
+        "id": "8-7",
+        "text": "What type of energy is stored in the chemical bonds of food and fuels?",
+        "options": [
+          "Kinetic energy",
+          "Thermal energy",
+          "Chemical energy",
+          "Light energy"
+        ],
+        "correctAnswer": "Chemical energy"
+      },
+      {
+        "id": "8-8",
+        "text": "When carbon combusts, it reacts with oxygen to form:",
+        "options": [
+          "Carbon monoxide",
+          "Carbon dioxide",
+          "Methane",
+          "Water"
+        ],
+        "correctAnswer": "Carbon dioxide"
+      },
+      {
+        "id": "8-9",
+        "text": "An exothermic reaction causes the temperature of the surroundings to:",
+        "options": [
+          "Rise",
+          "Drop",
+          "Stay exactly the same",
+          "Fluctuate randomly"
+        ],
+        "correctAnswer": "Rise"
+      },
+      {
+        "id": "8-10",
+        "text": "Which chemical is used in an instant cold pack due to its strongly endothermic reaction with water?",
+        "options": [
+          "Calcium oxide",
+          "Sodium chloride",
+          "Ammonium nitrate",
+          "Magnesium oxide"
+        ],
+        "correctAnswer": "Ammonium nitrate"
+      },
+      {
+        "id": "8-11",
+        "text": "Which energy transformation occurs in a battery-powered torch?",
+        "options": [
+          "Chemical -> Electrical -> Light",
+          "Electrical -> Kinetic -> Light",
+          "Chemical -> Thermal -> Kinetic",
+          "Potential -> Electrical -> Sound"
+        ],
+        "correctAnswer": "Chemical -> Electrical -> Light"
+      },
+      {
+        "id": "8-12",
+        "text": "Kinetic energy is the form of energy found in:",
+        "options": [
+          "Stored objects like a stretched spring",
+          "Moving objects",
+          "Hot objects",
+          "Light waves"
+        ],
+        "correctAnswer": "Moving objects"
+      },
+      {
+        "id": "8-13",
+        "text": "The reaction inside a self-heating lunchbox using calcium oxide and water is an example of:",
+        "options": [
+          "An endothermic reaction",
+          "An exothermic reaction",
+          "A physical change",
+          "Evaporation"
+        ],
+        "correctAnswer": "An exothermic reaction"
+      },
+      {
+        "id": "8-14",
+        "text": "What does the term \"malleable\" mean when describing metals?",
+        "options": [
+          "They can be hammered into thin sheets",
+          "They can be pulled into long wires",
+          "They are good conductors of heat",
+          "They produce a ringing sound when struck"
+        ],
+        "correctAnswer": "They can be hammered into thin sheets"
+      },
+      {
+        "id": "8-15",
+        "text": "Which of the following is NOT a typical property of most metals?",
+        "options": [
+          "Lustrous (shiny)",
+          "Sonorous",
+          "Poor conductor of electricity",
+          "Ductile"
+        ],
+        "correctAnswer": "Poor conductor of electricity"
+      },
+      {
+        "id": "8-16",
+        "text": "Which metal property makes copper very useful for making electrical cables?",
+        "options": [
+          "It is sonorous and lustrous",
+          "It is ductile and a good electrical conductor",
+          "It is inert and insulates heat",
+          "It is an insulator"
+        ],
+        "correctAnswer": "It is ductile and a good electrical conductor"
+      },
+      {
+        "id": "8-17",
+        "text": "When a metal reacts with oxygen, it forms a:",
+        "options": [
+          "Metal hydroxide",
+          "Metal oxide",
+          "Metal salt",
+          "Metal hydride"
+        ],
+        "correctAnswer": "Metal oxide"
+      },
+      {
+        "id": "8-18",
+        "text": "What is the process called when a shiny metal surface turns dull because it reacts with oxygen in the air?",
+        "options": [
+          "Rusting",
+          "Tarnishing",
+          "Galvanizing",
+          "Dissolving"
+        ],
+        "correctAnswer": "Tarnishing"
+      },
+      {
+        "id": "8-19",
+        "text": "Which metal is considered inert and does not react with oxygen at all?",
+        "options": [
+          "Sodium",
+          "Potassium",
+          "Iron",
+          "Gold"
+        ],
+        "correctAnswer": "Gold"
+      },
+      {
+        "id": "8-20",
+        "text": "What two substances must be present for iron to rust?",
+        "options": [
+          "Oxygen and carbon dioxide",
+          "Oxygen and water",
+          "Water and salt",
+          "Nitrogen and oxygen"
+        ],
+        "correctAnswer": "Oxygen and water"
+      },
+      {
+        "id": "8-21",
+        "text": "Hydrated iron oxide is a brown, flaky substance commonly known as:",
+        "options": [
+          "Tarnish",
+          "Rust",
+          "Ash",
+          "Soot"
+        ],
+        "correctAnswer": "Rust"
+      },
+      {
+        "id": "8-22",
+        "text": "How does rust affect the strength of an iron object?",
+        "options": [
+          "It makes the iron stronger",
+          "It has no effect on the iron's strength",
+          "It is weaker and makes the iron crumble easily",
+          "It turns the iron into a different metal"
+        ],
+        "correctAnswer": "It is weaker and makes the iron crumble easily"
+      },
+      {
+        "id": "8-23",
+        "text": "Which method prevents rusting by coating iron with a layer of zinc?",
+        "options": [
+          "Painting",
+          "Oiling",
+          "Galvanization",
+          "Lubricating"
+        ],
+        "correctAnswer": "Galvanization"
+      },
+      {
+        "id": "8-24",
+        "text": "In an experiment to investigate rusting, what is the purpose of adding calcium chloride to a test tube?",
+        "options": [
+          "To provide extra oxygen",
+          "To absorb moisture from the air",
+          "To act as a catalyst",
+          "To boil the water"
+        ],
+        "correctAnswer": "To absorb moisture from the air"
+      },
+      {
+        "id": "8-25",
+        "text": "Boiling water before adding an iron nail in a rusting experiment serves to:",
+        "options": [
+          "Remove all dissolved minerals",
+          "Remove all dissolved oxygen gas",
+          "Evaporate the water completely",
+          "Speed up the rusting process"
+        ],
+        "correctAnswer": "Remove all dissolved oxygen gas"
+      },
+      {
+        "id": "8-26",
+        "text": "In the iron nail rusting experiment, what is the dependent variable?",
+        "options": [
+          "Whether water is present",
+          "Whether oxygen is present",
+          "Whether the iron nail rusted",
+          "The temperature of the room"
+        ],
+        "correctAnswer": "Whether the iron nail rusted"
+      },
+      {
+        "id": "8-27",
+        "text": "Which of the following metals reacts most vigorously with cold water?",
+        "options": [
+          "Magnesium",
+          "Zinc",
+          "Potassium",
+          "Iron"
+        ],
+        "correctAnswer": "Potassium"
+      },
+      {
+        "id": "8-28",
+        "text": "When a reactive metal (like sodium) reacts with cold water, the products are:",
+        "options": [
+          "Metal oxide and water",
+          "Metal hydroxide and hydrogen gas",
+          "Metal oxide and hydrogen gas",
+          "Metal salt and water"
+        ],
+        "correctAnswer": "Metal hydroxide and hydrogen gas"
+      },
+      {
+        "id": "8-29",
+        "text": "How can you test for the presence of hydrogen gas?",
+        "options": [
+          "It turns limewater milky",
+          "It relights a glowing splint",
+          "It produces a \"squeaky pop\" sound with a burning splint",
+          "It turns damp red litmus paper blue"
+        ],
+        "correctAnswer": "It produces a \"squeaky pop\" sound with a burning splint"
+      },
+      {
+        "id": "8-30",
+        "text": "Less reactive metals like magnesium and zinc do not react with cold water, but they will react with:",
+        "options": [
+          "Ice",
+          "Hot steam",
+          "Saltwater",
+          "Oil"
+        ],
+        "correctAnswer": "Hot steam"
+      },
+      {
+        "id": "8-31",
+        "text": "What products are formed when a metal reacts with hot steam?",
+        "options": [
+          "Metal hydroxide and hydrogen",
+          "Metal oxide and hydrogen",
+          "Metal chloride and hydrogen",
+          "Metal oxide and water"
+        ],
+        "correctAnswer": "Metal oxide and hydrogen"
+      },
+      {
+        "id": "8-32",
+        "text": "Which of the following metals does NOT react with cold water or steam?",
+        "options": [
+          "Sodium",
+          "Calcium",
+          "Copper",
+          "Aluminium"
+        ],
+        "correctAnswer": "Copper"
+      },
+      {
+        "id": "8-33",
+        "text": "Looking at the reactivity series, which of these metals is the LEAST reactive?",
+        "options": [
+          "Potassium",
+          "Magnesium",
+          "Iron",
+          "Gold"
+        ],
+        "correctAnswer": "Gold"
+      },
+      {
+        "id": "8-34",
+        "text": "Which of the following represents a metal hydroxide?",
+        "options": [
+          "Na2O",
+          "Ca(OH)2",
+          "NaOH",
+          "Both B and C"
+        ],
+        "correctAnswer": "Both B and C"
+      },
+      {
+        "id": "8-35",
+        "text": "What is the main difference between an oxide and a hydroxide?",
+        "options": [
+          "Oxides contain oxygen, while hydroxides contain both hydrogen and oxygen",
+          "Oxides contain hydrogen, while hydroxides contain oxygen",
+          "Oxides dissolve in water, but hydroxides do not",
+          "There is no difference"
+        ],
+        "correctAnswer": "Oxides contain oxygen, while hydroxides contain both hydrogen and oxygen"
+      },
+      {
+        "id": "8-36",
+        "text": "Acids are described as chemicals that can donate:",
+        "options": [
+          "OH⁻ particles",
+          "H⁺ particles",
+          "O²⁻ particles",
+          "Na⁺ particles"
+        ],
+        "correctAnswer": "H⁺ particles"
+      },
+      {
+        "id": "8-37",
+        "text": "Which common weak acid is found in vinegar?",
+        "options": [
+          "Hydrochloric acid",
+          "Sulfuric acid",
+          "Ethanoic acid",
+          "Nitric acid"
+        ],
+        "correctAnswer": "Ethanoic acid"
+      },
+      {
+        "id": "8-38",
+        "text": "What does \"concentration\" of an acid refer to?",
+        "options": [
+          "The total volume of the solvent",
+          "The number of solutes in a certain volume of solution",
+          "The type of metal it reacts with",
+          "The temperature of the water"
+        ],
+        "correctAnswer": "The number of solutes in a certain volume of solution"
+      },
+      {
+        "id": "8-39",
+        "text": "A dilute acid has:",
+        "options": [
+          "A low concentration and a small number of solutes",
+          "A high concentration and a large number of solutes",
+          "No solutes at all",
+          "Only solid metal particles"
+        ],
+        "correctAnswer": "A low concentration and a small number of solutes"
+      },
+      {
+        "id": "8-40",
+        "text": "Metals that are more reactive than copper react with dilute acids to form:",
+        "options": [
+          "A salt and water",
+          "A metal salt and hydrogen gas",
+          "A metal oxide and hydrogen gas",
+          "A non-metal and water"
+        ],
+        "correctAnswer": "A metal salt and hydrogen gas"
+      },
+      {
+        "id": "8-41",
+        "text": "Which salt is formed when magnesium reacts with sulfuric acid?",
+        "options": [
+          "Magnesium chloride",
+          "Magnesium ethanoate",
+          "Magnesium sulfate",
+          "Magnesium oxide"
+        ],
+        "correctAnswer": "Magnesium sulfate"
+      },
+      {
+        "id": "8-42",
+        "text": "Which salt is formed when zinc reacts with ethanoic acid?",
+        "options": [
+          "Zinc chloride",
+          "Zinc ethanoate",
+          "Zinc sulfate",
+          "Zinc nitrate"
+        ],
+        "correctAnswer": "Zinc ethanoate"
+      },
+      {
+        "id": "8-43",
+        "text": "What is the correct word equation for the reaction between aluminium and hydrochloric acid?",
+        "options": [
+          "Aluminium + hydrochloric acid -> aluminium sulfate + water",
+          "Aluminium + hydrochloric acid -> aluminium chloride + hydrogen",
+          "Aluminium + hydrochloric acid -> aluminium oxide + hydrogen",
+          "Aluminium + hydrochloric acid -> aluminium ethanoate + water"
+        ],
+        "correctAnswer": "Aluminium + hydrochloric acid -> aluminium chloride + hydrogen"
+      },
+      {
+        "id": "8-44",
+        "text": "Which of the following metals will NOT react with dilute acids?",
+        "options": [
+          "Iron",
+          "Zinc",
+          "Copper",
+          "Magnesium"
+        ],
+        "correctAnswer": "Copper"
+      },
+      {
+        "id": "8-45",
+        "text": "In a solution, the substance that gets dissolved is called the:",
+        "options": [
+          "Solvent",
+          "Solute",
+          "Precipitate",
+          "Reactant"
+        ],
+        "correctAnswer": "Solute"
+      },
+      {
+        "id": "8-46",
+        "text": "Water is a common solvent. What happens to a soluble substance like table salt when added to water?",
+        "options": [
+          "It breaks into smaller pieces and disappears to form a transparent solution",
+          "It sinks to the bottom and stays solid",
+          "It floats on the surface",
+          "It produces hydrogen gas"
+        ],
+        "correctAnswer": "It breaks into smaller pieces and disappears to form a transparent solution"
+      },
+      {
+        "id": "8-47",
+        "text": "Which of the following substances is generally insoluble in water?",
+        "options": [
+          "Table salt",
+          "Sugar",
+          "Sand",
+          "Most metal salts"
+        ],
+        "correctAnswer": "Sand"
+      },
+      {
+        "id": "8-48",
+        "text": "What is the word equation for the reaction of sodium and sulfuric acid?",
+        "options": [
+          "Sodium + sulfuric acid -> sodium ethanoate + hydrogen",
+          "Sodium + sulfuric acid -> sodium chloride + hydrogen",
+          "Sodium + sulfuric acid -> sodium sulfate + hydrogen",
+          "Sodium + sulfuric acid -> sodium oxide + hydrogen"
+        ],
+        "correctAnswer": "Sodium + sulfuric acid -> sodium sulfate + hydrogen"
+      },
+      {
+        "id": "8-49",
+        "text": "If hydrogen is formed in an acid-metal reaction, you should handle it carefully because it is:",
+        "options": [
+          "Highly toxic",
+          "Highly flammable",
+          "Very heavy and sinks",
+          "Unreactive"
+        ],
+        "correctAnswer": "Highly flammable"
+      },
+      {
+        "id": "8-50",
+        "text": "What is formed when potassium reacts with ethanoic acid?",
+        "options": [
+          "Potassium ethanoate + hydrogen",
+          "Potassium sulfate + hydrogen",
+          "Potassium chloride + hydrogen",
+          "Potassium hydroxide + hydrogen"
+        ],
+        "correctAnswer": "Potassium ethanoate + hydrogen"
+      }
     ]
   },
   {
-    id: 9,
-    title: "Magnetism",
-    description: "Properties of magnets and electromagnets.",
-    color: "bg-indigo-900",
-    concepts: [
+    "id": 9,
+    "title": "Magnetism",
+    "description": "Properties of magnets and electromagnets.",
+    "color": "bg-indigo-900",
+    "concepts": [
       "Basics of Magnetism: Magnets attract magnetic materials (Iron, Nickel, Cobalt, and Steel). They typically come in shapes like bar magnets and horseshoe magnets.",
       "Magnetic Poles and Forces: All magnets have a North pole and a South pole. Like poles repel each other, while opposite poles attract each other.",
       "Magnetic Fields: A magnetic field is the area around a magnet where its effect can be felt. Magnetic field lines always point from the North pole to the South pole. The closer the field lines are to each other, the stronger the magnetic effect. A compass needle aligns with these field lines.",
@@ -1597,97 +10269,787 @@ export const units: Unit[] = [
       "Properties of Electromagnets: The polarity of an electromagnet can be changed by reversing the battery's polarity (Maxwell’s right-hand grip rule applies). They are used in scrapyards (to sort magnetic metals from non-magnetic ones) and in electric bells.",
       "Adjusting Electromagnet Strength: An electromagnet can be made stronger by: 1) Increasing the number of coils. 2) Using a soft iron core (which gains and loses magnetism quickly) instead of a steel core (which retains magnetism). 3) Increasing the electric current (adding more batteries)."
     ],
-    vocab: [
-      { term: "Magnet", traditional: "磁鐵", simplified: "磁铁", definition: "A piece of iron or other material that has its component atoms so ordered that the material exhibits properties of magnetism." },
-      { term: "Magnetic material", traditional: "磁性物質", simplified: "磁性物质", definition: "A material that is attracted to a magnet." },
-      { term: "Iron", traditional: "鐵", simplified: "铁", definition: "A strong, hard magnetic silvery-gray metal." },
-      { term: "Nickel", traditional: "鎳", simplified: "镍", definition: "A silvery-white lustrous metal with a slight golden tinge." },
-      { term: "Cobalt", traditional: "鈷", simplified: "钴", definition: "A hard, lustrous, silver-gray metal." },
-      { term: "Steel", traditional: "鋼", simplified: "钢", definition: "A hard, strong gray or bluish-gray alloy of iron with carbon." },
-      { term: "Bar magnet", traditional: "條形磁鐵", simplified: "条形磁铁", definition: "A rectangular magnet with a north pole at one end and a south pole at the other." },
-      { term: "Horseshoe magnet", traditional: "馬蹄形磁鐵", simplified: "马蹄形磁铁", definition: "A magnet in the shape of a horseshoe." },
-      { term: "Pole", traditional: "極", simplified: "极", definition: "Each of the two points or regions of an electric circuit or a magnetized body or a sphere at which the lines of magnetic force are directed." },
-      { term: "North pole", traditional: "北極", simplified: "北极", definition: "The end of a magnet that points toward the north." },
-      { term: "South pole", traditional: "南極", simplified: "南极", definition: "The end of a magnet that points toward the south." },
-      { term: "Magnetic field", traditional: "磁場", simplified: "磁场", definition: "A region around a magnetic material or a moving electric charge within which the force of magnetism acts." },
-      { term: "Magnetic field lines", traditional: "磁力線", simplified: "磁力线", definition: "Imaginary lines used to represent the direction and strength of a magnetic field." },
-      { term: "Compass", traditional: "指南針", simplified: "指南针", definition: "An instrument containing a magnetized pointer which shows the direction of magnetic north and bearings from it." },
-      { term: "Attract", traditional: "吸引", simplified: "吸引", definition: "Pull towards." },
-      { term: "Repel", traditional: "排斥", simplified: "排斥", definition: "Push away." },
-      { term: "Lodestone / Magnetite", traditional: "磁石 / 磁鐵礦", simplified: "磁石 / 磁铁矿", definition: "A naturally magnetized piece of the mineral magnetite." },
-      { term: "Natural magnet", traditional: "天然磁鐵", simplified: "天然磁铁", definition: "A magnet that occurs naturally in nature." },
-      { term: "Core", traditional: "地核", simplified: "地核", definition: "The dense central region of the Earth." },
-      { term: "Mantle", traditional: "地幔", simplified: "地幔", definition: "The region of the earth's interior between the crust and the core." },
-      { term: "Crust", traditional: "地殼", simplified: "地壳", definition: "The outermost layer of a planet." },
-      { term: "Geographic pole", traditional: "地理極", simplified: "地理极", definition: "Either of the two points on a planet's surface where its axis of rotation meets the surface." },
-      { term: "Magnetic pole", traditional: "磁極", simplified: "磁极", definition: "Each of the two points or regions of a magnetized body at which the magnetic field is strongest." },
-      { term: "Aurora borealis (Northern lights)", traditional: "北極光", simplified: "北极光", definition: "A natural light display in the Earth's sky, predominantly seen in high-latitude regions." },
-      { term: "Aurora australis (Southern lights)", traditional: "南極光", simplified: "南極光", definition: "The southern counterpart to the aurora borealis." },
-      { term: "Solar wind", traditional: "太陽風", simplified: "太阳风", definition: "The continuous flow of charged particles from the sun which permeates the solar system." },
-      { term: "Solar storm", traditional: "太陽風暴", simplified: "太阳风暴", definition: "A disturbance on the Sun, which can affect the entire Solar System." },
-      { term: "Magnetization", traditional: "磁化", simplified: "磁化", definition: "The process of making a substance magnetic." },
-      { term: "Permanent magnet", traditional: "永久磁鐵", simplified: "永久磁铁", definition: "A magnet that retains its magnetic properties in the absence of an inducing field or current." },
-      { term: "Electromagnet", traditional: "電磁鐵", simplified: "电磁铁", definition: "A soft metal core made into a magnet by the passage of electric current through a coil surrounding it." },
-      { term: "Circuit", traditional: "電路", simplified: "电路", definition: "A complete and closed path around which a circulating electric current can flow." },
-      { term: "Current", traditional: "電流", simplified: "电流", definition: "A flow of electricity which results from the ordered directional movement of electrically charged particles." },
-      { term: "Coil", traditional: "線圈", simplified: "线圈", definition: "A length of something wound in a joined sequence of loops." },
-      { term: "Core (of electromagnet)", traditional: "鐵芯", simplified: "铁芯", definition: "A piece of magnetic material placed inside a coil to increase the magnetic field." },
-      { term: "Soft iron", traditional: "軟鐵", simplified: "软铁", definition: "Iron that is easily magnetized and demagnetized." },
-      { term: "Maxwell's right-hand grip rule", traditional: "麥克斯韋右手握拳定則", simplified: "麦克斯韦右手握拳定则", definition: "A rule for determining the direction of the magnetic field around a current-carrying wire." },
-      { term: "Scrapyard", traditional: "廢金屬回收場", simplified: "废金属回收场", definition: "A place where old vehicles or machines are collected and either sold as scrap or broken up for parts." },
-      { term: "Electric bell", traditional: "電鈴", simplified: "电铃", definition: "A mechanical or electronic bell that functions by means of an electromagnet." }
+    "vocab": [
+      {
+        "term": "Magnet",
+        "traditional": "磁鐵",
+        "simplified": "磁铁",
+        "definition": "A piece of iron or other material that has its component atoms so ordered that the material exhibits properties of magnetism."
+      },
+      {
+        "term": "Magnetic material",
+        "traditional": "磁性物質",
+        "simplified": "磁性物质",
+        "definition": "A material that is attracted to a magnet."
+      },
+      {
+        "term": "Iron",
+        "traditional": "鐵",
+        "simplified": "铁",
+        "definition": "A strong, hard magnetic silvery-gray metal."
+      },
+      {
+        "term": "Nickel",
+        "traditional": "鎳",
+        "simplified": "镍",
+        "definition": "A silvery-white lustrous metal with a slight golden tinge."
+      },
+      {
+        "term": "Cobalt",
+        "traditional": "鈷",
+        "simplified": "钴",
+        "definition": "A hard, lustrous, silver-gray metal."
+      },
+      {
+        "term": "Steel",
+        "traditional": "鋼",
+        "simplified": "钢",
+        "definition": "A hard, strong gray or bluish-gray alloy of iron with carbon."
+      },
+      {
+        "term": "Bar magnet",
+        "traditional": "條形磁鐵",
+        "simplified": "条形磁铁",
+        "definition": "A rectangular magnet with a north pole at one end and a south pole at the other."
+      },
+      {
+        "term": "Horseshoe magnet",
+        "traditional": "馬蹄形磁鐵",
+        "simplified": "马蹄形磁铁",
+        "definition": "A magnet in the shape of a horseshoe."
+      },
+      {
+        "term": "Pole",
+        "traditional": "極",
+        "simplified": "极",
+        "definition": "Each of the two points or regions of an electric circuit or a magnetized body or a sphere at which the lines of magnetic force are directed."
+      },
+      {
+        "term": "North pole",
+        "traditional": "北極",
+        "simplified": "北极",
+        "definition": "The end of a magnet that points toward the north."
+      },
+      {
+        "term": "South pole",
+        "traditional": "南極",
+        "simplified": "南极",
+        "definition": "The end of a magnet that points toward the south."
+      },
+      {
+        "term": "Magnetic field",
+        "traditional": "磁場",
+        "simplified": "磁场",
+        "definition": "A region around a magnetic material or a moving electric charge within which the force of magnetism acts."
+      },
+      {
+        "term": "Magnetic field lines",
+        "traditional": "磁力線",
+        "simplified": "磁力线",
+        "definition": "Imaginary lines used to represent the direction and strength of a magnetic field."
+      },
+      {
+        "term": "Compass",
+        "traditional": "指南針",
+        "simplified": "指南针",
+        "definition": "An instrument containing a magnetized pointer which shows the direction of magnetic north and bearings from it."
+      },
+      {
+        "term": "Attract",
+        "traditional": "吸引",
+        "simplified": "吸引",
+        "definition": "Pull towards."
+      },
+      {
+        "term": "Repel",
+        "traditional": "排斥",
+        "simplified": "排斥",
+        "definition": "Push away."
+      },
+      {
+        "term": "Lodestone / Magnetite",
+        "traditional": "磁石 / 磁鐵礦",
+        "simplified": "磁石 / 磁铁矿",
+        "definition": "A naturally magnetized piece of the mineral magnetite."
+      },
+      {
+        "term": "Natural magnet",
+        "traditional": "天然磁鐵",
+        "simplified": "天然磁铁",
+        "definition": "A magnet that occurs naturally in nature."
+      },
+      {
+        "term": "Core",
+        "traditional": "地核",
+        "simplified": "地核",
+        "definition": "The dense central region of the Earth."
+      },
+      {
+        "term": "Mantle",
+        "traditional": "地幔",
+        "simplified": "地幔",
+        "definition": "The region of the earth's interior between the crust and the core."
+      },
+      {
+        "term": "Crust",
+        "traditional": "地殼",
+        "simplified": "地壳",
+        "definition": "The outermost layer of a planet."
+      },
+      {
+        "term": "Geographic pole",
+        "traditional": "地理極",
+        "simplified": "地理极",
+        "definition": "Either of the two points on a planet's surface where its axis of rotation meets the surface."
+      },
+      {
+        "term": "Magnetic pole",
+        "traditional": "磁極",
+        "simplified": "磁极",
+        "definition": "Each of the two points or regions of a magnetized body at which the magnetic field is strongest."
+      },
+      {
+        "term": "Aurora borealis (Northern lights)",
+        "traditional": "北極光",
+        "simplified": "北极光",
+        "definition": "A natural light display in the Earth's sky, predominantly seen in high-latitude regions."
+      },
+      {
+        "term": "Aurora australis (Southern lights)",
+        "traditional": "南極光",
+        "simplified": "南極光",
+        "definition": "The southern counterpart to the aurora borealis."
+      },
+      {
+        "term": "Solar wind",
+        "traditional": "太陽風",
+        "simplified": "太阳风",
+        "definition": "The continuous flow of charged particles from the sun which permeates the solar system."
+      },
+      {
+        "term": "Solar storm",
+        "traditional": "太陽風暴",
+        "simplified": "太阳风暴",
+        "definition": "A disturbance on the Sun, which can affect the entire Solar System."
+      },
+      {
+        "term": "Magnetization",
+        "traditional": "磁化",
+        "simplified": "磁化",
+        "definition": "The process of making a substance magnetic."
+      },
+      {
+        "term": "Permanent magnet",
+        "traditional": "永久磁鐵",
+        "simplified": "永久磁铁",
+        "definition": "A magnet that retains its magnetic properties in the absence of an inducing field or current."
+      },
+      {
+        "term": "Electromagnet",
+        "traditional": "電磁鐵",
+        "simplified": "电磁铁",
+        "definition": "A soft metal core made into a magnet by the passage of electric current through a coil surrounding it."
+      },
+      {
+        "term": "Circuit",
+        "traditional": "電路",
+        "simplified": "电路",
+        "definition": "A complete and closed path around which a circulating electric current can flow."
+      },
+      {
+        "term": "Current",
+        "traditional": "電流",
+        "simplified": "电流",
+        "definition": "A flow of electricity which results from the ordered directional movement of electrically charged particles."
+      },
+      {
+        "term": "Coil",
+        "traditional": "線圈",
+        "simplified": "线圈",
+        "definition": "A length of something wound in a joined sequence of loops."
+      },
+      {
+        "term": "Core (of electromagnet)",
+        "traditional": "鐵芯",
+        "simplified": "铁芯",
+        "definition": "A piece of magnetic material placed inside a coil to increase the magnetic field."
+      },
+      {
+        "term": "Soft iron",
+        "traditional": "軟鐵",
+        "simplified": "软铁",
+        "definition": "Iron that is easily magnetized and demagnetized."
+      },
+      {
+        "term": "Maxwell's right-hand grip rule",
+        "traditional": "麥克斯韋右手握拳定則",
+        "simplified": "麦克斯韦右手握拳定则",
+        "definition": "A rule for determining the direction of the magnetic field around a current-carrying wire."
+      },
+      {
+        "term": "Scrapyard",
+        "traditional": "廢金屬回收場",
+        "simplified": "废金属回收场",
+        "definition": "A place where old vehicles or machines are collected and either sold as scrap or broken up for parts."
+      },
+      {
+        "term": "Electric bell",
+        "traditional": "電鈴",
+        "simplified": "电铃",
+        "definition": "A mechanical or electronic bell that functions by means of an electromagnet."
+      }
     ],
-    questions: [
-      { id: "9-1", text: "Which of the following is a magnetic material?", options: ["Aluminum", "Copper", "Iron", "Zinc"], correctAnswer: "Iron" },
-      { id: "9-2", text: "Which list contains ONLY magnetic materials?", options: ["Iron, Nickel, Cobalt, Steel", "Gold, Silver, Copper, Iron", "Nickel, Cobalt, Aluminum, Magnesium", "Iron, Steel, Zinc, Lead"], correctAnswer: "Iron, Nickel, Cobalt, Steel" },
-      { id: "9-3", text: "What are the two common shapes of magnets mentioned in the notes?", options: ["Circle and Triangle", "Bar and Horseshoe", "Square and Hexagon", "Cylinder and Sphere"], correctAnswer: "Bar and Horseshoe" },
-      { id: "9-4", text: "Every magnet has two poles. What are they called?", options: ["East and West", "Top and Bottom", "North and South", "Positive and Negative"], correctAnswer: "North and South" },
-      { id: "9-5", text: "What is the area around a magnet where its magnetic effect can be detected called?", options: ["Magnetic zone", "Magnetic field", "Magnetic vacuum", "Magnetic circle"], correctAnswer: "Magnetic field" },
-      { id: "9-6", text: "Which direction do magnetic field lines always point?", options: ["From South to North", "From North to South", "Clockwise", "Counter-clockwise"], correctAnswer: "From North to South" },
-      { id: "9-7", text: "What happens when magnetic field lines are drawn closer together?", options: ["The magnetic effect is weaker", "The magnetic effect is stronger", "The magnet loses its power", "The magnetic poles reverse"], correctAnswer: "The magnetic effect is stronger" },
-      { id: "9-8", text: "Can magnetic field lines cross each other?", options: ["Yes, always", "Only at the poles", "No, they never touch or cross", "Only in a horseshoe magnet"], correctAnswer: "No, they never touch or cross" },
-      { id: "9-9", text: "Which tool can be used to visualize and detect the direction of a magnetic field?", options: ["Thermometer", "Barometer", "Compass", "Ruler"], correctAnswer: "Compass" },
-      { id: "9-10", text: "If you bring two North poles of two different magnets close together, what will happen?", options: ["They will attract", "They will repel", "They will do nothing", "They will catch fire"], correctAnswer: "They will repel" },
-      { id: "9-11", text: "If you bring a North pole and a South pole close together, what will happen?", options: ["They will attract", "They will repel", "They will cancel each other out", "They will push each other away"], correctAnswer: "They will attract" },
-      { id: "9-12", text: "\"Like poles _ and opposite poles _.\"", options: ["attract, repel", "repel, attract", "destroy, create", "align, cross"], correctAnswer: "repel, attract" },
-      { id: "9-13", text: "A compass needle aligns itself with what?", options: ["The Earth's gravity", "Magnetic field lines", "The wind direction", "Solar radiation"], correctAnswer: "Magnetic field lines" },
-      { id: "9-14", text: "Which of the following metals is NOT magnetic?", options: ["Steel", "Nickel", "Cobalt", "Copper"], correctAnswer: "Copper" },
-      { id: "9-15", text: "If a bar magnet has a weak magnetic field, its field lines will be:", options: ["Very close together", "Spaced further apart", "Crossing each other repeatedly", "Pointing from South to North"], correctAnswer: "Spaced further apart" },
-      { id: "9-16", text: "Who discovered the first natural magnets?", options: ["A Roman emperor", "A Greek shepherd named Magnus", "A Chinese scientist", "An Egyptian sailor"], correctAnswer: "A Greek shepherd named Magnus" },
-      { id: "9-17", text: "The first natural magnets were made of a type of rock known as:", options: ["Granite", "Limestone", "Lodestone (Magnetite)", "Marble"], correctAnswer: "Lodestone (Magnetite)" },
-      { id: "9-18", text: "Which civilization is credited with inventing the earliest compass using floating lodestone needles?", options: ["Greeks", "Romans", "Egyptians", "Chinese"], correctAnswer: "Chinese" },
-      { id: "9-19", text: "Which of the following is considered one of the \"four great inventions\" of ancient China?", options: ["The steam engine", "The compass", "The telescope", "The battery"], correctAnswer: "The compass" },
-      { id: "9-20", text: "Which layer of the Earth acts like a giant magnet?", options: ["Crust", "Mantle", "Core", "Atmosphere"], correctAnswer: "Core" },
-      { id: "9-21", text: "What two metals primarily make up the Earth's core?", options: ["Gold and Silver", "Iron and Nickel", "Copper and Zinc", "Cobalt and Steel"], correctAnswer: "Iron and Nickel" },
-      { id: "9-22", text: "The Earth is tilted on its axis at an angle of:", options: ["15.5 degrees", "23.5 degrees", "45.0 degrees", "90.0 degrees"], correctAnswer: "23.5 degrees" },
-      { id: "9-23", text: "Geographically, the Arctic is at the geographic North pole. Magnetically, the Arctic is at the:", options: ["Magnetic North pole", "Magnetic South pole", "Magnetic East pole", "Magnetic West pole"], correctAnswer: "Magnetic South pole" },
-      { id: "9-24", text: "The Earth's magnetic field lines start at the geographic __ and end at the geographic __.", options: ["North, South", "South, North", "Equator, Poles", "West, East"], correctAnswer: "South, North" },
-      { id: "9-25", text: "What causes the beautiful light displays known as auroras?", options: ["Moonlight reflecting off ice", "Solar wind particles interacting with Earth's atmosphere", "Volcanic eruptions", "Lightning storms"], correctAnswer: "Solar wind particles interacting with Earth's atmosphere" },
-      { id: "9-26", text: "Aurora borealis is also known as the:", options: ["Southern lights", "Northern lights", "Equator lights", "Polar flash"], correctAnswer: "Northern lights" },
-      { id: "9-27", text: "When highly energetic particles from the sun are sent to Earth in large amounts, it is called a:", options: ["Lunar eclipse", "Solar storm", "Magnetic wave", "Meteor shower"], correctAnswer: "Solar storm" },
-      { id: "9-28", text: "Which atmospheric gas produces green and red light during an aurora?", options: ["Nitrogen", "Carbon dioxide", "Oxygen", "Helium"], correctAnswer: "Oxygen" },
-      { id: "9-29", text: "Which atmospheric gas produces blue and purple light during an aurora?", options: ["Nitrogen", "Oxygen", "Hydrogen", "Methane"], correctAnswer: "Nitrogen" },
-      { id: "9-30", text: "Can auroras happen on other planets?", options: ["No, only on Earth", "Yes, if they have an atmosphere and a magnetic field", "Yes, but only on planets closer to the sun than Earth", "Yes, but only on moons, not planets"], correctAnswer: "Yes, if they have an atmosphere and a magnetic field" },
-      { id: "9-31", text: "The process of turning a natural magnetic material into a magnet using an external magnet is called:", options: ["Electrification", "Galvanization", "Magnetization", "Oxidation"], correctAnswer: "Magnetization" },
-      { id: "9-32", text: "What is the main difference between a permanent magnet and an electromagnet?", options: ["Permanent magnets are stronger", "Electromagnets do not have poles", "Electromagnets can be turned ON and OFF", "Permanent magnets need batteries"], correctAnswer: "Electromagnets can be turned ON and OFF" },
-      { id: "9-33", text: "An electromagnet generates a magnetic field only when:", options: ["It is placed in water", "Electricity passes through its coil", "It is heated up", "It is painted red and blue"], correctAnswer: "Electricity passes through its coil" },
-      { id: "9-34", text: "How do you turn \"OFF\" an electromagnet?", options: ["By breaking the circuit", "By completing the circuit", "By adding more coils", "By adding another battery"], correctAnswer: "By breaking the circuit" },
-      { id: "9-35", text: "How can you reverse the polarity (swap the North and South poles) of an electromagnet?", options: ["By turning the switch off", "By removing the iron core", "By reversing the polarity of the battery (current direction)", "By using a copper core instead"], correctAnswer: "By reversing the polarity of the battery (current direction)" },
-      { id: "9-36", text: "Which rule helps determine the poles of an electromagnet based on the direction of current?", options: ["Newton's Law", "Maxwell's right-hand grip rule", "Einstein's First Law", "The Left-hand rule"], correctAnswer: "Maxwell's right-hand grip rule" },
-      { id: "9-37", text: "In an electromagnet, the wire is usually coiled around a:", options: ["Plastic rod", "Wooden stick", "Core (usually soft iron)", "Glass tube"], correctAnswer: "Core (usually soft iron)" },
-      { id: "9-38", text: "Which of the following is an everyday application of an electromagnet?", options: ["A compass needle", "A scrapyard crane", "A fridge magnet", "A wooden door"], correctAnswer: "A scrapyard crane" },
-      { id: "9-39", text: "Why are electromagnets useful in a metal scrapyard?", options: ["They can sort magnetic metals from non-magnetic metals and drop them by turning off the current", "They never lose their magnetism", "They make the metals lighter", "They crush the metals into cubes"], correctAnswer: "They can sort magnetic metals from non-magnetic metals and drop them by turning off the current" },
-      { id: "9-40", text: "In an electric bell, what happens immediately after the electromagnet pulls the armature to strike the bell?", options: ["The battery explodes", "The circuit breaks, switching the electromagnet off", "The bell becomes permanently magnetized", "The current reverses direction"], correctAnswer: "The circuit breaks, switching the electromagnet off" },
-      { id: "9-41", text: "Which of the following will make an electromagnet STRONGER?", options: ["Decreasing the number of coils", "Increasing the number of coils", "Removing the battery", "Using a plastic core"], correctAnswer: "Increasing the number of coils" },
-      { id: "9-42", text: "Which of the following will make an electromagnet WEAKER?", options: ["Adding more batteries", "Wrapping more wire coils around the core", "Using fewer batteries (decreasing electric current)", "Using a soft iron core"], correctAnswer: "Using fewer batteries (decreasing electric current)" },
-      { id: "9-43", text: "What is the difference between using a soft iron core and a steel core in an electromagnet?", options: ["Soft iron retains its magnetism permanently, steel loses it", "Soft iron loses its magnetism quickly when turned off, steel retains it", "Soft iron cannot be magnetized at all", "Steel makes the electromagnet weaker"], correctAnswer: "Soft iron loses its magnetism quickly when turned off, steel retains it" },
-      { id: "9-44", text: "If you want an electromagnet to drop objects immediately when the switch is turned off, which core should you use?", options: ["Steel", "Wood", "Soft iron", "Copper"], correctAnswer: "Soft iron" },
-      { id: "9-45", text: "In Maxwell's right-hand grip rule, if your fingers curl in the direction of the current, what does your thumb point to?", options: ["The South pole", "The North pole", "The positive terminal of the battery", "The negative terminal of the battery"], correctAnswer: "The North pole" },
-      { id: "9-46", text: "If a circuit has a wire coiled around a soft iron nail connected to 3 batteries, how can you increase its magnetic strength?", options: ["Reduce the number of coils", "Change the 3 batteries to 1 battery", "Change the 3 batteries to 5 batteries", "Replace the iron nail with a plastic pen"], correctAnswer: "Change the 3 batteries to 5 batteries" },
-      { id: "9-47", text: "Which of the following metals would an electromagnet in a scrapyard pick up?", options: ["Aluminum", "Zinc", "Cobalt", "Copper"], correctAnswer: "Cobalt" },
-      { id: "9-48", text: "What is the purpose of the switch in an electromagnet circuit?", options: ["To change the color of the light", "To complete or break the circuit to turn the magnet ON or OFF", "To increase the voltage", "To prevent the wire from melting"], correctAnswer: "To complete or break the circuit to turn the magnet ON or OFF" },
-      { id: "9-49", text: "Current flows in a conductive material from the __ terminal to the __ terminal.", options: ["positive, negative", "negative, positive", "north, south", "south, north"], correctAnswer: "positive, negative" },
-      { id: "9-50", text: "What visual cue indicates the magnetic field of an electromagnet in an experiment?", options: ["The wires turning red", "Using iron powder or a compass around it", "The battery shaking", "Smoke coming from the coil"], correctAnswer: "Using iron powder or a compass around it" }
+    "questions": [
+      {
+        "id": "9-1",
+        "text": "Which of the following is a magnetic material?",
+        "options": [
+          "Aluminum",
+          "Copper",
+          "Iron",
+          "Zinc"
+        ],
+        "correctAnswer": "Iron"
+      },
+      {
+        "id": "9-2",
+        "text": "Which list contains ONLY magnetic materials?",
+        "options": [
+          "Iron, Nickel, Cobalt, Steel",
+          "Gold, Silver, Copper, Iron",
+          "Nickel, Cobalt, Aluminum, Magnesium",
+          "Iron, Steel, Zinc, Lead"
+        ],
+        "correctAnswer": "Iron, Nickel, Cobalt, Steel"
+      },
+      {
+        "id": "9-3",
+        "text": "What are the two common shapes of magnets mentioned in the notes?",
+        "options": [
+          "Circle and Triangle",
+          "Bar and Horseshoe",
+          "Square and Hexagon",
+          "Cylinder and Sphere"
+        ],
+        "correctAnswer": "Bar and Horseshoe"
+      },
+      {
+        "id": "9-4",
+        "text": "Every magnet has two poles. What are they called?",
+        "options": [
+          "East and West",
+          "Top and Bottom",
+          "North and South",
+          "Positive and Negative"
+        ],
+        "correctAnswer": "North and South"
+      },
+      {
+        "id": "9-5",
+        "text": "What is the area around a magnet where its magnetic effect can be detected called?",
+        "options": [
+          "Magnetic zone",
+          "Magnetic field",
+          "Magnetic vacuum",
+          "Magnetic circle"
+        ],
+        "correctAnswer": "Magnetic field"
+      },
+      {
+        "id": "9-6",
+        "text": "Which direction do magnetic field lines always point?",
+        "options": [
+          "From South to North",
+          "From North to South",
+          "Clockwise",
+          "Counter-clockwise"
+        ],
+        "correctAnswer": "From North to South"
+      },
+      {
+        "id": "9-7",
+        "text": "What happens when magnetic field lines are drawn closer together?",
+        "options": [
+          "The magnetic effect is weaker",
+          "The magnetic effect is stronger",
+          "The magnet loses its power",
+          "The magnetic poles reverse"
+        ],
+        "correctAnswer": "The magnetic effect is stronger"
+      },
+      {
+        "id": "9-8",
+        "text": "Can magnetic field lines cross each other?",
+        "options": [
+          "Yes, always",
+          "Only at the poles",
+          "No, they never touch or cross",
+          "Only in a horseshoe magnet"
+        ],
+        "correctAnswer": "No, they never touch or cross"
+      },
+      {
+        "id": "9-9",
+        "text": "Which tool can be used to visualize and detect the direction of a magnetic field?",
+        "options": [
+          "Thermometer",
+          "Barometer",
+          "Compass",
+          "Ruler"
+        ],
+        "correctAnswer": "Compass"
+      },
+      {
+        "id": "9-10",
+        "text": "If you bring two North poles of two different magnets close together, what will happen?",
+        "options": [
+          "They will attract",
+          "They will repel",
+          "They will do nothing",
+          "They will catch fire"
+        ],
+        "correctAnswer": "They will repel"
+      },
+      {
+        "id": "9-11",
+        "text": "If you bring a North pole and a South pole close together, what will happen?",
+        "options": [
+          "They will attract",
+          "They will repel",
+          "They will cancel each other out",
+          "They will push each other away"
+        ],
+        "correctAnswer": "They will attract"
+      },
+      {
+        "id": "9-12",
+        "text": "\"Like poles _ and opposite poles _.\"",
+        "options": [
+          "attract, repel",
+          "repel, attract",
+          "destroy, create",
+          "align, cross"
+        ],
+        "correctAnswer": "repel, attract"
+      },
+      {
+        "id": "9-13",
+        "text": "A compass needle aligns itself with what?",
+        "options": [
+          "The Earth's gravity",
+          "Magnetic field lines",
+          "The wind direction",
+          "Solar radiation"
+        ],
+        "correctAnswer": "Magnetic field lines"
+      },
+      {
+        "id": "9-14",
+        "text": "Which of the following metals is NOT magnetic?",
+        "options": [
+          "Steel",
+          "Nickel",
+          "Cobalt",
+          "Copper"
+        ],
+        "correctAnswer": "Copper"
+      },
+      {
+        "id": "9-15",
+        "text": "If a bar magnet has a weak magnetic field, its field lines will be:",
+        "options": [
+          "Very close together",
+          "Spaced further apart",
+          "Crossing each other repeatedly",
+          "Pointing from South to North"
+        ],
+        "correctAnswer": "Spaced further apart"
+      },
+      {
+        "id": "9-16",
+        "text": "Who discovered the first natural magnets?",
+        "options": [
+          "A Roman emperor",
+          "A Greek shepherd named Magnus",
+          "A Chinese scientist",
+          "An Egyptian sailor"
+        ],
+        "correctAnswer": "A Greek shepherd named Magnus"
+      },
+      {
+        "id": "9-17",
+        "text": "The first natural magnets were made of a type of rock known as:",
+        "options": [
+          "Granite",
+          "Limestone",
+          "Lodestone (Magnetite)",
+          "Marble"
+        ],
+        "correctAnswer": "Lodestone (Magnetite)"
+      },
+      {
+        "id": "9-18",
+        "text": "Which civilization is credited with inventing the earliest compass using floating lodestone needles?",
+        "options": [
+          "Greeks",
+          "Romans",
+          "Egyptians",
+          "Chinese"
+        ],
+        "correctAnswer": "Chinese"
+      },
+      {
+        "id": "9-19",
+        "text": "Which of the following is considered one of the \"four great inventions\" of ancient China?",
+        "options": [
+          "The steam engine",
+          "The compass",
+          "The telescope",
+          "The battery"
+        ],
+        "correctAnswer": "The compass"
+      },
+      {
+        "id": "9-20",
+        "text": "Which layer of the Earth acts like a giant magnet?",
+        "options": [
+          "Crust",
+          "Mantle",
+          "Core",
+          "Atmosphere"
+        ],
+        "correctAnswer": "Core"
+      },
+      {
+        "id": "9-21",
+        "text": "What two metals primarily make up the Earth's core?",
+        "options": [
+          "Gold and Silver",
+          "Iron and Nickel",
+          "Copper and Zinc",
+          "Cobalt and Steel"
+        ],
+        "correctAnswer": "Iron and Nickel"
+      },
+      {
+        "id": "9-22",
+        "text": "The Earth is tilted on its axis at an angle of:",
+        "options": [
+          "15.5 degrees",
+          "23.5 degrees",
+          "45.0 degrees",
+          "90.0 degrees"
+        ],
+        "correctAnswer": "23.5 degrees"
+      },
+      {
+        "id": "9-23",
+        "text": "Geographically, the Arctic is at the geographic North pole. Magnetically, the Arctic is at the:",
+        "options": [
+          "Magnetic North pole",
+          "Magnetic South pole",
+          "Magnetic East pole",
+          "Magnetic West pole"
+        ],
+        "correctAnswer": "Magnetic South pole"
+      },
+      {
+        "id": "9-24",
+        "text": "The Earth's magnetic field lines start at the geographic __ and end at the geographic __.",
+        "options": [
+          "North, South",
+          "South, North",
+          "Equator, Poles",
+          "West, East"
+        ],
+        "correctAnswer": "South, North"
+      },
+      {
+        "id": "9-25",
+        "text": "What causes the beautiful light displays known as auroras?",
+        "options": [
+          "Moonlight reflecting off ice",
+          "Solar wind particles interacting with Earth's atmosphere",
+          "Volcanic eruptions",
+          "Lightning storms"
+        ],
+        "correctAnswer": "Solar wind particles interacting with Earth's atmosphere"
+      },
+      {
+        "id": "9-26",
+        "text": "Aurora borealis is also known as the:",
+        "options": [
+          "Southern lights",
+          "Northern lights",
+          "Equator lights",
+          "Polar flash"
+        ],
+        "correctAnswer": "Northern lights"
+      },
+      {
+        "id": "9-27",
+        "text": "When highly energetic particles from the sun are sent to Earth in large amounts, it is called a:",
+        "options": [
+          "Lunar eclipse",
+          "Solar storm",
+          "Magnetic wave",
+          "Meteor shower"
+        ],
+        "correctAnswer": "Solar storm"
+      },
+      {
+        "id": "9-28",
+        "text": "Which atmospheric gas produces green and red light during an aurora?",
+        "options": [
+          "Nitrogen",
+          "Carbon dioxide",
+          "Oxygen",
+          "Helium"
+        ],
+        "correctAnswer": "Oxygen"
+      },
+      {
+        "id": "9-29",
+        "text": "Which atmospheric gas produces blue and purple light during an aurora?",
+        "options": [
+          "Nitrogen",
+          "Oxygen",
+          "Hydrogen",
+          "Methane"
+        ],
+        "correctAnswer": "Nitrogen"
+      },
+      {
+        "id": "9-30",
+        "text": "Can auroras happen on other planets?",
+        "options": [
+          "No, only on Earth",
+          "Yes, if they have an atmosphere and a magnetic field",
+          "Yes, but only on planets closer to the sun than Earth",
+          "Yes, but only on moons, not planets"
+        ],
+        "correctAnswer": "Yes, if they have an atmosphere and a magnetic field"
+      },
+      {
+        "id": "9-31",
+        "text": "The process of turning a natural magnetic material into a magnet using an external magnet is called:",
+        "options": [
+          "Electrification",
+          "Galvanization",
+          "Magnetization",
+          "Oxidation"
+        ],
+        "correctAnswer": "Magnetization"
+      },
+      {
+        "id": "9-32",
+        "text": "What is the main difference between a permanent magnet and an electromagnet?",
+        "options": [
+          "Permanent magnets are stronger",
+          "Electromagnets do not have poles",
+          "Electromagnets can be turned ON and OFF",
+          "Permanent magnets need batteries"
+        ],
+        "correctAnswer": "Electromagnets can be turned ON and OFF"
+      },
+      {
+        "id": "9-33",
+        "text": "An electromagnet generates a magnetic field only when:",
+        "options": [
+          "It is placed in water",
+          "Electricity passes through its coil",
+          "It is heated up",
+          "It is painted red and blue"
+        ],
+        "correctAnswer": "Electricity passes through its coil"
+      },
+      {
+        "id": "9-34",
+        "text": "How do you turn \"OFF\" an electromagnet?",
+        "options": [
+          "By breaking the circuit",
+          "By completing the circuit",
+          "By adding more coils",
+          "By adding another battery"
+        ],
+        "correctAnswer": "By breaking the circuit"
+      },
+      {
+        "id": "9-35",
+        "text": "How can you reverse the polarity (swap the North and South poles) of an electromagnet?",
+        "options": [
+          "By turning the switch off",
+          "By removing the iron core",
+          "By reversing the polarity of the battery (current direction)",
+          "By using a copper core instead"
+        ],
+        "correctAnswer": "By reversing the polarity of the battery (current direction)"
+      },
+      {
+        "id": "9-36",
+        "text": "Which rule helps determine the poles of an electromagnet based on the direction of current?",
+        "options": [
+          "Newton's Law",
+          "Maxwell's right-hand grip rule",
+          "Einstein's First Law",
+          "The Left-hand rule"
+        ],
+        "correctAnswer": "Maxwell's right-hand grip rule"
+      },
+      {
+        "id": "9-37",
+        "text": "In an electromagnet, the wire is usually coiled around a:",
+        "options": [
+          "Plastic rod",
+          "Wooden stick",
+          "Core (usually soft iron)",
+          "Glass tube"
+        ],
+        "correctAnswer": "Core (usually soft iron)"
+      },
+      {
+        "id": "9-38",
+        "text": "Which of the following is an everyday application of an electromagnet?",
+        "options": [
+          "A compass needle",
+          "A scrapyard crane",
+          "A fridge magnet",
+          "A wooden door"
+        ],
+        "correctAnswer": "A scrapyard crane"
+      },
+      {
+        "id": "9-39",
+        "text": "Why are electromagnets useful in a metal scrapyard?",
+        "options": [
+          "They can sort magnetic metals from non-magnetic metals and drop them by turning off the current",
+          "They never lose their magnetism",
+          "They make the metals lighter",
+          "They crush the metals into cubes"
+        ],
+        "correctAnswer": "They can sort magnetic metals from non-magnetic metals and drop them by turning off the current"
+      },
+      {
+        "id": "9-40",
+        "text": "In an electric bell, what happens immediately after the electromagnet pulls the armature to strike the bell?",
+        "options": [
+          "The battery explodes",
+          "The circuit breaks, switching the electromagnet off",
+          "The bell becomes permanently magnetized",
+          "The current reverses direction"
+        ],
+        "correctAnswer": "The circuit breaks, switching the electromagnet off"
+      },
+      {
+        "id": "9-41",
+        "text": "Which of the following will make an electromagnet STRONGER?",
+        "options": [
+          "Decreasing the number of coils",
+          "Increasing the number of coils",
+          "Removing the battery",
+          "Using a plastic core"
+        ],
+        "correctAnswer": "Increasing the number of coils"
+      },
+      {
+        "id": "9-42",
+        "text": "Which of the following will make an electromagnet WEAKER?",
+        "options": [
+          "Adding more batteries",
+          "Wrapping more wire coils around the core",
+          "Using fewer batteries (decreasing electric current)",
+          "Using a soft iron core"
+        ],
+        "correctAnswer": "Using fewer batteries (decreasing electric current)"
+      },
+      {
+        "id": "9-43",
+        "text": "What is the difference between using a soft iron core and a steel core in an electromagnet?",
+        "options": [
+          "Soft iron retains its magnetism permanently, steel loses it",
+          "Soft iron loses its magnetism quickly when turned off, steel retains it",
+          "Soft iron cannot be magnetized at all",
+          "Steel makes the electromagnet weaker"
+        ],
+        "correctAnswer": "Soft iron loses its magnetism quickly when turned off, steel retains it"
+      },
+      {
+        "id": "9-44",
+        "text": "If you want an electromagnet to drop objects immediately when the switch is turned off, which core should you use?",
+        "options": [
+          "Steel",
+          "Wood",
+          "Soft iron",
+          "Copper"
+        ],
+        "correctAnswer": "Soft iron"
+      },
+      {
+        "id": "9-45",
+        "text": "In Maxwell's right-hand grip rule, if your fingers curl in the direction of the current, what does your thumb point to?",
+        "options": [
+          "The South pole",
+          "The North pole",
+          "The positive terminal of the battery",
+          "The negative terminal of the battery"
+        ],
+        "correctAnswer": "The North pole"
+      },
+      {
+        "id": "9-46",
+        "text": "If a circuit has a wire coiled around a soft iron nail connected to 3 batteries, how can you increase its magnetic strength?",
+        "options": [
+          "Reduce the number of coils",
+          "Change the 3 batteries to 1 battery",
+          "Change the 3 batteries to 5 batteries",
+          "Replace the iron nail with a plastic pen"
+        ],
+        "correctAnswer": "Change the 3 batteries to 5 batteries"
+      },
+      {
+        "id": "9-47",
+        "text": "Which of the following metals would an electromagnet in a scrapyard pick up?",
+        "options": [
+          "Aluminum",
+          "Zinc",
+          "Cobalt",
+          "Copper"
+        ],
+        "correctAnswer": "Cobalt"
+      },
+      {
+        "id": "9-48",
+        "text": "What is the purpose of the switch in an electromagnet circuit?",
+        "options": [
+          "To change the color of the light",
+          "To complete or break the circuit to turn the magnet ON or OFF",
+          "To increase the voltage",
+          "To prevent the wire from melting"
+        ],
+        "correctAnswer": "To complete or break the circuit to turn the magnet ON or OFF"
+      },
+      {
+        "id": "9-49",
+        "text": "Current flows in a conductive material from the __ terminal to the __ terminal.",
+        "options": [
+          "positive, negative",
+          "negative, positive",
+          "north, south",
+          "south, north"
+        ],
+        "correctAnswer": "positive, negative"
+      },
+      {
+        "id": "9-50",
+        "text": "What visual cue indicates the magnetic field of an electromagnet in an experiment?",
+        "options": [
+          "The wires turning red",
+          "Using iron powder or a compass around it",
+          "The battery shaking",
+          "Smoke coming from the coil"
+        ],
+        "correctAnswer": "Using iron powder or a compass around it"
+      }
     ]
   }
 ];
