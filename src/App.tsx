@@ -369,7 +369,24 @@ function AppContent() {
   useEffect(() => {
     const q = query(collection(db, 'tasks'), orderBy('dueDate', 'asc'));
     return onSnapshot(q, (snap) => {
-      const fetchedTasks = snap.docs.map(d => ({ id: d.id, ...d.data() }) as Task);
+      const fetchedTasks = snap.docs.map(d => {
+        const data = { id: d.id, ...d.data() } as Task;
+        const normalize = (s: string) => s.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+        const initialMatch = INITIAL_TASKS.find(it => 
+          it.id === d.id || normalize(it.title) === normalize(data.title)
+        );
+        // Merge complex worksheet objects from local definition if they exist
+        if (initialMatch && initialMatch.type === 'worksheet') {
+          return {
+            ...initialMatch,
+            ...data,
+            type: initialMatch.type,
+            worksheetQuestions: initialMatch.worksheetQuestions,
+            pdfUrl: initialMatch.pdfUrl
+          };
+        }
+        return data;
+      });
       setTasks(fetchedTasks);
     });
   }, []);

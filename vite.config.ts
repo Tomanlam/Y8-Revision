@@ -16,11 +16,21 @@ export default defineConfig(({mode}) => {
         output: {
           manualChunks(id) {
             if (id.includes('node_modules')) {
-              if (id.includes('/react/') || id.includes('/react-dom/')) return 'vendor-react';
               if (id.includes('firebase')) return 'firebase';
+              if (id.includes('jspdf') || id.includes('react-pdf')) return 'pdf';
               if (id.includes('recharts') || id.includes('d3')) return 'charts';
-              if (id.includes('lucide-react')) return 'icons';
+              if (id.includes('@google/genai')) return 'genai';
               if (id.includes('motion')) return 'animation';
+              
+              // Instead of arbitrary string checks, put standard React libs in one chunk
+              if (
+                id.includes('/react/') ||
+                id.includes('/react-dom/') ||
+                id.includes('/scheduler/')
+              ) {
+                return 'react-core';
+              }
+              
               return 'vendor';
             }
           },
