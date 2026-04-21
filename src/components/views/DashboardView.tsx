@@ -5,10 +5,11 @@ import {
   Heart, BookOpen, GraduationCap, Languages, ChevronLeft, 
   CheckCircle2, XCircle, Trophy, Trash2, Lock, FileText, 
   Download, Star, Zap, Chrome, LayoutGrid, Info, ArrowRight, RefreshCw,
-  QrCode, Edit, Database, LogOut, User, Calendar as CalendarIcon, ChevronRight as ChevronRightIcon, Target
+  QrCode, Edit, Database, LogOut, User, Calendar as CalendarIcon, ChevronRight as ChevronRightIcon, Target,
+  Crown, Calculator
 } from 'lucide-react';
 import { Unit, ChallengeRecord, ChallengeResponse, Question, UserProfile, Task } from '../../types';
-import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths } from 'date-fns';
+import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, parseISO, startOfDay } from 'date-fns';
 import { User as FirebaseUser } from 'firebase/auth';
 
 interface DashboardViewProps {
@@ -74,6 +75,8 @@ interface DashboardViewProps {
   onCreateTask: (taskData: Partial<Task>) => void;
   onDeleteTask: (id: string) => void;
   onStartTask: (task: Task) => void;
+  showCalculator: boolean;
+  setShowCalculator: (v: boolean) => void;
 }
 
 const Y8Splash = ({ onClose }: { onClose: () => void }) => {
@@ -170,145 +173,6 @@ const Y8Splash = ({ onClose }: { onClose: () => void }) => {
   );
 };
 
-const CalendarSection = ({ tasks, onStartTask }: { tasks: Task[], onStartTask: (task: Task) => void }) => {
-  const [currentDate, setCurrentDate] = React.useState(new Date());
-  const [selectedDate, setSelectedDate] = React.useState(new Date());
-
-  const monthStart = startOfMonth(currentDate);
-  const monthEnd = endOfMonth(monthStart);
-  const startDate = startOfWeek(monthStart);
-  const endDate = endOfWeek(monthEnd);
-
-  const calendarDays = eachDayOfInterval({
-    start: startDate,
-    end: endDate,
-  });
-
-  const nextMonth = () => setCurrentDate(addMonths(currentDate, 1));
-  const prevMonth = () => setCurrentDate(subMonths(currentDate, 1));
-
-  const tasksForSelectedDate = tasks.filter(task => 
-    isSameDay(new Date(task.dueDate), selectedDate)
-  );
-
-  return (
-    <div className="bg-white border-2 border-gray-100 rounded-[2.5rem] p-8 shadow-sm">
-      <div className="flex flex-col md:flex-row gap-8">
-        {/* Calendar Side */}
-        <div className="flex-1">
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-blue-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-100">
-                <CalendarIcon size={24} />
-              </div>
-              <div>
-                <h3 className="text-xl font-black text-gray-800 tracking-tight leading-none uppercase">{format(currentDate, 'MMMM yyyy')}</h3>
-                <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Upcoming Tasks</span>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-xl">
-              <button onClick={prevMonth} className="p-2 hover:bg-white hover:shadow-sm rounded-lg transition-all text-gray-500">
-                <ChevronLeft size={20} />
-              </button>
-              <button onClick={nextMonth} className="p-2 hover:bg-white hover:shadow-sm rounded-lg transition-all text-gray-500">
-                <ChevronRightIcon size={20} />
-              </button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-7 gap-2">
-            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-              <div key={day} className="text-center text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
-                {day}
-              </div>
-            ))}
-            {calendarDays.map((day, idx) => {
-              const dayTasks = tasks.filter(t => isSameDay(new Date(t.dueDate), day));
-              const isSelected = isSameDay(day, selectedDate);
-              const isCurrentMonth = isSameMonth(day, monthStart);
-              const hasTasks = dayTasks.length > 0;
-
-              return (
-                <button
-                  key={idx}
-                  onClick={() => setSelectedDate(day)}
-                  className={`
-                    group relative aspect-square rounded-2xl flex flex-col items-center justify-center transition-all
-                    ${isSelected ? 'bg-blue-500 text-white shadow-lg shadow-blue-100 scale-105 z-10' : 'hover:bg-gray-50'}
-                    ${!isCurrentMonth ? 'opacity-20 translate-y-1 scale-95' : 'opacity-100'}
-                  `}
-                >
-                  <span className={`text-sm font-bold ${isSelected ? 'text-white' : 'text-gray-700'}`}>
-                    {format(day, 'd')}
-                  </span>
-                  {hasTasks && (
-                    <div className={`mt-1 flex gap-1 transform transition-transform group-hover:scale-125 ${isSelected ? 'opacity-100' : 'opacity-100'}`}>
-                      {dayTasks.slice(0, 3).map((_, i) => (
-                        <div key={i} className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-white' : 'bg-blue-400'}`} />
-                      ))}
-                    </div>
-                  )}
-                  {isSelected && (
-                    <motion.div layoutId="bubble" className="absolute inset-0 border-4 border-blue-500 rounded-2xl pointer-events-none" />
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Tasks Preview Side */}
-        <div className="w-full md:w-80 bg-gray-50 rounded-3xl p-6 flex flex-col">
-          <div className="flex items-center justify-between mb-6">
-            <h4 className="font-black text-gray-800 uppercase text-xs tracking-widest">
-              {isSameDay(selectedDate, new Date()) ? 'Today' : format(selectedDate, 'MMM d, yyyy')}
-            </h4>
-            <span className="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
-              {tasksForSelectedDate.length} Tasks
-            </span>
-          </div>
-
-          <div className="flex-1 space-y-4 overflow-y-auto pr-2 custom-scrollbar max-h-[300px]">
-            {tasksForSelectedDate.length > 0 ? (
-              tasksForSelectedDate.map(task => (
-                <motion.div
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  key={task.id}
-                  className="bg-white p-5 rounded-2xl border-2 border-transparent hover:border-blue-200 transition-all cursor-pointer group shadow-sm"
-                  onClick={() => onStartTask(task)}
-                >
-                  <div className="flex items-start gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center font-black group-hover:bg-blue-500 group-hover:text-white transition-all">
-                      <Target size={20} />
-                    </div>
-                    <div className="flex-1">
-                      <h5 className="font-black text-gray-800 text-sm leading-tight mb-1">{task.title}</h5>
-                      <p className="text-gray-500 text-[10px] font-bold uppercase truncate max-w-[120px]">
-                        {task.description}
-                      </p>
-                    </div>
-                    <div className="self-center">
-                      <ChevronRightIcon size={16} className="text-gray-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all" />
-                    </div>
-                  </div>
-                </motion.div>
-              ))
-            ) : (
-              <div className="flex flex-col items-center justify-center h-full text-center p-8">
-                <div className="bg-white p-4 rounded-3xl shadow-sm mb-4">
-                  <LayoutGrid size={32} className="text-gray-300" />
-                </div>
-                <p className="text-gray-400 font-bold text-xs uppercase tracking-widest">No tasks scheduled for this day</p>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 const DashboardView: React.FC<DashboardViewProps> = (props) => {
   const {
     isY8Open, setIsY8Open, setIsQRModalOpen, showEasterNotice, setShowEasterNotice,
@@ -326,7 +190,8 @@ const DashboardView: React.FC<DashboardViewProps> = (props) => {
     currentEventMessageIndex, eventMessages, randomConcept, refreshConcept,
     startQuiz, startRevision, startVocab,
     currentUser, loginWithGoogle, logout, allUsers, selectedStudent, setSelectedStudent,
-    tasks, onCreateTask, onDeleteTask, onStartTask
+    tasks, onCreateTask, onDeleteTask, onStartTask,
+    showCalculator, setShowCalculator
   } = props;
 
   return (
@@ -342,10 +207,24 @@ const DashboardView: React.FC<DashboardViewProps> = (props) => {
             <span className="text-[10px] font-bold text-black uppercase tracking-widest mt-1">An app by Toman</span>
           </div>
           <div className="flex items-center gap-2">
+            
             {currentUser ? (
               <div className="flex items-center gap-2 mr-2">
                 <div className="hidden sm:flex flex-col items-end">
-                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">Logged in as</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">Logged in as</span>
+                    {isAdminLoggedIn ? (
+                      <div className="flex items-center gap-1 bg-amber-50 px-2 py-0.5 rounded-full">
+                        <Crown size={10} className="text-amber-500 fill-amber-500" />
+                        <span className="text-[9px] font-black text-amber-600 uppercase tracking-tight">God Mode</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1 bg-emerald-50 px-2 py-0.5 rounded-full">
+                        <GraduationCap size={10} className="text-emerald-500" />
+                        <span className="text-[9px] font-black text-emerald-600 uppercase tracking-tight">Student Mode</span>
+                      </div>
+                    )}
+                  </div>
                   <span className="text-xs font-bold text-gray-700 truncate max-w-[120px]">{currentUser.displayName || currentUser.email}</span>
                 </div>
                 {currentUser.photoURL ? (
@@ -366,21 +245,14 @@ const DashboardView: React.FC<DashboardViewProps> = (props) => {
             ) : (
               <button 
                 onClick={loginWithGoogle}
-                className="group flex items-center gap-3 bg-white border-2 border-gray-100 hover:border-blue-400 px-5 py-2 rounded-2xl font-black text-xs uppercase tracking-widest text-gray-700 shadow-[0_4px_0_0_#f3f4f6] hover:shadow-[0_4px_0_0_#dbeafe] active:shadow-none active:translate-y-1 transition-all mr-2"
+                className="group flex items-center gap-2 bg-white border-2 border-gray-100 hover:border-blue-400 px-3 py-1.5 rounded-xl font-black text-[10px] uppercase tracking-widest text-gray-700 shadow-[0_3px_0_0_#f3f4f6] hover:shadow-[0_3px_0_0_#dbeafe] active:shadow-none active:translate-y-0.5 transition-all mr-2"
               >
-                <div className="flex items-center justify-center w-7 h-7 bg-white rounded-lg shadow-sm group-hover:scale-110 transition-transform font-black text-blue-500 text-lg">
+                <div className="flex items-center justify-center w-6 h-6 bg-white rounded-lg shadow-sm group-hover:scale-110 transition-transform font-black text-blue-500 text-sm">
                   G
                 </div>
-                <span>Login with Google</span>
+                <span>Login</span>
               </button>
             )}
-            <button 
-              onClick={() => setIsQRModalOpen(true)}
-              className="bg-gray-100 text-gray-600 p-2 rounded-full hover:bg-gray-200 transition-all"
-              title="App QR Code"
-            >
-              <QrCode size={20} />
-            </button>
             <button 
               onClick={() => setIsY8Open(true)}
               className="bg-orange-500 text-white px-4 py-1.5 rounded-full font-black text-sm uppercase tracking-widest shadow-[0_4px_0_0_#c2410c] active:shadow-none active:translate-y-1 transition-all"
@@ -495,8 +367,6 @@ const DashboardView: React.FC<DashboardViewProps> = (props) => {
       </AnimatePresence>
 
       <main className="max-w-7xl mx-auto p-6 space-y-8 mt-4 pb-24">
-        <CalendarSection tasks={tasks} onStartTask={onStartTask} />
-
         <div className="bg-emerald-100 border-2 border-emerald-200 rounded-2xl p-6 flex items-center gap-6">
           <div className="bg-emerald-500 p-4 rounded-full text-white">
             <GraduationCap size={40} />

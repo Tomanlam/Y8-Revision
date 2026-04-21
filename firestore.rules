@@ -20,7 +20,7 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isEmailVerified() && request.auth.token.email == "tomanlam@gmail.com";
+      return isSignedIn() && request.auth.token.email == "tomanlam@gmail.com" && request.auth.token.email_verified == true;
     }
     
     function isOwner(userId) {
@@ -85,7 +85,8 @@ service cloud.firestore {
 
     match /tasks/{taskId} {
       allow read: if isSignedIn();
-      allow write: if isAdmin() && isValidTask(request.resource.data);
+      allow create, update: if isAdmin() && isValidTask(request.resource.data);
+      allow delete: if isAdmin();
     }
 
     match /submissions/{submissionId} {

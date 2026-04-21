@@ -25,7 +25,10 @@ import {
 
 // Constants
 import { eventMessages, facts, navItems } from './constants';
+
+// Data
 import { units } from './data';
+import { ExothermicReactionsWorksheet } from './data/worksheets/ExothermicReactions';
 
 // Components
 import DashboardView from './components/views/DashboardView';
@@ -36,6 +39,8 @@ import UserStatsView from './components/views/UserStatsView';
 import AboutView from './components/views/AboutView';
 import QuickFacts from './QuickFacts';
 import TasksView from './components/views/TasksView';
+import TaskWorksheetView from './components/views/TaskWorksheetView';
+import Calculator from './components/Calculator';
 
 // Icons
 import { 
@@ -118,7 +123,7 @@ const APP_NAV_ITEMS: NavItem[] = [
   { mode: 'about', icon: Info, label: 'About' }
 ];
 
-const Sidebar = ({ currentMode, setMode }: { currentMode: AppMode, setMode: (m: AppMode) => void }) => {
+const Sidebar = ({ currentMode, setMode, onQRClick }: { currentMode: AppMode, setMode: (m: AppMode) => void, onQRClick: () => void }) => {
   const [isHovered, setIsHovered] = useState(false);
 
   return (
@@ -126,7 +131,7 @@ const Sidebar = ({ currentMode, setMode }: { currentMode: AppMode, setMode: (m: 
       initial={false}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      animate={{ width: isHovered ? 260 : 80 }}
+      animate={{ width: isHovered ? 300 : 80 }}
       className="fixed left-0 top-0 bottom-0 bg-white border-r-2 border-gray-100 z-50 hidden md:flex flex-col py-8 transition-all duration-300 ease-in-out shadow-xl"
     >
       <div className={`px-5 mb-10 flex items-center gap-4 overflow-hidden h-12 transition-all ${!isHovered ? 'justify-center' : ''}`}>
@@ -138,7 +143,7 @@ const Sidebar = ({ currentMode, setMode }: { currentMode: AppMode, setMode: (m: 
               exit={{ opacity: 0, x: -10 }}
               className="flex flex-col whitespace-nowrap"
             >
-              <h1 className="text-xl font-black text-emerald-500 tracking-tight leading-none">Y8 Cambridge LS Science</h1>
+              <h1 className="text-base font-black text-emerald-500 tracking-tight leading-none uppercase">Y8 Cambridge LS Science</h1>
               <span className="text-[8px] font-bold text-black uppercase tracking-widest mt-1">An app by Toman</span>
             </motion.div>
           ) : (
@@ -196,17 +201,15 @@ const Sidebar = ({ currentMode, setMode }: { currentMode: AppMode, setMode: (m: 
       </div>
 
       <div className="px-4 mt-auto">
-        <div className={`p-4 rounded-2xl bg-gray-50 border-2 border-gray-100 flex items-center gap-3 overflow-hidden ${!isHovered && 'justify-center p-3'}`}>
-          <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 flex-shrink-0 font-black">
-            L
+        <button
+          onClick={onQRClick}
+          className="w-full p-4 rounded-2xl bg-gray-50 border-2 border-gray-100 flex items-center justify-center gap-4 transition-all hover:bg-emerald-50 hover:border-emerald-100 group"
+          title="App QR Code"
+        >
+          <div className="flex-shrink-0 text-gray-400 group-hover:text-emerald-500">
+            <QrCode size={24} />
           </div>
-          {isHovered && (
-            <div className="overflow-hidden">
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">Instructor</p>
-              <p className="font-black text-gray-800 uppercase tracking-tight truncate">Mr. LAM</p>
-            </div>
-          )}
-        </div>
+        </button>
       </div>
     </motion.div>
   );
@@ -222,7 +225,21 @@ export default function App() {
 
 const ADMIN_EMAIL = 'tomanlam@gmail.com';
 
+const INITIAL_TASKS: Task[] = [
+    {
+      id: 'task-1',
+      title: 'Cells and Organisms Review',
+      description: 'Complete the quiz to review the basic structures of plants and animal cells.',
+      units: [1],
+      dueDate: '2024-04-15',
+      status: 'active',
+      type: 'standard'
+    },
+    ExothermicReactionsWorksheet
+  ];
+
 function AppContent() {
+
   const [mode, setMode] = useState<AppMode>('dashboard');
   const [selectedUnitId, setSelectedUnitId] = useState<number | null>(null);
   const [sessionStats, setSessionStats] = useState<SessionStats>({});
@@ -255,7 +272,7 @@ function AppContent() {
   const [adminPassword, setAdminPassword] = useState("");
   const [adminError, setAdminError] = useState("");
   const [challengeRecords, setChallengeRecords] = useState<ChallengeRecord[]>([]);
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [tasks, setTasks] = useState<Task[]>(INITIAL_TASKS);
   const [mySubmissions, setMySubmissions] = useState<TaskSubmission[]>([]);
   const [allSubmissions, setAllSubmissions] = useState<TaskSubmission[]>([]);
   const [editingRecord, setEditingRecord] = useState<ChallengeRecord | null>(null);
@@ -265,6 +282,8 @@ function AppContent() {
   const [randomConcept, setRandomConcept] = useState(facts[0]);
   const [chineseType, setChineseType] = useState<'traditional' | 'simplified'>('traditional');
   const [activeTask, setActiveTask] = useState<Task | null>(null);
+  const [viewedSubmission, setViewedSubmission] = useState<TaskSubmission | null>(null);
+  const [showCalculator, setShowCalculator] = useState(false);
 
   const selectedUnit = useMemo(() => units.find(u => u.id === selectedUnitId), [selectedUnitId]);
 
@@ -350,7 +369,8 @@ function AppContent() {
   useEffect(() => {
     const q = query(collection(db, 'tasks'), orderBy('dueDate', 'asc'));
     return onSnapshot(q, (snap) => {
-      setTasks(snap.docs.map(d => ({ id: d.id, ...d.data() }) as Task));
+      const fetchedTasks = snap.docs.map(d => ({ id: d.id, ...d.data() }) as Task);
+      setTasks(fetchedTasks);
     });
   }, []);
 
@@ -501,18 +521,29 @@ function AppContent() {
         createdAt: new Date().toISOString()
       };
       await setDoc(doc(db, 'tasks', id), task);
-    } catch (e) { console.error(e); }
+      console.log("Task created successfully:", id);
+    } catch (e) {
+      console.error("Error creating task:", e);
+      alert("Failed to create task. Check console for details.");
+    }
   };
 
   const onDeleteTask = async (id: string) => {
-    try { await deleteDoc(doc(db, 'tasks', id)); }
+    try { 
+      await deleteDoc(doc(db, 'tasks', id)); 
+      setTasks(prev => prev.filter(t => t.id !== id)); // Immediate local UI update
+    }
     catch (e) { console.error(e); }
   };
 
   const onStartTask = (task: Task) => {
     setActiveTask(task);
-    setSelectedUnitId(task.units[0]);
-    setMode('quiz');
+    if (task.type === 'worksheet' || task.worksheetQuestions || task.pdfUrl) {
+      setMode('worksheet');
+    } else {
+      setSelectedUnitId(task.units[0]);
+      setMode('quiz');
+    }
   };
 
   const handleQuizCompleteForTask = async (score: number, total: number, unitId: number) => {
@@ -524,7 +555,8 @@ function AppContent() {
        userId: currentUser.uid,
        studentName: currentUser.displayName || 'Student',
        completedAt: new Date().toISOString(),
-       results: { score, total, unitId }
+       results: { score, total, unitId },
+       responses: {}
      };
      
      await setDoc(doc(db, 'submissions', submission.id), submission);
@@ -535,7 +567,7 @@ function AppContent() {
   return (
     <div className="font-sans selection:bg-emerald-200 min-h-screen bg-gray-50 flex">
       {['dashboard', 'user-stats', 'about', 'quick-facts', 'tasks'].includes(mode) && (
-        <Sidebar currentMode={mode} setMode={setMode} />
+        <Sidebar currentMode={mode} setMode={setMode} onQRClick={() => setIsQRModalOpen(true)} />
       )}
 
       <div className={`flex-1 transition-all duration-300 ${['dashboard', 'user-stats', 'about', 'quick-facts', 'tasks'].includes(mode) ? 'md:pl-[80px]' : ''}`}>
@@ -573,8 +605,14 @@ function AppContent() {
               currentUser={currentUser} loginWithGoogle={loginWithGoogle} logout={logout}
               allUsers={allUsers} selectedStudent={selectedStudent} setSelectedStudent={setSelectedStudent}
               tasks={tasks} onCreateTask={onCreateTask} onDeleteTask={onDeleteTask} onStartTask={onStartTask}
+              showCalculator={showCalculator} setShowCalculator={setShowCalculator}
             />
           )}
+
+          {/* Virtual Calculator global overlay */}
+          <AnimatePresence>
+            {showCalculator && <Calculator key="global-calc" onClose={() => setShowCalculator(false)} />}
+          </AnimatePresence>
 
           {mode === 'quiz' && (
             <QuizView 
@@ -617,6 +655,7 @@ function AppContent() {
           )}
 
           {mode === 'tasks' && <TasksView 
+            key="tasks"
             currentEventMessageIndex={currentEventMessageIndex} 
             eventMessages={eventMessages} 
             showEasterNotice={showEasterNotice}
@@ -633,8 +672,41 @@ function AppContent() {
             onCreateTask={onCreateTask}
             onDeleteTask={onDeleteTask}
             onStartTask={onStartTask}
+            onViewSubmission={(sub, task) => {
+              setViewedSubmission(sub);
+              setActiveTask(task);
+              setMode('worksheet');
+            }}
           />}
-          {mode === 'user-stats' && <UserStatsView units={units} sessionStats={sessionStats} />}
+          {mode === 'worksheet' && activeTask && (
+            <TaskWorksheetView 
+              key="worksheet"
+              task={activeTask}
+              onBack={() => {
+                setMode('tasks');
+                setActiveTask(null);
+                setViewedSubmission(null);
+              }}
+              initialResponses={viewedSubmission ? viewedSubmission.responses : mySubmissions.find(s => s.taskId === activeTask.id)?.responses}
+              readOnly={!!viewedSubmission}
+              showCalculator={showCalculator}
+              setShowCalculator={setShowCalculator}
+              onComplete={async (responses) => {
+                if (!currentUser || viewedSubmission) return;
+                const submission: TaskSubmission = {
+                  id: `${activeTask.id}_${currentUser.uid}`,
+                  taskId: activeTask.id,
+                  userId: currentUser.uid,
+                  studentName: currentUser.displayName || 'Student',
+                  completedAt: new Date().toISOString(),
+                  results: { score: 0, total: activeTask.worksheetQuestions?.length || 0, unitId: activeTask.units[0] },
+                  responses: responses
+                };
+                await setDoc(doc(db, 'submissions', submission.id), submission);
+              }}
+            />
+          )}
+          {mode === 'user-stats' && <UserStatsView key="user-stats" units={units} sessionStats={sessionStats} />}
           {mode === 'about' && <AboutView key="about" />}
           {mode === 'quick-facts' && <QuickFacts key="quick-facts" />}
         </AnimatePresence>

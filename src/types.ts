@@ -1,6 +1,6 @@
 import { LucideIcon } from 'lucide-react';
 
-export type AppMode = 'splash' | 'dashboard' | 'revision' | 'quiz' | 'vocab' | 'user-stats' | 'about' | 'playground' | 'quick-facts' | 'tasks';
+export type AppMode = 'splash' | 'dashboard' | 'revision' | 'quiz' | 'vocab' | 'user-stats' | 'about' | 'playground' | 'quick-facts' | 'tasks' | 'worksheet';
 
 export interface QuizSubMode {
   id: string;
@@ -49,6 +49,14 @@ export interface Task {
   dueDate: string;
   status: 'active' | 'archived';
   createdAt?: string;
+  type?: 'standard' | 'worksheet';
+  pdfUrl?: string;
+  worksheetQuestions?: (Question & { 
+    page?: number; 
+    section?: string; 
+    instruction?: string;
+    tableData?: string[][];
+  })[];
 }
 
 export interface TaskSubmission {
@@ -62,6 +70,7 @@ export interface TaskSubmission {
     total: number;
     unitId: number;
   };
+  responses: Record<string, any>;
 }
 
 export type OperationType = 'create' | 'update' | 'delete' | 'list' | 'get' | 'write';
@@ -86,11 +95,13 @@ export interface NavItem {
 
 export interface Question {
   id: string;
-  text: string;
-  options: string[];
-  correctAnswer: string;
+  text?: string;
+  question?: string;
+  type?: 'mcq' | 'short-response' | 'table' | string;
+  options?: string[];
+  correctAnswer?: string;
   explanation?: string;
-  correct?: number; // Some units use index, some use correctAnswer string
+  correct?: number; 
 }
 
 export interface Vocab {
