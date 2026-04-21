@@ -16,6 +16,15 @@ export interface SessionStats {
   }
 }
 
+export interface UserProfile {
+  userId: string;
+  email: string;
+  displayName: string;
+  progress: SessionStats;
+  lastSeen: string;
+  isAdmin?: boolean;
+}
+
 export interface ChallengeResponse {
   questionId: string;
   answer: string;
@@ -30,6 +39,29 @@ export interface ChallengeRecord {
   timestamp: string;
   selectedUnits: number[];
   responses: ChallengeResponse[];
+}
+
+export interface Task {
+  id: string;
+  title: string;
+  description: string;
+  units: number[];
+  dueDate: string;
+  status: 'active' | 'archived';
+  createdAt?: string;
+}
+
+export interface TaskSubmission {
+  id: string;
+  taskId: string;
+  userId: string;
+  studentName: string;
+  completedAt: string;
+  results: {
+    score: number;
+    total: number;
+    unitId: number;
+  };
 }
 
 export type OperationType = 'create' | 'update' | 'delete' | 'list' | 'get' | 'write';
@@ -82,7 +114,7 @@ export interface Unit {
   descriptionTraditional?: string;
   descriptionSimplified?: string;
   color: string;
-  concepts: Concept[];
+  concepts: string[] | Concept[];
   conceptsTraditional?: string[];
   conceptsSimplified?: string[];
   vocab: Vocab[];

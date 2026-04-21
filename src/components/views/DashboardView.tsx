@@ -5,9 +5,11 @@ import {
   Heart, BookOpen, GraduationCap, Languages, ChevronLeft, 
   CheckCircle2, XCircle, Trophy, Trash2, Lock, FileText, 
   Download, Star, Zap, Chrome, LayoutGrid, Info, ArrowRight, RefreshCw,
-  QrCode, Edit, Database, LogOut
+  QrCode, Edit, Database, LogOut, User, Calendar as CalendarIcon, ChevronRight as ChevronRightIcon, Target
 } from 'lucide-react';
-import { Unit, ChallengeRecord, ChallengeResponse, Question } from '../../types';
+import { Unit, ChallengeRecord, ChallengeResponse, Question, UserProfile, Task } from '../../types';
+import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths } from 'date-fns';
+import { User as FirebaseUser } from 'firebase/auth';
 
 interface DashboardViewProps {
   isY8Open: boolean;
@@ -62,6 +64,16 @@ interface DashboardViewProps {
   startQuiz: (unit: Unit) => void;
   startRevision: (unit: Unit) => void;
   startVocab: (unit: Unit) => void;
+  currentUser: FirebaseUser | null;
+  loginWithGoogle: () => void;
+  logout: () => void;
+  allUsers: UserProfile[];
+  selectedStudent: UserProfile | null;
+  setSelectedStudent: (u: UserProfile | null) => void;
+  tasks: Task[];
+  onCreateTask: (taskData: Partial<Task>) => void;
+  onDeleteTask: (id: string) => void;
+  onStartTask: (task: Task) => void;
 }
 
 const Y8Splash = ({ onClose }: { onClose: () => void }) => {
@@ -158,6 +170,145 @@ const Y8Splash = ({ onClose }: { onClose: () => void }) => {
   );
 };
 
+const CalendarSection = ({ tasks, onStartTask }: { tasks: Task[], onStartTask: (task: Task) => void }) => {
+  const [currentDate, setCurrentDate] = React.useState(new Date());
+  const [selectedDate, setSelectedDate] = React.useState(new Date());
+
+  const monthStart = startOfMonth(currentDate);
+  const monthEnd = endOfMonth(monthStart);
+  const startDate = startOfWeek(monthStart);
+  const endDate = endOfWeek(monthEnd);
+
+  const calendarDays = eachDayOfInterval({
+    start: startDate,
+    end: endDate,
+  });
+
+  const nextMonth = () => setCurrentDate(addMonths(currentDate, 1));
+  const prevMonth = () => setCurrentDate(subMonths(currentDate, 1));
+
+  const tasksForSelectedDate = tasks.filter(task => 
+    isSameDay(new Date(task.dueDate), selectedDate)
+  );
+
+  return (
+    <div className="bg-white border-2 border-gray-100 rounded-[2.5rem] p-8 shadow-sm">
+      <div className="flex flex-col md:flex-row gap-8">
+        {/* Calendar Side */}
+        <div className="flex-1">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-blue-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-100">
+                <CalendarIcon size={24} />
+              </div>
+              <div>
+                <h3 className="text-xl font-black text-gray-800 tracking-tight leading-none uppercase">{format(currentDate, 'MMMM yyyy')}</h3>
+                <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Upcoming Tasks</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-xl">
+              <button onClick={prevMonth} className="p-2 hover:bg-white hover:shadow-sm rounded-lg transition-all text-gray-500">
+                <ChevronLeft size={20} />
+              </button>
+              <button onClick={nextMonth} className="p-2 hover:bg-white hover:shadow-sm rounded-lg transition-all text-gray-500">
+                <ChevronRightIcon size={20} />
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-7 gap-2">
+            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+              <div key={day} className="text-center text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
+                {day}
+              </div>
+            ))}
+            {calendarDays.map((day, idx) => {
+              const dayTasks = tasks.filter(t => isSameDay(new Date(t.dueDate), day));
+              const isSelected = isSameDay(day, selectedDate);
+              const isCurrentMonth = isSameMonth(day, monthStart);
+              const hasTasks = dayTasks.length > 0;
+
+              return (
+                <button
+                  key={idx}
+                  onClick={() => setSelectedDate(day)}
+                  className={`
+                    group relative aspect-square rounded-2xl flex flex-col items-center justify-center transition-all
+                    ${isSelected ? 'bg-blue-500 text-white shadow-lg shadow-blue-100 scale-105 z-10' : 'hover:bg-gray-50'}
+                    ${!isCurrentMonth ? 'opacity-20 translate-y-1 scale-95' : 'opacity-100'}
+                  `}
+                >
+                  <span className={`text-sm font-bold ${isSelected ? 'text-white' : 'text-gray-700'}`}>
+                    {format(day, 'd')}
+                  </span>
+                  {hasTasks && (
+                    <div className={`mt-1 flex gap-1 transform transition-transform group-hover:scale-125 ${isSelected ? 'opacity-100' : 'opacity-100'}`}>
+                      {dayTasks.slice(0, 3).map((_, i) => (
+                        <div key={i} className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-white' : 'bg-blue-400'}`} />
+                      ))}
+                    </div>
+                  )}
+                  {isSelected && (
+                    <motion.div layoutId="bubble" className="absolute inset-0 border-4 border-blue-500 rounded-2xl pointer-events-none" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Tasks Preview Side */}
+        <div className="w-full md:w-80 bg-gray-50 rounded-3xl p-6 flex flex-col">
+          <div className="flex items-center justify-between mb-6">
+            <h4 className="font-black text-gray-800 uppercase text-xs tracking-widest">
+              {isSameDay(selectedDate, new Date()) ? 'Today' : format(selectedDate, 'MMM d, yyyy')}
+            </h4>
+            <span className="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
+              {tasksForSelectedDate.length} Tasks
+            </span>
+          </div>
+
+          <div className="flex-1 space-y-4 overflow-y-auto pr-2 custom-scrollbar max-h-[300px]">
+            {tasksForSelectedDate.length > 0 ? (
+              tasksForSelectedDate.map(task => (
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  key={task.id}
+                  className="bg-white p-5 rounded-2xl border-2 border-transparent hover:border-blue-200 transition-all cursor-pointer group shadow-sm"
+                  onClick={() => onStartTask(task)}
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center font-black group-hover:bg-blue-500 group-hover:text-white transition-all">
+                      <Target size={20} />
+                    </div>
+                    <div className="flex-1">
+                      <h5 className="font-black text-gray-800 text-sm leading-tight mb-1">{task.title}</h5>
+                      <p className="text-gray-500 text-[10px] font-bold uppercase truncate max-w-[120px]">
+                        {task.description}
+                      </p>
+                    </div>
+                    <div className="self-center">
+                      <ChevronRightIcon size={16} className="text-gray-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all" />
+                    </div>
+                  </div>
+                </motion.div>
+              ))
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-center p-8">
+                <div className="bg-white p-4 rounded-3xl shadow-sm mb-4">
+                  <LayoutGrid size={32} className="text-gray-300" />
+                </div>
+                <p className="text-gray-400 font-bold text-xs uppercase tracking-widest">No tasks scheduled for this day</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const DashboardView: React.FC<DashboardViewProps> = (props) => {
   const {
     isY8Open, setIsY8Open, setIsQRModalOpen, showEasterNotice, setShowEasterNotice,
@@ -173,7 +324,9 @@ const DashboardView: React.FC<DashboardViewProps> = (props) => {
     setAdminPassword, adminError, challengeRecords, generatePDF,
     deleteChallengeRecord, editingRecord, setEditingRecord, updateChallengeRecord,
     currentEventMessageIndex, eventMessages, randomConcept, refreshConcept,
-    startQuiz, startRevision, startVocab
+    startQuiz, startRevision, startVocab,
+    currentUser, loginWithGoogle, logout, allUsers, selectedStudent, setSelectedStudent,
+    tasks, onCreateTask, onDeleteTask, onStartTask
   } = props;
 
   return (
@@ -189,6 +342,38 @@ const DashboardView: React.FC<DashboardViewProps> = (props) => {
             <span className="text-[10px] font-bold text-black uppercase tracking-widest mt-1">An app by Toman</span>
           </div>
           <div className="flex items-center gap-2">
+            {currentUser ? (
+              <div className="flex items-center gap-2 mr-2">
+                <div className="hidden sm:flex flex-col items-end">
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">Logged in as</span>
+                  <span className="text-xs font-bold text-gray-700 truncate max-w-[120px]">{currentUser.displayName || currentUser.email}</span>
+                </div>
+                {currentUser.photoURL ? (
+                  <img src={currentUser.photoURL} alt="User" className="w-8 h-8 rounded-full border-2 border-emerald-100" referrerPolicy="no-referrer" />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold text-xs">
+                    {currentUser.displayName?.charAt(0) || 'U'}
+                  </div>
+                )}
+                <button 
+                  onClick={logout}
+                  className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                  title="Logout"
+                >
+                  <LogOut size={18} />
+                </button>
+              </div>
+            ) : (
+              <button 
+                onClick={loginWithGoogle}
+                className="group flex items-center gap-3 bg-white border-2 border-gray-100 hover:border-blue-400 px-5 py-2 rounded-2xl font-black text-xs uppercase tracking-widest text-gray-700 shadow-[0_4px_0_0_#f3f4f6] hover:shadow-[0_4px_0_0_#dbeafe] active:shadow-none active:translate-y-1 transition-all mr-2"
+              >
+                <div className="flex items-center justify-center w-7 h-7 bg-white rounded-lg shadow-sm group-hover:scale-110 transition-transform font-black text-blue-500 text-lg">
+                  G
+                </div>
+                <span>Login with Google</span>
+              </button>
+            )}
             <button 
               onClick={() => setIsQRModalOpen(true)}
               className="bg-gray-100 text-gray-600 p-2 rounded-full hover:bg-gray-200 transition-all"
@@ -310,6 +495,8 @@ const DashboardView: React.FC<DashboardViewProps> = (props) => {
       </AnimatePresence>
 
       <main className="max-w-7xl mx-auto p-6 space-y-8 mt-4 pb-24">
+        <CalendarSection tasks={tasks} onStartTask={onStartTask} />
+
         <div className="bg-emerald-100 border-2 border-emerald-200 rounded-2xl p-6 flex items-center gap-6">
           <div className="bg-emerald-500 p-4 rounded-full text-white">
             <GraduationCap size={40} />
@@ -560,6 +747,25 @@ const DashboardView: React.FC<DashboardViewProps> = (props) => {
                     <Lock size={32} />
                   </div>
                   <h2 className="text-2xl font-black text-center text-gray-800 uppercase mb-6">Admin Login</h2>
+                  
+                  <button 
+                    type="button"
+                    onClick={loginWithGoogle}
+                    className="w-full bg-white border-4 border-emerald-500 text-emerald-600 py-4 rounded-2xl font-black uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-emerald-50 transition-all shadow-[0_6px_0_0_#10b981] active:shadow-none active:translate-y-1 mb-6"
+                  >
+                    <Chrome size={24} />
+                    Login with Admin Google
+                  </button>
+
+                  <div className="relative my-8">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t-2 border-gray-100"></div>
+                    </div>
+                    <div className="relative flex justify-center text-[10px] uppercase font-black text-gray-300">
+                      <span className="bg-white px-2 italic">Legacy Login</span>
+                    </div>
+                  </div>
+
                   <form onSubmit={handleAdminLogin} className="space-y-4">
                     <div>
                       <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Username</label>
@@ -612,28 +818,131 @@ const DashboardView: React.FC<DashboardViewProps> = (props) => {
                     <p className="text-4xl font-black text-gray-800">{challengeRecords.length}</p>
                   </div>
                   <div className="bg-white p-6 rounded-3xl border-2 border-gray-200 shadow-sm">
-                    <p className="text-gray-400 font-black text-xs uppercase tracking-widest mb-2">Avg. Performance</p>
+                    <p className="text-gray-400 font-black text-xs uppercase tracking-widest mb-2">Total Students</p>
                     <p className="text-4xl font-black text-emerald-500">
-                      {challengeRecords.length > 0 
-                        ? (challengeRecords.reduce((acc, r) => acc + (r.score / r.totalQuestions), 0) / challengeRecords.length * 100).toFixed(1)
-                        : 0}%
+                      {allUsers.length}
                     </p>
                   </div>
                   <div className="bg-white p-6 rounded-3xl border-2 border-gray-200 shadow-sm">
-                    <p className="text-gray-400 font-black text-xs uppercase tracking-widest mb-2">Active Students</p>
+                    <p className="text-gray-400 font-black text-xs uppercase tracking-widest mb-2">Event Records</p>
                     <p className="text-4xl font-black text-blue-500">
                       {new Set(challengeRecords.map(r => r.studentName)).size}
                     </p>
                   </div>
                 </div>
 
+                <div className="grid lg:grid-cols-2 gap-8">
+                  <div className="space-y-6">
+                    <div className="flex justify-between items-center">
+                      <h2 className="text-2xl font-black text-gray-800 uppercase tracking-tight">Registered Students</h2>
+                      <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                        Total: {allUsers.length}
+                      </div>
+                    </div>
+
+                    <div className="bg-white rounded-[2rem] border-2 border-gray-200 overflow-hidden shadow-sm max-h-[600px] overflow-y-auto">
+                      <div className="divide-y-2 divide-gray-100">
+                        {allUsers.map(user => (
+                          <button
+                            key={user.userId}
+                            onClick={() => setSelectedStudent(user)}
+                            className={`w-full p-6 text-left flex items-center justify-between hover:bg-gray-50 transition-colors group ${selectedStudent?.userId === user.userId ? 'bg-emerald-50' : ''}`}
+                          >
+                            <div className="flex items-center gap-4">
+                              <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-black text-xl">
+                                {user.displayName?.charAt(0) || 'S'}
+                              </div>
+                              <div>
+                                <h3 className="font-black text-gray-800 uppercase tracking-tight leading-none mb-1">{user.displayName}</h3>
+                                <p className="text-xs font-bold text-gray-400">{user.email}</p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Last online</p>
+                              <p className="text-xs font-bold text-gray-600">
+                                {new Date(user.lastSeen).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-6">
+                    <div className="flex justify-between items-center">
+                      <h2 className="text-2xl font-black text-gray-800 uppercase tracking-tight">Student Details</h2>
+                      {selectedStudent && (
+                        <button 
+                          onClick={() => setSelectedStudent(null)}
+                          className="text-[10px] font-black text-emerald-500 uppercase tracking-widest hover:underline"
+                        >
+                          Clear Selection
+                        </button>
+                      )}
+                    </div>
+
+                    {selectedStudent ? (
+                      <div className="bg-white rounded-[2rem] border-2 border-gray-200 p-8 shadow-sm space-y-8">
+                        <div className="flex items-center gap-6 pb-6 border-b-2 border-gray-50">
+                          <div className="w-20 h-20 rounded-3xl bg-emerald-500 flex items-center justify-center text-white font-black text-4xl shadow-lg">
+                            {selectedStudent.displayName?.charAt(0) || 'S'}
+                          </div>
+                          <div>
+                            <h2 className="text-3xl font-black text-gray-800 uppercase tracking-tighter leading-none mb-2">{selectedStudent.displayName}</h2>
+                            <span className="bg-emerald-100 text-emerald-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
+                              Active Student
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="space-y-4">
+                          <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Unit Progress</h3>
+                          <div className="grid grid-cols-2 gap-4">
+                            {units.map(unit => {
+                              const unitProgress = selectedStudent.progress?.[unit.id] || { attemptedQuestions: [], masteredVocab: [] };
+                              return (
+                                <div key={unit.id} className="p-4 rounded-2xl bg-gray-50 border-2 border-gray-100 group hover:border-emerald-200 transition-colors">
+                                  <div className="flex items-center gap-2 mb-3">
+                                    <div className={`w-8 h-8 ${unit.color} rounded-lg flex items-center justify-center text-white font-bold text-xs`}>
+                                      {unit.id}
+                                    </div>
+                                    <span className="font-black text-[10px] text-gray-500 uppercase truncate">{unit.title}</span>
+                                  </div>
+                                  <div className="space-y-2">
+                                    <div className="flex justify-between items-center">
+                                      <span className="text-[10px] font-bold text-gray-400 uppercase">Quiz</span>
+                                      <span className="text-xs font-black text-emerald-600">{unitProgress.attemptedQuestions.length} / {unit.questions.length}</span>
+                                    </div>
+                                    <div className="h-1.5 bg-white rounded-full overflow-hidden border">
+                                      <div 
+                                        className="h-full bg-emerald-500 transition-all duration-1000"
+                                        style={{ width: `${(unitProgress.attemptedQuestions.length / unit.questions.length) * 100}%` }}
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-gray-100 rounded-[2.5rem] border-4 border-dashed border-gray-200 flex flex-col items-center justify-center p-20 text-center">
+                        <User size={64} className="text-gray-300 mb-4" />
+                        <p className="text-gray-400 font-bold uppercase tracking-widest text-sm">Select a student from the list to view detailed progress</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                 <div className="flex justify-between items-center">
-                  <h2 className="text-2xl font-black text-gray-800 uppercase tracking-tight">Quiz Records</h2>
+                  <h2 className="text-2xl font-black text-gray-800 uppercase tracking-tight">Historical Quiz Records</h2>
                   <button 
                     onClick={() => generatePDF(challengeRecords)}
                     className="bg-emerald-500 text-white px-6 py-3 rounded-2xl font-black uppercase tracking-widest flex items-center gap-2 shadow-[0_4px_0_0_#059669] hover:bg-emerald-600 transition-all active:shadow-none active:translate-y-1"
                   >
-                    <Download size={20} /> Export All
+                    <Download size={20} /> Export History
                   </button>
                 </div>
 

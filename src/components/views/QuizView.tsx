@@ -11,9 +11,10 @@ interface QuizViewProps {
   onBack: () => void;
   sessionStats: any;
   setSessionStats: (stats: any | ((prev: any) => any)) => void;
+  onComplete?: (score: number, total: number) => void;
 }
 
-const QuizView: React.FC<QuizViewProps> = ({ unit, onBack, sessionStats, setSessionStats }) => {
+const QuizView: React.FC<QuizViewProps> = ({ unit, onBack, sessionStats, setSessionStats, onComplete }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [status, setStatus] = useState<'idle' | 'selected' | 'checked'>('idle');
@@ -28,7 +29,18 @@ const QuizView: React.FC<QuizViewProps> = ({ unit, onBack, sessionStats, setSess
   if (!unit) return null;
 
   const currentQuestion = unit.questions[currentIndex];
-  const correctIndex = currentQuestion.options.indexOf(currentQuestion.correctAnswer);
+  
+  const getCorrectIndex = (q: any) => {
+    if (typeof q.correct === 'number') return q.correct;
+    if (!q.options || !q.correctAnswer) return -1;
+    
+    const target = q.correctAnswer.toString().trim().toLowerCase();
+    return q.options.findIndex((opt: string) => 
+      opt.toString().trim().toLowerCase() === target
+    );
+  };
+
+  const correctIndex = getCorrectIndex(currentQuestion);
   const isCorrect = selectedAnswer === correctIndex;
   
   const currentTranslation = assistLang === 'traditional' ? {
@@ -310,7 +322,10 @@ const QuizView: React.FC<QuizViewProps> = ({ unit, onBack, sessionStats, setSess
                  <span className="hidden md:inline">Practice Again</span>
                </button>
               <button
-                onClick={onBack}
+                onClick={() => {
+                  if (onComplete) onComplete(score, unit.questions.length);
+                  else onBack();
+                }}
                 className="flex-[3] md:flex-1 py-4 rounded-2xl font-black uppercase tracking-widest text-lg transition-all bg-emerald-500 text-white hover:bg-emerald-600 shadow-[0_4px_0_0_#059669] active:shadow-none active:translate-y-1"
               >
                 Continue

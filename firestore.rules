@@ -1,65 +1,101 @@
-// ===============================================================
-// Assumed Data Model
-// ===============================================================
-//
-// Collection: challengeRecords
-// Document ID: record.id (string)
-// Fields:
-//   - id: string (required) - Unique identifier
-//   - studentName: string (required) - Student name
-//   - score: number (required) - Correct answers count
-//   - totalQuestions: number (required) - Total questions count
-//   - selectedUnits: list (required) - List of unit IDs (integers)
-//   - responses: list (required) - List of question response objects
-//   - timestamp: string (required) - ISO 8601 date-time string
-//
-// ===============================================================
-
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
+    // DEFAULT DENY
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
     // ===============================================================
     // Helper Functions
     // ===============================================================
     
-    function isAuthenticated() {
+    function isSignedIn() {
       return request.auth != null;
     }
     
+    function isEmailVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
     function isAdmin() {
-      return isAuthenticated() && (
-        request.auth.token.email == "tomanlam@gmail.com" && request.auth.token.email_verified == true
-      );
+      return isEmailVerified() && request.auth.token.email == "tomanlam@gmail.com";
     }
     
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // ===============================================================
+    // Validation Helpers
+    // ===============================================================
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['userId', 'email', 'progress', 'lastSeen']) &&
+             data.userId == request.auth.uid &&
+             data.email == request.auth.token.email &&
+             data.progress is map &&
+             data.lastSeen is string;
+    }
+
     function isValidChallengeRecord(data) {
       return data.keys().hasAll(['id', 'studentName', 'score', 'totalQuestions', 'selectedUnits', 'responses', 'timestamp']) &&
              data.id is string &&
-             data.studentName is string && data.studentName.size() > 0 && data.studentName.size() < 100 &&
-             data.score is int && data.score >= 0 &&
-             data.totalQuestions is int && data.totalQuestions > 0 &&
+             data.studentName is string && data.studentName.size() < 100 &&
+             data.score is int &&
+             data.totalQuestions is int &&
              data.selectedUnits is list &&
              data.responses is list &&
              data.timestamp is string;
     }
 
+    function isValidTask(data) {
+      return data.keys().hasAll(['id', 'title', 'status']) &&
+             data.id is string &&
+             data.title is string &&
+             data.status in ['active', 'archived'];
+    }
+
+    function isValidSubmission(data) {
+      return data.keys().hasAll(['taskId', 'userId', 'completedAt']) &&
+             data.userId == request.auth.uid &&
+             data.taskId is string &&
+             data.completedAt is string;
+    }
+
     // ===============================================================
-    // Rules
+    // Match Blocks
     // ===============================================================
 
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+      allow create, update: if isOwner(userId) && isValidUser(request.resource.data);
+    }
+
     match /challengeRecords/{recordId} {
-      // Students can create their records without authentication
-      // We rely on strict schema validation to prevent junk data
       allow create: if isValidChallengeRecord(request.resource.data);
-      
-      // Only admins can read, update, or delete records
       allow read, update, delete: if isAdmin();
     }
-    
-    // Connection test document - requires auth (admin test)
+
+    match /tasks/{taskId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin() && isValidTask(request.resource.data);
+    }
+
+    match /submissions/{submissionId} {
+      allow get: if isOwner(request.resource.data.userId) || isAdmin();
+      allow list: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow create: if isSignedIn() && isValidSubmission(request.resource.data);
+    }
+
     match /test/connection {
-      allow read: if isAdmin();
+      allow read: if isSignedIn();
     }
   }
 }

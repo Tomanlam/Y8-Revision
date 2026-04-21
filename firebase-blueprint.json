@@ -1,5 +1,49 @@
 {
   "entities": {
+    "User": {
+      "title": "User",
+      "description": "Represents a student or admin user and their persistent progress.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "progress": { 
+          "type": "object",
+          "description": "User's progress across units (SessionStats structure)."
+        },
+        "lastSeen": { "type": "string", "format": "date-time" },
+        "isAdmin": { "type": "boolean" }
+      },
+      "required": ["userId", "email", "progress", "lastSeen"]
+    },
+    "Task": {
+      "title": "Task",
+      "description": "An assigned task for students to complete.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "units": { "type": "array", "items": { "type": "integer" } },
+        "dueDate": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["active", "archived"] }
+      },
+      "required": ["id", "title", "status"]
+    },
+    "TaskSubmission": {
+      "title": "Task Submission",
+      "description": "A student's completion record for a specific task.",
+      "type": "object",
+      "properties": {
+        "taskId": { "type": "string" },
+        "userId": { "type": "string" },
+        "studentName": { "type": "string" },
+        "completedAt": { "type": "string", "format": "date-time" },
+        "results": { "type": "object" }
+      },
+      "required": ["taskId", "userId", "completedAt"]
+    },
     "ChallengeRecord": {
       "title": "Challenge Record",
       "description": "A record of a student's performance in a quiz challenge or Easter assignment.",
@@ -30,6 +74,18 @@
     }
   },
   "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles and progress."
+    },
+    "/tasks/{taskId}": {
+      "schema": "Task",
+      "description": "Assigned tasks."
+    },
+    "/submissions/{submissionId}": {
+      "schema": "TaskSubmission",
+      "description": "Student task completions."
+    },
     "/challengeRecords/{recordId}": {
       "schema": "ChallengeRecord",
       "description": "Collection of all quiz records."

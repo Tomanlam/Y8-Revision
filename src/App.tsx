@@ -11,15 +11,16 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { 
   collection, doc, setDoc, deleteDoc, onSnapshot, 
-  query, orderBy, getDocFromServer 
+  query, orderBy, getDocFromServer, getDoc, updateDoc, where
 } from 'firebase/firestore';
-import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
+import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut, User as FirebaseUser } from 'firebase/auth';
 import { db, auth } from './firebase';
 
 // Types
 import { 
   AppMode, SessionStats, ChallengeResponse, ChallengeRecord, 
-  OperationType, Unit, Question, NavItem 
+  OperationType, Unit, Question, NavItem, UserProfile,
+  Task, TaskSubmission
 } from './types';
 
 // Constants
@@ -27,12 +28,10 @@ import { eventMessages, facts, navItems } from './constants';
 import { units } from './data';
 
 // Components
-import SplashScreen from './components/views/SplashScreen';
 import DashboardView from './components/views/DashboardView';
 import QuizView from './components/views/QuizView';
 import VocabView from './components/views/VocabView';
 import RevisionNotesView from './components/views/RevisionNotesView';
-import PlaygroundView from './components/views/PlaygroundView';
 import UserStatsView from './components/views/UserStatsView';
 import AboutView from './components/views/AboutView';
 import QuickFacts from './QuickFacts';
@@ -114,7 +113,6 @@ class AppErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundary
 const APP_NAV_ITEMS: NavItem[] = [
   { mode: 'dashboard', icon: LayoutGrid, label: 'Hub' },
   { mode: 'tasks', icon: Target, label: 'Tasks' },
-  { mode: 'playground', icon: FlaskRound, label: 'Play' },
   { mode: 'user-stats', icon: User, label: 'Stats' },
   { mode: 'quick-facts', icon: Lightbulb, label: 'Facts' },
   { mode: 'about', icon: Info, label: 'About' }
@@ -128,23 +126,29 @@ const Sidebar = ({ currentMode, setMode }: { currentMode: AppMode, setMode: (m: 
       initial={false}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      animate={{ width: isHovered ? 240 : 80 }}
+      animate={{ width: isHovered ? 260 : 80 }}
       className="fixed left-0 top-0 bottom-0 bg-white border-r-2 border-gray-100 z-50 hidden md:flex flex-col py-8 transition-all duration-300 ease-in-out shadow-xl"
     >
-      <div className="px-5 mb-10 flex items-center gap-4 overflow-hidden h-10">
-        <div className="bg-emerald-500 p-2 rounded-xl text-white flex-shrink-0">
-          <GraduationCap size={24} />
-        </div>
+      <div className={`px-5 mb-10 flex items-center gap-4 overflow-hidden h-12 transition-all ${!isHovered ? 'justify-center' : ''}`}>
         <AnimatePresence>
-          {isHovered && (
-            <motion.h2
+          {isHovered ? (
+            <motion.div
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -10 }}
-              className="font-black text-gray-800 uppercase tracking-tight whitespace-nowrap"
+              className="flex flex-col whitespace-nowrap"
             >
-              Y8 Science
-            </motion.h2>
+              <h1 className="text-xl font-black text-emerald-500 tracking-tight leading-none">Y8 Cambridge LS Science</h1>
+              <span className="text-[8px] font-bold text-black uppercase tracking-widest mt-1">An app by Toman</span>
+            </motion.div>
+          ) : (
+            <motion.div
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="bg-emerald-500 w-10 h-10 rounded-xl flex items-center justify-center text-white"
+            >
+              <span className="font-black text-lg">Y8</span>
+            </motion.div>
           )}
         </AnimatePresence>
       </div>
@@ -216,10 +220,19 @@ export default function App() {
   );
 }
 
+const ADMIN_EMAIL = 'tomanlam@gmail.com';
+
 function AppContent() {
-  const [mode, setMode] = useState<AppMode>('splash');
+  const [mode, setMode] = useState<AppMode>('dashboard');
   const [selectedUnitId, setSelectedUnitId] = useState<number | null>(null);
   const [sessionStats, setSessionStats] = useState<SessionStats>({});
+  
+  // Auth State
+  const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [isAuthReady, setIsAuthReady] = useState(false);
+  const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
+  const [selectedStudent, setSelectedStudent] = useState<UserProfile | null>(null);
   
   // Dashboard & Challenge States
   const [isY8Open, setIsY8Open] = useState(false);
@@ -238,33 +251,92 @@ function AppContent() {
   const [shortResponseInput, setShortResponseInput] = useState("");
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
-  const [isAuthReady, setIsAuthReady] = useState(false);
   const [adminUsername, setAdminUsername] = useState("");
   const [adminPassword, setAdminPassword] = useState("");
   const [adminError, setAdminError] = useState("");
   const [challengeRecords, setChallengeRecords] = useState<ChallengeRecord[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [mySubmissions, setMySubmissions] = useState<TaskSubmission[]>([]);
+  const [allSubmissions, setAllSubmissions] = useState<TaskSubmission[]>([]);
   const [editingRecord, setEditingRecord] = useState<ChallengeRecord | null>(null);
   const [isEventMode, setIsEventMode] = useState(false);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [currentEventMessageIndex, setCurrentEventMessageIndex] = useState(0);
   const [randomConcept, setRandomConcept] = useState(facts[0]);
   const [chineseType, setChineseType] = useState<'traditional' | 'simplified'>('traditional');
+  const [activeTask, setActiveTask] = useState<Task | null>(null);
 
   const selectedUnit = useMemo(() => units.find(u => u.id === selectedUnitId), [selectedUnitId]);
 
   useEffect(() => {
-    const timer = setTimeout(() => setMode('dashboard'), 2500);
-    return () => clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (user) => {
+    const unsub = onAuthStateChanged(auth, async (user) => {
+      setCurrentUser(user);
       setIsAuthReady(true);
-      if (user?.email === 'tomanlam@gmail.com') setIsAdminLoggedIn(true);
-      else setIsAdminLoggedIn(false);
+      
+      if (user) {
+        // Sync/Fetch user profile
+        const userRef = doc(db, 'users', user.uid);
+        const userSnap = await getDoc(userRef);
+        
+        if (userSnap.exists()) {
+          const data = userSnap.data() as UserProfile;
+          setUserProfile(data);
+          setSessionStats(data.progress || {});
+          
+          // Update last seen
+          await updateDoc(userRef, { lastSeen: new Date().toISOString() });
+        } else {
+          // Initialize profile
+          const newProfile: UserProfile = {
+            userId: user.uid,
+            email: user.email || '',
+            displayName: user.displayName || 'Student',
+            progress: {},
+            lastSeen: new Date().toISOString(),
+            isAdmin: user.email === ADMIN_EMAIL
+          };
+          await setDoc(userRef, newProfile);
+          setUserProfile(newProfile);
+          setSessionStats({});
+        }
+        
+        if (user.email === ADMIN_EMAIL) {
+          setIsAdminLoggedIn(true);
+        } else {
+          setIsAdminLoggedIn(false);
+        }
+      } else {
+        setUserProfile(null);
+        setIsAdminLoggedIn(false);
+        setSessionStats({}); // Reset for guests
+      }
     });
     return () => unsub();
   }, []);
+
+  // Sync sessionStats to Firestore
+  useEffect(() => {
+    if (!currentUser || !userProfile) return;
+    
+    const syncTimer = setTimeout(async () => {
+      const userRef = doc(db, 'users', currentUser.uid);
+      await updateDoc(userRef, { 
+        progress: sessionStats,
+        lastSeen: new Date().toISOString()
+      });
+    }, 2000); // Debounce sync
+
+    return () => clearTimeout(syncTimer);
+  }, [sessionStats, currentUser, userProfile]);
+
+  // Fetch all users for Admin
+  useEffect(() => {
+    if (!isAdminLoggedIn) return;
+    const q = query(collection(db, 'users'), orderBy('lastSeen', 'desc'));
+    return onSnapshot(q, (snap) => {
+      setAllUsers(snap.docs.map(d => d.data() as UserProfile));
+    });
+  }, [isAdminLoggedIn]);
 
   useEffect(() => {
     if (!isAdminLoggedIn) return;
@@ -273,6 +345,50 @@ function AppContent() {
       setChallengeRecords(snap.docs.map(d => ({ id: d.id, ...d.data() }) as ChallengeRecord));
     });
   }, [isAdminLoggedIn]);
+
+  // Fetch Tasks for everyone
+  useEffect(() => {
+    const q = query(collection(db, 'tasks'), orderBy('dueDate', 'asc'));
+    return onSnapshot(q, (snap) => {
+      setTasks(snap.docs.map(d => ({ id: d.id, ...d.data() }) as Task));
+    });
+  }, []);
+
+  // Fetch Submissions for student
+  useEffect(() => {
+    if (!currentUser || isAdminLoggedIn) return;
+    const q = query(collection(db, 'submissions'), where('userId', '==', currentUser.uid));
+    return onSnapshot(q, (snap) => {
+      setMySubmissions(snap.docs.map(d => ({ id: d.id, ...d.data() }) as TaskSubmission));
+    });
+  }, [currentUser, isAdminLoggedIn]);
+
+  // Fetch all Submissions for Admin
+  useEffect(() => {
+    if (!isAdminLoggedIn) return;
+    const q = query(collection(db, 'submissions'), orderBy('completedAt', 'desc'));
+    return onSnapshot(q, (snap) => {
+      setAllSubmissions(snap.docs.map(d => ({ id: d.id, ...d.data() }) as TaskSubmission));
+    });
+  }, [isAdminLoggedIn]);
+
+  const loginWithGoogle = async () => {
+    const provider = new GoogleAuthProvider();
+    try {
+      await signInWithPopup(auth, provider);
+    } catch (e) {
+      console.error("Login failed", e);
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await signOut(auth);
+      setMode('dashboard');
+    } catch (e) {
+      console.error("Logout failed", e);
+    }
+  };
 
   const refreshConcept = () => setRandomConcept(facts[Math.floor(Math.random() * facts.length)]);
 
@@ -352,27 +468,78 @@ function AppContent() {
 
   const finalizeChallenge = () => {
     const score = challengeResponses.filter(r => r.isCorrect).length;
+    const finalName = challengeStudentName || currentUser?.displayName || 'Anonymous Student';
     const record: ChallengeRecord = {
-      id: Date.now().toString(), studentName: challengeStudentName,
+      id: Date.now().toString(), 
+      studentName: finalName,
       score, totalQuestions: challengeQuestions.length,
       selectedUnits: challengeSelectedUnits, responses: challengeResponses,
       timestamp: new Date().toISOString()
     };
     setDoc(doc(db, 'challengeRecords', record.id), record);
+
+    // If it was a task completion from TaskView (Easter assignment)
+    if (isEventMode) {
+       // Optional: handle event submissions specifically if needed
+    }
+
     setShowChallengeResult(false);
     setChallengeStudentName("");
+    setIsEventMode(false);
+  };
+
+  const onCreateTask = async (taskData: Partial<Task>) => {
+    try {
+      const id = Date.now().toString();
+      const task: Task = {
+        id,
+        title: taskData.title || "Untitled Task",
+        description: taskData.description || "",
+        units: taskData.units || [1],
+        dueDate: taskData.dueDate || new Date().toISOString(),
+        status: 'active',
+        createdAt: new Date().toISOString()
+      };
+      await setDoc(doc(db, 'tasks', id), task);
+    } catch (e) { console.error(e); }
+  };
+
+  const onDeleteTask = async (id: string) => {
+    try { await deleteDoc(doc(db, 'tasks', id)); }
+    catch (e) { console.error(e); }
+  };
+
+  const onStartTask = (task: Task) => {
+    setActiveTask(task);
+    setSelectedUnitId(task.units[0]);
+    setMode('quiz');
+  };
+
+  const handleQuizCompleteForTask = async (score: number, total: number, unitId: number) => {
+     if (!activeTask || !currentUser) return;
+     
+     const submission: TaskSubmission = {
+       id: `${activeTask.id}_${currentUser.uid}`,
+       taskId: activeTask.id,
+       userId: currentUser.uid,
+       studentName: currentUser.displayName || 'Student',
+       completedAt: new Date().toISOString(),
+       results: { score, total, unitId }
+     };
+     
+     await setDoc(doc(db, 'submissions', submission.id), submission);
+     setActiveTask(null);
+     setMode('tasks');
   };
 
   return (
     <div className="font-sans selection:bg-emerald-200 min-h-screen bg-gray-50 flex">
-      {['dashboard', 'playground', 'user-stats', 'about', 'quick-facts', 'tasks'].includes(mode) && (
+      {['dashboard', 'user-stats', 'about', 'quick-facts', 'tasks'].includes(mode) && (
         <Sidebar currentMode={mode} setMode={setMode} />
       )}
 
-      <div className={`flex-1 transition-all duration-300 ${['dashboard', 'playground', 'user-stats', 'about', 'quick-facts', 'tasks'].includes(mode) ? 'md:pl-[80px]' : ''}`}>
+      <div className={`flex-1 transition-all duration-300 ${['dashboard', 'user-stats', 'about', 'quick-facts', 'tasks'].includes(mode) ? 'md:pl-[80px]' : ''}`}>
         <AnimatePresence mode="wait">
-          {mode === 'splash' && <SplashScreen key="splash" />}
-          
           {mode === 'dashboard' && (
             <DashboardView 
               key="dashboard"
@@ -403,6 +570,9 @@ function AppContent() {
               randomConcept={randomConcept} refreshConcept={refreshConcept}
               setMode={setMode} setSelectedUnitId={setSelectedUnitId}
               startQuiz={startQuiz} startRevision={startRevision} startVocab={startVocab}
+              currentUser={currentUser} loginWithGoogle={loginWithGoogle} logout={logout}
+              allUsers={allUsers} selectedStudent={selectedStudent} setSelectedStudent={setSelectedStudent}
+              tasks={tasks} onCreateTask={onCreateTask} onDeleteTask={onDeleteTask} onStartTask={onStartTask}
             />
           )}
 
@@ -410,9 +580,19 @@ function AppContent() {
             <QuizView 
               key="quiz"
               unit={selectedUnit}
-              onBack={() => setMode('dashboard')}
+              onBack={() => {
+                setMode(activeTask ? 'tasks' : 'dashboard');
+                setActiveTask(null);
+              }}
               sessionStats={sessionStats}
               setSessionStats={setSessionStats}
+              onComplete={(score, total) => {
+                if (activeTask) {
+                  handleQuizCompleteForTask(score, total, selectedUnitId || 0);
+                } else {
+                  setMode('dashboard');
+                }
+              }}
             />
           )}
 
@@ -436,7 +616,6 @@ function AppContent() {
             />
           )}
 
-          {mode === 'playground' && <PlaygroundView key="playground" />}
           {mode === 'tasks' && <TasksView 
             currentEventMessageIndex={currentEventMessageIndex} 
             eventMessages={eventMessages} 
@@ -445,6 +624,15 @@ function AppContent() {
             easterNoticeAgreed={easterNoticeAgreed}
             setEasterNoticeAgreed={setEasterNoticeAgreed}
             proceedToEasterAssignment={startEasterAssignment}
+            isAdmin={isAdminLoggedIn}
+            tasks={tasks}
+            mySubmissions={mySubmissions}
+            allSubmissions={allSubmissions}
+            currentUser={currentUser}
+            units={units}
+            onCreateTask={onCreateTask}
+            onDeleteTask={onDeleteTask}
+            onStartTask={onStartTask}
           />}
           {mode === 'user-stats' && <UserStatsView units={units} sessionStats={sessionStats} />}
           {mode === 'about' && <AboutView key="about" />}
@@ -488,21 +676,24 @@ function AppContent() {
       </AnimatePresence>
 
       {/* Mobile Nav */}
-      {['dashboard', 'playground', 'user-stats', 'about', 'quick-facts', 'tasks'].includes(mode) && (
-        <nav className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t-2 border-gray-100 p-4 z-40 md:hidden">
-          <div className="max-w-2xl mx-auto flex justify-around items-center">
+      {['dashboard', 'user-stats', 'about', 'quick-facts', 'tasks'].includes(mode) && (
+        <nav className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-gray-100 px-2 py-1 z-40 md:hidden h-20">
+          <div className="max-w-md mx-auto flex justify-between items-stretch h-full">
             {APP_NAV_ITEMS.map((item) => {
               const Icon = item.icon;
+              const isActive = mode === item.mode;
               return (
               <button 
                 key={item.mode}
                 onClick={() => setMode(item.mode)}
-                className={`flex flex-col items-center gap-1 transition-colors ${mode === item.mode ? 'text-emerald-500' : 'text-gray-400'}`}
+                className={`flex-1 flex flex-col items-center justify-center transition-all ${isActive ? 'text-emerald-500' : 'text-gray-400'}`}
               >
-                <div className={`p-2 rounded-xl transition-all ${mode === item.mode ? 'bg-emerald-50' : ''}`}>
-                  <Icon size={24} fill={mode === item.mode ? "currentColor" : "none"} />
-                  <span className="text-[10px] font-black uppercase tracking-widest block text-center mt-1">{item.label}</span>
+                <div className={`w-12 h-12 rounded-2xl flex flex-col items-center justify-center transition-all ${isActive ? 'bg-emerald-50' : ''}`}>
+                  <Icon size={24} fill={isActive ? "currentColor" : "none"} />
                 </div>
+                <span className={`text-[8px] font-bold uppercase tracking-widest leading-none mt-1 ${isActive ? 'text-emerald-700' : 'text-gray-400'}`}>
+                  {item.label}
+                </span>
               </button>
             )})}
           </div>
