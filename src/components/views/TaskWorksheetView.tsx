@@ -2,10 +2,15 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronLeft, CheckCircle2, AlertCircle, FileText, Layout, ArrowRight, X, Calculator } from 'lucide-react';
 import { Document, Page, pdfjs } from 'react-pdf';
+import 'react-pdf/dist/Page/AnnotationLayer.css';
+import 'react-pdf/dist/Page/TextLayer.css';
 import { Task, Question } from '../../types';
 
-// PDF worker setup
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+// PDF worker setup - Use local worker for better bundling support
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.min.mjs',
+  import.meta.url,
+).toString();
 
 interface TaskWorksheetViewProps {
   task: Task;
@@ -140,8 +145,15 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({ task, onBack, onC
         <div className="flex-1 overflow-y-auto custom-scrollbar p-8 flex justify-center bg-gray-200/50">
           <div className="max-w-4xl w-full">
             <Document
-              file={task.pdfUrl || 'https://raw.githubusercontent.com/mozilla/pdf.js/ba2edeae/web/compressed.tracemonkey-pldi-09.pdf'}
+              file={task.pdfUrl || ''}
               onLoadSuccess={onDocumentLoadSuccess}
+              onLoadError={(error) => console.error("PDF Load Error:", error)}
+              onSourceError={(error) => console.error("PDF Source Error:", error)}
+              options={{
+                cMapUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/cmaps/`,
+                cMapPacked: true,
+                standardFontDataUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/standard_fonts/`,
+              }}
               loading={
                 <div className="flex flex-col items-center justify-center py-20 gap-4">
                   <div className="animate-spin rounded-full h-12 w-12 border-4 border-emerald-500 border-t-transparent shadow-lg"></div>

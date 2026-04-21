@@ -8,7 +8,7 @@ export const ExothermicReactionsWorksheet: Task = {
   dueDate: '2026-04-23',
   status: 'active',
   type: 'worksheet',
-  pdfUrl: '/Y8_8.1_Investigating_exothermic_reactions_WS_BLANK_30_marks.pdf',
+  pdfUrl: '/worksheet.pdf',
   worksheetQuestions: [
     { 
       id: 'ex1_1', 
