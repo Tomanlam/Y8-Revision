@@ -239,15 +239,22 @@ const TasksView = ({
 
   const generateResponsePDF = (submission: TaskSubmission, task: Task, includeFeedback: boolean = false) => {
     const doc = new jsPDF();
+    const primaryColor = [16, 185, 129] as [number, number, number]; // Emerald 500
+    
+    // Top Color Bar
+    doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+    doc.rect(0, 0, 210, 6, 'F');
     
     // Header
+    doc.setFont("helvetica", "bold");
     doc.setFontSize(22);
     doc.setTextColor(31, 41, 55);
-    doc.text(includeFeedback ? "Marked Worksheet Report" : "Student Worksheet Submission", 20, 20);
+    doc.text(includeFeedback ? "Marked Worksheet Report" : "Student Worksheet Submission", 15, 22);
     
+    doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
     doc.setTextColor(156, 163, 175);
-    doc.text(`Generated on ${format(new Date(), 'PPP p')}`, 20, 28);
+    doc.text(`Generated on ${format(new Date(), 'PPP p')}`, 15, 28);
     
     // Student & Task Info Box
     autoTable(doc, {
@@ -258,9 +265,17 @@ const TasksView = ({
         ['Date Submitted:', format(new Date(submission.completedAt), 'PPP p')],
         ['Overall Score:', submission.results ? `${submission.results.score} / ${submission.results.total}` : 'Pending Grading']
       ],
-      theme: 'plain',
-      styles: { fontSize: 10, cellPadding: 1 },
-      columnStyles: { 0: { fontStyle: 'bold', cellWidth: 40 } }
+      theme: 'grid',
+      styles: { 
+        fontSize: 10, 
+        cellPadding: 4,
+        lineColor: [255, 255, 255],
+        lineWidth: 1
+      },
+      columnStyles: { 
+        0: { fontStyle: 'bold', cellWidth: 40, fillColor: [243, 244, 246], textColor: [55, 65, 81] },
+        1: { fillColor: [249, 250, 251], textColor: [17, 24, 39] }
+      }
     });
 
     const tableData = task.worksheetQuestions?.map((q, idx) => {
@@ -282,7 +297,7 @@ const TasksView = ({
       ];
 
       if (includeFeedback) {
-        row.push(feedback ? `[${feedback.score}]\n${feedback.feedback}` : '---');
+        row.push(feedback ? `[Score: ${feedback.score}]\n\n${feedback.feedback}` : '---');
       }
 
       return row;
@@ -293,31 +308,45 @@ const TasksView = ({
       head: [includeFeedback ? ['#', 'Question', 'Student Response', 'Teacher Feedback'] : ['#', 'Question', 'Student Response']],
       body: tableData,
       theme: 'grid',
-      headStyles: { fillColor: [16, 185, 129] },
-      columnStyles: includeFeedback ? {
-        0: { cellWidth: 10 },
-        1: { cellWidth: 50 },
-        2: { cellWidth: 60, textColor: [168, 85, 247], fontStyle: 'bold' },
-        3: { cellWidth: 60, textColor: [239, 68, 68] }
-      } : {
-        0: { cellWidth: 10 },
-        1: { cellWidth: 80 },
-        2: { cellWidth: 90, textColor: [168, 85, 247], fontStyle: 'bold' }
+      headStyles: { 
+        fillColor: primaryColor, 
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+        fontSize: 10
       },
-      styles: { fontSize: 8, cellPadding: 3, overflow: 'linebreak' }
+      styles: { 
+        fontSize: 9, 
+        cellPadding: 5, 
+        overflow: 'linebreak',
+        lineColor: [255, 255, 255], // White borders to create bubble effect
+        lineWidth: 2
+      },
+      columnStyles: includeFeedback ? {
+        0: { cellWidth: 10, halign: 'center', fillColor: [249, 250, 251], textColor: [100, 100, 100] },
+        1: { cellWidth: 50, fillColor: [249, 250, 251], textColor: [31, 41, 55], fontStyle: 'bold' },
+        2: { cellWidth: 65, fillColor: [239, 246, 255], textColor: [30, 58, 138], fontStyle: 'bold' }, // Blue bubble for student
+        3: { cellWidth: 65, fillColor: [254, 242, 242], textColor: [153, 27, 27], fontStyle: 'italic' } // Red bubble for teacher
+      } : {
+        0: { cellWidth: 10, halign: 'center', fillColor: [249, 250, 251], textColor: [100, 100, 100] },
+        1: { cellWidth: 80, fillColor: [249, 250, 251], textColor: [31, 41, 55], fontStyle: 'bold' },
+        2: { cellWidth: 90, fillColor: [239, 246, 255], textColor: [30, 58, 138], fontStyle: 'bold' }
+      }
     });
 
     if (includeFeedback && submission.feedback) {
       const finalY = (doc as any).lastAutoTable.finalY || 150;
       doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
       doc.setTextColor(16, 185, 129);
-      doc.text("Teacher's General Feedback", 20, finalY + 15);
-      doc.setFontSize(10);
-      doc.setTextColor(80, 80, 80);
-      doc.text("All responses are verified using Gemini AI Lite according to official mark schemes.", 20, finalY + 25);
+      doc.text("Teacher's General Feedback", 15, finalY + 15);
+      
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(156, 163, 175);
+      doc.text("All responses are verified using Gemini AI Lite according to official mark schemes.", 15, finalY + 22);
     }
 
-    doc.save(`${includeFeedback?'Report':'Submission'}_${submission.studentName}_${task.title.substring(0,15)}.pdf`);
+    doc.save(`${includeFeedback?'Report':'Submission'}_${submission.studentName.replace(/\s+/g, '_')}_${task.title.substring(0,15).replace(/\s+/g, '_')}.pdf`);
   };
 
   return (
