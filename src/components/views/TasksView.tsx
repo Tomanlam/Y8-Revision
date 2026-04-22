@@ -26,6 +26,7 @@ interface TasksViewProps {
   onDeleteTask: (id: string) => void;
   onStartTask: (task: Task) => void;
   onViewSubmission?: (sub: TaskSubmission, task: Task) => void;
+  onDeleteSubmission?: (id: string) => void;
 }
 
 const CalendarSection = ({ tasks, onStartTask }: { tasks: Task[], onStartTask: (task: Task) => void }) => {
@@ -196,7 +197,8 @@ const TasksView = ({
   onCreateTask,
   onDeleteTask,
   onStartTask,
-  onViewSubmission
+  onViewSubmission,
+  onDeleteSubmission
 }: TasksViewProps) => {
   const [viewType, setViewType] = React.useState<'agenda' | 'monthly'>('agenda');
   const [isCreatorOpen, setIsCreatorOpen] = React.useState(false);

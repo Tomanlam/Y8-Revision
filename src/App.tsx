@@ -29,6 +29,10 @@ import { eventMessages, facts, navItems } from './constants';
 // Data
 import { units } from './data';
 import { ExothermicReactionsWorksheet } from './data/worksheets/ExothermicReactions';
+import { EnergyChangesWorksheet } from './data/worksheets/EnergyChanges';
+import { IronRustWorksheet } from './data/worksheets/IronRust';
+import { ReactionsWaterSteamWorksheet } from './data/worksheets/ReactionsWaterSteam';
+import { ReactionsAcidsWorksheet } from './data/worksheets/ReactionsAcids';
 
 // Components
 import DashboardView from './components/views/DashboardView';
@@ -235,7 +239,11 @@ const INITIAL_TASKS: Task[] = [
       status: 'active',
       type: 'standard'
     },
-    ExothermicReactionsWorksheet
+    ExothermicReactionsWorksheet,
+    EnergyChangesWorksheet,
+    IronRustWorksheet,
+    ReactionsWaterSteamWorksheet,
+    ReactionsAcidsWorksheet
   ];
 
 function AppContent() {
@@ -561,6 +569,17 @@ function AppContent() {
     catch (e) { console.error(e); }
   };
 
+  const handleDeleteSubmission = async (submissionId: string) => {
+    if (!isAdminLoggedIn) return;
+    if (!window.confirm("Are you sure you want to delete this submission?")) return;
+    try {
+      await deleteDoc(doc(db, 'submissions', submissionId));
+    } catch (e) {
+      console.error("Error deleting submission:", e);
+      alert("Failed to delete submission.");
+    }
+  };
+
   const onStartTask = (task: Task) => {
     setActiveTask(task);
     if (task.type === 'worksheet' || task.worksheetQuestions || task.pdfUrl) {
@@ -625,11 +644,11 @@ function AppContent() {
               setEditingRecord={setEditingRecord} updateChallengeRecord={updateChallengeRecord}
               currentEventMessageIndex={currentEventMessageIndex} eventMessages={eventMessages}
               randomConcept={randomConcept} refreshConcept={refreshConcept}
-              setMode={setMode} setSelectedUnitId={setSelectedUnitId}
               startQuiz={startQuiz} startRevision={startRevision} startVocab={startVocab}
               currentUser={currentUser} loginWithGoogle={loginWithGoogle} logout={logout}
               allUsers={allUsers} selectedStudent={selectedStudent} setSelectedStudent={setSelectedStudent}
               tasks={tasks} onCreateTask={onCreateTask} onDeleteTask={onDeleteTask} onStartTask={onStartTask}
+              setMode={setMode}
               showCalculator={showCalculator} setShowCalculator={setShowCalculator}
             />
           )}
@@ -702,6 +721,7 @@ function AppContent() {
               setActiveTask(task);
               setMode('worksheet');
             }}
+            onDeleteSubmission={handleDeleteSubmission}
           />}
           {mode === 'worksheet' && activeTask && (
             <TaskWorksheetView 
@@ -714,9 +734,10 @@ function AppContent() {
               }}
               initialResponses={viewedSubmission ? viewedSubmission.responses : mySubmissions.find(s => s.taskId === activeTask.id)?.responses}
               readOnly={!!viewedSubmission}
+              isAdmin={isAdminLoggedIn}
               showCalculator={showCalculator}
               setShowCalculator={setShowCalculator}
-              onComplete={async (responses) => {
+              onComplete={async (responses, results) => {
                 if (!currentUser || viewedSubmission) return;
                 const submission: TaskSubmission = {
                   id: `${activeTask.id}_${currentUser.uid}`,
@@ -724,8 +745,13 @@ function AppContent() {
                   userId: currentUser.uid,
                   studentName: currentUser.displayName || 'Student',
                   completedAt: new Date().toISOString(),
-                  results: { score: 0, total: activeTask.worksheetQuestions?.length || 0, unitId: activeTask.units[0] },
-                  responses: responses
+                  results: results || { 
+                    score: 0, 
+                    total: activeTask.worksheetQuestions?.length || 0, 
+                    unitId: activeTask.units[0] 
+                  },
+                  responses: responses,
+                  feedback: results?.feedback
                 };
                 await setDoc(doc(db, 'submissions', submission.id), submission);
               }}

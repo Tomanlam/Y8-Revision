@@ -75,6 +75,7 @@ interface DashboardViewProps {
   onCreateTask: (taskData: Partial<Task>) => void;
   onDeleteTask: (id: string) => void;
   onStartTask: (task: Task) => void;
+  setMode: (mode: any) => void;
   showCalculator: boolean;
   setShowCalculator: (v: boolean) => void;
 }
@@ -190,7 +191,7 @@ const DashboardView: React.FC<DashboardViewProps> = (props) => {
     currentEventMessageIndex, eventMessages, randomConcept, refreshConcept,
     startQuiz, startRevision, startVocab,
     currentUser, loginWithGoogle, logout, allUsers, selectedStudent, setSelectedStudent,
-    tasks, onCreateTask, onDeleteTask, onStartTask,
+    tasks, onCreateTask, onDeleteTask, onStartTask, setMode,
     showCalculator, setShowCalculator
   } = props;
 
@@ -448,10 +449,16 @@ const DashboardView: React.FC<DashboardViewProps> = (props) => {
             Made with <Heart className="inline text-red-400 mx-1" size={16} fill="currentColor" /> for Y8 Students
           </p>
           <button 
-            onClick={() => setIsAdminOpen(true)}
+            onClick={() => {
+              if (isAdminLoggedIn) {
+                setMode('tasks');
+              } else {
+                setIsAdminOpen(true);
+              }
+            }}
             className="bg-red-500 text-white px-6 py-2 rounded-xl font-black uppercase tracking-widest text-xs shadow-[0_4px_0_0_#b91c1c] active:shadow-none active:translate-y-1 transition-all"
           >
-            Admin Access
+            Admin Dashboard
           </button>
         </footer>
       </main>

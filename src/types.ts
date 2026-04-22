@@ -71,6 +71,7 @@ export interface TaskSubmission {
     unitId: number;
   };
   responses: Record<string, any>;
+  feedback?: Record<string, { score: string, feedback: string }>;
 }
 
 export type OperationType = 'create' | 'update' | 'delete' | 'list' | 'get' | 'write';
