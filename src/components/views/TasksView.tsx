@@ -242,11 +242,13 @@ const TasksView = ({
     
     // Header
     doc.setFontSize(22);
-    doc.setTextColor(31, 41, 55);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(17, 24, 39); // text-gray-900
     doc.text(includeFeedback ? "Marked Worksheet Report" : "Student Worksheet Submission", 20, 20);
     
     doc.setFontSize(10);
-    doc.setTextColor(156, 163, 175);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(107, 114, 128); // text-gray-500
     doc.text(`Generated on ${format(new Date(), 'PPP p')}`, 20, 28);
     
     // Student & Task Info Box
@@ -259,11 +261,22 @@ const TasksView = ({
         ['Overall Score:', submission.results ? `${submission.results.score} / ${submission.results.total}` : 'Pending Grading']
       ],
       theme: 'plain',
-      styles: { fontSize: 10, cellPadding: 1 },
-      columnStyles: { 0: { fontStyle: 'bold', cellWidth: 40 } }
+      styles: { fontSize: 10, cellPadding: 2 },
+      columnStyles: { 
+        0: { fontStyle: 'bold', textColor: [55, 65, 81], cellWidth: 35 }, // text-gray-700
+        1: { textColor: [17, 24, 39] } // text-gray-900
+      }
     });
 
-    const tableData = task.worksheetQuestions?.map((q, idx) => {
+    // Horizontal divider
+    let nextY = (doc as any).lastAutoTable.finalY + 5;
+    doc.setDrawColor(229, 231, 235); // gray-200
+    doc.setLineWidth(0.5);
+    doc.line(20, nextY, 190, nextY);
+
+    const bodyData: any[] = [];
+
+    task.worksheetQuestions?.forEach((q, idx) => {
       let response = submission.responses?.[q.id];
       const feedback = submission.feedback?.[q.id];
       
@@ -271,53 +284,97 @@ const TasksView = ({
         response = Object.entries(response)
           .map(([key, val]) => `${key}: ${val}`)
           .join('\n');
+      } else if (Array.isArray(response)) {
+        response = response.join(', ');
       } else if (typeof response === 'object' && response !== null) {
         response = JSON.stringify(response);
       }
       
-      const row = [
-        idx + 1,
-        (q as any).question || (q as any).text || '---',
-        response || '---'
-      ];
+      const questionText = (q as any).question || (q as any).text || '---';
+      const finalResponse = response || 'No answer provided.';
 
-      if (includeFeedback) {
-        row.push(feedback ? `[${feedback.score}]\n${feedback.feedback}` : '---');
+      // 1. Question Text
+      bodyData.push([
+        { 
+          content: `${idx + 1}. ${questionText}`, 
+          styles: { 
+            fontStyle: 'bold', 
+            fontSize: 11, 
+            textColor: [31, 41, 55], // text-gray-800
+            cellPadding: { top: 6, bottom: 2, left: 0, right: 0 }
+          } 
+        }
+      ]);
+
+      // 2. Student Response (Purple Bold)
+      bodyData.push([
+        {
+          content: `Student Response:\n${finalResponse}`,
+          styles: {
+            fontStyle: 'bold',
+            fontSize: 11,
+            textColor: [147, 51, 234], // text-purple-600
+            cellPadding: { top: 2, bottom: (includeFeedback && feedback) ? 4 : 8, left: 0, right: 0 }
+          }
+        }
+      ]);
+
+      // 3. Teacher Feedback (Red Card)
+      if (includeFeedback && feedback) {
+        bodyData.push([
+          {
+            content: `Teacher Feedback [${feedback.score} pts]:\n${feedback.feedback}`,
+            styles: {
+              fillColor: [254, 242, 242], // bg-red-50
+              textColor: [153, 27, 27], // text-red-800
+              fontStyle: 'normal',
+              fontSize: 10,
+              lineWidth: 0.1,
+              lineColor: [254, 202, 202], // border-red-200
+              cellPadding: 5
+            }
+          }
+        ]);
+        
+        // Form space after the red card
+        bodyData.push([
+          {
+            content: '',
+            styles: { cellPadding: { top: 2, bottom: 2, left: 0, right: 0 } }
+          }
+        ]);
       }
+    });
 
-      return row;
-    }) || [];
-
+    // Render the Worksheet Structure
     autoTable(doc, {
-      startY: (doc as any).lastAutoTable.finalY + 10,
-      head: [includeFeedback ? ['#', 'Question', 'Student Response', 'Teacher Feedback'] : ['#', 'Question', 'Student Response']],
-      body: tableData,
-      theme: 'grid',
-      headStyles: { fillColor: [16, 185, 129] },
-      columnStyles: includeFeedback ? {
-        0: { cellWidth: 10 },
-        1: { cellWidth: 50 },
-        2: { cellWidth: 60, textColor: [168, 85, 247], fontStyle: 'bold' },
-        3: { cellWidth: 60, textColor: [239, 68, 68] }
-      } : {
-        0: { cellWidth: 10 },
-        1: { cellWidth: 80 },
-        2: { cellWidth: 90, textColor: [168, 85, 247], fontStyle: 'bold' }
-      },
-      styles: { fontSize: 8, cellPadding: 3, overflow: 'linebreak' }
+      startY: nextY + 5,
+      body: bodyData,
+      theme: 'plain',
+      styles: { overflow: 'linebreak' },
+      columnStyles: { 0: { cellWidth: 170 } },
+      margin: { left: 20, right: 20 }
     });
 
     if (includeFeedback && submission.feedback) {
-      const finalY = (doc as any).lastAutoTable.finalY || 150;
-      doc.setFontSize(14);
-      doc.setTextColor(16, 185, 129);
-      doc.text("Teacher's General Feedback", 20, finalY + 15);
-      doc.setFontSize(10);
-      doc.setTextColor(80, 80, 80);
-      doc.text("All responses are verified using Gemini AI Lite according to official mark schemes.", 20, finalY + 25);
+      let finalY = (doc as any).lastAutoTable.finalY + 10;
+      if (finalY > 260) {
+        doc.addPage();
+        finalY = 20;
+      }
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(16, 185, 129); // text-emerald-500
+      doc.text("Teacher's General Feedback", 20, finalY);
+      
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(107, 114, 128); // text-gray-500
+      doc.text("All responses are verified using Gemini AI Lite according to official mark schemes.", 20, finalY + 6);
     }
 
-    doc.save(`${includeFeedback?'Report':'Submission'}_${submission.studentName}_${task.title.substring(0,15)}.pdf`);
+    const safeTitle = task.title.replace(/[^a-z0-9]/gi, '_').toLowerCase().substring(0, 20);
+    doc.save(`${includeFeedback?'Marked_Report':'Submission'}_${submission.studentName}_${safeTitle}.pdf`);
   };
 
   return (
