@@ -367,6 +367,10 @@ function AppContent() {
 
   // Fetch Tasks for everyone
   useEffect(() => {
+    if (!currentUser) {
+      setTasks(INITIAL_TASKS);
+      return;
+    }
     const q = query(collection(db, 'tasks'), orderBy('dueDate', 'asc'));
     return onSnapshot(q, (snap) => {
       const fetchedTasks = snap.docs.map(d => {

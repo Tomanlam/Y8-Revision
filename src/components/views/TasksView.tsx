@@ -8,6 +8,7 @@ import autoTable from "jspdf-autotable";
 import { Task, TaskSubmission, Unit } from '../../types';
 
 interface TasksViewProps {
+  key?: string;
   currentEventMessageIndex: number;
   eventMessages: string[];
   showEasterNotice: boolean;
@@ -514,7 +515,7 @@ const TasksView = ({
            </div>
 
            <div className="space-y-12">
-             {Object.entries(submissionsByTask).map(([taskId, subs]) => {
+             {(Object.entries(submissionsByTask) as [string, TaskSubmission[]][]).map(([taskId, subs]) => {
                const task = tasks.find(t => t.id === taskId);
                if (!task) return null;
                

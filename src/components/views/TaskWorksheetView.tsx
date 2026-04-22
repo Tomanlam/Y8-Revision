@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronLeft, CheckCircle2, AlertCircle, FileText, Layout, ArrowRight, X, Calculator } from 'lucide-react';
 import { Document, Page, pdfjs } from 'react-pdf';
@@ -27,9 +27,23 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({ task, onBack, onC
   const [activePage, setActivePage] = useState(1);
   const [responses, setResponses] = useState<Record<string, any>>(initialResponses || {});
   const [submitted, setSubmitted] = useState(false);
+  const [viewerWidth, setViewerWidth] = useState(window.innerWidth * 0.45);
   
   const rightPaneRef = useRef<HTMLDivElement>(null);
   const pageRefs = useRef<Record<number, HTMLDivElement | null>>({});
+
+  // Handle resize debounced
+  useEffect(() => {
+    const handleResize = () => setViewerWidth(window.innerWidth * 0.45);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const pdfOptions = useMemo(() => ({
+    cMapUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/cmaps/`,
+    cMapPacked: true,
+    standardFontDataUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/standard_fonts/`,
+  }), []);
 
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
@@ -149,11 +163,7 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({ task, onBack, onC
               onLoadSuccess={onDocumentLoadSuccess}
               onLoadError={(error) => console.error("PDF Load Error:", error)}
               onSourceError={(error) => console.error("PDF Source Error:", error)}
-              options={{
-                cMapUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/cmaps/`,
-                cMapPacked: true,
-                standardFontDataUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/standard_fonts/`,
-              }}
+              options={pdfOptions}
               loading={
                 <div className="flex flex-col items-center justify-center py-20 gap-4">
                   <div className="animate-spin rounded-full h-12 w-12 border-4 border-emerald-500 border-t-transparent shadow-lg"></div>
@@ -177,7 +187,7 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({ task, onBack, onC
                 >
                   <Page 
                     pageNumber={index + 1} 
-                    width={Math.min(window.innerWidth * 0.45, 800)}
+                    width={Math.min(viewerWidth, 800)}
                     renderTextLayer={false}
                     renderAnnotationLayer={false}
                   />

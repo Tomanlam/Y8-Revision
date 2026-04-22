@@ -2,13 +2,13 @@ import { Task, Question } from '../../types';
 
 export const ExothermicReactionsWorksheet: Task = {
   id: 'task-exothermic-reactions',
-  title: 'Y8_8.1_Investigating_exothermic_reactions_WS_BLANK_30_marks',
+  title: 'y8 8.1',
   description: 'Identify variables and interpret results in exothermic reaction experiments.',
   units: [8],
   dueDate: '2026-04-23',
   status: 'active',
   type: 'worksheet',
-  pdfUrl: '/worksheet.pdf',
+  pdfUrl: '/y8 8.1.pdf',
   worksheetQuestions: [
     { 
       id: 'ex1_1', 

@@ -17,7 +17,7 @@ export default defineConfig(({mode}) => {
           manualChunks(id) {
             if (id.includes('node_modules')) {
               if (id.includes('firebase')) return 'firebase';
-              if (id.includes('jspdf') || id.includes('react-pdf') || id.includes('pdfjs-dist')) return 'pdf';
+              if (id.includes('jspdf') || id.includes('react-pdf')) return 'pdf';
               if (id.includes('recharts') || id.includes('d3')) return 'charts';
               if (id.includes('@google/genai')) return 'genai';
               if (id.includes('motion')) return 'animation';
