@@ -6,7 +6,7 @@ import {
   CheckCircle2, XCircle, Trophy, Trash2, Lock, FileText, 
   Download, Star, Zap, Chrome, LayoutGrid, Info, ArrowRight, RefreshCw,
   QrCode, Edit, Database, LogOut, User, Calendar as CalendarIcon, ChevronRight as ChevronRightIcon, Target,
-  Crown, Calculator
+  Crown, Calculator, Clock
 } from 'lucide-react';
 import { Unit, ChallengeRecord, ChallengeResponse, Question, UserProfile, Task } from '../../types';
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, parseISO, startOfDay } from 'date-fns';
@@ -368,33 +368,64 @@ const DashboardView: React.FC<DashboardViewProps> = (props) => {
       </AnimatePresence>
 
       <main className="max-w-7xl mx-auto p-6 space-y-8 mt-4 pb-24">
-        <div className="bg-emerald-100 border-2 border-emerald-200 rounded-2xl p-6 flex items-center gap-6">
-          <div className="bg-emerald-500 p-4 rounded-full text-white">
-            <GraduationCap size={40} />
-          </div>
-          <div className="flex-1">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-black text-emerald-900 uppercase tracking-tight">Did you know?</h2>
-              <motion.button
-                whileHover={{ rotate: 180 }}
-                whileTap={{ scale: 0.8 }}
-                onClick={refreshConcept}
-                className="text-emerald-600 hover:text-emerald-800 p-1 rounded-full hover:bg-emerald-200 transition-colors"
-              >
-                <RefreshCw size={20} />
-              </motion.button>
+        <div className="bg-gradient-to-r from-emerald-500 to-teal-600 rounded-[2.5rem] p-8 shadow-lg text-white">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div>
+              <h2 className="text-4xl font-black uppercase tracking-tight mb-2">At a Glance</h2>
+              <p className="text-emerald-100 font-bold text-lg">{format(new Date(), 'EEEE, MMMM do yyyy')}</p>
             </div>
-            <p className="text-emerald-700 font-medium leading-tight mt-1">
-              {randomConcept.includes(': ') ? (
-                <>
-                  <span className="font-bold">{randomConcept.split(': ')[0]}:</span>
-                  {randomConcept.substring(randomConcept.indexOf(': ') + 1)}
-                </>
-              ) : (
-                randomConcept
-              )}
-            </p>
+            <div className="flex items-center gap-4 bg-white/20 p-5 rounded-3xl backdrop-blur-sm border border-white/20">
+              <div className="bg-white p-3 rounded-2xl text-teal-600 shadow-sm">
+                <Target size={32} />
+              </div>
+              <div>
+                <div className="text-4xl font-black leading-none">{tasks.filter(t => t.status === 'active').length}</div>
+                <div className="text-sm font-bold uppercase tracking-widest mt-1 opacity-90 text-emerald-50">Active Tasks</div>
+              </div>
+            </div>
           </div>
+          
+          {tasks.filter(t => t.status === 'active').length > 0 && (
+            <div className="mt-8 pt-8 border-t-2 border-white/20">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-black uppercase tracking-widest text-emerald-100">Next Deadlines</h3>
+                <button 
+                  onClick={() => setMode('tasks')}
+                  className="text-xs font-bold uppercase tracking-widest hover:text-emerald-200 transition-colors flex items-center gap-1"
+                >
+                  View All <ChevronRightIcon size={14} />
+                </button>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {tasks.filter(t => t.status === 'active')
+                  .sort((a,b) => {
+                    const dateA = a.dueDate.includes('T') ? parseISO(a.dueDate) : new Date(a.dueDate + 'T00:00:00');
+                    const dateB = b.dueDate.includes('T') ? parseISO(b.dueDate) : new Date(b.dueDate + 'T00:00:00');
+                    return dateA.getTime() - dateB.getTime();
+                  })
+                  .slice(0, 3)
+                  .map(task => {
+                    const taskDate = task.dueDate.includes('T') ? parseISO(task.dueDate) : new Date(task.dueDate + 'T00:00:00');
+                    return (
+                      <div key={task.id} className="bg-white/10 hover:bg-white/20 transition-colors rounded-2xl p-4 flex items-center justify-between gap-3 border border-white/10">
+                        <div className="truncate flex-1">
+                          <p className="font-bold truncate text-base" title={task.title}>{task.title}</p>
+                          <p className="text-xs font-semibold text-emerald-100 uppercase tracking-wider mt-1 flex items-center gap-1">
+                            <Clock size={12} /> {format(taskDate, 'MMM do')}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => { setMode('tasks'); onStartTask(task); }}
+                          className="bg-white text-teal-600 p-2.5 rounded-xl hover:scale-105 active:scale-95 transition-all shadow-sm"
+                        >
+                          <ArrowRight size={16} />
+                        </button>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
