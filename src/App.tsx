@@ -377,13 +377,17 @@ function AppContent() {
         const data = { id: d.id, ...d.data() } as Task;
         const normalize = (s: string) => s.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
         const initialMatch = INITIAL_TASKS.find(it => 
-          it.id === d.id || normalize(it.title) === normalize(data.title)
+          it.id === d.id || 
+          normalize(it.title) === normalize(data.title) ||
+          (it.type === 'worksheet' && data.title.toLowerCase().includes(it.title.toLowerCase()))
         );
         // Merge complex worksheet objects from local definition if they exist
         if (initialMatch && initialMatch.type === 'worksheet') {
+          console.log(`Matching worksheet found for: ${data.title}`, initialMatch.pdfUrl);
           return {
             ...initialMatch,
             ...data,
+            id: d.id, // Preserve the Firestore ID
             type: initialMatch.type,
             worksheetQuestions: initialMatch.worksheetQuestions,
             pdfUrl: initialMatch.pdfUrl
