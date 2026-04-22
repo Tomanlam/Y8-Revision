@@ -8,7 +8,7 @@ export const ExothermicReactionsWorksheet: Task = {
   dueDate: '2026-04-23',
   status: 'active',
   type: 'worksheet',
-  pdfUrl: '/y8_8_1.pdf',
+  pdfUrl: 'https://msk8tathmqnxjo8k.public.blob.vercel-storage.com/y8%208.1.pdf',
   worksheetQuestions: [
     { 
       id: 'ex1_1', 
