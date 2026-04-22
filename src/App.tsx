@@ -592,13 +592,22 @@ function AppContent() {
 
   const handleDeleteSubmission = async (submissionId: string) => {
     if (!isAdminLoggedIn) return;
-    if (!window.confirm("Are you sure you want to delete this submission?")) return;
+    // Remove window.confirm which fails in iframe
     try {
       await deleteDoc(doc(db, 'submissions', submissionId));
-      alert("Submission deleted successfully.");
     } catch (e) {
       console.error("Error deleting submission:", e);
-      alert("Failed to delete submission.");
+    }
+  };
+
+  const handleWipeCleanSlate = async () => {
+    if (!isAdminLoggedIn) return;
+    try {
+      for (const t of tasks) await deleteDoc(doc(db, 'tasks', t.id));
+      for (const s of allSubmissions) await deleteDoc(doc(db, 'submissions', s.id));
+      setTasks([]);
+    } catch (e) {
+      console.error("Error wiping data:", e);
     }
   };
 
@@ -744,6 +753,7 @@ function AppContent() {
               setMode('worksheet');
             }}
             onDeleteSubmission={handleDeleteSubmission}
+            onWipeCleanSlate={handleWipeCleanSlate}
           />}
           {mode === 'worksheet' && activeTask && (
             <TaskWorksheetView 
@@ -765,11 +775,14 @@ function AppContent() {
 
                 if (isAdminLoggedIn && viewedSubmission) {
                   // Admin is grading an existing submission
-                  await updateDoc(doc(db, 'submissions', viewedSubmission.id), {
-                    results: results,
-                    feedback: results?.feedback,
+                  const updateData: any = {
                     gradedAt: new Date().toISOString()
-                  });
+                  };
+                  if (results !== undefined) updateData.results = results;
+                  if (results?.feedback !== undefined) updateData.feedback = results.feedback;
+
+                  await updateDoc(doc(db, 'submissions', viewedSubmission.id), updateData);
+                  
                   setViewedSubmission({
                     ...viewedSubmission,
                     results: results,
@@ -781,28 +794,36 @@ function AppContent() {
 
                 try {
                   const submissionId = `${activeTask.id}_${currentUser.uid}`.replace(/[^a-zA-Z0-9_\-]/g, '_');
-                  const submission: TaskSubmission = {
+                  const submissionToSave: any = {
                     id: submissionId,
                     taskId: activeTask.id,
                     userId: currentUser.uid,
                     studentName: currentUser.displayName || 'Student',
                     completedAt: new Date().toISOString(),
-                    results: results || { 
+                    responses: responses
+                  };
+                  
+                  if (results !== undefined) {
+                    submissionToSave.results = results;
+                  } else {
+                    submissionToSave.results = { 
                       score: 0, 
                       total: activeTask.worksheetQuestions?.length || 0, 
                       unitId: (activeTask.units && activeTask.units.length > 0) ? activeTask.units[0] : 0
-                    },
-                    responses: responses,
-                    feedback: results?.feedback
-                  };
+                    };
+                  }
+
+                  if (results?.feedback !== undefined) {
+                    submissionToSave.feedback = results.feedback;
+                  }
                   
                   console.log("Saving submission to Firestore:", submissionId);
-                  await setDoc(doc(db, 'submissions', submissionId), submission);
+                  await setDoc(doc(db, 'submissions', submissionId), submissionToSave);
                   
                   // Optimistically update local state to show "Done" immediately
                   setMySubmissions(prev => {
                     const filtered = prev.filter(s => s.id !== submissionId);
-                    return [...filtered, submission];
+                    return [...filtered, submissionToSave as TaskSubmission];
                   });
                   
                 } catch (e) {

@@ -232,7 +232,7 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
           {(isAdmin || (!readOnly && !submitted)) && (
             <div className="flex items-center gap-2">
               <button
-                disabled={isValidating || (!readOnly && Object.keys(responses).length === 0)}
+                disabled={isValidating}
                 onClick={() => setShowConfirm(true)}
                 className="bg-emerald-500 text-white px-5 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-[0_4px_0_0_#059669] active:shadow-none active:translate-y-1 transition-all disabled:opacity-50 disabled:translate-y-0 disabled:shadow-none flex items-center gap-2"
               >
@@ -273,7 +273,9 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
               <p className="text-gray-500 font-bold mb-8">
                 {isAdmin && readOnly 
                   ? 'This will use AI to analyze student responses against the markscheme.' 
-                  : 'Your work will now be submitted and graded by the teacher. You won\'t be able to edit your answers after this.'}
+                  : (Object.keys(responses).length < (task.worksheetQuestions?.length || 0) 
+                     ? `WARNING: You have only answered ${Object.keys(responses).length} out of ${task.worksheetQuestions?.length || 0} questions. Your work is incomplete! Are you sure you want to submit?`
+                     : 'Your work will now be submitted and graded by the teacher. You won\'t be able to edit your answers after this.')}
               </p>
               <div className="flex gap-4">
                 <button
