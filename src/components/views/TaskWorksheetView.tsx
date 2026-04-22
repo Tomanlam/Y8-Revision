@@ -94,13 +94,12 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
 
   const handleFinalSubmit = async () => {
     setShowConfirm(false);
+    setIsValidating(true);
     
-    // If Admin is grading
-    if (isAdmin && readOnly) {
-      setIsValidating(true);
-      setValidationFeedback({});
-      
-      try {
+    try {
+      // If Admin is grading
+      if (isAdmin && readOnly) {
+        setValidationFeedback({});
         const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY as string });
         const taskKey = task.title.replace('y8 ', '');
         const rubricText = rubrics[taskKey] || "Grade based on general scientific principles.";
@@ -149,24 +148,24 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
           }
         });
 
-        onComplete(responses, {
+        await onComplete(responses, {
           score: earnedPoints,
           total: totalPoints || task.worksheetQuestions?.length || 0,
           feedback: feedback
         });
-      } catch (error) {
-        console.error("Grading failed:", error);
-        alert("Something went wrong during grading. Please try again.");
-      } finally {
-        setIsValidating(false);
-      }
-      return;
+      } else {
+      // Student Submit path
+      // Note: onComplete in App.tsx is async and handles Firestore persistence
+      await onComplete(responses);
+      setSubmitted(true);
     }
-
-    // Student Submit path
-    setSubmitted(true);
-    onComplete(responses);
-  };
+  } catch (error) {
+    console.error("Operation failed:", error);
+    alert(isAdmin ? "Grading failed. Please try again." : "Submission failed. Please check your connection and try again.");
+  } finally {
+    setIsValidating(false);
+  }
+};
 
   const handleEdit = () => {
     setSubmitted(false);

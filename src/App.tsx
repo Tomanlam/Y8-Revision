@@ -787,23 +787,36 @@ function AppContent() {
                   return;
                 }
 
-                if (viewedSubmission) return; // Should not happen for non-admin
-
-                const submission: TaskSubmission = {
-                  id: `${activeTask.id}_${currentUser.uid}`,
-                  taskId: activeTask.id,
-                  userId: currentUser.uid,
-                  studentName: currentUser.displayName || 'Student',
-                  completedAt: new Date().toISOString(),
-                  results: results || { 
-                    score: 0, 
-                    total: activeTask.worksheetQuestions?.length || 0, 
-                    unitId: activeTask.units[0] 
-                  },
-                  responses: responses,
-                  feedback: results?.feedback
-                };
-                await setDoc(doc(db, 'submissions', submission.id), submission);
+                try {
+                  const submissionId = `${activeTask.id}_${currentUser.uid}`.replace(/\s+/g, '_');
+                  const submission: TaskSubmission = {
+                    id: submissionId,
+                    taskId: activeTask.id,
+                    userId: currentUser.uid,
+                    studentName: currentUser.displayName || 'Student',
+                    completedAt: new Date().toISOString(),
+                    results: results || { 
+                      score: 0, 
+                      total: activeTask.worksheetQuestions?.length || 0, 
+                      unitId: (activeTask.units && activeTask.units.length > 0) ? activeTask.units[0] : 0
+                    },
+                    responses: responses,
+                    feedback: results?.feedback
+                  };
+                  
+                  console.log("Saving submission to Firestore:", submissionId);
+                  await setDoc(doc(db, 'submissions', submissionId), submission);
+                  
+                  // Optimistically update local state to show "Done" immediately
+                  setMySubmissions(prev => {
+                    const filtered = prev.filter(s => s.id !== submissionId);
+                    return [...filtered, submission];
+                  });
+                  
+                } catch (e) {
+                  console.error("Firestore submission error:", e);
+                  throw e; // Rethrow so it's caught in TaskWorksheetView and shows alert
+                }
               }}
             />
           )}
