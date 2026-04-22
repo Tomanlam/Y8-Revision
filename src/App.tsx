@@ -381,29 +381,39 @@ function AppContent() {
     }
     const q = query(collection(db, 'tasks'), orderBy('dueDate', 'asc'));
     return onSnapshot(q, (snap) => {
-      const fetchedTasks = snap.docs.map(d => {
+      const firestoreTasks = snap.docs.map(d => {
         const data = { id: d.id, ...d.data() } as Task;
-        const normalize = (s: string) => s.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-        const initialMatch = INITIAL_TASKS.find(it => 
-          it.id === d.id || 
-          normalize(it.title) === normalize(data.title) ||
-          (it.type === 'worksheet' && data.title.toLowerCase().includes(it.title.toLowerCase()))
-        );
-        // Merge complex worksheet objects from local definition if they exist
-        if (initialMatch && initialMatch.type === 'worksheet') {
-          console.log(`Matching worksheet found for: ${data.title}`, initialMatch.pdfUrl);
-          return {
-            ...initialMatch,
-            ...data,
-            id: d.id, // Preserve the Firestore ID
-            type: initialMatch.type,
-            worksheetQuestions: initialMatch.worksheetQuestions,
-            pdfUrl: initialMatch.pdfUrl
-          };
-        }
         return data;
       });
-      setTasks(fetchedTasks);
+
+      // Merge Firestore tasks with INITIAL_TASKS
+      const combinedTasks = [...INITIAL_TASKS];
+      
+      firestoreTasks.forEach(ft => {
+        const normalize = (s: string) => s.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+        const existingIdx = combinedTasks.findIndex(it => 
+          it.id === ft.id || 
+          normalize(it.title) === normalize(ft.title) ||
+          (it.type === 'worksheet' && ft.title.toLowerCase().includes(it.title.toLowerCase()))
+        );
+
+        if (existingIdx !== -1) {
+          // Merge Firestore data (like dueDate or manual edits) with local definition (questions, pdfUrl)
+          const it = combinedTasks[existingIdx];
+          combinedTasks[existingIdx] = {
+            ...it,
+            ...ft,
+            id: ft.id, // Prefer Firestore ID for primary key
+            worksheetQuestions: it.worksheetQuestions || ft.worksheetQuestions,
+            pdfUrl: it.pdfUrl || ft.pdfUrl,
+            type: it.type || ft.type
+          };
+        } else {
+          combinedTasks.push(ft);
+        }
+      });
+
+      setTasks(combinedTasks);
     });
   }, []);
 
@@ -734,7 +744,7 @@ function AppContent() {
               }}
               initialResponses={viewedSubmission ? viewedSubmission.responses : mySubmissions.find(s => s.taskId === activeTask.id)?.responses}
               initialFeedback={viewedSubmission ? viewedSubmission.feedback : mySubmissions.find(s => s.taskId === activeTask.id)?.feedback}
-              readOnly={!!viewedSubmission}
+              readOnly={!!viewedSubmission || (!isAdminLoggedIn && mySubmissions.some(s => s.taskId === activeTask.id))}
               isAdmin={isAdminLoggedIn}
               showCalculator={showCalculator}
               setShowCalculator={setShowCalculator}

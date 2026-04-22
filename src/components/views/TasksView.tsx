@@ -246,38 +246,52 @@ const TasksView = ({
     
     const tableData = task.worksheetQuestions?.map((q, idx) => {
       let response = submission.responses?.[q.id];
+      const feedback = submission.feedback?.[q.id];
+      
       if (q.type === 'table' && response && typeof response === 'object') {
-        // Format table response nicely
         response = Object.entries(response)
           .map(([key, val]) => `[${key}]: ${val}`)
           .join('\n');
       } else if (typeof response === 'object' && response !== null) {
         response = JSON.stringify(response);
       }
+      
       return [
         idx + 1,
         (q as any).question || (q as any).text || '---',
-        response || '---'
+        response || '---',
+        feedback ? `${feedback.score}\n${feedback.feedback}` : '---'
       ];
     }) || [];
 
     autoTable(doc, {
       startY: 60,
-      head: [['#', 'Question', 'Student Response']],
+      head: [['#', 'Question', 'Student Response', 'Teacher Feedback']],
       body: tableData,
       theme: 'grid',
       headStyles: { fillColor: [16, 185, 129] }, // emerald-500
       columnStyles: {
         0: { cellWidth: 10 },
-        1: { cellWidth: 80 },
-        2: { cellWidth: 90 }
+        1: { cellWidth: 60 },
+        2: { cellWidth: 60 },
+        3: { cellWidth: 50 }
       },
       styles: {
-        fontSize: 9,
-        cellPadding: 4,
+        fontSize: 8,
+        cellPadding: 3,
         overflow: 'linebreak'
       }
     });
+
+    if (submission.feedback) {
+      const finalY = (doc as any).lastAutoTable.finalY || 150;
+      doc.setFontSize(14);
+      doc.setTextColor(16, 185, 129);
+      doc.text("Final Summary", 20, finalY + 15);
+      doc.setFontSize(10);
+      doc.setTextColor(80, 80, 80);
+      doc.text(`Total Score: ${submission.results?.score} / ${submission.results?.total}`, 20, finalY + 25);
+    }
 
     doc.save(`Response_${submission.studentName}_${task.title.substring(0, 20)}.pdf`);
   };
