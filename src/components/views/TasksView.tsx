@@ -532,8 +532,8 @@ const TasksView = ({
 
            <div className="space-y-12">
              {(Object.entries(submissionsByTask) as [string, TaskSubmission[]][]).map(([taskId, subs]) => {
-               const task = tasks.find(t => t.id === taskId);
-               if (!task) return null;
+               const task = tasks.find(t => t.id === taskId) || { id: taskId, title: `Unlinked Task (${taskId})`, dueDate: new Date().toISOString(), type: "worksheet" } as Task;
+               
                
                return (
                  <div key={taskId} className="space-y-6">

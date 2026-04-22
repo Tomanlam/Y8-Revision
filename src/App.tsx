@@ -440,16 +440,16 @@ function AppContent() {
     if (!isAdminLoggedIn) return;
     const q = query(collection(db, 'submissions'), orderBy('completedAt', 'desc'));
     return onSnapshot(q, (snap) => {
-      const subs = snap.docs.map(d => ({ id: d.id, ...d.data() } as TaskSubmission));
-      // Fix up task IDs that might be using original/legacy IDs
-      const fixedSubs = subs.map(sub => {
-        const task = tasks.find(t => t.id === sub.taskId || (t as any).originalId === sub.taskId);
-        if (task && task.id !== sub.taskId) {
-          return { ...sub, taskId: task.id };
-        }
-        return sub;
-      });
-      setAllSubmissions(fixedSubs);
+        const subs = snap.docs.map(d => ({ id: d.id, ...d.data() } as TaskSubmission));
+        // Fix up task IDs that might be using original/legacy IDs
+        const fixedSubs = subs.map(sub => {
+          const task = tasks.find(t => t.id === sub.taskId || (t as any).originalId === sub.taskId);
+          if (task && task.id !== sub.taskId) {
+            return { ...sub, taskId: task.id };
+          }
+          return sub;
+        });
+        setAllSubmissions(fixedSubs);
     }, (error) => {
       console.error("Admin submissions fetch failed:", error);
     });
@@ -604,6 +604,7 @@ function AppContent() {
     if (!window.confirm("Are you sure you want to delete this submission?")) return;
     try {
       await deleteDoc(doc(db, 'submissions', submissionId));
+      alert("Submission deleted successfully.");
     } catch (e) {
       console.error("Error deleting submission:", e);
       alert("Failed to delete submission.");
@@ -788,7 +789,7 @@ function AppContent() {
                 }
 
                 try {
-                  const submissionId = `${activeTask.id}_${currentUser.uid}`.replace(/\s+/g, '_');
+                  const submissionId = `${activeTask.id}_${currentUser.uid}`.replace(/[^a-zA-Z0-9_\-]/g, '_');
                   const submission: TaskSubmission = {
                     id: submissionId,
                     taskId: activeTask.id,
