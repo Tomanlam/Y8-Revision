@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Star, CheckCircle2, ListChecks, Users, Clock, Plus, Trash2, Layout, Calendar as CalendarIcon, ChevronLeft, ChevronRight as ChevronRightIcon, Target, List, FileText, Eye } from 'lucide-react';
+import { Star, CheckCircle2, ListChecks, Users, Clock, Plus, Trash2, Layout, Calendar as CalendarIcon, ChevronLeft, ChevronRight as ChevronRightIcon, Target, List, FileText, Eye, ArrowRight } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, parseISO, startOfDay } from 'date-fns';
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -668,28 +668,46 @@ const TasksView = ({
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => setShowEasterNotice(true)}
-            className="bg-gradient-to-br from-cyan-400 to-blue-500 rounded-3xl p-6 shadow-xl cursor-pointer relative overflow-hidden group border-4 border-cyan-300 h-full"
+            className="bg-gradient-to-r from-emerald-500 to-teal-600 rounded-[2rem] p-5 md:p-6 shadow-lg text-white cursor-pointer relative overflow-hidden group h-full flex flex-col"
           >
-            <div className="absolute top-0 right-0 p-4 opacity-20 group-hover:opacity-40 transition-opacity">
-              <Star size={80} />
+            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+              <Star size={100} />
             </div>
-            <div className="relative z-10">
-                <div className="bg-white/20 w-12 h-12 rounded-xl backdrop-blur-sm flex items-center justify-center mb-4">
-                  <Star className="text-white" size={24} />
+            <div className="relative z-10 flex flex-col h-full">
+                <div className="flex items-center justify-between gap-4 mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-white/20 w-10 h-10 rounded-xl backdrop-blur-sm flex items-center justify-center border border-white/20">
+                      <Star className="text-white" size={20} />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-black uppercase tracking-tight leading-none">Event Mode</h2>
+                      <p className="text-emerald-100 font-bold text-[10px] uppercase tracking-widest mt-1 opacity-80">Special Content</p>
+                    </div>
+                  </div>
+                  <div className="bg-white text-teal-600 p-2 rounded-xl shadow-sm">
+                    <ArrowRight size={16} />
+                  </div>
                 </div>
-                <h2 className="text-xl font-black text-white uppercase tracking-tight mb-1">Event Mode</h2>
-                <div className="h-10 relative overflow-hidden">
-                  <AnimatePresence mode="wait">
-                    <motion.p 
-                      key={currentEventMessageIndex}
-                      initial={{ y: 20, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                      exit={{ y: -20, opacity: 0 }}
-                      className="text-white/90 font-medium absolute inset-0 text-sm leading-tight"
-                    >
-                      {eventMessages[currentEventMessageIndex]}
-                    </motion.p>
-                  </AnimatePresence>
+                
+                <div className="bg-white/10 rounded-2xl p-4 border border-white/10 backdrop-blur-sm flex-1 flex items-center min-h-[80px]">
+                  <div className="relative w-full">
+                    <AnimatePresence mode="wait">
+                      <motion.p 
+                        key={currentEventMessageIndex}
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        className="text-white font-medium text-sm leading-tight italic"
+                      >
+                        "{eventMessages[currentEventMessageIndex]}"
+                      </motion.p>
+                    </AnimatePresence>
+                  </div>
+                </div>
+                
+                <div className="mt-4 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-emerald-100">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-200 animate-pulse" />
+                  <span>Limited Time Event</span>
                 </div>
             </div>
           </motion.div>

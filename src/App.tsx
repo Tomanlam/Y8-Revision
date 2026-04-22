@@ -684,11 +684,6 @@ function AppContent() {
             />
           )}
 
-          {/* Virtual Calculator global overlay */}
-          <AnimatePresence>
-            {showCalculator && <Calculator key="global-calc" onClose={() => setShowCalculator(false)} />}
-          </AnimatePresence>
-
           {mode === 'quiz' && (
             <QuizView 
               key="quiz"
@@ -833,9 +828,15 @@ function AppContent() {
               }}
             />
           )}
+
           {mode === 'user-stats' && <UserStatsView key="user-stats" units={units} sessionStats={sessionStats} />}
           {mode === 'about' && <AboutView key="about" />}
           {mode === 'quick-facts' && <QuickFacts key="quick-facts" />}
+        </AnimatePresence>
+
+        {/* Virtual Calculator global overlay - Moved outside wait container to fix warning */}
+        <AnimatePresence>
+          {showCalculator && <Calculator key="global-calc" onClose={() => setShowCalculator(false)} />}
         </AnimatePresence>
       </div>
 
