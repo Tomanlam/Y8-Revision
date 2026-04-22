@@ -368,35 +368,35 @@ const DashboardView: React.FC<DashboardViewProps> = (props) => {
       </AnimatePresence>
 
       <main className="max-w-7xl mx-auto p-6 space-y-8 mt-4 pb-24">
-        <div className="bg-gradient-to-r from-emerald-500 to-teal-600 rounded-[2.5rem] p-8 shadow-lg text-white">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <div className="bg-gradient-to-r from-emerald-500 to-teal-600 rounded-[2rem] p-5 md:p-6 shadow-lg text-white">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div>
-              <h2 className="text-4xl font-black uppercase tracking-tight mb-2">At a Glance</h2>
-              <p className="text-emerald-100 font-bold text-lg">{format(new Date(), 'EEEE, MMMM do yyyy')}</p>
+              <h2 className="text-2xl font-black uppercase tracking-tight mb-1">At a Glance</h2>
+              <p className="text-emerald-100 font-medium text-sm">{format(new Date(), 'EEEE, MMMM do yyyy')}</p>
             </div>
-            <div className="flex items-center gap-4 bg-white/20 p-5 rounded-3xl backdrop-blur-sm border border-white/20">
-              <div className="bg-white p-3 rounded-2xl text-teal-600 shadow-sm">
-                <Target size={32} />
+            <div className="flex items-center gap-3 bg-white/20 p-3 rounded-2xl backdrop-blur-sm border border-white/20">
+              <div className="bg-white p-2 rounded-xl text-teal-600 shadow-sm">
+                <Target size={24} />
               </div>
               <div>
-                <div className="text-4xl font-black leading-none">{tasks.filter(t => t.status === 'active').length}</div>
-                <div className="text-sm font-bold uppercase tracking-widest mt-1 opacity-90 text-emerald-50">Active Tasks</div>
+                <div className="text-2xl font-black leading-none">{tasks.filter(t => t.status === 'active').length}</div>
+                <div className="text-[10px] font-bold uppercase tracking-widest mt-0.5 opacity-90 text-emerald-50">Active Tasks</div>
               </div>
             </div>
           </div>
           
           {tasks.filter(t => t.status === 'active').length > 0 && (
-            <div className="mt-8 pt-8 border-t-2 border-white/20">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-black uppercase tracking-widest text-emerald-100">Next Deadlines</h3>
+            <div className="mt-5 pt-5 border-t border-white/20">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-xs font-black uppercase tracking-widest text-emerald-100">Next Deadlines</h3>
                 <button 
                   onClick={() => setMode('tasks')}
-                  className="text-xs font-bold uppercase tracking-widest hover:text-emerald-200 transition-colors flex items-center gap-1"
+                  className="text-[10px] font-bold uppercase tracking-widest hover:text-emerald-200 transition-colors flex items-center gap-1"
                 >
-                  View All <ChevronRightIcon size={14} />
+                  View All <ChevronRightIcon size={12} />
                 </button>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {tasks.filter(t => t.status === 'active')
                   .sort((a,b) => {
                     const dateA = a.dueDate.includes('T') ? parseISO(a.dueDate) : new Date(a.dueDate + 'T00:00:00');
@@ -407,18 +407,18 @@ const DashboardView: React.FC<DashboardViewProps> = (props) => {
                   .map(task => {
                     const taskDate = task.dueDate.includes('T') ? parseISO(task.dueDate) : new Date(task.dueDate + 'T00:00:00');
                     return (
-                      <div key={task.id} className="bg-white/10 hover:bg-white/20 transition-colors rounded-2xl p-4 flex items-center justify-between gap-3 border border-white/10">
+                      <div key={task.id} className="bg-white/10 hover:bg-white/20 transition-colors rounded-xl p-3 flex items-center justify-between gap-3 border border-white/10">
                         <div className="truncate flex-1">
-                          <p className="font-bold truncate text-base" title={task.title}>{task.title}</p>
-                          <p className="text-xs font-semibold text-emerald-100 uppercase tracking-wider mt-1 flex items-center gap-1">
-                            <Clock size={12} /> {format(taskDate, 'MMM do')}
+                          <p className="font-bold truncate text-sm" title={task.title}>{task.title}</p>
+                          <p className="text-[10px] font-semibold text-emerald-100 uppercase tracking-wider mt-0.5 flex items-center gap-1">
+                            <Clock size={10} /> {format(taskDate, 'MMM do')}
                           </p>
                         </div>
                         <button
                           onClick={() => { setMode('tasks'); onStartTask(task); }}
-                          className="bg-white text-teal-600 p-2.5 rounded-xl hover:scale-105 active:scale-95 transition-all shadow-sm"
+                          className="bg-white text-teal-600 p-2 rounded-lg hover:scale-105 active:scale-95 transition-all shadow-sm"
                         >
-                          <ArrowRight size={16} />
+                          <ArrowRight size={14} />
                         </button>
                       </div>
                     );
