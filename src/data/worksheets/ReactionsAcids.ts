@@ -112,7 +112,7 @@ export const ReactionsAcidsWorksheet: Task = {
       id: '85_c3', 
       section: 'Challenge', 
       question: '3. Look at the grid on page 7. Present these results on the grid supplied. Present them in order with the least reactive first.', 
-      type: 'interactive-graph', 
+      type: 'short-response', 
       page: 7 
     },
     { 

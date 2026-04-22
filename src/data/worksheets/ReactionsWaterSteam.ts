@@ -14,7 +14,7 @@ export const ReactionsWaterSteamWorksheet: Task = {
       id: '84_f1', 
       section: 'Focus', 
       question: '1. Place the metals (zinc, copper, potassium, magnesium) in order of their reactivity with water, starting with the most reactive.', 
-      type: 'interactive-sorting', 
+      type: 'short-response', 
       page: 1 
     },
     { 
@@ -49,7 +49,7 @@ export const ReactionsWaterSteamWorksheet: Task = {
       id: '84_p6', 
       section: 'Practice', 
       question: '6. Use the diagram on page 2. Label the apparatus set up to demonstrate the reaction of metals with steam.', 
-      type: 'interactive-diagram', 
+      type: 'short-response', 
       page: 2 
     },
     { 
@@ -77,7 +77,7 @@ export const ReactionsWaterSteamWorksheet: Task = {
       id: '84_c10', 
       section: 'Challenge', 
       question: '10. Draw and label the apparatus you could use to collect the gas given off in this reaction (Describe your drawing).', 
-      type: 'interactive-apparatus', 
+      type: 'short-response', 
       page: 3 
     },
     { 

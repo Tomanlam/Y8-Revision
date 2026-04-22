@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { motion, AnimatePresence, Reorder } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   ChevronLeft, CheckCircle2, AlertCircle, FileText, Layout, ArrowRight, X, 
   Calculator, Edit, Eye, Send, Trash2, Timer, RefreshCw 
@@ -9,9 +9,6 @@ import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 import { Task, Question } from '../../types';
 import { GoogleGenAI } from "@google/genai";
-import { InteractiveDiagram } from './../interactive/InteractiveDiagram';
-import { InteractiveApparatus } from './../interactive/InteractiveApparatus';
-import { InteractiveGraph } from './../interactive/InteractiveGraph';
 
 // PDF worker setup - Use unpkg for production reliability
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -118,39 +115,20 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
           Grading Rubric for y8 ${taskKey}:
           ${rubricText}
           
-          Student Responses (can be text, array or object):
+          Student Responses:
           ${JSON.stringify(responses, null, 2)}
           
           Worksheet Questions and Context:
           ${JSON.stringify(task.worksheetQuestions, null, 2)}
           
           Output Requirements:
-          Return your response in a structured JSON format where each key is the question ID and the value is an object with "score" (a string like "1/1" or "0/1") and "feedback" (a brief helpful comment). Give every question a score.
+          Return your response in a structured JSON format where each key is the question ID and the value is an object with "score" (a string like "1/1" or "0/1") and "feedback" (a brief helpful comment).
         `;
 
         const aiResponse = await ai.models.generateContent({
           model: "gemini-3.1-flash-lite-preview",
           contents: [{ text: prompt }],
-          config: { 
-            responseMimeType: "application/json",
-            responseSchema: {
-              type: "object",
-              additionalProperties: {
-                type: "object",
-                properties: {
-                  score: {
-                    type: "string",
-                    description: "Score like '1/1' or '0/1'"
-                  },
-                  feedback: {
-                    type: "string",
-                    description: "Helpful teacher feedback"
-                  }
-                },
-                required: ["score", "feedback"]
-              }
-            }
-          },
+          config: { responseMimeType: "application/json" },
         });
 
         let feedback = {};
@@ -159,26 +137,21 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
           setValidationFeedback(feedback);
         }
 
-        // Calculate numeric score from feedback safely
+        // Calculate numeric score from feedback
         let totalPoints = 0;
         let earnedPoints = 0;
         Object.values(feedback as any).forEach((f: any) => {
-          if (f && typeof f.score === 'string') {
-            const parts = f.score.split('/');
-            if (parts.length === 2 && !isNaN(parseFloat(parts[0])) && !isNaN(parseFloat(parts[1]))) {
-              earnedPoints += parseFloat(parts[0]);
-              totalPoints += parseFloat(parts[1]);
-            }
+          const parts = f.score.split('/');
+          if (parts.length === 2) {
+            earnedPoints += parseFloat(parts[0]);
+            totalPoints += parseFloat(parts[1]);
           }
         });
-
-        // Ensure we don't pass any undefined values in the feedback object to Firestore
-        const sanitizedFeedback = JSON.parse(JSON.stringify(feedback));
 
         await onComplete(responses, {
           score: earnedPoints,
           total: totalPoints || task.worksheetQuestions?.length || 0,
-          feedback: sanitizedFeedback
+          feedback: feedback
         });
       } else {
       // Student Submit path
@@ -499,81 +472,6 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
                                 </motion.div>
                               )}
                             </div>
-                          )}
-
-                          {typedQ.type === 'interactive-sorting' && (
-                            <div className="space-y-4">
-                              <div className="bg-emerald-50/50 p-4 rounded-3xl border border-emerald-100 mb-2 text-sm text-emerald-800 font-bold">
-                                Drag and drop the metals below to order them by reactivity (Most reactive at the top).
-                              </div>
-                              <Reorder.Group 
-                                axis="y" 
-                                values={responses[typedQ.id] || ['Zinc', 'Copper', 'Potassium', 'Magnesium']} 
-                                onReorder={(newOrder) => !(readOnly || submitted) && handleResponse(typedQ.id, newOrder)}
-                                className="space-y-2 flex flex-col"
-                              >
-                                {(responses[typedQ.id] || ['Zinc', 'Copper', 'Potassium', 'Magnesium']).map((item: string, idx: number) => (
-                                  <Reorder.Item 
-                                    key={item} 
-                                    value={item}
-                                    className={`relative z-10 bg-white border-2 border-gray-100 p-4 rounded-2xl flex items-center gap-4 font-black text-gray-700 shadow-[0_4px_0_0_rgba(0,0,0,0.05)] cursor-grab active:cursor-grabbing ${readOnly || submitted ? 'pointer-events-none opacity-80' : 'hover:border-emerald-200 hover:shadow-[0_4px_0_0_#a7f3d0]'}`}
-                                  >
-                                    <div className="w-8 h-8 rounded-xl bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-400">
-                                      {idx + 1}
-                                    </div>
-                                    <span className="flex-1">{item}</span>
-                                    {!readOnly && !submitted && <div className="w-6 h-1 flex flex-col justify-between items-center opacity-30 gap-[3px]"><div className="w-4 h-0.5 bg-gray-800 rounded-full"></div><div className="w-4 h-0.5 bg-gray-800 rounded-full"></div><div className="w-4 h-0.5 bg-gray-800 rounded-full"></div></div>}
-                                  </Reorder.Item>
-                                ))}
-                              </Reorder.Group>
-                              {(submitted || readOnly) && validationFeedback[typedQ.id] && (
-                                <motion.div 
-                                  initial={{ opacity: 0, scale: 0.95 }}
-                                  animate={{ opacity: 1, scale: 1 }}
-                                  className={`p-4 rounded-2xl border mt-4 ${
-                                    validationFeedback[typedQ.id].score.includes('/0') || validationFeedback[typedQ.id].score.startsWith('0/') 
-                                      ? 'bg-red-50 border-red-100 text-red-800' 
-                                      : 'bg-emerald-50 border-emerald-100 text-emerald-800'
-                                  }`}
-                                >
-                                  <div className="flex items-center justify-between mb-2">
-                                    <span className="text-[10px] font-black uppercase tracking-widest">Teacher Feedback</span>
-                                    <span className="text-xs font-black">{validationFeedback[typedQ.id].score}</span>
-                                  </div>
-                                  <p className="text-xs font-medium italic">"{validationFeedback[typedQ.id].feedback}"</p>
-                                </motion.div>
-                              )}
-                            </div>
-                          )}
-
-                          {typedQ.type === 'interactive-diagram' && (
-                            <InteractiveDiagram
-                              id={typedQ.id}
-                              responses={responses}
-                              handleResponse={handleResponse}
-                              readOnly={readOnly || false}
-                              submitted={submitted}
-                            />
-                          )}
-
-                          {typedQ.type === 'interactive-apparatus' && (
-                            <InteractiveApparatus
-                              id={typedQ.id}
-                              responses={responses}
-                              handleResponse={handleResponse}
-                              readOnly={readOnly || false}
-                              submitted={submitted}
-                            />
-                          )}
-
-                          {typedQ.type === 'interactive-graph' && (
-                            <InteractiveGraph
-                              id={typedQ.id}
-                              responses={responses}
-                              handleResponse={handleResponse}
-                              readOnly={readOnly || false}
-                              submitted={submitted}
-                            />
                           )}
 
                           {typedQ.type === 'table' && typedQ.tableData && (
