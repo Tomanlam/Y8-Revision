@@ -18,6 +18,7 @@ interface TaskWorksheetViewProps {
   onBack: () => void;
   onComplete: (responses: Record<string, any>, results?: any) => void;
   initialResponses?: Record<string, any>;
+  initialFeedback?: Record<string, { score: string, feedback: string }>;
   readOnly?: boolean;
   isAdmin?: boolean;
   showCalculator: boolean;
@@ -26,14 +27,16 @@ interface TaskWorksheetViewProps {
 
 import { rubrics } from '../../data/markschemes';
 
-const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({ task, onBack, onComplete, initialResponses, readOnly, isAdmin, showCalculator, setShowCalculator }) => {
+const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({ 
+  task, onBack, onComplete, initialResponses, initialFeedback, readOnly, isAdmin, showCalculator, setShowCalculator 
+}) => {
   const [numPages, setNumPages] = useState<number | null>(null);
   const [activePage, setActivePage] = useState(1);
   const [responses, setResponses] = useState<Record<string, any>>(initialResponses || {});
   const [submitted, setSubmitted] = useState(false);
   const [viewerWidth, setViewerWidth] = useState(window.innerWidth * 0.45);
   const [isValidating, setIsValidating] = useState(false);
-  const [validationFeedback, setValidationFeedback] = useState<Record<string, { score: string, feedback: string }>>({});
+  const [validationFeedback, setValidationFeedback] = useState<Record<string, { score: string, feedback: string }>>(initialFeedback || {});
   
   const rightPaneRef = useRef<HTMLDivElement>(null);
   const pageRefs = useRef<Record<number, HTMLDivElement | null>>({});
@@ -91,70 +94,78 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({ task, onBack, onC
 
   const handleFinalSubmit = async () => {
     setShowConfirm(false);
-    setIsValidating(true);
-    setValidationFeedback({});
     
-    try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY as string });
-      const taskKey = task.title.replace('y8 ', '');
-      const rubricText = rubrics[taskKey] || "Grade based on general scientific principles.";
+    // If Admin is grading
+    if (isAdmin && readOnly) {
+      setIsValidating(true);
+      setValidationFeedback({});
+      
+      try {
+        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY as string });
+        const taskKey = task.title.replace('y8 ', '');
+        const rubricText = rubrics[taskKey] || "Grade based on general scientific principles.";
 
-      const prompt = `
-        You are an expert science teacher. 
-        I am providing you with:
-        1. An official grading rubric (below).
-        2. A list of student responses to specific questions from a worksheet.
-        
-        Task: Grade the student's responses based STRICTLY on the provided rubric for y8 ${taskKey}.
-        
-        Grading Rubric for y8 ${taskKey}:
-        ${rubricText}
-        
-        Student Responses:
-        ${JSON.stringify(responses, null, 2)}
-        
-        Worksheet Questions and Context:
-        ${JSON.stringify(task.worksheetQuestions, null, 2)}
-        
-        Output Requirements:
-        Return your response in a structured JSON format where each key is the question ID and the value is an object with "score" (a string like "1/1" or "0/1") and "feedback" (a brief helpful comment).
-      `;
+        const prompt = `
+          You are an expert science teacher. 
+          I am providing you with:
+          1. An official grading rubric (below).
+          2. A list of student responses to specific questions from a worksheet.
+          
+          Task: Grade the student's responses based STRICTLY on the provided rubric for y8 ${taskKey}.
+          
+          Grading Rubric for y8 ${taskKey}:
+          ${rubricText}
+          
+          Student Responses:
+          ${JSON.stringify(responses, null, 2)}
+          
+          Worksheet Questions and Context:
+          ${JSON.stringify(task.worksheetQuestions, null, 2)}
+          
+          Output Requirements:
+          Return your response in a structured JSON format where each key is the question ID and the value is an object with "score" (a string like "1/1" or "0/1") and "feedback" (a brief helpful comment).
+        `;
 
-      const aiResponse = await ai.models.generateContent({
-        model: "gemini-3.1-flash-lite-preview",
-        contents: [{ text: prompt }],
-        config: { responseMimeType: "application/json" },
-      });
+        const aiResponse = await ai.models.generateContent({
+          model: "gemini-3.1-flash-lite-preview",
+          contents: [{ text: prompt }],
+          config: { responseMimeType: "application/json" },
+        });
 
-      let feedback = {};
-      if (aiResponse.text) {
-        feedback = JSON.parse(aiResponse.text);
-        setValidationFeedback(feedback);
-      }
-
-      // Calculate numeric score from feedback
-      let totalPoints = 0;
-      let earnedPoints = 0;
-      Object.values(feedback as any).forEach((f: any) => {
-        const parts = f.score.split('/');
-        if (parts.length === 2) {
-          earnedPoints += parseFloat(parts[0]);
-          totalPoints += parseFloat(parts[1]);
+        let feedback = {};
+        if (aiResponse.text) {
+          feedback = JSON.parse(aiResponse.text);
+          setValidationFeedback(feedback);
         }
-      });
 
-      setSubmitted(true);
-      onComplete(responses, {
-        score: earnedPoints,
-        total: totalPoints || task.worksheetQuestions?.length || 0,
-        feedback: feedback
-      });
-    } catch (error) {
-      console.error("Submission/Validation failed:", error);
-      alert("Something went wrong during grading. Please try again.");
-    } finally {
-      setIsValidating(false);
+        // Calculate numeric score from feedback
+        let totalPoints = 0;
+        let earnedPoints = 0;
+        Object.values(feedback as any).forEach((f: any) => {
+          const parts = f.score.split('/');
+          if (parts.length === 2) {
+            earnedPoints += parseFloat(parts[0]);
+            totalPoints += parseFloat(parts[1]);
+          }
+        });
+
+        onComplete(responses, {
+          score: earnedPoints,
+          total: totalPoints || task.worksheetQuestions?.length || 0,
+          feedback: feedback
+        });
+      } catch (error) {
+        console.error("Grading failed:", error);
+        alert("Something went wrong during grading. Please try again.");
+      } finally {
+        setIsValidating(false);
+      }
+      return;
     }
+
+    // Student Submit path
+    setSubmitted(true);
+    onComplete(responses);
   };
 
   const handleEdit = () => {
@@ -222,14 +233,14 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({ task, onBack, onC
           {(isAdmin || (!readOnly && !submitted)) && (
             <div className="flex items-center gap-2">
               <button
-                disabled={isValidating || Object.keys(responses).length === 0}
+                disabled={isValidating || (!readOnly && Object.keys(responses).length === 0)}
                 onClick={() => setShowConfirm(true)}
                 className="bg-emerald-500 text-white px-5 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-[0_4px_0_0_#059669] active:shadow-none active:translate-y-1 transition-all disabled:opacity-50 disabled:translate-y-0 disabled:shadow-none flex items-center gap-2"
               >
                 {isValidating ? (
                   <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 ) : <CheckCircle2 size={14} />}
-                {isValidating ? 'Grading...' : 'Submit and Grade'}
+                {isValidating ? 'Grading...' : (isAdmin && readOnly ? 'Grade & Feedback' : 'Submit Worksheet')}
               </button>
             </div>
           )}
@@ -257,9 +268,13 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({ task, onBack, onC
               <div className="bg-amber-100 w-16 h-16 rounded-2xl flex items-center justify-center text-amber-500 mx-auto mb-6">
                 <AlertCircle size={32} />
               </div>
-              <h3 className="text-xl font-black text-gray-800 mb-2 uppercase">Ready to Submit?</h3>
+              <h3 className="text-xl font-black text-gray-800 mb-2 uppercase">
+                {isAdmin && readOnly ? 'Confirm Grading?' : 'Ready to Submit?'}
+              </h3>
               <p className="text-gray-500 font-bold mb-8">
-                Your work will now be submitted and graded by the teacher. You won't be able to edit your answers after this.
+                {isAdmin && readOnly 
+                  ? 'This will use AI to analyze student responses against the markscheme.' 
+                  : 'Your work will now be submitted and graded by the teacher. You won\'t be able to edit your answers after this.'}
               </p>
               <div className="flex gap-4">
                 <button
@@ -272,7 +287,7 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({ task, onBack, onC
                   onClick={handleFinalSubmit}
                   className="flex-1 bg-emerald-500 text-white py-3 rounded-xl font-black uppercase text-xs shadow-[0_4px_0_0_#059669] active:shadow-none active:translate-y-1 transition-all tracking-widest"
                 >
-                  Confirm
+                  {isAdmin && readOnly ? 'Start Grading' : 'Confirm'}
                 </button>
               </div>
             </motion.div>

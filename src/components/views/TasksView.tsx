@@ -585,17 +585,41 @@ const TasksView = ({
                                  Check response
                                </button>
                              )}
-                             <button 
-                               onClick={(e) => {
-                                 e.stopPropagation();
-                                 generateResponsePDF(sub, task);
-                               }}
-                               className="w-full flex items-center justify-center gap-2 py-3 bg-emerald-50 text-emerald-600 rounded-xl font-black uppercase tracking-widest text-xs border-2 border-emerald-100 hover:bg-emerald-100 hover:border-emerald-200 transition-all"
-                             >
-                               <FileText size={16} />
-                               Export PDF
-                             </button>
+                             
+                             <div className="grid grid-cols-2 gap-2">
+                               <button 
+                                 onClick={(e) => {
+                                   e.stopPropagation();
+                                   generateResponsePDF(sub, task);
+                                 }}
+                                 className="flex items-center justify-center gap-2 py-3 bg-emerald-50 text-emerald-600 rounded-xl font-black uppercase tracking-widest text-[10px] border-2 border-emerald-100 hover:bg-emerald-100 hover:border-emerald-200 transition-all"
+                               >
+                                 <FileText size={14} />
+                                 PDF
+                               </button>
+                               {isAdmin && onDeleteSubmission && (
+                                 <button 
+                                   onClick={(e) => {
+                                     e.stopPropagation();
+                                     onDeleteSubmission(sub.id);
+                                   }}
+                                   className="flex items-center justify-center gap-2 py-3 bg-red-50 text-red-500 rounded-xl font-black uppercase tracking-widest text-[10px] border-2 border-red-100 hover:bg-red-100 hover:border-red-200 transition-all"
+                                 >
+                                   <Trash2 size={14} />
+                                   Delete
+                                 </button>
+                               )}
+                             </div>
                            </div>
+
+                           {sub.feedback && (
+                             <div className="mt-4 p-4 bg-amber-50 rounded-2xl border border-amber-100">
+                               <p className="text-[10px] font-black text-amber-600 uppercase tracking_widest mb-1">Teacher Feedback Preview</p>
+                               <p className="text-[10px] text-amber-800 font-bold line-clamp-2 italic">
+                                 {Object.values(sub.feedback).map((f: any) => f.feedback).join(' • ')}
+                               </p>
+                             </div>
+                           )}
                          </motion.div>
                        );
                      })}

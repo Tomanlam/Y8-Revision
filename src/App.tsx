@@ -733,12 +733,32 @@ function AppContent() {
                 setViewedSubmission(null);
               }}
               initialResponses={viewedSubmission ? viewedSubmission.responses : mySubmissions.find(s => s.taskId === activeTask.id)?.responses}
+              initialFeedback={viewedSubmission ? viewedSubmission.feedback : mySubmissions.find(s => s.taskId === activeTask.id)?.feedback}
               readOnly={!!viewedSubmission}
               isAdmin={isAdminLoggedIn}
               showCalculator={showCalculator}
               setShowCalculator={setShowCalculator}
               onComplete={async (responses, results) => {
-                if (!currentUser || viewedSubmission) return;
+                if (!currentUser) return;
+
+                if (isAdminLoggedIn && viewedSubmission) {
+                  // Admin is grading an existing submission
+                  await updateDoc(doc(db, 'submissions', viewedSubmission.id), {
+                    results: results,
+                    feedback: results?.feedback,
+                    gradedAt: new Date().toISOString()
+                  });
+                  setViewedSubmission({
+                    ...viewedSubmission,
+                    results: results,
+                    feedback: results?.feedback
+                  });
+                  alert("Student responses graded successfully!");
+                  return;
+                }
+
+                if (viewedSubmission) return; // Should not happen for non-admin
+
                 const submission: TaskSubmission = {
                   id: `${activeTask.id}_${currentUser.uid}`,
                   taskId: activeTask.id,
