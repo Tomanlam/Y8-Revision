@@ -230,15 +230,6 @@ export default function App() {
 const ADMIN_EMAIL = 'tomanlam@gmail.com';
 
 const INITIAL_TASKS: Task[] = [
-    {
-      id: 'task-1',
-      title: 'Cells and Organisms Review',
-      description: 'Complete the quiz to review the basic structures of plants and animal cells.',
-      units: [1],
-      dueDate: '2024-04-15',
-      status: 'active',
-      type: 'standard'
-    },
     ExothermicReactionsWorksheet,
     EnergyChangesWorksheet,
     IronRustWorksheet,

@@ -202,6 +202,8 @@ const TasksView = ({
 }: TasksViewProps) => {
   const [viewType, setViewType] = React.useState<'agenda' | 'monthly'>('agenda');
   const [isCreatorOpen, setIsCreatorOpen] = React.useState(false);
+  const [activeTab, setActiveTab] = React.useState<'tasks' | 'submissions'>('tasks');
+  const [submissionFilter, setSubmissionFilter] = React.useState('');
   const [newTask, setNewTask] = React.useState<Partial<Task>>({
     title: '',
     description: '',
@@ -232,99 +234,147 @@ const TasksView = ({
     });
   };
 
-  const generateResponsePDF = (submission: TaskSubmission, task: Task) => {
+  const generateResponsePDF = (submission: TaskSubmission, task: Task, includeFeedback: boolean = false) => {
     const doc = new jsPDF();
     
     // Header
     doc.setFontSize(22);
-    doc.text("Worksheet Response", 20, 20);
+    doc.setTextColor(31, 41, 55);
+    doc.text(includeFeedback ? "Marked Worksheet Report" : "Student Worksheet Submission", 20, 20);
     
-    doc.setFontSize(12);
-    doc.text(`Task: ${task.title}`, 20, 35);
-    doc.text(`Student: ${submission.studentName}`, 20, 42);
-    doc.text(`Completed: ${format(new Date(submission.completedAt), 'PPP p')}`, 20, 49);
+    doc.setFontSize(10);
+    doc.setTextColor(156, 163, 175);
+    doc.text(`Generated on ${format(new Date(), 'PPP p')}`, 20, 28);
     
+    // Student & Task Info Box
+    autoTable(doc, {
+      startY: 35,
+      body: [
+        ['Student Name:', submission.studentName],
+        ['Task Title:', task.title],
+        ['Date Submitted:', format(new Date(submission.completedAt), 'PPP p')],
+        ['Overall Score:', submission.results ? `${submission.results.score} / ${submission.results.total}` : 'Pending Grading']
+      ],
+      theme: 'plain',
+      styles: { fontSize: 10, cellPadding: 1 },
+      columnStyles: { 0: { fontStyle: 'bold', cellWidth: 40 } }
+    });
+
     const tableData = task.worksheetQuestions?.map((q, idx) => {
       let response = submission.responses?.[q.id];
       const feedback = submission.feedback?.[q.id];
       
       if (q.type === 'table' && response && typeof response === 'object') {
         response = Object.entries(response)
-          .map(([key, val]) => `[${key}]: ${val}`)
+          .map(([key, val]) => `${key}: ${val}`)
           .join('\n');
       } else if (typeof response === 'object' && response !== null) {
         response = JSON.stringify(response);
       }
       
-      return [
+      const row = [
         idx + 1,
         (q as any).question || (q as any).text || '---',
-        response || '---',
-        feedback ? `${feedback.score}\n${feedback.feedback}` : '---'
+        response || '---'
       ];
+
+      if (includeFeedback) {
+        row.push(feedback ? `[${feedback.score}]\n${feedback.feedback}` : '---');
+      }
+
+      return row;
     }) || [];
 
     autoTable(doc, {
-      startY: 60,
-      head: [['#', 'Question', 'Student Response', 'Teacher Feedback']],
+      startY: (doc as any).lastAutoTable.finalY + 10,
+      head: [includeFeedback ? ['#', 'Question', 'Student Response', 'Teacher Feedback'] : ['#', 'Question', 'Student Response']],
       body: tableData,
       theme: 'grid',
-      headStyles: { fillColor: [16, 185, 129] }, // emerald-500
-      columnStyles: {
+      headStyles: { fillColor: [16, 185, 129] },
+      columnStyles: includeFeedback ? {
         0: { cellWidth: 10 },
-        1: { cellWidth: 60 },
+        1: { cellWidth: 50 },
         2: { cellWidth: 60 },
-        3: { cellWidth: 50 }
+        3: { cellWidth: 60 }
+      } : {
+        0: { cellWidth: 10 },
+        1: { cellWidth: 80 },
+        2: { cellWidth: 90 }
       },
-      styles: {
-        fontSize: 8,
-        cellPadding: 3,
-        overflow: 'linebreak'
-      }
+      styles: { fontSize: 8, cellPadding: 3, overflow: 'linebreak' }
     });
 
-    if (submission.feedback) {
+    if (includeFeedback && submission.feedback) {
       const finalY = (doc as any).lastAutoTable.finalY || 150;
       doc.setFontSize(14);
       doc.setTextColor(16, 185, 129);
-      doc.text("Final Summary", 20, finalY + 15);
+      doc.text("Teacher's General Feedback", 20, finalY + 15);
       doc.setFontSize(10);
       doc.setTextColor(80, 80, 80);
-      doc.text(`Total Score: ${submission.results?.score} / ${submission.results?.total}`, 20, finalY + 25);
+      doc.text("All responses are verified using Gemini AI Lite according to official mark schemes.", 20, finalY + 25);
     }
 
-    doc.save(`Response_${submission.studentName}_${task.title.substring(0, 20)}.pdf`);
+    doc.save(`${includeFeedback?'Report':'Submission'}_${submission.studentName}_${task.title.substring(0,15)}.pdf`);
   };
 
   return (
     <div className="flex flex-col flex-1 h-full max-w-7xl mx-auto w-full p-6 space-y-8 pb-24 mt-4">
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
-          <h1 className="text-3xl font-black text-gray-800 uppercase tracking-tight">Tasks</h1>
-          <p className="text-gray-500 font-medium mt-2">Complete assignments and special events.</p>
+          <h1 className="text-3xl font-black text-gray-800 uppercase tracking-tight">
+            {isAdmin ? "Admin Dashboard" : "Tasks"}
+          </h1>
+          <p className="text-gray-500 font-medium mt-2">
+            {isAdmin ? "Review student submissions and manage assignments." : "Complete assignments and special events."}
+          </p>
         </div>
         
         <div className="flex flex-wrap items-center gap-4">
-          <div className="bg-gray-100 p-1.5 rounded-2xl flex items-center shadow-inner">
-            <button 
-              onClick={() => setViewType('agenda')}
-              className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2 ${
-                viewType === 'agenda' ? 'bg-white text-emerald-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'
-              }`}
-            >
-              <List size={16} />
-              Agenda
-            </button>
-            <button 
-              onClick={() => setViewType('monthly')}
-              className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2 ${
-                viewType === 'monthly' ? 'bg-white text-emerald-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'
-              }`}
-            >
-              <CalendarIcon size={16} />
-              Monthly
-            </button>
-          </div>
+          {isAdmin && (
+            <div className="bg-gray-100 p-1.5 rounded-2xl flex items-center shadow-inner mr-2">
+              <button 
+                onClick={() => setActiveTab('tasks')}
+                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${
+                  activeTab === 'tasks' ? 'bg-white text-emerald-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'
+                }`}
+              >
+                <Target size={14} />
+                Tasks
+              </button>
+              <button 
+                onClick={() => setActiveTab('submissions')}
+                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${
+                  activeTab === 'submissions' ? 'bg-white text-emerald-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'
+                }`}
+              >
+                <Users size={14} />
+                Submissions
+              </button>
+            </div>
+          )}
+
+          {activeTab === 'tasks' && (
+            <div className="bg-gray-100 p-1.5 rounded-2xl flex items-center shadow-inner">
+              <button 
+                onClick={() => setViewType('agenda')}
+                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${
+                  viewType === 'agenda' ? 'bg-white text-emerald-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'
+                }`}
+              >
+                <List size={14} />
+                Agenda
+              </button>
+              <button 
+                onClick={() => setViewType('monthly')}
+                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${
+                  viewType === 'monthly' ? 'bg-white text-emerald-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'
+                }`}
+              >
+                <CalendarIcon size={14} />
+                Monthly
+              </button>
+            </div>
+          )}
 
           {isAdmin && (
             <button 
@@ -408,9 +458,154 @@ const TasksView = ({
         </motion.div>
       )}
 
-      {/* Removed old redundant Recent Completions block */}
+      {activeTab === 'submissions' && isAdmin ? (
+        <div className="space-y-8">
+           <div className="flex items-center gap-4 bg-white p-6 rounded-3xl border-2 border-gray-100 shadow-sm">
+             <div className="flex-1 relative">
+                <input 
+                  type="text"
+                  placeholder="Search students or tasks..."
+                  value={submissionFilter}
+                  onChange={(e) => setSubmissionFilter(e.target.value)}
+                  className="w-full pl-12 pr-4 py-3 rounded-2xl border-2 border-gray-50 font-bold focus:border-emerald-500 outline-none transition-all bg-gray-50/50"
+                />
+                <List className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+             </div>
+           </div>
+           
+           <div className="space-y-12">
+             {(Object.entries(submissionsByTask) as [string, TaskSubmission[]][]).map(([taskId, subs]) => {
+               const task = tasks.find(t => t.id === taskId) || { id: taskId, title: `Unlinked Task (${taskId})`, dueDate: new Date().toISOString(), type: "worksheet" } as Task;
+               
+               const filteredSubs = subs.filter(s => 
+                 s.studentName.toLowerCase().includes(submissionFilter.toLowerCase()) || 
+                 task.title.toLowerCase().includes(submissionFilter.toLowerCase())
+               );
 
-      {viewType === 'monthly' ? (
+               if (filteredSubs.length === 0) return null;
+
+               return (
+                 <div key={taskId} className="space-y-6">
+                   <h4 className="font-black text-gray-800 text-lg uppercase border-b-2 border-gray-100 pb-2 flex items-center gap-2">
+                     <Layout className="text-emerald-500" size={20} />
+                     {task.title}
+                   </h4>
+                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                     {filteredSubs.map((sub) => {
+                       let statusColor = 'bg-emerald-50 text-emerald-600';
+                       let statusText = 'Completed';
+                       
+                       if (task.dueDate) {
+                         const dueEnd = new Date(task.dueDate);
+                         dueEnd.setHours(23, 59, 59, 999);
+                         const subDate = new Date(sub.completedAt);
+                         if (subDate.getTime() > dueEnd.getTime()) {
+                           statusColor = 'bg-red-50 text-red-600';
+                           statusText = 'Late';
+                         } else if (dueEnd.getTime() - subDate.getTime() > 24 * 60 * 60 * 1000) {
+                           statusColor = 'bg-blue-50 text-blue-600';
+                           statusText = 'Early';
+                         } else {
+                           statusColor = 'bg-emerald-50 text-emerald-600';
+                           statusText = 'On-time';
+                         }
+                       }
+                       
+                       return (
+                         <motion.div 
+                           key={sub.id}
+                           whileHover={{ y: -5 }}
+                           className="bg-white p-6 rounded-[2rem] border-2 border-gray-50 shadow-sm space-y-6 flex flex-col justify-between relative"
+                         >
+                           <div>
+                             <div className="flex justify-between items-start mb-4">
+                               <div>
+                                 <h4 className="font-black text-gray-800 text-sm uppercase truncate max-w-[180px]">{sub.studentName}</h4>
+                                 <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Student</span>
+                               </div>
+                               <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${statusColor}`}>{statusText}</span>
+                             </div>
+
+                             <div className="bg-gray-50 rounded-2xl p-4 space-y-3">
+                               <div className="flex items-center justify-between text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                 <span>Date Submitted</span>
+                                 <span className="text-gray-800">{format(new Date(sub.completedAt), 'MMM d, yyyy')}</span>
+                               </div>
+                               <div className="flex items-center justify-between text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                 <span>Score</span>
+                                 <span className="text-emerald-600 font-black text-base">{sub.results?.score} / {sub.results?.total}</span>
+                               </div>
+                             </div>
+                           </div>
+
+                           <div className="flex flex-col gap-2 mt-auto">
+                             {onViewSubmission && (
+                               <button 
+                                 onClick={(e) => {
+                                   e.stopPropagation();
+                                   onViewSubmission(sub, task);
+                                 }}
+                                 className="w-full flex items-center justify-center gap-2 py-3 bg-blue-500 text-white rounded-xl font-black uppercase tracking-widest text-xs shadow-[0_4px_0_0_#2563eb] active:shadow-none active:translate-y-1 transition-all"
+                               >
+                                 <Eye size={16} />
+                                 Review & Grade
+                               </button>
+                             )}
+                             
+                             <div className="flex flex-col gap-2">
+                               <div className="grid grid-cols-2 gap-2">
+                                 <button 
+                                   onClick={(e) => {
+                                     e.stopPropagation();
+                                     generateResponsePDF(sub, task, false);
+                                   }}
+                                   className="flex items-center justify-center gap-2 py-3 bg-emerald-50 text-emerald-600 rounded-xl font-black uppercase tracking-widest text-[10px] border-2 border-emerald-100 hover:bg-emerald-100 transition-all font-black"
+                                 >
+                                   <FileText size={14} />
+                                   Student PDF
+                                 </button>
+                                 {sub.feedback ? (
+                                   <button 
+                                     onClick={(e) => {
+                                       e.stopPropagation();
+                                       generateResponsePDF(sub, task, true);
+                                     }}
+                                     className="flex items-center justify-center gap-2 py-3 bg-amber-50 text-amber-600 rounded-xl font-black uppercase tracking-widest text-[10px] border-2 border-amber-100 hover:bg-amber-100 transition-all shadow-sm font-black"
+                                   >
+                                     <FileText size={14} />
+                                     Marked Report
+                                    </button>
+                                  ) : (
+                                    <div className="flex items-center justify-center py-3 bg-gray-50 text-gray-300 rounded-xl font-black uppercase tracking-widest text-[10px] border-2 border-gray-100 italic">
+                                      Not Graded
+                                    </div>
+                                  )}
+                               </div>
+
+                                {isAdmin && onDeleteSubmission && (
+                                  <button 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onDeleteSubmission(sub.id);
+                                    }}
+                                    className="flex items-center justify-center gap-2 py-3 bg-red-50 text-red-500 rounded-xl font-black uppercase tracking-widest text-[10px] border-2 border-red-100 hover:bg-red-100 hover:border-red-200 transition-all w-full"
+                                  >
+                                    <Trash2 size={14} />
+                                    Delete Submission
+                                  </button>
+                                )}
+                             </div>
+                           </div>
+                         </motion.div>
+                       );
+                     })}
+                   </div>
+                 </div>
+               );
+             })}
+           </div>
+        </div>
+      ) : viewType === 'monthly' ? (
         <CalendarSection tasks={tasks} onStartTask={onStartTask} />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -514,141 +709,6 @@ const TasksView = ({
                <h3 className="font-black text-gray-400 uppercase tracking-tight">No tasks assigned yet</h3>
              </div>
            )}
-         </div>
-       )}
-
-       {/* Admin Submissions Section */}
-       {isAdmin && allSubmissions.length > 0 && (
-         <div className="space-y-8 pt-12 border-t-2 border-gray-100">
-           <div className="flex items-center gap-4">
-             <div className="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-emerald-100">
-               <Users size={24} />
-             </div>
-             <div>
-               <h3 className="text-2xl font-black text-gray-800 tracking-tight uppercase">Recent Submissions</h3>
-               <p className="text-xs font-black text-emerald-500 uppercase tracking-widest">Admin Dashboard</p>
-             </div>
-           </div>
-
-           <div className="space-y-12">
-             {(Object.entries(submissionsByTask) as [string, TaskSubmission[]][]).map(([taskId, subs]) => {
-               const task = tasks.find(t => t.id === taskId) || { id: taskId, title: `Unlinked Task (${taskId})`, dueDate: new Date().toISOString(), type: "worksheet" } as Task;
-               
-               
-               return (
-                 <div key={taskId} className="space-y-6">
-                   <h4 className="font-black text-gray-800 text-lg uppercase border-b-2 border-gray-100 pb-2">{task.title}</h4>
-                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                     {subs.map((sub) => {
-                       let statusColor = 'bg-emerald-50 text-emerald-600';
-                       let statusText = 'Completed';
-                       
-                       if (task.dueDate) {
-                         const dueEnd = new Date(task.dueDate);
-                         dueEnd.setHours(23, 59, 59, 999);
-                         const subDate = new Date(sub.completedAt);
-                         if (subDate.getTime() > dueEnd.getTime()) {
-                           statusColor = 'bg-red-50 text-red-600';
-                           statusText = 'Late';
-                         } else if (dueEnd.getTime() - subDate.getTime() > 24 * 60 * 60 * 1000) {
-                           statusColor = 'bg-blue-50 text-blue-600';
-                           statusText = 'Early';
-                         } else {
-                           statusColor = 'bg-emerald-50 text-emerald-600';
-                           statusText = 'On-time';
-                         }
-                       }
-                       
-                       return (
-                         <motion.div 
-                           key={sub.id}
-                           whileHover={{ y: -5 }}
-                           className="bg-white p-6 rounded-[2rem] border-2 border-gray-50 shadow-sm space-y-6 flex flex-col justify-between relative"
-                         >
-                           <div>
-                             <div className="flex justify-between items-start mb-4">
-                               <div>
-                                 <h4 className="font-black text-gray-800 text-sm uppercase truncate max-w-[180px]">{sub.studentName}</h4>
-                                 <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Student</span>
-                               </div>
-                               <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${statusColor}`}>{statusText}</span>
-                             </div>
-
-                             <div className="bg-gray-50 rounded-2xl p-4 space-y-3">
-                               <div className="flex items-center justify-between text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                                 <span>Date Submitted</span>
-                                 <span className="text-gray-800">{format(new Date(sub.completedAt), 'MMM d, yyyy')}</span>
-                               </div>
-                               <div className="flex items-center justify-between text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                                 <span>Score</span>
-                                 <span className="text-emerald-600 font-black text-base">{sub.results?.score} / {sub.results?.total}</span>
-                               </div>
-                             </div>
-                           </div>
-
-                           <div className="flex flex-col gap-2 mt-auto">
-                             {onViewSubmission && (
-                               <button 
-                                 onClick={(e) => {
-                                   e.stopPropagation();
-                                   onViewSubmission(sub, task);
-                                 }}
-                                 className="w-full flex items-center justify-center gap-2 py-3 bg-blue-500 text-white rounded-xl font-black uppercase tracking-widest text-xs shadow-[0_4px_0_0_#2563eb] active:shadow-none active:translate-y-1 transition-all"
-                               >
-                                 <Eye size={16} />
-                                 Check response
-                               </button>
-                             )}
-                             
-                             <div className="grid grid-cols-2 gap-2">
-                               <button 
-                                 onClick={(e) => {
-                                   e.stopPropagation();
-                                   generateResponsePDF(sub, task);
-                                 }}
-                                 className="flex items-center justify-center gap-2 py-3 bg-emerald-50 text-emerald-600 rounded-xl font-black uppercase tracking-widest text-[10px] border-2 border-emerald-100 hover:bg-emerald-100 hover:border-emerald-200 transition-all"
-                               >
-                                 <FileText size={14} />
-                                 PDF
-                               </button>
-                               {isAdmin && onDeleteSubmission && (
-                                 <button 
-                                   onClick={(e) => {
-                                     e.stopPropagation();
-                                     onDeleteSubmission(sub.id);
-                                   }}
-                                   className="flex items-center justify-center gap-2 py-3 bg-red-50 text-red-500 rounded-xl font-black uppercase tracking-widest text-[10px] border-2 border-red-100 hover:bg-red-100 hover:border-red-200 transition-all"
-                                 >
-                                   <Trash2 size={14} />
-                                   Delete
-                                 </button>
-                               )}
-                             </div>
-                           </div>
-
-                           {sub.feedback && (
-                             <div className="mt-4 p-4 bg-amber-50 rounded-2xl border border-amber-100">
-                               <p className="text-[10px] font-black text-amber-600 uppercase tracking_widest mb-1">Teacher Feedback Preview</p>
-                               <p className="text-[10px] text-amber-800 font-bold line-clamp-2 italic">
-                                 {Object.values(sub.feedback).map((f: any) => f.feedback).join(' • ')}
-                               </p>
-                             </div>
-                           )}
-                         </motion.div>
-                       );
-                     })}
-                   </div>
-                 </div>
-               );
-             })}
-             
-             {Object.keys(submissionsByTask).length === 0 && (
-               <div className="py-12 flex flex-col items-center justify-center text-center bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200">
-                 <Users size={48} className="text-gray-300 mb-4" />
-                 <h3 className="font-black text-gray-400 uppercase tracking-tight">No submissions yet</h3>
-               </div>
-             )}
-           </div>
          </div>
        )}
 

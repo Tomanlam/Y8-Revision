@@ -36,39 +36,35 @@
       "description": "A student's completion record for a specific task.",
       "type": "object",
       "properties": {
+        "id": { "type": "string", "description": "Unique key: taskId_userId" },
         "taskId": { "type": "string" },
         "userId": { "type": "string" },
         "studentName": { "type": "string" },
         "completedAt": { "type": "string", "format": "date-time" },
-        "results": { "type": "object" }
+        "responses": { "type": "object" },
+        "feedback": { "type": "object", "description": "Admin grading feedback and scores" },
+        "results": { 
+          "type": "object",
+          "properties": {
+            "score": { "type": "number" },
+            "total": { "type": "number" }
+          }
+        }
       },
-      "required": ["taskId", "userId", "completedAt"]
+      "required": ["id", "taskId", "userId", "completedAt", "responses"]
     },
     "ChallengeRecord": {
       "title": "Challenge Record",
       "description": "A record of a student's performance in a quiz challenge or Easter assignment.",
       "type": "object",
       "properties": {
-        "id": { "type": "string", "description": "Unique identifier for the record." },
-        "studentName": { "type": "string", "description": "The name of the student who completed the quiz." },
-        "score": { "type": "integer", "description": "The number of correct answers." },
-        "totalQuestions": { "type": "integer", "description": "The total number of questions in the quiz." },
-        "selectedUnits": { "type": "array", "items": { "type": "integer" }, "description": "The unit IDs included in the quiz." },
-        "responses": { 
-          "type": "array", 
-          "items": { 
-            "type": "object",
-            "properties": {
-              "questionId": { "type": "string" },
-              "questionText": { "type": "string" },
-              "userAnswer": { "type": "string" },
-              "correctAnswer": { "type": "string" },
-              "isCorrect": { "type": "boolean" }
-            }
-          },
-          "description": "The student's individual answers to each question."
-        },
-        "timestamp": { "type": "string", "format": "date-time", "description": "When the quiz was completed." }
+        "id": { "type": "string" },
+        "studentName": { "type": "string" },
+        "score": { "type": "integer" },
+        "totalQuestions": { "type": "integer" },
+        "selectedUnits": { "type": "array", "items": { "type": "integer" } },
+        "responses": { "type": "array" },
+        "timestamp": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "studentName", "score", "totalQuestions", "selectedUnits", "responses", "timestamp"]
     }
@@ -84,7 +80,7 @@
     },
     "/submissions/{submissionId}": {
       "schema": "TaskSubmission",
-      "description": "Student task completions."
+      "description": "Student task completions. submissionId is $(taskId)_$(userId)"
     },
     "/challengeRecords/{recordId}": {
       "schema": "ChallengeRecord",

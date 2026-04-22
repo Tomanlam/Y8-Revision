@@ -15,20 +15,14 @@ service cloud.firestore {
       return request.auth != null;
     }
     
-    function isEmailVerified() {
-      return isSignedIn() && request.auth.token.email_verified == true;
-    }
-
     function isAdmin() {
-      return isSignedIn() && request.auth.token.email == "tomanlam@gmail.com" && request.auth.token.email_verified == true;
+      return isSignedIn() && 
+             request.auth.token.email == "tomanlam@gmail.com" && 
+             request.auth.token.email_verified == true;
     }
     
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
-    }
-
-    function isValidId(id) {
-      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\.\\-]+$');
     }
 
     // ===============================================================
@@ -37,37 +31,14 @@ service cloud.firestore {
 
     function isValidUser(data) {
       return data.keys().hasAll(['userId', 'email', 'progress', 'lastSeen']) &&
-             data.userId == request.auth.uid &&
-             data.email == request.auth.token.email &&
-             data.progress is map &&
-             data.lastSeen is string;
-    }
-
-    function isValidChallengeRecord(data) {
-      return data.keys().hasAll(['id', 'studentName', 'score', 'totalQuestions', 'selectedUnits', 'responses', 'timestamp']) &&
-             data.id is string &&
-             data.studentName is string && data.studentName.size() < 100 &&
-             data.score is int &&
-             data.totalQuestions is int &&
-             data.selectedUnits is list &&
-             data.responses is list &&
-             data.timestamp is string;
-    }
-
-    function isValidTask(data) {
-      return data.keys().hasAll(['id', 'title', 'status']) &&
-             data.id is string &&
-             data.title is string &&
-             data.status in ['active', 'archived'];
+             data.userId == request.auth.uid;
     }
 
     function isValidSubmission(data) {
-      return data.keys().hasAll(['taskId', 'userId', 'completedAt', 'studentName', 'responses']) &&
-             data.taskId is string &&
-             data.userId is string &&
-             data.completedAt is string &&
-             data.studentName is string &&
-             data.responses is map;
+      // Basic structure validation
+      return data.keys().hasAll(['id', 'taskId', 'userId', 'completedAt', 'studentName', 'responses']) &&
+             data.userId == request.auth.uid &&
+             data.id == data.taskId + "_" + data.userId;
     }
 
     // ===============================================================
@@ -75,32 +46,42 @@ service cloud.firestore {
     // ===============================================================
 
     match /users/{userId} {
-      allow get: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow get: if isOwner(userId) || isAdmin();
       allow list: if isAdmin();
-      allow create, update: if isSignedIn() && request.auth.uid == userId && isValidUser(request.resource.data);
-    }
-
-    match /challengeRecords/{recordId} {
-      allow create: if isValidChallengeRecord(request.resource.data);
-      allow read, update, delete: if isAdmin();
+      allow create, update: if isOwner(userId) && isValidUser(request.resource.data);
     }
 
     match /tasks/{taskId} {
       allow read: if isSignedIn();
-      allow create, update: if isAdmin() && isValidTask(request.resource.data);
-      allow delete: if isAdmin();
+      allow write: if isAdmin();
     }
 
     match /submissions/{submissionId} {
+      // Students can read their own work
+      // Admin can read all work
       allow get: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
       allow list: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid && isValidSubmission(request.resource.data);
-      allow update: if (isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid)) && isValidSubmission(request.resource.data);
+      
+      // Creating: Students can only create for themselves. 
+      // Enforce the once-only rule by checking if document already exists
+      allow create: if isSignedIn() && 
+                      isValidSubmission(request.resource.data) && 
+                      !exists(/databases/$(database)/documents/submissions/$(submissionId));
+      
+      // Updating: 
+      // 1. Students CANNOT update their submission (submit once)
+      // 2. Admin CAN update to add grading/feedback
+      allow update: if isAdmin() && 
+                      request.resource.data.userId == resource.data.userId &&
+                      request.resource.data.taskId == resource.data.taskId;
+
+      // Deleting: Only Admin
       allow delete: if isAdmin();
     }
 
-    match /test/connection {
-      allow read: if isSignedIn();
+    match /challengeRecords/{recordId} {
+      allow create: if isSignedIn();
+      allow read, delete: if isAdmin();
     }
   }
 }
