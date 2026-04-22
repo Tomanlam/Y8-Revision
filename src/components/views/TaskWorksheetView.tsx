@@ -118,20 +118,39 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
           Grading Rubric for y8 ${taskKey}:
           ${rubricText}
           
-          Student Responses:
+          Student Responses (can be text, array or object):
           ${JSON.stringify(responses, null, 2)}
           
           Worksheet Questions and Context:
           ${JSON.stringify(task.worksheetQuestions, null, 2)}
           
           Output Requirements:
-          Return your response in a structured JSON format where each key is the question ID and the value is an object with "score" (a string like "1/1" or "0/1") and "feedback" (a brief helpful comment).
+          Return your response in a structured JSON format where each key is the question ID and the value is an object with "score" (a string like "1/1" or "0/1") and "feedback" (a brief helpful comment). Give every question a score.
         `;
 
         const aiResponse = await ai.models.generateContent({
           model: "gemini-3.1-flash-lite-preview",
           contents: [{ text: prompt }],
-          config: { responseMimeType: "application/json" },
+          config: { 
+            responseMimeType: "application/json",
+            responseSchema: {
+              type: "object",
+              additionalProperties: {
+                type: "object",
+                properties: {
+                  score: {
+                    type: "string",
+                    description: "Score like '1/1' or '0/1'"
+                  },
+                  feedback: {
+                    type: "string",
+                    description: "Helpful teacher feedback"
+                  }
+                },
+                required: ["score", "feedback"]
+              }
+            }
+          },
         });
 
         let feedback = {};
@@ -140,21 +159,26 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
           setValidationFeedback(feedback);
         }
 
-        // Calculate numeric score from feedback
+        // Calculate numeric score from feedback safely
         let totalPoints = 0;
         let earnedPoints = 0;
         Object.values(feedback as any).forEach((f: any) => {
-          const parts = f.score.split('/');
-          if (parts.length === 2) {
-            earnedPoints += parseFloat(parts[0]);
-            totalPoints += parseFloat(parts[1]);
+          if (f && typeof f.score === 'string') {
+            const parts = f.score.split('/');
+            if (parts.length === 2 && !isNaN(parseFloat(parts[0])) && !isNaN(parseFloat(parts[1]))) {
+              earnedPoints += parseFloat(parts[0]);
+              totalPoints += parseFloat(parts[1]);
+            }
           }
         });
+
+        // Ensure we don't pass any undefined values in the feedback object to Firestore
+        const sanitizedFeedback = JSON.parse(JSON.stringify(feedback));
 
         await onComplete(responses, {
           score: earnedPoints,
           total: totalPoints || task.worksheetQuestions?.length || 0,
-          feedback: feedback
+          feedback: sanitizedFeedback
         });
       } else {
       // Student Submit path

@@ -778,8 +778,8 @@ function AppContent() {
                   const updateData: any = {
                     gradedAt: new Date().toISOString()
                   };
-                  if (results !== undefined) updateData.results = results;
-                  if (results?.feedback !== undefined) updateData.feedback = results.feedback;
+                  if (results !== undefined) updateData.results = JSON.parse(JSON.stringify(results));
+                  if (results?.feedback !== undefined) updateData.feedback = JSON.parse(JSON.stringify(results.feedback));
 
                   await updateDoc(doc(db, 'submissions', viewedSubmission.id), updateData);
                   
@@ -800,11 +800,11 @@ function AppContent() {
                     userId: currentUser.uid,
                     studentName: currentUser.displayName || 'Student',
                     completedAt: new Date().toISOString(),
-                    responses: responses
+                    responses: JSON.parse(JSON.stringify(responses || {}))
                   };
                   
                   if (results !== undefined) {
-                    submissionToSave.results = results;
+                    submissionToSave.results = JSON.parse(JSON.stringify(results));
                   } else {
                     submissionToSave.results = { 
                       score: 0, 
@@ -814,7 +814,7 @@ function AppContent() {
                   }
 
                   if (results?.feedback !== undefined) {
-                    submissionToSave.feedback = results.feedback;
+                    submissionToSave.feedback = JSON.parse(JSON.stringify(results.feedback));
                   }
                   
                   console.log("Saving submission to Firestore:", submissionId);
