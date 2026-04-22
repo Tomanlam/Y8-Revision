@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence, Reorder } from 'motion/react';
 import { 
   ChevronLeft, CheckCircle2, AlertCircle, FileText, Layout, ArrowRight, X, 
   Calculator, Edit, Eye, Send, Trash2, Timer, RefreshCw 
@@ -9,6 +9,9 @@ import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 import { Task, Question } from '../../types';
 import { GoogleGenAI } from "@google/genai";
+import { InteractiveDiagram } from './../interactive/InteractiveDiagram';
+import { InteractiveApparatus } from './../interactive/InteractiveApparatus';
+import { InteractiveGraph } from './../interactive/InteractiveGraph';
 
 // PDF worker setup - Use unpkg for production reliability
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -472,6 +475,81 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
                                 </motion.div>
                               )}
                             </div>
+                          )}
+
+                          {typedQ.type === 'interactive-sorting' && (
+                            <div className="space-y-4">
+                              <div className="bg-emerald-50/50 p-4 rounded-3xl border border-emerald-100 mb-2 text-sm text-emerald-800 font-bold">
+                                Drag and drop the metals below to order them by reactivity (Most reactive at the top).
+                              </div>
+                              <Reorder.Group 
+                                axis="y" 
+                                values={responses[typedQ.id] || ['Zinc', 'Copper', 'Potassium', 'Magnesium']} 
+                                onReorder={(newOrder) => !(readOnly || submitted) && handleResponse(typedQ.id, newOrder)}
+                                className="space-y-2 flex flex-col"
+                              >
+                                {(responses[typedQ.id] || ['Zinc', 'Copper', 'Potassium', 'Magnesium']).map((item: string, idx: number) => (
+                                  <Reorder.Item 
+                                    key={item} 
+                                    value={item}
+                                    className={`relative z-10 bg-white border-2 border-gray-100 p-4 rounded-2xl flex items-center gap-4 font-black text-gray-700 shadow-[0_4px_0_0_rgba(0,0,0,0.05)] cursor-grab active:cursor-grabbing ${readOnly || submitted ? 'pointer-events-none opacity-80' : 'hover:border-emerald-200 hover:shadow-[0_4px_0_0_#a7f3d0]'}`}
+                                  >
+                                    <div className="w-8 h-8 rounded-xl bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-400">
+                                      {idx + 1}
+                                    </div>
+                                    <span className="flex-1">{item}</span>
+                                    {!readOnly && !submitted && <div className="w-6 h-1 flex flex-col justify-between items-center opacity-30 gap-[3px]"><div className="w-4 h-0.5 bg-gray-800 rounded-full"></div><div className="w-4 h-0.5 bg-gray-800 rounded-full"></div><div className="w-4 h-0.5 bg-gray-800 rounded-full"></div></div>}
+                                  </Reorder.Item>
+                                ))}
+                              </Reorder.Group>
+                              {(submitted || readOnly) && validationFeedback[typedQ.id] && (
+                                <motion.div 
+                                  initial={{ opacity: 0, scale: 0.95 }}
+                                  animate={{ opacity: 1, scale: 1 }}
+                                  className={`p-4 rounded-2xl border mt-4 ${
+                                    validationFeedback[typedQ.id].score.includes('/0') || validationFeedback[typedQ.id].score.startsWith('0/') 
+                                      ? 'bg-red-50 border-red-100 text-red-800' 
+                                      : 'bg-emerald-50 border-emerald-100 text-emerald-800'
+                                  }`}
+                                >
+                                  <div className="flex items-center justify-between mb-2">
+                                    <span className="text-[10px] font-black uppercase tracking-widest">Teacher Feedback</span>
+                                    <span className="text-xs font-black">{validationFeedback[typedQ.id].score}</span>
+                                  </div>
+                                  <p className="text-xs font-medium italic">"{validationFeedback[typedQ.id].feedback}"</p>
+                                </motion.div>
+                              )}
+                            </div>
+                          )}
+
+                          {typedQ.type === 'interactive-diagram' && (
+                            <InteractiveDiagram
+                              id={typedQ.id}
+                              responses={responses}
+                              handleResponse={handleResponse}
+                              readOnly={readOnly || false}
+                              submitted={submitted}
+                            />
+                          )}
+
+                          {typedQ.type === 'interactive-apparatus' && (
+                            <InteractiveApparatus
+                              id={typedQ.id}
+                              responses={responses}
+                              handleResponse={handleResponse}
+                              readOnly={readOnly || false}
+                              submitted={submitted}
+                            />
+                          )}
+
+                          {typedQ.type === 'interactive-graph' && (
+                            <InteractiveGraph
+                              id={typedQ.id}
+                              responses={responses}
+                              handleResponse={handleResponse}
+                              readOnly={readOnly || false}
+                              submitted={submitted}
+                            />
                           )}
 
                           {typedQ.type === 'table' && typedQ.tableData && (

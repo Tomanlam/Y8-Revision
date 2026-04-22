@@ -668,28 +668,30 @@ const TasksView = ({
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => setShowEasterNotice(true)}
-            className="bg-gradient-to-br from-cyan-400 to-blue-500 rounded-3xl p-6 shadow-xl cursor-pointer relative overflow-hidden group border-4 border-cyan-300 h-full"
+            className="bg-gradient-to-r from-emerald-500 to-teal-600 rounded-[2rem] p-6 shadow-lg cursor-pointer relative overflow-hidden group h-full flex flex-col justify-between"
           >
-            <div className="absolute top-0 right-0 p-4 opacity-20 group-hover:opacity-40 transition-opacity">
-              <Star size={80} />
+            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+              <Star size={120} />
             </div>
             <div className="relative z-10">
-                <div className="bg-white/20 w-12 h-12 rounded-xl backdrop-blur-sm flex items-center justify-center mb-4">
-                  <Star className="text-white" size={24} />
+                <div className="bg-white/20 w-12 h-12 rounded-2xl backdrop-blur-sm flex items-center justify-center mb-6 border border-white/20 shadow-sm text-teal-50">
+                  <Star size={24} />
                 </div>
-                <h2 className="text-xl font-black text-white uppercase tracking-tight mb-1">Event Mode</h2>
-                <div className="h-10 relative overflow-hidden">
-                  <AnimatePresence mode="wait">
-                    <motion.p 
-                      key={currentEventMessageIndex}
-                      initial={{ y: 20, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                      exit={{ y: -20, opacity: 0 }}
-                      className="text-white/90 font-medium absolute inset-0 text-sm leading-tight"
-                    >
-                      {eventMessages[currentEventMessageIndex]}
-                    </motion.p>
-                  </AnimatePresence>
+                <div>
+                  <h2 className="text-2xl font-black text-white uppercase tracking-tight mb-2 leading-none">Event Mode</h2>
+                  <div className="h-10 relative overflow-hidden">
+                    <AnimatePresence mode="wait">
+                      <motion.p 
+                        key={currentEventMessageIndex}
+                        initial={{ y: 20, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{ y: -20, opacity: 0 }}
+                        className="text-emerald-100 font-medium text-sm absolute inset-0 leading-tight"
+                      >
+                        {eventMessages[currentEventMessageIndex]}
+                      </motion.p>
+                    </AnimatePresence>
+                  </div>
                 </div>
             </div>
           </motion.div>
