@@ -206,6 +206,7 @@ const TasksView = ({
   const [isCreatorOpen, setIsCreatorOpen] = React.useState(false);
   const [activeTab, setActiveTab] = React.useState<'tasks' | 'submissions'>('tasks');
   const [submissionFilter, setSubmissionFilter] = React.useState('');
+  const [nukeLevel, setNukeLevel] = React.useState(0);
   const [newTask, setNewTask] = React.useState<Partial<Task>>({
     title: '',
     description: '',
@@ -296,12 +297,12 @@ const TasksView = ({
       columnStyles: includeFeedback ? {
         0: { cellWidth: 10 },
         1: { cellWidth: 50 },
-        2: { cellWidth: 60 },
-        3: { cellWidth: 60 }
+        2: { cellWidth: 60, textColor: [168, 85, 247], fontStyle: 'bold' },
+        3: { cellWidth: 60, textColor: [239, 68, 68] }
       } : {
         0: { cellWidth: 10 },
         1: { cellWidth: 80 },
-        2: { cellWidth: 90 }
+        2: { cellWidth: 90, textColor: [168, 85, 247], fontStyle: 'bold' }
       },
       styles: { fontSize: 8, cellPadding: 3, overflow: 'linebreak' }
     });
@@ -389,22 +390,22 @@ const TasksView = ({
               </button>
               {onWipeCleanSlate && (
                 <button 
-                  onClick={(e) => {
-                    // Quick confirm trick to bypass iframe confirm if needed, or we just do an inline state toggle. 
-                    // Let's use a standard double-click confirmation or simple js logic assuming it might work or use a custom check.
-                    // Wait, standard confirm fails in iframe, so let's just use a native prompt/alert workaround or simply execute it, 
-                    // since the user asked for a wipe clean slate feature explicitly. 
-                    // To make it safer, we can ask them to double click? For now, let's just trigger it quickly and provide visual feedback.
-                    // Let's implement an inline confirmation state if space allows, or since admin is careful, just run it.
-                    // We'll use a double click to prevent accidental wipes.
-                    e.currentTarget.innerText = "Wiping...";
-                    onWipeCleanSlate();
+                  onClick={() => {
+                    if (nukeLevel < 2) {
+                      setNukeLevel(prev => prev + 1);
+                    } else {
+                      onWipeCleanSlate();
+                      setNukeLevel(0);
+                    }
                   }}
-                  className="bg-red-500 text-white px-6 py-3 rounded-2xl font-black uppercase tracking-widest text-xs flex items-center gap-2 shadow-[0_4px_0_0_#ef4444] active:translate-y-1 active:shadow-none transition-all h-[42px]"
-                  title="Double click to quickly wipe all tasks and submissions"
+                  onMouseLeave={() => {
+                    // Reset nuke level if mouse leaves to be extra safe
+                    if (nukeLevel > 0) setNukeLevel(0);
+                  }}
+                  className={`bg-red-500 text-white px-6 py-3 rounded-2xl font-black uppercase tracking-widest text-xs flex items-center gap-2 shadow-[0_4px_0_0_#ef4444] active:translate-y-1 active:shadow-none transition-all h-[42px] ${nukeLevel > 0 ? 'animate-pulse' : ''}`}
                 >
                   <Trash2 size={18} />
-                  Nuke Data
+                  {nukeLevel === 0 ? "Nuke Data" : nukeLevel === 1 ? "Are you sure?" : "TRIPLE CONFIRM!"}
                 </button>
               )}
             </div>
