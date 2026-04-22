@@ -95,39 +95,39 @@ const QuizView: React.FC<QuizViewProps> = ({ unit, onBack, sessionStats, setSess
   const progress = ((currentIndex + (status === 'checked' && isCorrect ? 1 : 0)) / unit.questions.length) * 100;
 
   return (
-    <div className="flex flex-col min-h-screen bg-white font-sans selection:bg-blue-100">
+    <div className="flex flex-col min-h-screen bg-gray-50 font-sans selection:bg-teal-100">
       {!showResults && (
-        <header className="flex items-center justify-between px-4 py-4 md:px-8 max-w-4xl mx-auto w-full gap-4">
+        <header className="flex items-center justify-between px-4 py-4 md:px-8 max-w-5xl mx-auto w-full gap-4 sticky top-0 z-10 bg-gray-50/80 backdrop-blur-sm -mb-4">
           <button 
             onClick={onBack} 
-            className="text-gray-400 hover:text-gray-600 transition-colors p-2"
+            className="text-gray-400 hover:text-teal-600 transition-colors p-2 bg-white rounded-full shadow-sm"
           >
-            <X size={28} />
+            <X size={24} />
           </button>
-          <div className="flex-1 h-4 bg-gray-200 rounded-full overflow-hidden relative">
+          <div className="flex-1 h-3 bg-gray-200 rounded-full overflow-hidden relative shadow-inner">
             <motion.div 
               initial={false}
               animate={{ width: `${progress}%` }}
-              className="absolute top-0 left-0 h-full bg-emerald-500 rounded-full transition-all duration-500 ease-out"
+              className="absolute top-0 left-0 h-full bg-gradient-to-r from-emerald-400 to-teal-500 rounded-full transition-all duration-500 ease-out"
             />
           </div>
-          <div className="flex items-center gap-2 font-bold text-orange-500">
-            <Zap size={24} fill="currentColor" />
-            <span className="text-xl">{streak}</span>
+          <div className="flex items-center gap-1.5 font-black text-orange-500 bg-white px-3 py-1.5 rounded-2xl shadow-sm">
+            <Zap size={20} fill="currentColor" />
+            <span className="text-lg">{streak}</span>
           </div>
           <div className="flex items-center gap-2 ml-2">
             <button 
               onClick={() => setAssistMode(!assistMode)}
-              className={`p-2 rounded-xl border-2 transition-all font-bold flex items-center gap-1.5 md:gap-2 ${assistMode ? 'bg-blue-100 border-blue-400 text-blue-700 shadow-[0_2px_0_0_#60a5fa] translate-y-[2px]' : 'border-gray-200 text-gray-500 hover:bg-gray-50 shadow-[0_4px_0_0_#e5e7eb] active:translate-y-1 active:shadow-none'}`}
+              className={`px-3 py-2 rounded-2xl border-2 transition-all font-black flex items-center gap-1.5 md:gap-2 uppercase tracking-widest text-xs md:text-sm ${assistMode ? 'bg-teal-50 border-teal-200 text-teal-700 shadow-sm' : 'bg-white border-gray-200 text-gray-500 hover:border-teal-200 hover:text-teal-600 shadow-[0_4px_0_0_rgba(0,0,0,0.05)] active:translate-y-1 active:shadow-none'}`}
               title="Assist Mode"
             >
-              <Languages size={20} />
-              <span className="hidden sm:inline text-sm uppercase tracking-wider">Assist</span>
+              <Languages size={18} />
+              <span className="hidden sm:inline">Assist</span>
             </button>
             {assistMode && (
               <button 
                 onClick={() => setAssistLang(prev => prev === 'traditional' ? 'simplified' : 'traditional')}
-                className="w-10 h-10 rounded-xl text-sm font-black border-2 border-slate-200 text-slate-600 bg-slate-50 hover:bg-slate-100 transition-all shadow-[0_4px_0_0_#e2e8f0] active:translate-y-1 active:shadow-none"
+                className="w-10 h-10 flex items-center justify-center rounded-2xl text-sm font-black border-2 border-gray-200 text-gray-600 bg-white hover:bg-gray-50 transition-all shadow-[0_4px_0_0_rgba(0,0,0,0.05)] active:translate-y-1 active:shadow-none"
               >
                 {assistLang === 'traditional' ? '繁' : '简'}
               </button>
@@ -136,7 +136,7 @@ const QuizView: React.FC<QuizViewProps> = ({ unit, onBack, sessionStats, setSess
         </header>
       )}
 
-      <main className={`flex-1 flex flex-col items-center w-full mx-auto px-4 md:px-8 pb-32 pt-4 md:pt-12 transition-all duration-300 ${assistMode ? 'max-w-5xl' : 'max-w-3xl'}`}>
+      <main className={`flex-1 flex flex-col items-center w-full mx-auto px-4 md:px-8 pb-32 pt-12 md:pt-20 transition-all duration-300 ${assistMode ? 'max-w-5xl' : 'max-w-3xl'}`}>
         <AnimatePresence mode="wait">
           {!showResults ? (
             <motion.div
@@ -146,11 +146,11 @@ const QuizView: React.FC<QuizViewProps> = ({ unit, onBack, sessionStats, setSess
               exit={{ x: -20, opacity: 0 }}
               className={`w-full mx-auto flex flex-col gap-8 ${assistMode ? 'max-w-4xl' : 'max-w-xl'}`}
             >
-              <h2 className="text-2xl md:text-3xl font-bold text-gray-800 tracking-tight leading-snug">
+              <h2 className="w-full text-white bg-gradient-to-r from-emerald-500 to-teal-600 rounded-[2rem] p-6 md:p-10 shadow-lg text-2xl md:text-3xl font-black tracking-tight leading-snug">
                 {assistMode ? (
-                  <div className="flex flex-col md:flex-row md:items-start gap-4">
+                  <div className="flex flex-col md:flex-row md:items-stretch gap-4">
                     <span className="flex-1">{currentQuestion.text}</span>
-                    <div className="flex-1 bg-blue-50 text-blue-700 p-4 md:p-6 rounded-2xl border-2 border-blue-100 shadow-inner">
+                    <div className="flex-1 bg-white/20 backdrop-blur-sm text-teal-50 p-4 md:p-6 rounded-2xl border border-white/20 shadow-inner">
                       {currentTranslation.text ? (
                         <span>{currentTranslation.text}</span>
                       ) : (
@@ -163,24 +163,24 @@ const QuizView: React.FC<QuizViewProps> = ({ unit, onBack, sessionStats, setSess
                 )}
               </h2>
 
-              <div className="flex flex-col gap-3 md:gap-4">
+              <div className="flex flex-col gap-3 md:gap-4 mt-2">
                 {currentQuestion.options.map((option, idx) => {
                   const isSelected = selectedAnswer === idx;
                   const isChecked = status === 'checked';
                   const isOptionCorrect = idx === correctIndex;
                   
-                  let stateStyle = 'border-gray-200 hover:bg-gray-50 text-gray-700 hover:border-gray-300 shadow-[0_4px_0_0_#e5e7eb] active:shadow-none active:translate-y-1';
+                  let stateStyle = 'bg-white border-2 border-gray-200 text-gray-700 hover:border-teal-300 shadow-[0_4px_0_0_rgba(0,0,0,0.05)] active:shadow-none active:translate-y-1 hover:shadow-md';
                   
                   if (isChecked) {
                     if (isOptionCorrect) {
-                      stateStyle = 'border-emerald-500 bg-emerald-100 text-emerald-700 shadow-none translate-y-1';
+                      stateStyle = 'border-emerald-500 bg-emerald-50 text-emerald-800 shadow-none translate-y-1';
                     } else if (isSelected) {
-                      stateStyle = 'border-red-500 bg-red-100 text-red-700 shadow-none translate-y-1';
+                      stateStyle = 'border-red-500 bg-red-50 text-red-800 shadow-none translate-y-1';
                     } else {
-                      stateStyle = 'border-gray-200 text-gray-400 opacity-50 shadow-none translate-y-1';
+                      stateStyle = 'bg-white border-gray-200 text-gray-400 opacity-50 shadow-none translate-y-1';
                     }
                   } else if (isSelected) {
-                    stateStyle = 'border-blue-400 bg-blue-50 text-blue-700 shadow-[0_4px_0_0_#60a5fa] ring-2 ring-blue-100';
+                    stateStyle = 'border-teal-500 bg-teal-50 text-teal-800 shadow-[0_4px_0_0_#14b8a6] ring-2 ring-teal-100/50';
                   }
 
                   return (
@@ -188,22 +188,22 @@ const QuizView: React.FC<QuizViewProps> = ({ unit, onBack, sessionStats, setSess
                       key={idx}
                       disabled={isChecked}
                       onClick={() => handleAnswerSelect(idx)}
-                      className={`w-full p-4 relative text-left rounded-2xl border-2 font-bold transition-all ${stateStyle}`}
+                      className={`w-full p-4 md:p-5 relative text-left rounded-3xl font-black transition-all ${stateStyle}`}
                     >
                       <div className="flex items-center gap-4">
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm transition-colors shrink-0 ${
-                          isChecked && isOptionCorrect ? 'bg-emerald-200 text-emerald-800' :
-                          isChecked && isSelected && !isOptionCorrect ? 'bg-red-200 text-red-800' :
-                          isSelected ? 'bg-blue-200 text-blue-800' :
-                          'bg-gray-100 text-gray-500'
+                        <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-black text-sm transition-colors shrink-0 shadow-sm border ${
+                          isChecked && isOptionCorrect ? 'bg-emerald-500 text-white border-emerald-600' :
+                          isChecked && isSelected && !isOptionCorrect ? 'bg-red-500 text-white border-red-600' :
+                          isSelected ? 'bg-teal-500 text-white border-teal-600' :
+                          'bg-gray-100 text-gray-500 border-gray-200'
                         }`}>
                           {idx + 1}
                         </div>
                         <div className="flex-1 text-lg">
                           {assistMode ? (
                             <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-6 justify-between">
-                              <span className="flex-1 font-bold">{option}</span>
-                              <div className="flex-1 text-sm md:text-base md:text-right text-blue-700/80 pt-1 md:pt-0 border-t md:border-t-0 md:border-l border-blue-200/50 md:pl-6 font-medium">
+                              <span className="flex-1 text-gray-800 tracking-tight">{option}</span>
+                              <div className="flex-1 text-sm md:text-base md:text-right text-teal-700/80 pt-1 md:pt-0 border-t md:border-t-0 md:border-l border-teal-200/50 md:pl-6 font-bold tracking-tight">
                                 {currentTranslation.options && currentTranslation.options[idx] ? (
                                   currentTranslation.options[idx]
                                 ) : (
@@ -212,7 +212,7 @@ const QuizView: React.FC<QuizViewProps> = ({ unit, onBack, sessionStats, setSess
                               </div>
                             </div>
                           ) : (
-                            option
+                            <span className="tracking-tight text-gray-800">{option}</span>
                           )}
                         </div>
                       </div>
@@ -227,23 +227,23 @@ const QuizView: React.FC<QuizViewProps> = ({ unit, onBack, sessionStats, setSess
               animate={{ scale: 1, opacity: 1 }}
               className="text-center w-full max-w-xl mx-auto pt-10"
             >
-              <div className="bg-yellow-100 w-32 h-32 rounded-[2rem] flex items-center justify-center text-yellow-500 mx-auto mb-8 shadow-xl shadow-yellow-100 group">
+              <div className="bg-gradient-to-r from-yellow-400 to-orange-500 w-32 h-32 rounded-[2rem] flex items-center justify-center text-white mx-auto mb-8 shadow-lg shadow-orange-200 group">
                 <Trophy size={64} className="group-hover:rotate-12 transition-transform" fill="currentColor" />
               </div>
-              <h2 className="text-3xl font-black text-gray-800 mb-2">Lesson Complete!</h2>
+              <h2 className="text-3xl font-black text-gray-800 mb-2 uppercase tracking-tight">Lesson Complete!</h2>
               <p className="text-gray-500 font-bold mb-10 text-lg">Great job finishing {unit.title}.</p>
               
               <div className="flex gap-4 mb-10">
-                <div className="flex-1 bg-orange-50 border-2 border-orange-200 p-4 rounded-3xl flex flex-col items-center">
-                  <div className="text-orange-500 font-black text-sm uppercase tracking-widest mb-1">Total XP</div>
-                  <div className="text-3xl font-black text-orange-600 flex items-center gap-1">
-                    <Zap size={24} fill="currentColor" /> {score * 10}
+                <div className="flex-1 bg-white border-2 border-gray-100 shadow-[0_4px_0_0_rgba(0,0,0,0.05)] p-6 rounded-3xl flex flex-col items-center">
+                  <div className="text-orange-500 font-black text-sm uppercase tracking-widest mb-2">Total XP</div>
+                  <div className="text-4xl font-black text-orange-500 flex items-center gap-1">
+                    <Zap size={28} fill="currentColor" /> {score * 10}
                   </div>
                 </div>
-                <div className="flex-1 bg-emerald-50 border-2 border-emerald-200 p-4 rounded-3xl flex flex-col items-center">
-                  <div className="text-emerald-500 font-black text-sm uppercase tracking-widest mb-1">Accuracy</div>
-                  <div className="text-3xl font-black text-emerald-600 flex items-center gap-1">
-                    <ShieldCheck size={24} fill="currentColor" />
+                <div className="flex-1 bg-white border-2 border-gray-100 shadow-[0_4px_0_0_rgba(0,0,0,0.05)] p-6 rounded-3xl flex flex-col items-center">
+                  <div className="text-teal-500 font-black text-sm uppercase tracking-widest mb-2">Accuracy</div>
+                  <div className="text-4xl font-black text-teal-500 flex items-center gap-1">
+                    <ShieldCheck size={28} fill="currentColor" />
                     {Math.round((score / unit.questions.length) * 100)}%
                   </div>
                 </div>
@@ -254,24 +254,24 @@ const QuizView: React.FC<QuizViewProps> = ({ unit, onBack, sessionStats, setSess
       </main>
 
       {/* Footer Actions */}
-      <div className="fixed bottom-0 left-0 w-full border-t-2 bg-white px-4 py-4 md:py-6">
-        <div className="max-w-4xl mx-auto">
+      <div className="fixed bottom-0 left-0 w-full border-t border-gray-200 bg-white/90 backdrop-blur-md px-4 py-4 md:py-6 z-20">
+        <div className="max-w-5xl mx-auto">
           {!showResults ? (
             status === 'checked' ? (
-              <div className={`p-4 md:p-6 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 w-full ${isCorrect ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>
+              <div className={`p-4 md:p-6 rounded-3xl flex flex-col md:flex-row items-center justify-between gap-4 w-full shadow-sm ${isCorrect ? 'bg-emerald-100 text-emerald-900 border-2 border-emerald-200' : 'bg-red-100 text-red-900 border-2 border-red-200'}`}>
                 <div className="flex items-center gap-4 w-full md:w-auto">
-                  <div className={`p-2 rounded-full ${isCorrect ? 'bg-emerald-200' : 'bg-red-200'}`}>
+                  <div className={`p-3 rounded-2xl flex items-center justify-center text-white shadow-sm ${isCorrect ? 'bg-emerald-500' : 'bg-red-500'}`}>
                     {isCorrect ? <CheckCircle2 size={32} /> : <XCircle size={32} />}
                   </div>
                   <div>
-                    <h3 className="font-bold text-xl md:text-2xl">
+                    <h3 className="font-black text-xl md:text-2xl uppercase tracking-tight">
                       {isCorrect ? 'Excellent!' : 'Incorrect'}
                     </h3>
                     {!isCorrect && (
                       <div className="text-sm font-medium mt-1">
-                        Correct answer: <span className="font-bold text-red-900">{currentQuestion.options[correctIndex]}</span>
+                        Correct answer: <span className="font-black text-red-700">{currentQuestion.options[correctIndex]}</span>
                         {assistMode && currentTranslation.correctAnswer && (
-                          <span className="block text-red-700 mt-1 bg-red-50 p-2 rounded-lg border border-red-200">{currentTranslation.correctAnswer}</span>
+                          <span className="block text-red-800 mt-2 bg-red-50 font-bold p-3 rounded-xl border border-red-200 shadow-inner">{currentTranslation.correctAnswer}</span>
                         )}
                       </div>
                     )}
@@ -288,7 +288,7 @@ const QuizView: React.FC<QuizViewProps> = ({ unit, onBack, sessionStats, setSess
               <div className="flex items-center justify-between w-full max-w-3xl mx-auto">
                 <button
                   onClick={() => {}}
-                  className="px-6 py-4 rounded-2xl text-gray-400 font-bold uppercase tracking-widest hover:bg-gray-100 hidden md:block"
+                  className="px-6 py-4 rounded-2xl text-gray-400 font-bold uppercase tracking-widest hover:bg-gray-100 transition-colors hidden md:block"
                 >
                   Skip
                 </button>
@@ -297,7 +297,7 @@ const QuizView: React.FC<QuizViewProps> = ({ unit, onBack, sessionStats, setSess
                   onClick={handleCheck}
                   className={`w-full md:w-48 py-4 rounded-2xl font-black uppercase tracking-widest text-lg transition-all ${
                     status === 'selected'
-                      ? 'bg-emerald-500 text-white hover:bg-emerald-600 shadow-[0_4px_0_0_#059669] active:shadow-none active:translate-y-1'
+                      ? 'bg-teal-500 text-white hover:bg-teal-600 shadow-[0_4px_0_0_#0f766e] active:shadow-none active:translate-y-1'
                       : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                   }`}
                 >
