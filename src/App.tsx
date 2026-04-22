@@ -404,6 +404,7 @@ function AppContent() {
             ...it,
             ...ft,
             id: ft.id, // Prefer Firestore ID for primary key
+            originalId: it.id, // Store local ID for submission mapping
             worksheetQuestions: it.worksheetQuestions || ft.worksheetQuestions,
             pdfUrl: it.pdfUrl || ft.pdfUrl,
             type: it.type || ft.type
@@ -422,18 +423,37 @@ function AppContent() {
     if (!currentUser || isAdminLoggedIn) return;
     const q = query(collection(db, 'submissions'), where('userId', '==', currentUser.uid));
     return onSnapshot(q, (snap) => {
-      setMySubmissions(snap.docs.map(d => ({ id: d.id, ...d.data() }) as TaskSubmission));
+      const subs = snap.docs.map(d => ({ id: d.id, ...d.data() } as TaskSubmission));
+      const fixedSubs = subs.map(sub => {
+        const task = tasks.find(t => t.id === sub.taskId || (t as any).originalId === sub.taskId);
+        if (task && task.id !== sub.taskId) {
+           return { ...sub, taskId: task.id };
+        }
+        return sub;
+      });
+      setMySubmissions(fixedSubs);
     });
-  }, [currentUser, isAdminLoggedIn]);
+  }, [currentUser, isAdminLoggedIn, tasks]);
 
   // Fetch all Submissions for Admin
   useEffect(() => {
     if (!isAdminLoggedIn) return;
     const q = query(collection(db, 'submissions'), orderBy('completedAt', 'desc'));
     return onSnapshot(q, (snap) => {
-      setAllSubmissions(snap.docs.map(d => ({ id: d.id, ...d.data() }) as TaskSubmission));
+      const subs = snap.docs.map(d => ({ id: d.id, ...d.data() } as TaskSubmission));
+      // Fix up task IDs that might be using original/legacy IDs
+      const fixedSubs = subs.map(sub => {
+        const task = tasks.find(t => t.id === sub.taskId || (t as any).originalId === sub.taskId);
+        if (task && task.id !== sub.taskId) {
+          return { ...sub, taskId: task.id };
+        }
+        return sub;
+      });
+      setAllSubmissions(fixedSubs);
+    }, (error) => {
+      console.error("Admin submissions fetch failed:", error);
     });
-  }, [isAdminLoggedIn]);
+  }, [isAdminLoggedIn, tasks]);
 
   const loginWithGoogle = async () => {
     const provider = new GoogleAuthProvider();

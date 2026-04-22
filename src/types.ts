@@ -43,6 +43,7 @@ export interface ChallengeRecord {
 
 export interface Task {
   id: string;
+  originalId?: string; // ID from initial definitions
   title: string;
   description: string;
   units: number[];
