@@ -31,8 +31,6 @@ import { units } from './data';
 import { ExothermicReactionsWorksheet } from './data/worksheets/ExothermicReactions';
 import { EnergyChangesWorksheet } from './data/worksheets/EnergyChanges';
 import { IronRustWorksheet } from './data/worksheets/IronRust';
-import { ReactionsWaterSteamWorksheet } from './data/worksheets/ReactionsWaterSteam';
-import { ReactionsAcidsWorksheet } from './data/worksheets/ReactionsAcids';
 
 // Components
 import DashboardView from './components/views/DashboardView';
@@ -232,9 +230,7 @@ const ADMIN_EMAIL = 'tomanlam@gmail.com';
 const INITIAL_TASKS: Task[] = [
     ExothermicReactionsWorksheet,
     EnergyChangesWorksheet,
-    IronRustWorksheet,
-    ReactionsWaterSteamWorksheet,
-    ReactionsAcidsWorksheet
+    IronRustWorksheet
   ];
 
 function AppContent() {

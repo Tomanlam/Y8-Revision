@@ -27,6 +27,49 @@ interface TaskWorksheetViewProps {
 
 import { rubrics } from '../../data/markschemes';
 
+const COMMAND_TERMS: Record<string, string> = {
+  state: "Give a specific name, value or other brief positive answer without explanation or calculation.",
+  explain: "Give a detailed account including reasons or causes.",
+  describe: "Give a detailed account.",
+  compare: "Give an account of similarities and differences between two (or more) items.",
+  evaluate: "Assess the implications and limitations.",
+  calculate: "Find an answer using mathematical methods.",
+  suggest: "Propose a hypothesis or other possible answer.",
+  define: "Give the precise meaning of a word, phrase, concept or physical quantity.",
+  analyze: "Break down in order to bring out the essential elements or structure.",
+  analyse: "Break down in order to bring out the essential elements or structure.",
+  outline: "Give a brief account or summary.",
+  design: "Produce a plan, simulation or model.",
+  identify: "Provide an answer from a number of possibilities.",
+  justify: "Give valid reasons or evidence to support an answer or conclusion."
+};
+
+const QuestionTextWithCommandTerms = ({ text }: { text: string }) => {
+  if (!text) return null;
+  const regex = new RegExp(`\\b(${Object.keys(COMMAND_TERMS).join('|')})\\b`, 'gi');
+  const parts = text.split(regex);
+
+  return (
+    <h4 className="font-black text-gray-800 text-lg leading-tight pt-1">
+      {parts.map((part, i) => {
+        const lowerPart = part.toLowerCase();
+        if (COMMAND_TERMS[lowerPart]) {
+          return (
+            <span key={i} className="relative inline-block group">
+              <span className="text-orange-500 underline decoration-orange-200 decoration-2 underline-offset-4 cursor-help">{part}</span>
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-3 bg-orange-500 text-white text-xs font-bold rounded-xl shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 leading-relaxed text-center">
+                <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-orange-500"></div>
+                {COMMAND_TERMS[lowerPart]}
+              </div>
+            </span>
+          );
+        }
+        return <span key={i}>{part}</span>;
+      })}
+    </h4>
+  );
+};
+
 const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({ 
   task, onBack, onComplete, initialResponses, initialFeedback, readOnly, isAdmin, showCalculator, setShowCalculator 
 }) => {
@@ -100,7 +143,13 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
       // If Admin is grading
       if (isAdmin && readOnly) {
         setValidationFeedback({});
-        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY as string });
+        
+        const apiKey = process.env.GEMINI_API_KEY;
+        if (!apiKey || apiKey === 'undefined') {
+          throw new Error("Gemini API Key is missing. If you are the developer, please ensure GEMINI_API_KEY is set in your environment variables (e.g. on Vercel Build Settings).");
+        }
+
+        const ai = new GoogleGenAI({ apiKey });
         const taskKey = task.title.replace('y8 ', '');
         const rubricText = rubrics[taskKey] || "Grade based on general scientific principles.";
 
@@ -403,9 +452,7 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
                             <span className="flex-shrink-0 w-10 h-10 rounded-2xl bg-gray-900 text-white flex items-center justify-center font-black text-sm shadow-xl shadow-gray-200">
                               {idx + 1}
                             </span>
-                            <h4 className="font-black text-gray-800 text-lg leading-tight pt-1">
-                              {typedQ.question}
-                            </h4>
+                            <QuestionTextWithCommandTerms text={typedQ.question} />
                           </div>
 
                           {typedQ.type === 'mcq' && (
