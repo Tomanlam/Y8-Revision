@@ -138,7 +138,8 @@ const TasksView = ({
 
   const [worksheetQuestionsJson, setWorksheetQuestionsJson] = React.useState('');
   const [markschemeContent, setMarkschemeContent] = React.useState('');
-  const [showPromptUi, setShowPromptUi] = React.useState(false);
+  const [showQuestionsPrompt, setShowQuestionsPrompt] = React.useState(false);
+  const [showMarkschemePrompt, setShowMarkschemePrompt] = React.useState(false);
 
   const [newTask, setNewTask] = React.useState<Partial<Task>>({
     title: '',
@@ -174,7 +175,8 @@ const TasksView = ({
     const taskToCreate = {
       ...newTask,
       type: (newTask.pdfUrl || parsedQuestions) ? ('worksheet' as const) : undefined,
-      worksheetQuestions: parsedQuestions
+      worksheetQuestions: parsedQuestions,
+      markschemeContent: markschemeContent.trim() || undefined
     };
 
     await onCreateTask(taskToCreate);
@@ -272,8 +274,9 @@ const TasksView = ({
     currentY = (doc as any).lastAutoTable.finalY + 12;
 
     const tableData = task.worksheetQuestions?.map((q, idx) => {
-      let response = submission.responses?.[q.id];
-      const feedback = submission.feedback?.[q.id];
+      const qId = q.id.trim();
+      let response = submission.responses?.[qId] || submission.responses?.[q.id];
+      const feedback = submission.feedback?.[qId] || submission.feedback?.[q.id];
       
       if (q.type === 'table' && response && typeof response === 'object') {
         response = Object.entries(response)
@@ -541,33 +544,61 @@ const TasksView = ({
                   <div className="flex items-center justify-between">
                     <label className="block text-xs font-black text-gray-400 uppercase tracking-widest">Interactive Worksheet Mode JSON</label>
                     <div className="flex gap-2">
-                      <button
+                       <button
                         type="button"
-                        onClick={() => setShowPromptUi(!showPromptUi)}
+                        onClick={() => setShowQuestionsPrompt(!showQuestionsPrompt)}
                         className="text-[10px] uppercase font-black tracking-widest bg-purple-50 text-purple-600 px-3 py-1.5 rounded-lg border border-purple-200 hover:bg-purple-100 transition-all"
                       >
-                        {showPromptUi ? 'Hide Prompt' : 'Show Prompt'}
+                        {showQuestionsPrompt ? 'Hide Prompt' : 'Show Prompt'}
                       </button>
                       <button
                         type="button"
                         onClick={() => {
+                          const workId = (newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
                           const prompt = `You are an expert curriculum parser. Parse the questions from this worksheet.
-Output a STRICT JSON array of question objects, adhering to this schema:
+Target Worksheet Title: ${newTask.title || '[Untitled Task]'}
+Target Internal ID: ${workId}
+
+Output a STRICT JSON array of question objects, adhering to this schema and examples:
 [
   {
-    "id": "string (unique identifier e.g., 'q1', 'q2')",
-    "text": "string (the question stem/text)",
-    "type": "string (can be 'short-response', 'mcq', or 'table')",
-    "page": "number (the page the question appears on)",
-    "options": ["string (optional, required ONLY if type is 'mcq')"],
-    "tableData": [["string (optional, required ONLY if type is 'table'. First array represents headers, following arrays represent rows)"]],
-    "section": "string (optional, the broader topic or section this question belongs to)",
-    "instruction": "string (optional, any specific instruction for this cluster of questions)"
+    "id": "${workId}_f1",
+    "section": "Focus",
+    "question": "1. What is the chemical name for rust?",
+    "type": "short-response",
+    "page": 1
+  },
+  {
+    "id": "${workId}_f2",
+    "section": "Focus",
+    "question": "2. Choose the correct state of matter for water at 25°C.",
+    "type": "mcq",
+    "options": ["Solid", "Liquid", "Gas"],
+    "page": 1
+  },
+  {
+    "id": "${workId}_f3",
+    "section": "Data Analysis",
+    "question": "3. Complete the following table with the missing values.",
+    "type": "table",
+    "tableData": [
+      ["Trial", "Time (s)", "Distance (m)"],
+      ["1", "2.0", ""],
+      ["2", "4.0", ""]
+    ],
+    "page": 2
   }
 ]
-Please output ONLY the raw JSON array without any markdown wrappers or explanations.`;
+
+Field Definitions:
+- "id": "${workId}_f[number]" (Unique ID matching the internal ID)
+- "question": Full text of the question.
+- "type": "short-response", "mcq", or "table".
+- "page": The page number in the PDF (CRITICAL for auto-scrolling).
+
+Output ONLY the raw JSON array.`;
                           navigator.clipboard.writeText(prompt);
-                          alert("Prompt copied to clipboard!");
+                          alert("Questions prompt copied!");
                         }}
                         className="flex items-center gap-1 text-[10px] uppercase font-black tracking-widest bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg border border-blue-200 hover:bg-blue-100 transition-all"
                       >
@@ -575,40 +606,90 @@ Please output ONLY the raw JSON array without any markdown wrappers or explanati
                       </button>
                     </div>
                   </div>
-                  {showPromptUi && (
-                    <div className="bg-purple-50 p-4 rounded-2xl border-2 border-purple-100 text-xs text-purple-900 font-mono whitespace-pre-wrap leading-relaxed shadow-inner">
-                      {`You are an expert curriculum parser. Parse the questions from this worksheet.
-Output a STRICT JSON array of question objects, adhering to this schema:
-[
-  {
-    "id": "string (unique identifier e.g., 'q1', 'q2')",
-    "text": "string (the question stem/text)",
-    "type": "string (can be 'short-response', 'mcq', or 'table')",
-    "page": "number (the page the question appears on)",
-    "options": ["string (optional, required ONLY if type is 'mcq')"],
-    "tableData": [["string (optional, required ONLY if type is 'table'. First array represents headers, following arrays represent rows)"]],
-    "section": "string (optional, the broader topic or section this question belongs to)",
-    "instruction": "string (optional, any specific instruction for this cluster of questions)"
-  }
-]
-Please output ONLY the raw JSON array without any markdown wrappers or explanations.`}
-                    </div>
+
+                  {showQuestionsPrompt && (
+                    <motion.div 
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="bg-purple-50 p-4 rounded-2xl border border-purple-100 text-[10px] text-purple-900 font-mono whitespace-pre-wrap leading-relaxed shadow-inner mb-4">
+                        {`Parse worksheet into questions array.
+Example: { "id": "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '')}_f1", "question": "...", "type": "short-response", "page": 1 }`}
+                      </div>
+                    </motion.div>
                   )}
+
                   <div className="text-[10px] text-gray-400 mb-1 leading-tight">Provide a JSON array of questions to make the PDF interactive. <br/> Leave blank for standard non-interactive task.</div>
                   <textarea 
                     value={worksheetQuestionsJson}
                     onChange={e => setWorksheetQuestionsJson(e.target.value)}
-                    className="w-full h-40 p-4 rounded-2xl border-2 border-gray-100 font-mono text-xs focus:border-purple-500 outline-none resize-none custom-scrollbar"
+                    className="w-full h-32 p-4 rounded-2xl border-2 border-gray-100 font-mono text-xs focus:border-purple-500 outline-none resize-none custom-scrollbar"
                     placeholder='[&#10;  { "id": "q1", "text": "What is...", "type": "short-response", "page": 1 }&#10;]'
                   />
                 </div>
+
                 <div className="space-y-4">
-                  <label className="block text-xs font-black text-gray-400 uppercase tracking-widest">Markscheme JSON (or text)</label>
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-black text-gray-400 uppercase tracking-widest">Markscheme JSON (or text)</label>
+                    <div className="flex gap-2">
+                       <button
+                        type="button"
+                        onClick={() => setShowMarkschemePrompt(!showMarkschemePrompt)}
+                        className="text-[10px] uppercase font-black tracking-widest bg-emerald-50 text-emerald-600 px-3 py-1.5 rounded-lg border border-emerald-200 hover:bg-emerald-100 transition-all"
+                      >
+                        {showMarkschemePrompt ? 'Hide Prompt' : 'Show Prompt'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const workId = (newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+                          const prompt = `You are an expert examiner. Parse the markscheme for this worksheet.
+Target Worksheet Title: ${newTask.title || '[Untitled Task]'}
+Target Internal ID: ${workId}
+
+Output a STRICT JSON object mapping question IDs to their grading criteria.
+IDs MUST match the worksheet ones (e.g., "${workId}_f1").
+
+Example:
+{
+  "${workId}_f1": {
+    "correctAnswer": "Iron(III) oxide",
+    "points": 1,
+    "rubric": "1 mark for naming iron(III) oxide.",
+    "keywords": ["iron", "oxide"]
+  }
+}
+
+Output ONLY the raw JSON object. No markdown wrappers.`;
+                          navigator.clipboard.writeText(prompt);
+                          alert("Markscheme prompt copied!");
+                        }}
+                        className="flex items-center gap-1 text-[10px] uppercase font-black tracking-widest bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg border border-blue-200 hover:bg-blue-100 transition-all"
+                      >
+                        <Copy size={12} /> Copy Prompt
+                      </button>
+                    </div>
+                  </div>
+
+                  {showMarkschemePrompt && (
+                    <motion.div 
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 text-[10px] text-emerald-900 font-mono whitespace-pre-wrap leading-relaxed shadow-inner mb-4">
+                        {`Generate markscheme mapping for auto-grading.
+Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '')}_f1"`}
+                      </div>
+                    </motion.div>
+                  )}
+
                   <div className="text-[10px] text-gray-400 mb-1 leading-tight">Used by the AI for auto-grading interactive worksheet submissions.</div>
                   <textarea 
                     value={markschemeContent}
                     onChange={e => setMarkschemeContent(e.target.value)}
-                    className="w-full h-40 p-4 rounded-2xl border-2 border-gray-100 font-mono text-xs focus:border-purple-500 outline-none resize-none custom-scrollbar"
+                    className="w-full h-32 p-4 rounded-2xl border-2 border-gray-100 font-mono text-xs focus:border-purple-500 outline-none resize-none custom-scrollbar"
                     placeholder="Provide the grading rubric and answers here..."
                   />
                 </div>

@@ -52,6 +52,7 @@ export interface Task {
   createdAt?: string;
   type?: 'standard' | 'worksheet';
   pdfUrl?: string;
+  markschemeContent?: string;
   worksheetQuestions?: (Question & { 
     page?: number; 
     section?: string; 

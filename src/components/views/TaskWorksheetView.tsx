@@ -10,7 +10,7 @@ import 'react-pdf/dist/Page/TextLayer.css';
 import { Task, Question } from '../../types';
 import { GoogleGenAI, Type } from "@google/genai";
 import { db } from '../../firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 
 // PDF worker setup - Use unpkg for production reliability
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -21,6 +21,7 @@ interface TaskWorksheetViewProps {
   onComplete: (responses: Record<string, any>, results?: any) => void;
   initialResponses?: Record<string, any>;
   initialFeedback?: Record<string, { score: string, feedback: string }>;
+  initialGeneralFeedback?: string;
   readOnly?: boolean;
   isAdmin?: boolean;
   showCalculator: boolean;
@@ -73,7 +74,7 @@ const QuestionTextWithCommandTerms = ({ text }: { text: string }) => {
 };
 
 const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({ 
-  task, onBack, onComplete, initialResponses, initialFeedback, readOnly, isAdmin, showCalculator, setShowCalculator 
+  task, onBack, onComplete, initialResponses, initialFeedback, initialGeneralFeedback, readOnly, isAdmin, showCalculator, setShowCalculator 
 }) => {
   const [numPages, setNumPages] = useState<number | null>(null);
   const [activePage, setActivePage] = useState(1);
@@ -82,14 +83,25 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
   const [viewerWidth, setViewerWidth] = useState(window.innerWidth * 0.45);
   const [isValidating, setIsValidating] = useState(false);
   const [validationFeedback, setValidationFeedback] = useState<Record<string, { score: string, feedback: string }>>(initialFeedback || {});
+  const [generalFeedback, setGeneralFeedback] = useState<string>(initialGeneralFeedback || "");
   
   const rightPaneRef = useRef<HTMLDivElement>(null);
   const pageRefs = useRef<Record<number, HTMLDivElement | null>>({});
 
+  useEffect(() => {
+    if (initialFeedback) setValidationFeedback(initialFeedback);
+    if (initialGeneralFeedback) setGeneralFeedback(initialGeneralFeedback);
+  }, [initialFeedback, initialGeneralFeedback]);
+
   const [showConfirm, setShowConfirm] = useState(false);
   const [showMarkschemeEditor, setShowMarkschemeEditor] = useState(false);
-  const taskKey = task.title.replace('y8 ', '');
-  const [markscheme, setMarkscheme] = useState<string>(rubrics[taskKey] || "Grade based on general scientific principles.");
+  const taskKeyRaw = task.title.replace(/y8\s+/i, '').trim();
+  const [markscheme, setMarkscheme] = useState<string>(
+    task.markschemeContent || 
+    rubrics[taskKeyRaw] || 
+    rubrics[task.title] || 
+    "Grade based on general scientific principles."
+  );
   const [editingMarkscheme, setEditingMarkscheme] = useState<string>("");
   const [isSavingMarkscheme, setIsSavingMarkscheme] = useState(false);
 
@@ -98,13 +110,27 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
   const [isSavingQuestions, setIsSavingQuestions] = useState(false);
 
   useEffect(() => {
+    // If the task already has a markscheme embedded, we use that first
+    if (task.markschemeContent) {
+      setMarkscheme(task.markschemeContent);
+      return;
+    }
+
     if (isAdmin) {
       const loadMarkscheme = async () => {
         try {
-          const docRef = doc(db, 'markschemes', taskKey);
+          // Try both variants for backwards compatibility
+          const docRef = doc(db, 'markschemes', taskKeyRaw);
           const snap = await getDoc(docRef);
           if (snap.exists()) {
             setMarkscheme(snap.data().content);
+          } else {
+            // Fallback to title with y8 if that's how it was saved
+            const docRefAlt = doc(db, 'markschemes', task.title);
+            const snapAlt = await getDoc(docRefAlt);
+            if (snapAlt.exists()) {
+              setMarkscheme(snapAlt.data().content);
+            }
           }
         } catch (e) {
           console.error("Error loading markscheme:", e);
@@ -112,12 +138,14 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
       };
       loadMarkscheme();
     }
-  }, [isAdmin, taskKey]);
+  }, [isAdmin, taskKeyRaw, task.title, task.markschemeContent]);
 
   const handleSaveMarkscheme = async () => {
     setIsSavingMarkscheme(true);
     try {
-      await setDoc(doc(db, 'markschemes', taskKey), { content: editingMarkscheme });
+      await updateDoc(doc(db, 'tasks', task.id), { markschemeContent: editingMarkscheme });
+      // Also save to legacy collection just in case
+      await setDoc(doc(db, 'markschemes', taskKeyRaw), { content: editingMarkscheme });
       setMarkscheme(editingMarkscheme);
       setShowMarkschemeEditor(false);
     } catch (e) {
@@ -211,25 +239,48 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
 
         const prompt = `
           You are an expert science teacher. 
+          Your task is to grade a student's worksheet submission based on a provided Markscheme/Grading Rubric.
+          
           I am providing you with:
-          1. An official grading rubric (below).
-          2. A list of student responses to specific questions from a worksheet.
+          1. The Official Marking Scheme (in text or JSON format).
+          2. The Student's Responses (mapped by Question ID).
+          3. The Worksheet Question Context (to help you understand the question content and IDs).
           
-          Task: Grade the student's responses based STRICTLY on the provided rubric for y8 ${taskKey}.
-          
-          Grading Rubric for y8 ${taskKey}:
+          Grading Rubric for ${task.title}:
+          ---
           ${markscheme}
+          ---
           
-          Student Responses:
+          Student Responses (mapped by ID):
           ${JSON.stringify(responses, null, 2)}
           
-          Worksheet Questions and Context:
-          ${JSON.stringify(task.worksheetQuestions, null, 2)}
+          Worksheet Questions (ID mapping and content):
+          ${JSON.stringify(task.worksheetQuestions?.map(q => ({ 
+            id: q.id, 
+            question: (q as any).question || (q as any).text, 
+            type: q.type,
+            instruction: (q as any).instruction
+          })), null, 2)}
           
-          Output Requirements:
-          Return your response in a structured JSON format with two keys:
-          1. "generalFeedback": a personalized general comment for the student based on their OVERALL performance (accuracy, reasoning, etc.). e.g. "Good effort overall, you demonstrated strong understanding of x, but struggled with y. Keep it up!"
-          2. "questions": an object where each key is the question ID and the value is an object with "score" (a string like "1/1" or "0/1") and "feedback" (a brief helpful comment).
+          Processing Instructions:
+          - Use the Official Marking Scheme provided above to evaluate the student's reasoning and accuracy for each question.
+          - If the marking scheme is a JSON object, match the Question IDs. If it is text, use your judgment based on the provided descriptors.
+          - REQUIRED: You must evaluate every question provided in the "Worksheet Questions" list regardless of whether the student answered it.
+          - If a student response is missing, mark score as "0/X" and feedback as "No response provided."
+          
+          Response Format:
+          Return a JSON object with:
+          1. "generalFeedback": A personalized summary comment for the student (max 3 sentences).
+          2. "questions": An array of objects. Each object MUST have "id" (the EXACT Question ID string), "score", and "feedback".
+          
+          Example Output Format:
+          {
+            "generalFeedback": "You did a great job on the calculation section but missed some key details in the experimental setup...",
+            "questions": [
+               { "id": "id_f1", "score": "1/1", "feedback": "Correct." },
+               { "id": "id_f2", "score": "0/2", "feedback": "Recall that..." }
+            ]
+          }
         `;
 
         const responseSchema = {
@@ -240,11 +291,15 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
               description: "A personalized general comment for the student based on their OVERALL performance."
             },
             questions: {
-              type: Type.OBJECT,
-              description: "An object mapping question IDs to their scores and feedback.",
-              additionalProperties: {
+              type: Type.ARRAY,
+              description: "An array mapping EXACT question IDs to their scores and feedback.",
+              items: {
                 type: Type.OBJECT,
                 properties: {
+                  id: {
+                    type: Type.STRING,
+                    description: "The EXACT Question ID (e.g., 'y8_8_4_f1')."
+                  },
                   score: {
                     type: Type.STRING,
                     description: "Score string like '1/1' or '0/1'."
@@ -254,64 +309,102 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
                     description: "A brief helpful comment on the response."
                   }
                 },
-                required: ["score", "feedback"]
+                required: ["id", "score", "feedback"]
               }
             }
           },
           required: ["generalFeedback", "questions"]
         };
 
-        const aiResponse = await ai.models.generateContent({
+        const result = await ai.models.generateContent({
           model: "gemini-3.1-flash-lite-preview",
           contents: [{ text: prompt }],
-          config: { 
+          config: {
             responseMimeType: "application/json",
             responseSchema: responseSchema
-          },
+          }
         });
 
-        let feedback = {};
-        let generalFeedback = "";
-        if (aiResponse.text) {
+        const aiText = result.text;
+
+        if (aiText) {
           try {
-            const parsed = JSON.parse(aiResponse.text);
-            feedback = parsed.questions || {};
-            generalFeedback = parsed.generalFeedback || "";
-            setValidationFeedback(feedback);
+            const parsed = JSON.parse(aiText);
+            const rawFeedbackArray = Array.isArray(parsed.questions) ? parsed.questions : [];
+            const generalResult = parsed.generalFeedback || "";
+            
+            // Normalize feedbackResult to match worksheet IDs strictly
+            const feedbackResult: Record<string, { score: string, feedback: string }> = {};
+            
+            task.worksheetQuestions?.forEach(q => {
+              const targetId = q.id.trim();
+              const targetIdLower = targetId.toLowerCase();
+              
+              // 1. Direct match (case sensitive then insensitive)
+              let aiMatch = rawFeedbackArray.find((f: any) => f.id === targetId) || 
+                            rawFeedbackArray.find((f: any) => f.id?.toLowerCase() === targetIdLower);
+              
+              // 2. Fuzzy match (AI key contains ID or vice versa)
+              if (!aiMatch) {
+                aiMatch = rawFeedbackArray.find((f: any) => {
+                  const k = (f.id || "").toString().trim().toLowerCase();
+                  return k.length > 2 && (k.includes(targetIdLower) || targetIdLower.includes(k));
+                });
+              }
+              
+              if (aiMatch) {
+                feedbackResult[targetId] = {
+                  score: aiMatch.score || "0/0",
+                  feedback: aiMatch.feedback || "Response analyzed but no specific rubric match found for this ID."
+                };
+              } else {
+                feedbackResult[targetId] = { score: "0/0", feedback: "Response analyzed but no specific rubric match found for this ID." };
+              }
+            });
+            
+            setValidationFeedback(feedbackResult);
+            setGeneralFeedback(generalResult);
+            
+            // Calculate numeric score from feedback
+            let totalPoints = 0;
+            let earnedPoints = 0;
+            Object.values(feedbackResult).forEach((f: any) => {
+              if (f && f.score) {
+                const parts = f.score.toString().split('/');
+                if (parts.length === 2) {
+                  earnedPoints += parseFloat(parts[0]);
+                  totalPoints += parseFloat(parts[1]);
+                } else {
+                  // Fallback for single numbers
+                  const num = parseFloat(f.score);
+                  if (!isNaN(num)) {
+                    earnedPoints += num;
+                    totalPoints += 1; // Assume 1 if not specified
+                  }
+                }
+              }
+            });
+
+            await onComplete(responses, {
+              score: earnedPoints,
+              total: totalPoints || task.worksheetQuestions?.length || 0,
+              feedback: feedbackResult,
+              generalFeedback: generalResult
+            });
           } catch (parseError) {
-            console.error("JSON parsing failed:", aiResponse.text);
+            console.error("JSON parsing failed:", result.text);
             throw new Error("AI returned invalid JSON formatting. Please try again.");
           }
         } else {
           throw new Error("AI returned an empty response. Please try again.");
         }
-
-        // Calculate numeric score from feedback
-        let totalPoints = 0;
-        let earnedPoints = 0;
-        Object.values(feedback as any).forEach((f: any) => {
-          if (f && f.score) {
-            const parts = f.score.split('/');
-            if (parts.length === 2) {
-              earnedPoints += parseFloat(parts[0]);
-              totalPoints += parseFloat(parts[1]);
-            }
-          }
-        });
-
-        await onComplete(responses, {
-          score: earnedPoints,
-          total: totalPoints || task.worksheetQuestions?.length || 0,
-          feedback: feedback,
-          generalFeedback: generalFeedback
-        });
       } else {
-      // Student Submit path
-      // Note: onComplete in App.tsx is async and handles Firestore persistence
-      await onComplete(responses);
-      setSubmitted(true);
-    }
-  } catch (error: any) {
+        // Student Submit path
+        // Note: onComplete in App.tsx is async and handles Firestore persistence
+        await onComplete(responses);
+        setSubmitted(true);
+      }
+    } catch (error: any) {
     console.error("Operation failed:", error);
     const errorMessage = error?.message || "An unexpected error occurred.";
     alert(isAdmin ? `Grading failed: ${errorMessage}. Please try again.` : `Submission failed: ${errorMessage}. Please check your connection and try again.`);
@@ -637,6 +730,41 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
               </p>
             </div>
 
+            {generalFeedback && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-emerald-50 border-2 border-emerald-100 rounded-[2rem] p-8 space-y-4 shadow-sm"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-emerald-500 text-white p-2 rounded-xl">
+                      <Send size={18} />
+                    </div>
+                    <h4 className="text-sm font-black text-emerald-800 uppercase tracking-widest">Teacher's Summary</h4>
+                  </div>
+                  {readOnly && (
+                    <div className="bg-white px-4 py-2 rounded-2xl border border-emerald-100 flex items-center gap-2">
+                       <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Score</span>
+                       <span className="text-lg font-black text-emerald-600">
+                          {Math.round(Object.values(validationFeedback as any).reduce<number>((acc, f: any) => {
+                             const p = f.score?.toString().split('/');
+                             return acc + (p?.[0] ? parseFloat(p[0]) : 0);
+                          }, 0))} / {
+                            Object.values(validationFeedback as any).reduce<number>((acc, f: any) => {
+                              const p = f.score?.toString().split('/');
+                              return acc + (p?.[1] ? parseFloat(p[1]) : 1);
+                           }, 0)
+                          }
+                       </span>
+                    </div>
+                  )}
+                </div>
+                <p className="text-sm font-bold text-gray-700 leading-relaxed italic">
+                  "{generalFeedback}"
+                </p>
+              </motion.div>
+            )}
             {Object.keys(questionsByPage).sort((a, b) => parseInt(a) - parseInt(b)).map(pageStr => {
               const pageNum = parseInt(pageStr);
               return (

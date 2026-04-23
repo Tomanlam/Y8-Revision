@@ -573,6 +573,7 @@ function AppContent() {
         createdAt: new Date().toISOString(),
         ...(taskData.type && { type: taskData.type }),
         ...(taskData.pdfUrl && { pdfUrl: taskData.pdfUrl }),
+        ...(taskData.markschemeContent && { markschemeContent: taskData.markschemeContent }),
         ...(taskData.worksheetQuestions && { worksheetQuestions: taskData.worksheetQuestions })
       };
       await setDoc(doc(db, 'tasks', id), task);
@@ -751,7 +752,7 @@ function AppContent() {
           />}
           {mode === 'worksheet' && activeTask && (
             <TaskWorksheetView 
-              key="worksheet"
+              key={`worksheet_${activeTask.id}_${viewedSubmission?.id || 'submit'}`}
               task={activeTask}
               onBack={() => {
                 setMode('tasks');
@@ -760,6 +761,7 @@ function AppContent() {
               }}
               initialResponses={viewedSubmission ? viewedSubmission.responses : mySubmissions.find(s => s.taskId === activeTask.id)?.responses}
               initialFeedback={viewedSubmission ? viewedSubmission.feedback : mySubmissions.find(s => s.taskId === activeTask.id)?.feedback}
+              initialGeneralFeedback={viewedSubmission ? viewedSubmission.generalFeedback : mySubmissions.find(s => s.taskId === activeTask.id)?.generalFeedback}
               readOnly={!!viewedSubmission || (!isAdminLoggedIn && mySubmissions.some(s => s.taskId === activeTask.id))}
               isAdmin={isAdminLoggedIn}
               showCalculator={showCalculator}
