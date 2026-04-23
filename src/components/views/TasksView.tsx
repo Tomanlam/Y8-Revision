@@ -135,8 +135,9 @@ const TasksView = ({
   const [activeTab, setActiveTab] = React.useState<'tasks' | 'submissions'>('tasks');
   const [submissionFilter, setSubmissionFilter] = React.useState('');
   const [nukeLevel, setNukeLevel] = React.useState(0);
-  const [markschemePdfUrl, setMarkschemePdfUrl] = React.useState('');
-  const [isParsing, setIsParsing] = React.useState(false);
+
+  const [worksheetQuestionsJson, setWorksheetQuestionsJson] = React.useState('');
+  const [markschemeContent, setMarkschemeContent] = React.useState('');
 
   const [newTask, setNewTask] = React.useState<Partial<Task>>({
     title: '',
@@ -157,7 +158,36 @@ const TasksView = ({
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    await onCreateTask(newTask);
+    
+    // Parse Questions JSON if provided
+    let parsedQuestions = undefined;
+    if (worksheetQuestionsJson.trim()) {
+      try {
+        parsedQuestions = JSON.parse(worksheetQuestionsJson);
+      } catch (err) {
+        alert("Invalid JSON in Worksheet Questions. Please check your formatting.");
+        return;
+      }
+    }
+
+    const taskToCreate = {
+      ...newTask,
+      type: (newTask.pdfUrl || parsedQuestions) ? ('worksheet' as const) : undefined,
+      worksheetQuestions: parsedQuestions
+    };
+
+    await onCreateTask(taskToCreate);
+    
+    // Save Markscheme to Firestore
+    if (markschemeContent.trim() && taskToCreate.title) {
+      try {
+        const taskKey = taskToCreate.title.replace('y8 ', '');
+        await setDoc(doc(db, 'markschemes', taskKey), { content: markschemeContent });
+      } catch (err) {
+        console.error("Failed to save markscheme:", err);
+      }
+    }
+
     setIsCreatorOpen(false);
     setNewTask({
       title: '',
@@ -166,102 +196,8 @@ const TasksView = ({
       dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       status: 'active'
     });
-    setMarkschemePdfUrl('');
-  };
-
-  const handleParseAndLaunch = async () => {
-    if (!newTask.title || !newTask.pdfUrl || !markschemePdfUrl) {
-      alert("Please provide Task Title, Worksheet PDF URL, and Markscheme PDF URL.");
-      return;
-    }
-
-    setIsParsing(true);
-    try {
-      const apiKey = process.env.GEMINI_API_KEY;
-      if (!apiKey || apiKey === 'undefined') {
-        throw new Error("Gemini API Key is missing.");
-      }
-      const ai = new GoogleGenAI({ apiKey });
-
-      // Fetch PDFs
-      const fetchPdfAsBase64 = async (url: string) => {
-        const response = await fetch(url);
-        if (!response.ok) throw new Error(`Failed to fetch PDF from ${url}`);
-        const blob = await response.blob();
-        return new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
-          reader.onerror = reject;
-          reader.readAsDataURL(blob);
-        });
-      };
-
-      const [worksheetBase64, markschemeBase64] = await Promise.all([
-        fetchPdfAsBase64(newTask.pdfUrl),
-        fetchPdfAsBase64(markschemePdfUrl)
-      ]);
-
-      // 1. Parse questions from worksheet
-      const questionsPrompt = `
-        You are an expert curriculum parser. Parse the questions from this worksheet PDF. 
-        Output a STRICT JSON array of question objects, each with:
-        - "id": string (e.g., "q1", "q2")
-        - "text": string (the question text)
-        - "type": string (e.g., "short-response", "table", "mcq")
-        - "page": number (the page it appears on, usually 1 or 2)
-        If the type is "table", include a "tableData" array of arrays representing the table structure (headers as the first array).
-      `;
-      const questionsResponse = await ai.models.generateContent({
-        model: "gemini-3.1-flash-lite-preview",
-        contents: [
-          { inlineData: { data: worksheetBase64, mimeType: "application/pdf" } },
-          { text: questionsPrompt }
-        ],
-        config: { responseMimeType: "application/json" }
-      });
-      const parsedQuestions = JSON.parse(questionsResponse.text || "[]");
-
-      // 2. Parse markscheme
-      const markschemePrompt = `
-        You are an expert curriculum parser. Extract the full grading rubric and correct answers from this markscheme PDF.
-        Output ONLY the raw markdown text for the final rubric string, no JSON structure. Do NOT wrap it in a JSON object.
-        Ensure it is clear, well-formatted, and explicitly links to the worksheet questions.
-      `;
-      const markschemeResponse = await ai.models.generateContent({
-        model: "gemini-3.1-flash-lite-preview",
-        contents: [
-          { inlineData: { data: markschemeBase64, mimeType: "application/pdf" } },
-          { text: markschemePrompt }
-        ]
-      });
-      const parsedMarkscheme = markschemeResponse.text || "Grade based on standard scientific principles.";
-
-      // 3. Save markscheme to Firestore
-      const taskKey = newTask.title.replace('y8 ', '');
-      await setDoc(doc(db, 'markschemes', taskKey), { content: parsedMarkscheme });
-
-      // 4. Create Task
-      await onCreateTask({
-        ...newTask,
-        type: 'worksheet',
-        worksheetQuestions: parsedQuestions
-      });
-
-      setIsCreatorOpen(false);
-      setNewTask({
-        title: '',
-        description: '',
-        units: [1],
-        dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        status: 'active'
-      });
-      setMarkschemePdfUrl('');
-    } catch (error: any) {
-      console.error(error);
-      alert("Parsing failed: " + error.message);
-    } finally {
-      setIsParsing(false);
-    }
+    setWorksheetQuestionsJson('');
+    setMarkschemeContent('');
   };
 
   const generateResponsePDF = (submission: TaskSubmission, task: Task, includeFeedback: boolean = false) => {
@@ -528,108 +464,115 @@ const TasksView = ({
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white p-8 rounded-3xl border-4 border-emerald-100 shadow-xl"
+          className="bg-white p-8 rounded-3xl border-4 border-emerald-100 shadow-xl fixed inset-0 md:inset-10 z-[300] overflow-y-auto"
         >
-          <form onSubmit={handleCreate} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest">Task Title</label>
-                <input 
-                  required
-                  type="text" 
-                  value={newTask.title}
-                  onChange={e => setNewTask({...newTask, title: e.target.value})}
-                  className="w-full p-4 rounded-2xl border-2 border-gray-100 font-bold focus:border-emerald-500 outline-none"
-                  placeholder="e.g. Unit 1 Revision"
-                />
-              </div>
-              <div className="space-y-4">
-                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest">Select Unit</label>
-                <select 
-                  value={newTask.units?.[0]}
-                  onChange={e => setNewTask({...newTask, units: [parseInt(e.target.value)]})}
-                  className="w-full p-4 rounded-2xl border-2 border-gray-100 font-bold outline-none"
-                >
-                  {units.map(u => (
-                    <option key={u.id} value={u.id}>{u.title}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="space-y-4">
-                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest">Due Date</label>
-                <input 
-                  type="date" 
-                  value={newTask.dueDate}
-                  onChange={e => setNewTask({...newTask, dueDate: e.target.value})}
-                  className="w-full p-4 rounded-2xl border-2 border-gray-100 font-bold outline-none"
-                />
-              </div>
-              <div className="space-y-4">
-                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest">Description</label>
-                <input 
-                  type="text" 
-                  value={newTask.description}
-                  onChange={e => setNewTask({...newTask, description: e.target.value})}
-                  className="w-full p-4 rounded-2xl border-2 border-gray-100 font-bold outline-none"
-                  placeholder="Optional details..."
-                />
-              </div>
-              <div className="space-y-4 md:col-span-2">
-                <div className="flex items-center gap-2 mb-2">
-                   <div className="flex-1 h-px bg-gray-100"></div>
-                   <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest">Interactive Worksheet Setup (Optional)</span>
-                   <div className="flex-1 h-px bg-gray-100"></div>
+          <div className="flex justify-between items-center mb-8 border-b-2 border-emerald-50 pb-4">
+            <div>
+              <h2 className="text-2xl font-black uppercase text-gray-800 tracking-tight">Create New Task</h2>
+              <p className="text-gray-500 font-bold text-sm">Fill in the details below to issue a new assignment.</p>
+            </div>
+            <button onClick={() => setIsCreatorOpen(false)} className="p-2 hover:bg-gray-100 rounded-xl transition-all">
+              <Trash2 className="text-gray-400 hover:text-red-500" />
+            </button>
+          </div>
+
+          <form onSubmit={handleCreate} className="space-y-6 max-w-5xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Left Column: Basic Info */}
+              <div className="space-y-6">
+                <div className="space-y-4">
+                  <label className="block text-xs font-black text-gray-400 uppercase tracking-widest">Task Title</label>
+                  <input 
+                    required
+                    type="text" 
+                    value={newTask.title}
+                    onChange={e => setNewTask({...newTask, title: e.target.value})}
+                    className="w-full p-4 rounded-2xl border-2 border-gray-100 font-bold focus:border-emerald-500 outline-none"
+                    placeholder="e.g. Unit 1 Revision"
+                  />
+                </div>
+                <div className="space-y-4">
+                  <label className="block text-xs font-black text-gray-400 uppercase tracking-widest">Select Unit</label>
+                  <select 
+                    value={newTask.units?.[0]}
+                    onChange={e => setNewTask({...newTask, units: [parseInt(e.target.value)]})}
+                    className="w-full p-4 rounded-2xl border-2 border-gray-100 font-bold outline-none focus:border-emerald-500"
+                  >
+                    {units.map(u => (
+                      <option key={u.id} value={u.id}>{u.title}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-4">
+                  <label className="block text-xs font-black text-gray-400 uppercase tracking-widest">Due Date</label>
+                  <input 
+                    type="date" 
+                    value={newTask.dueDate}
+                    onChange={e => setNewTask({...newTask, dueDate: e.target.value})}
+                    className="w-full p-4 rounded-2xl border-2 border-gray-100 font-bold outline-none focus:border-emerald-500"
+                  />
+                </div>
+                <div className="space-y-4">
+                  <label className="block text-xs font-black text-gray-400 uppercase tracking-widest">Description</label>
+                  <input 
+                    type="text" 
+                    value={newTask.description}
+                    onChange={e => setNewTask({...newTask, description: e.target.value})}
+                    className="w-full p-4 rounded-2xl border-2 border-gray-100 font-bold outline-none focus:border-emerald-500"
+                    placeholder="Optional details..."
+                  />
+                </div>
+                <div className="space-y-4">
+                  <label className="block text-xs font-black text-gray-400 uppercase tracking-widest">Worksheet PDF URL (Optional)</label>
+                  <input 
+                    type="url" 
+                    value={newTask.pdfUrl || ''}
+                    onChange={e => setNewTask({...newTask, pdfUrl: e.target.value})}
+                    className="w-full p-4 rounded-2xl border-2 border-gray-100 font-bold focus:border-purple-500 outline-none"
+                    placeholder="https://.../sheet.pdf"
+                  />
                 </div>
               </div>
-              <div className="space-y-4">
-                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest">Worksheet PDF URL</label>
-                <input 
-                  type="url" 
-                  value={newTask.pdfUrl || ''}
-                  onChange={e => setNewTask({...newTask, pdfUrl: e.target.value})}
-                  className="w-full p-4 rounded-2xl border-2 border-gray-100 font-bold focus:border-emerald-500 outline-none"
-                  placeholder="https://.../sheet.pdf"
-                />
-              </div>
-              <div className="space-y-4">
-                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest">Markscheme PDF URL</label>
-                <input 
-                  type="url" 
-                  value={markschemePdfUrl}
-                  onChange={e => setMarkschemePdfUrl(e.target.value)}
-                  className="w-full p-4 rounded-2xl border-2 border-gray-100 font-bold focus:border-emerald-500 outline-none"
-                  placeholder="https://.../markscheme.pdf"
-                />
+
+              {/* Right Column: Advanced Setup */}
+              <div className="space-y-6">
+                <div className="space-y-4">
+                  <label className="block text-xs font-black text-gray-400 uppercase tracking-widest">Interactive Worksheet Mode JSON</label>
+                  <div className="text-[10px] text-gray-400 mb-1 leading-tight">Provide a JSON array of questions to make the PDF interactive. <br/> Leave blank for standard non-interactive task.</div>
+                  <textarea 
+                    value={worksheetQuestionsJson}
+                    onChange={e => setWorksheetQuestionsJson(e.target.value)}
+                    className="w-full h-40 p-4 rounded-2xl border-2 border-gray-100 font-mono text-xs focus:border-purple-500 outline-none resize-none custom-scrollbar"
+                    placeholder='[&#10;  { "id": "q1", "text": "What is...", "type": "short-response", "page": 1 }&#10;]'
+                  />
+                </div>
+                <div className="space-y-4">
+                  <label className="block text-xs font-black text-gray-400 uppercase tracking-widest">Markscheme JSON (or text)</label>
+                  <div className="text-[10px] text-gray-400 mb-1 leading-tight">Used by the AI for auto-grading interactive worksheet submissions.</div>
+                  <textarea 
+                    value={markschemeContent}
+                    onChange={e => setMarkschemeContent(e.target.value)}
+                    className="w-full h-40 p-4 rounded-2xl border-2 border-gray-100 font-mono text-xs focus:border-purple-500 outline-none resize-none custom-scrollbar"
+                    placeholder="Provide the grading rubric and answers here..."
+                  />
+                </div>
               </div>
             </div>
-            <div className="flex justify-end gap-4 mt-6">
+
+            <div className="flex justify-end gap-4 mt-12 bg-white sticky bottom-0 pt-4 border-t-2 border-emerald-50">
               <button 
                 type="button"
                 onClick={() => setIsCreatorOpen(false)}
                 className="px-8 py-3 rounded-2xl font-black uppercase tracking-widest text-xs text-gray-400 hover:bg-gray-50"
-                disabled={isParsing}
               >
                 Cancel
               </button>
-              {(newTask.pdfUrl && markschemePdfUrl) ? (
-                <button 
-                  type="button"
-                  onClick={handleParseAndLaunch}
-                  disabled={isParsing}
-                  className="bg-purple-500 text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest shadow-[0_6px_0_0_#a855f7] active:translate-y-1 active:shadow-none transition-all flex items-center justify-center gap-2 min-w-[240px]"
-                >
-                  {isParsing ? (
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  ) : "Parse PDF & Launch"}
-                </button>
-              ) : (
-                <button 
-                  type="submit"
-                  className="bg-emerald-500 text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest shadow-[0_6px_0_0_#059669] active:translate-y-1 active:shadow-none transition-all"
-                >
-                  Launch Task
-                </button>
-              )}
+              <button 
+                type="submit"
+                className="bg-emerald-500 text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest shadow-[0_6px_0_0_#059669] active:translate-y-1 active:shadow-none transition-all"
+              >
+                Launch Task
+              </button>
             </div>
           </form>
         </motion.div>

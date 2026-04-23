@@ -774,13 +774,15 @@ function AppContent() {
                   };
                   if (results !== undefined) updateData.results = results;
                   if (results?.feedback !== undefined) updateData.feedback = results.feedback;
+                  if (results?.generalFeedback !== undefined) updateData.generalFeedback = results.generalFeedback;
 
                   await updateDoc(doc(db, 'submissions', viewedSubmission.id), updateData);
                   
                   setViewedSubmission({
                     ...viewedSubmission,
                     results: results,
-                    feedback: results?.feedback
+                    feedback: results?.feedback,
+                    generalFeedback: results?.generalFeedback
                   });
                   alert("Student responses graded successfully!");
                   return;
@@ -809,6 +811,9 @@ function AppContent() {
 
                   if (results?.feedback !== undefined) {
                     submissionToSave.feedback = results.feedback;
+                  }
+                  if (results?.generalFeedback !== undefined) {
+                    submissionToSave.generalFeedback = results.generalFeedback;
                   }
                   
                   console.log("Saving submission to Firestore:", submissionId);
