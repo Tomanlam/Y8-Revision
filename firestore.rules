@@ -83,5 +83,10 @@ service cloud.firestore {
       allow create: if isSignedIn();
       allow read, delete: if isAdmin();
     }
+
+    match /markschemes/{taskId} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
   }
 }

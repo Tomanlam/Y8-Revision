@@ -4,6 +4,9 @@ import { Star, CheckCircle2, ListChecks, Users, Clock, Plus, Trash2, Layout, Cal
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, parseISO, startOfDay } from 'date-fns';
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
+import { GoogleGenAI } from "@google/genai";
+import { db } from '../../firebase';
+import { doc, setDoc } from 'firebase/firestore';
 
 import { Task, TaskSubmission, Unit } from '../../types';
 
@@ -132,6 +135,9 @@ const TasksView = ({
   const [activeTab, setActiveTab] = React.useState<'tasks' | 'submissions'>('tasks');
   const [submissionFilter, setSubmissionFilter] = React.useState('');
   const [nukeLevel, setNukeLevel] = React.useState(0);
+  const [markschemePdfUrl, setMarkschemePdfUrl] = React.useState('');
+  const [isParsing, setIsParsing] = React.useState(false);
+
   const [newTask, setNewTask] = React.useState<Partial<Task>>({
     title: '',
     description: '',
@@ -160,6 +166,102 @@ const TasksView = ({
       dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       status: 'active'
     });
+    setMarkschemePdfUrl('');
+  };
+
+  const handleParseAndLaunch = async () => {
+    if (!newTask.title || !newTask.pdfUrl || !markschemePdfUrl) {
+      alert("Please provide Task Title, Worksheet PDF URL, and Markscheme PDF URL.");
+      return;
+    }
+
+    setIsParsing(true);
+    try {
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey || apiKey === 'undefined') {
+        throw new Error("Gemini API Key is missing.");
+      }
+      const ai = new GoogleGenAI({ apiKey });
+
+      // Fetch PDFs
+      const fetchPdfAsBase64 = async (url: string) => {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`Failed to fetch PDF from ${url}`);
+        const blob = await response.blob();
+        return new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+      };
+
+      const [worksheetBase64, markschemeBase64] = await Promise.all([
+        fetchPdfAsBase64(newTask.pdfUrl),
+        fetchPdfAsBase64(markschemePdfUrl)
+      ]);
+
+      // 1. Parse questions from worksheet
+      const questionsPrompt = `
+        You are an expert curriculum parser. Parse the questions from this worksheet PDF. 
+        Output a STRICT JSON array of question objects, each with:
+        - "id": string (e.g., "q1", "q2")
+        - "text": string (the question text)
+        - "type": string (e.g., "short-response", "table", "mcq")
+        - "page": number (the page it appears on, usually 1 or 2)
+        If the type is "table", include a "tableData" array of arrays representing the table structure (headers as the first array).
+      `;
+      const questionsResponse = await ai.models.generateContent({
+        model: "gemini-3.1-flash-lite-preview",
+        contents: [
+          { inlineData: { data: worksheetBase64, mimeType: "application/pdf" } },
+          { text: questionsPrompt }
+        ],
+        config: { responseMimeType: "application/json" }
+      });
+      const parsedQuestions = JSON.parse(questionsResponse.text || "[]");
+
+      // 2. Parse markscheme
+      const markschemePrompt = `
+        You are an expert curriculum parser. Extract the full grading rubric and correct answers from this markscheme PDF.
+        Output ONLY the raw markdown text for the final rubric string, no JSON structure. Do NOT wrap it in a JSON object.
+        Ensure it is clear, well-formatted, and explicitly links to the worksheet questions.
+      `;
+      const markschemeResponse = await ai.models.generateContent({
+        model: "gemini-3.1-flash-lite-preview",
+        contents: [
+          { inlineData: { data: markschemeBase64, mimeType: "application/pdf" } },
+          { text: markschemePrompt }
+        ]
+      });
+      const parsedMarkscheme = markschemeResponse.text || "Grade based on standard scientific principles.";
+
+      // 3. Save markscheme to Firestore
+      const taskKey = newTask.title.replace('y8 ', '');
+      await setDoc(doc(db, 'markschemes', taskKey), { content: parsedMarkscheme });
+
+      // 4. Create Task
+      await onCreateTask({
+        ...newTask,
+        type: 'worksheet',
+        worksheetQuestions: parsedQuestions
+      });
+
+      setIsCreatorOpen(false);
+      setNewTask({
+        title: '',
+        description: '',
+        units: [1],
+        dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        status: 'active'
+      });
+      setMarkschemePdfUrl('');
+    } catch (error: any) {
+      console.error(error);
+      alert("Parsing failed: " + error.message);
+    } finally {
+      setIsParsing(false);
+    }
   };
 
   const generateResponsePDF = (submission: TaskSubmission, task: Task, includeFeedback: boolean = false) => {
@@ -187,8 +289,13 @@ const TasksView = ({
 
     // NEW: Teacher's General Feedback at the START (if report)
     if (includeFeedback && submission.feedback) {
+      const feedbackText = submission.generalFeedback || "Comprehensive review of accuracy, reasoning, and conceptual understanding demonstrated in this task.";
+      const splitFeedback = doc.splitTextToSize(feedbackText, 170);
+      const textHeight = splitFeedback.length * 5;
+      const boxHeight = 15 + textHeight + 5;
+
       doc.setFillColor(240, 253, 244); // Light emerald background
-      doc.rect(15, currentY, 180, 25, 'F');
+      doc.rect(15, currentY, 180, boxHeight, 'F');
       
       doc.setFontSize(12);
       doc.setFont("helvetica", "bold");
@@ -198,9 +305,9 @@ const TasksView = ({
       doc.setFontSize(9);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(55, 65, 81);
-      doc.text("Comprehensive review of accuracy, reasoning, and conceptual understanding demonstrated in this task.", 20, currentY + 16);
+      doc.text(splitFeedback, 20, currentY + 18);
       
-      currentY += 35;
+      currentY += boxHeight + 10;
     }
 
     // Student & Task Info Box
@@ -467,21 +574,62 @@ const TasksView = ({
                   placeholder="Optional details..."
                 />
               </div>
+              <div className="space-y-4 md:col-span-2">
+                <div className="flex items-center gap-2 mb-2">
+                   <div className="flex-1 h-px bg-gray-100"></div>
+                   <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest">Interactive Worksheet Setup (Optional)</span>
+                   <div className="flex-1 h-px bg-gray-100"></div>
+                </div>
+              </div>
+              <div className="space-y-4">
+                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest">Worksheet PDF URL</label>
+                <input 
+                  type="url" 
+                  value={newTask.pdfUrl || ''}
+                  onChange={e => setNewTask({...newTask, pdfUrl: e.target.value})}
+                  className="w-full p-4 rounded-2xl border-2 border-gray-100 font-bold focus:border-emerald-500 outline-none"
+                  placeholder="https://.../sheet.pdf"
+                />
+              </div>
+              <div className="space-y-4">
+                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest">Markscheme PDF URL</label>
+                <input 
+                  type="url" 
+                  value={markschemePdfUrl}
+                  onChange={e => setMarkschemePdfUrl(e.target.value)}
+                  className="w-full p-4 rounded-2xl border-2 border-gray-100 font-bold focus:border-emerald-500 outline-none"
+                  placeholder="https://.../markscheme.pdf"
+                />
+              </div>
             </div>
             <div className="flex justify-end gap-4 mt-6">
               <button 
                 type="button"
                 onClick={() => setIsCreatorOpen(false)}
                 className="px-8 py-3 rounded-2xl font-black uppercase tracking-widest text-xs text-gray-400 hover:bg-gray-50"
+                disabled={isParsing}
               >
                 Cancel
               </button>
-              <button 
-                type="submit"
-                className="bg-emerald-500 text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest shadow-[0_6px_0_0_#059669] active:translate-y-1 active:shadow-none transition-all"
-              >
-                Launch Task
-              </button>
+              {(newTask.pdfUrl && markschemePdfUrl) ? (
+                <button 
+                  type="button"
+                  onClick={handleParseAndLaunch}
+                  disabled={isParsing}
+                  className="bg-purple-500 text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest shadow-[0_6px_0_0_#a855f7] active:translate-y-1 active:shadow-none transition-all flex items-center justify-center gap-2 min-w-[240px]"
+                >
+                  {isParsing ? (
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : "Parse PDF & Launch"}
+                </button>
+              ) : (
+                <button 
+                  type="submit"
+                  className="bg-emerald-500 text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest shadow-[0_6px_0_0_#059669] active:translate-y-1 active:shadow-none transition-all"
+                >
+                  Launch Task
+                </button>
+              )}
             </div>
           </form>
         </motion.div>

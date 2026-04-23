@@ -570,7 +570,10 @@ function AppContent() {
         units: taskData.units || [1],
         dueDate: taskData.dueDate || new Date().toISOString(),
         status: 'active',
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        ...(taskData.type && { type: taskData.type }),
+        ...(taskData.pdfUrl && { pdfUrl: taskData.pdfUrl }),
+        ...(taskData.worksheetQuestions && { worksheetQuestions: taskData.worksheetQuestions })
       };
       await setDoc(doc(db, 'tasks', id), task);
       console.log("Task created successfully:", id);

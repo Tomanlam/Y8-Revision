@@ -67,6 +67,15 @@
         "timestamp": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "studentName", "score", "totalQuestions", "selectedUnits", "responses", "timestamp"]
+    },
+    "Markscheme": {
+      "title": "Markscheme",
+      "description": "Administrator-editable markschemes for assignments.",
+      "type": "object",
+      "properties": {
+        "content": { "type": "string" }
+      },
+      "required": ["content"]
     }
   },
   "firestore": {
@@ -85,6 +94,10 @@
     "/challengeRecords/{recordId}": {
       "schema": "ChallengeRecord",
       "description": "Collection of all quiz records."
+    },
+    "/markschemes/{taskId}": {
+      "schema": "Markscheme",
+      "description": "Editable markschemes by task ID."
     }
   }
 }

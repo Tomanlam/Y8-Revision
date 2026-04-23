@@ -207,7 +207,9 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
           ${JSON.stringify(task.worksheetQuestions, null, 2)}
           
           Output Requirements:
-          Return your response in a structured JSON format where each key is the question ID and the value is an object with "score" (a string like "1/1" or "0/1") and "feedback" (a brief helpful comment).
+          Return your response in a structured JSON format with two keys:
+          1. "generalFeedback": a personalized general comment for the student based on their OVERALL performance (accuracy, reasoning, etc.). e.g. "Good effort overall, you demonstrated strong understanding of x, but struggled with y. Keep it up!"
+          2. "questions": an object where each key is the question ID and the value is an object with "score" (a string like "1/1" or "0/1") and "feedback" (a brief helpful comment).
         `;
 
         const aiResponse = await ai.models.generateContent({
@@ -217,8 +219,11 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
         });
 
         let feedback = {};
+        let generalFeedback = "";
         if (aiResponse.text) {
-          feedback = JSON.parse(aiResponse.text);
+          const parsed = JSON.parse(aiResponse.text);
+          feedback = parsed.questions || parsed; // fallback
+          generalFeedback = parsed.generalFeedback || "";
           setValidationFeedback(feedback);
         }
 
@@ -226,17 +231,20 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
         let totalPoints = 0;
         let earnedPoints = 0;
         Object.values(feedback as any).forEach((f: any) => {
-          const parts = f.score.split('/');
-          if (parts.length === 2) {
-            earnedPoints += parseFloat(parts[0]);
-            totalPoints += parseFloat(parts[1]);
+          if (f && f.score) {
+            const parts = f.score.split('/');
+            if (parts.length === 2) {
+              earnedPoints += parseFloat(parts[0]);
+              totalPoints += parseFloat(parts[1]);
+            }
           }
         });
 
         await onComplete(responses, {
           score: earnedPoints,
           total: totalPoints || task.worksheetQuestions?.length || 0,
-          feedback: feedback
+          feedback: feedback,
+          generalFeedback: generalFeedback
         });
       } else {
       // Student Submit path

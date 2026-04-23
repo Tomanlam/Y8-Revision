@@ -73,6 +73,7 @@ export interface TaskSubmission {
   };
   responses: Record<string, any>;
   feedback?: Record<string, { score: string, feedback: string }>;
+  generalFeedback?: string;
 }
 
 export type OperationType = 'create' | 'update' | 'delete' | 'list' | 'get' | 'write';
