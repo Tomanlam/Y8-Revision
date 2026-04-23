@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Star, CheckCircle2, ListChecks, Users, Clock, Plus, Trash2, Layout, Calendar as CalendarIcon, ChevronLeft, ChevronRight as ChevronRightIcon, Target, List, FileText, Eye, ArrowRight, User, Download, Info } from 'lucide-react';
+import { Star, CheckCircle2, ListChecks, Users, Clock, Plus, Trash2, Layout, Calendar as CalendarIcon, ChevronLeft, ChevronRight as ChevronRightIcon, Target, List, FileText, Eye, ArrowRight, User, Download, Info, Copy } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, parseISO, startOfDay } from 'date-fns';
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -138,6 +138,7 @@ const TasksView = ({
 
   const [worksheetQuestionsJson, setWorksheetQuestionsJson] = React.useState('');
   const [markschemeContent, setMarkschemeContent] = React.useState('');
+  const [showPromptUi, setShowPromptUi] = React.useState(false);
 
   const [newTask, setNewTask] = React.useState<Partial<Task>>({
     title: '',
@@ -537,7 +538,62 @@ const TasksView = ({
               {/* Right Column: Advanced Setup */}
               <div className="space-y-6">
                 <div className="space-y-4">
-                  <label className="block text-xs font-black text-gray-400 uppercase tracking-widest">Interactive Worksheet Mode JSON</label>
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-black text-gray-400 uppercase tracking-widest">Interactive Worksheet Mode JSON</label>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowPromptUi(!showPromptUi)}
+                        className="text-[10px] uppercase font-black tracking-widest bg-purple-50 text-purple-600 px-3 py-1.5 rounded-lg border border-purple-200 hover:bg-purple-100 transition-all"
+                      >
+                        {showPromptUi ? 'Hide Prompt' : 'Show Prompt'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const prompt = `You are an expert curriculum parser. Parse the questions from this worksheet.
+Output a STRICT JSON array of question objects, adhering to this schema:
+[
+  {
+    "id": "string (unique identifier e.g., 'q1', 'q2')",
+    "text": "string (the question stem/text)",
+    "type": "string (can be 'short-response', 'mcq', or 'table')",
+    "page": "number (the page the question appears on)",
+    "options": ["string (optional, required ONLY if type is 'mcq')"],
+    "tableData": [["string (optional, required ONLY if type is 'table'. First array represents headers, following arrays represent rows)"]],
+    "section": "string (optional, the broader topic or section this question belongs to)",
+    "instruction": "string (optional, any specific instruction for this cluster of questions)"
+  }
+]
+Please output ONLY the raw JSON array without any markdown wrappers or explanations.`;
+                          navigator.clipboard.writeText(prompt);
+                          alert("Prompt copied to clipboard!");
+                        }}
+                        className="flex items-center gap-1 text-[10px] uppercase font-black tracking-widest bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg border border-blue-200 hover:bg-blue-100 transition-all"
+                      >
+                        <Copy size={12} /> Copy Prompt
+                      </button>
+                    </div>
+                  </div>
+                  {showPromptUi && (
+                    <div className="bg-purple-50 p-4 rounded-2xl border-2 border-purple-100 text-xs text-purple-900 font-mono whitespace-pre-wrap leading-relaxed shadow-inner">
+                      {`You are an expert curriculum parser. Parse the questions from this worksheet.
+Output a STRICT JSON array of question objects, adhering to this schema:
+[
+  {
+    "id": "string (unique identifier e.g., 'q1', 'q2')",
+    "text": "string (the question stem/text)",
+    "type": "string (can be 'short-response', 'mcq', or 'table')",
+    "page": "number (the page the question appears on)",
+    "options": ["string (optional, required ONLY if type is 'mcq')"],
+    "tableData": [["string (optional, required ONLY if type is 'table'. First array represents headers, following arrays represent rows)"]],
+    "section": "string (optional, the broader topic or section this question belongs to)",
+    "instruction": "string (optional, any specific instruction for this cluster of questions)"
+  }
+]
+Please output ONLY the raw JSON array without any markdown wrappers or explanations.`}
+                    </div>
+                  )}
                   <div className="text-[10px] text-gray-400 mb-1 leading-tight">Provide a JSON array of questions to make the PDF interactive. <br/> Leave blank for standard non-interactive task.</div>
                   <textarea 
                     value={worksheetQuestionsJson}
