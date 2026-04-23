@@ -8,7 +8,7 @@ import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 import { Task, Question } from '../../types';
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
 import { db } from '../../firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
@@ -193,6 +193,7 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
   };
 
   const handleFinalSubmit = async () => {
+    if (isValidating) return;
     setShowConfirm(false);
     setIsValidating(true);
     
@@ -231,19 +232,58 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
           2. "questions": an object where each key is the question ID and the value is an object with "score" (a string like "1/1" or "0/1") and "feedback" (a brief helpful comment).
         `;
 
+        const responseSchema = {
+          type: Type.OBJECT,
+          properties: {
+            generalFeedback: {
+              type: Type.STRING,
+              description: "A personalized general comment for the student based on their OVERALL performance."
+            },
+            questions: {
+              type: Type.OBJECT,
+              description: "An object mapping question IDs to their scores and feedback.",
+              additionalProperties: {
+                type: Type.OBJECT,
+                properties: {
+                  score: {
+                    type: Type.STRING,
+                    description: "Score string like '1/1' or '0/1'."
+                  },
+                  feedback: {
+                    type: Type.STRING,
+                    description: "A brief helpful comment on the response."
+                  }
+                },
+                required: ["score", "feedback"]
+              }
+            }
+          },
+          required: ["generalFeedback", "questions"]
+        };
+
         const aiResponse = await ai.models.generateContent({
           model: "gemini-3.1-flash-lite-preview",
           contents: [{ text: prompt }],
-          config: { responseMimeType: "application/json" },
+          config: { 
+            responseMimeType: "application/json",
+            responseSchema: responseSchema
+          },
         });
 
         let feedback = {};
         let generalFeedback = "";
         if (aiResponse.text) {
-          const parsed = JSON.parse(aiResponse.text);
-          feedback = parsed.questions || parsed; // fallback
-          generalFeedback = parsed.generalFeedback || "";
-          setValidationFeedback(feedback);
+          try {
+            const parsed = JSON.parse(aiResponse.text);
+            feedback = parsed.questions || {};
+            generalFeedback = parsed.generalFeedback || "";
+            setValidationFeedback(feedback);
+          } catch (parseError) {
+            console.error("JSON parsing failed:", aiResponse.text);
+            throw new Error("AI returned invalid JSON formatting. Please try again.");
+          }
+        } else {
+          throw new Error("AI returned an empty response. Please try again.");
         }
 
         // Calculate numeric score from feedback
@@ -271,9 +311,10 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
       await onComplete(responses);
       setSubmitted(true);
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error("Operation failed:", error);
-    alert(isAdmin ? "Grading failed. Please try again." : "Submission failed. Please check your connection and try again.");
+    const errorMessage = error?.message || "An unexpected error occurred.";
+    alert(isAdmin ? `Grading failed: ${errorMessage}. Please try again.` : `Submission failed: ${errorMessage}. Please check your connection and try again.`);
   } finally {
     setIsValidating(false);
   }
