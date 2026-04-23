@@ -93,6 +93,10 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
   const [editingMarkscheme, setEditingMarkscheme] = useState<string>("");
   const [isSavingMarkscheme, setIsSavingMarkscheme] = useState(false);
 
+  const [showQuestionsEditor, setShowQuestionsEditor] = useState(false);
+  const [editingQuestions, setEditingQuestions] = useState<string>("");
+  const [isSavingQuestions, setIsSavingQuestions] = useState(false);
+
   useEffect(() => {
     if (isAdmin) {
       const loadMarkscheme = async () => {
@@ -121,6 +125,21 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
       alert("Failed to save markscheme.");
     } finally {
       setIsSavingMarkscheme(false);
+    }
+  };
+
+  const handleSaveQuestions = async () => {
+    setIsSavingQuestions(true);
+    try {
+      const parsedQuestions = JSON.parse(editingQuestions);
+      await setDoc(doc(db, 'tasks', task.id), { worksheetQuestions: parsedQuestions }, { merge: true });
+      setShowQuestionsEditor(false);
+      // It will auto-refresh via App.tsx task listener, but let's notify user
+    } catch (e) {
+      console.error(e);
+      alert("Failed to save questions. Please ensure valid JSON formatting.");
+    } finally {
+      setIsSavingQuestions(false);
     }
   };
 
@@ -324,30 +343,43 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
           
           {(isAdmin || (!readOnly && !submitted)) && (
             <div className="flex items-center gap-2">
-              {isAdmin && readOnly && (
+              {isAdmin && (
+                <>
+                  <button
+                    onClick={() => {
+                      setEditingQuestions(JSON.stringify(task.worksheetQuestions || [], null, 2));
+                      setShowQuestionsEditor(true);
+                    }}
+                    className="bg-purple-50 text-purple-600 border border-purple-200 px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-purple-100 transition-all shadow-[0_4px_0_0_#d8b4fe] active:shadow-none active:translate-y-1 block"
+                  >
+                    Edit Questions
+                  </button>
+                  <button
+                    onClick={() => {
+                      setEditingMarkscheme(markscheme);
+                      setShowMarkschemeEditor(true);
+                    }}
+                    className="bg-blue-50 text-blue-600 border border-blue-200 px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-100 transition-all shadow-[0_4px_0_0_#bfdbfe] active:shadow-none active:translate-y-1 block"
+                  >
+                    Edit Markscheme
+                  </button>
+                </>
+              )}
+              {(!readOnly || isAdmin) && (
                 <button
-                  onClick={() => {
-                    setEditingMarkscheme(markscheme);
-                    setShowMarkschemeEditor(true);
-                  }}
-                  className="bg-blue-50 text-blue-600 border border-blue-200 px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-100 transition-all shadow-[0_4px_0_0_#bfdbfe] active:shadow-none active:translate-y-1"
+                  disabled={isValidating}
+                  onClick={() => setShowConfirm(true)}
+                  className="bg-emerald-500 text-white px-5 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-[0_4px_0_0_#059669] active:shadow-none active:translate-y-1 transition-all disabled:opacity-50 disabled:translate-y-0 disabled:shadow-none flex items-center gap-2"
                 >
-                  Edit Markscheme
+                  {isValidating ? (
+                    <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : <CheckCircle2 size={14} />}
+                  {isValidating ? 'Grading...' : (isAdmin && readOnly ? 'Grade & Feedback' : 'Submit Worksheet')}
                 </button>
               )}
-              <button
-                disabled={isValidating}
-                onClick={() => setShowConfirm(true)}
-                className="bg-emerald-500 text-white px-5 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-[0_4px_0_0_#059669] active:shadow-none active:translate-y-1 transition-all disabled:opacity-50 disabled:translate-y-0 disabled:shadow-none flex items-center gap-2"
-              >
-                {isValidating ? (
-                  <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                ) : <CheckCircle2 size={14} />}
-                {isValidating ? 'Grading...' : (isAdmin && readOnly ? 'Grade & Feedback' : 'Submit Worksheet')}
-              </button>
             </div>
           )}
-          {submitted && isAdmin && (
+          {submitted && isAdmin && !readOnly && (
             <button
               onClick={handleEdit}
               className="bg-amber-500 text-white px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-[0_4px_0_0_#d97706] active:shadow-none active:translate-y-1 transition-all flex items-center gap-2"
@@ -359,6 +391,58 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
       </header>
 
       {/* Confirmation Modal */}
+      <AnimatePresence>
+        {showQuestionsEditor && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-6">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-3xl p-8 max-w-2xl w-full shadow-2xl flex flex-col max-h-[90vh]"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="bg-purple-100 p-2 rounded-xl text-purple-500">
+                    <Layout size={24} />
+                  </div>
+                  <h3 className="text-xl font-black text-gray-800 uppercase tracking-tight">Edit Worksheet Questions</h3>
+                </div>
+                <button onClick={() => setShowQuestionsEditor(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
+                  <X size={24} />
+                </button>
+              </div>
+              <p className="text-sm text-gray-500 mb-4 font-medium italic">
+                Edit the JSON payload for the questions directly. Ensure the format adheres to the required schema.
+              </p>
+              <textarea
+                value={editingQuestions}
+                onChange={(e) => setEditingQuestions(e.target.value)}
+                className="w-full flex-1 min-h-[300px] p-6 rounded-2xl border-2 border-slate-100 font-mono text-xs leading-relaxed resize-none focus:border-purple-500 outline-none custom-scrollbar mb-6 bg-slate-50/50 text-gray-800"
+                placeholder="Enter the questions JSON here..."
+              />
+              <div className="flex justify-end gap-4 shrink-0">
+                <button
+                  onClick={() => setShowQuestionsEditor(false)}
+                  className="px-6 py-3 rounded-xl font-black uppercase text-xs text-gray-400 hover:bg-gray-50 hover:text-gray-600 tracking-widest transition-colors"
+                  disabled={isSavingQuestions}
+                >
+                  Discard Changes
+                </button>
+                <button
+                  onClick={handleSaveQuestions}
+                  className="px-8 py-3 bg-purple-500 text-white rounded-xl font-black uppercase text-xs shadow-[0_4px_0_0_#9333ea] active:shadow-none active:translate-y-1 transition-all tracking-widest flex items-center justify-center gap-2 min-w-[160px]"
+                  disabled={isSavingQuestions}
+                >
+                  {isSavingQuestions ? (
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : "Save Changes"}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       <AnimatePresence>
         {showMarkschemeEditor && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-6">
