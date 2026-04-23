@@ -326,19 +326,6 @@ const TasksView = ({
             </div>
           )}
 
-          {activeTab === 'submissions' && (
-            <div className="w-full md:w-auto relative">
-               <input 
-                 type="text"
-                 placeholder="Search students or tasks..."
-                 value={submissionFilter}
-                 onChange={(e) => setSubmissionFilter(e.target.value)}
-                 className="w-full md:w-64 pl-12 pr-4 py-3 rounded-2xl border-2 border-gray-50 font-bold focus:border-emerald-500 outline-none transition-all bg-gray-50/50"
-               />
-               <List className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-            </div>
-          )}
-
           {isAdmin && (
             <div className="flex gap-2">
               <button 
@@ -502,17 +489,30 @@ const TasksView = ({
 
       {activeTab === 'submissions' && isAdmin ? (
         <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
-           <div className="bg-white p-6 rounded-[2.5rem] border-2 border-gray-100 shadow-sm flex flex-col md:flex-row items-center gap-6">
-             <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-500 shadow-inner">
-               <Users size={32} />
+           <div className="flex flex-col md:flex-row items-center gap-4">
+             <div className="flex-1 bg-white p-4 rounded-[2rem] border-2 border-gray-100 shadow-sm flex items-center gap-4">
+               <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-500 shadow-inner shrink-0">
+                 <Users size={24} />
+               </div>
+               <div>
+                 <h3 className="text-lg font-black text-gray-800 uppercase tracking-tight">Grading Queue</h3>
+                 <p className="text-gray-500 text-xs font-medium">Review and grade student worksheet submissions.</p>
+               </div>
              </div>
-             <div className="flex-1 text-center md:text-left">
-               <h3 className="text-xl font-black text-gray-800 uppercase tracking-tight">Grading Queue</h3>
-               <p className="text-gray-500 font-medium">Verify submissions and provide automated feedback with Gemini.</p>
+
+             <div className="w-full md:w-96 relative">
+               <input 
+                 type="text"
+                 placeholder="Search students or tasks..."
+                 value={submissionFilter}
+                 onChange={(e) => setSubmissionFilter(e.target.value)}
+                 className="w-full pl-12 pr-4 py-4 rounded-[2rem] border-2 border-gray-100 font-bold focus:border-emerald-500 outline-none transition-all bg-white shadow-sm"
+               />
+               <List className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
              </div>
            </div>
            
-           <div className="space-y-16">
+           <div className="space-y-8">
              {(Object.entries(submissionsByTask) as [string, TaskSubmission[]][]).map(([taskId, subs]) => {
                const task = tasks.find(t => t.id === taskId) || { id: taskId, title: `Unlinked Task (${taskId})`, dueDate: new Date().toISOString(), type: "worksheet" } as Task;
                
@@ -582,59 +582,58 @@ const TasksView = ({
                              initial={{ opacity: 0, scale: 0.95 }}
                              animate={{ opacity: 1, scale: 1 }}
                              exit={{ opacity: 0, scale: 0.95 }}
-                             whileHover={{ y: -8 }}
-                             className={`group bg-white p-8 rounded-[2.5rem] border-2 transition-all relative flex flex-col justify-between shadow-sm overflow-hidden ${
-                               isGraded ? 'border-emerald-100 hover:border-emerald-300' : 'border-gray-100 shadow-xl shadow-gray-100/50 hover:border-orange-200'
+                             whileHover={{ y: -4 }}
+                             className={`group bg-white p-5 rounded-3xl border-2 transition-all relative flex flex-col justify-between shadow-sm overflow-hidden ${
+                               isGraded ? 'border-emerald-100 hover:border-emerald-300' : 'border-gray-100 shadow-sm hover:border-orange-200'
                              }`}
                            >
-                             {/* Background Decoration */}
-                             <div className={`absolute -top-12 -right-12 w-24 h-24 rounded-full opacity-5 group-hover:opacity-10 transition-opacity ${isGraded ? 'bg-emerald-500' : 'bg-orange-500'}`} />
+                             {/* Sub-header info */}
 
                              <div>
-                               <div className="flex justify-between items-start mb-6">
-                                 <div className="flex items-center gap-3">
-                                   <div className="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors border-2 border-gray-100">
-                                     <User size={24} />
+                               <div className="flex justify-between items-start mb-4">
+                                 <div className="flex items-center gap-2">
+                                   <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors border-2 border-gray-100 shrink-0">
+                                     <User size={20} />
                                    </div>
                                    <div>
-                                     <h4 className="font-black text-gray-800 text-base uppercase truncate max-w-[150px] tracking-tight">{sub.studentName}</h4>
-                                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Student</p>
+                                     <h4 className="font-black text-gray-800 text-sm uppercase truncate max-w-[120px] tracking-tight">{sub.studentName}</h4>
+                                     <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Student</p>
                                    </div>
                                  </div>
-                                 <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase border-2 ${statusColor}`}>
+                                 <div className={`px-3 py-1 rounded-full text-[9px] font-black uppercase border-2 ${statusColor}`}>
                                    {statusText}
                                  </div>
                                </div>
 
-                               <div className="grid grid-cols-2 gap-4 mb-4">
-                                 <div className="bg-gray-50/50 rounded-2xl p-4 border border-gray-100">
-                                   <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 text-center">Score</p>
-                                   <p className={`text-xl font-black text-center ${isGraded ? 'text-emerald-500' : 'text-gray-400 italic text-sm'}`}>
+                               <div className="grid grid-cols-2 gap-3 mb-4">
+                                 <div className="bg-gray-50/50 rounded-2xl p-2.5 border border-gray-100">
+                                   <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5 text-center">Score</p>
+                                   <p className={`text-base font-black text-center ${isGraded ? 'text-emerald-500' : 'text-gray-400 italic text-xs'}`}>
                                      {isGraded ? `${sub.results?.score} / ${sub.results?.total}` : 'Pending'}
                                    </p>
                                  </div>
-                                 <div className="bg-gray-50/50 rounded-2xl p-4 border border-gray-100">
-                                   <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 text-center">Submitted</p>
-                                   <p className="text-center font-black text-gray-700 text-sm">{format(new Date(sub.completedAt), 'MMM d')}</p>
+                                 <div className="bg-gray-50/50 rounded-2xl p-2.5 border border-gray-100">
+                                   <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5 text-center">Date</p>
+                                   <p className="text-center font-black text-gray-700 text-xs">{format(new Date(sub.completedAt), 'MMM d')}</p>
                                  </div>
                                </div>
                              </div>
 
-                             <div className="space-y-3 mt-6">
+                             <div className="space-y-2 mt-2">
                                {onViewSubmission && (
                                  <button 
                                    onClick={(e) => {
                                      e.stopPropagation();
                                      onViewSubmission(sub, task);
                                    }}
-                                   className={`w-full flex items-center justify-center gap-3 py-4 rounded-2xl font-black uppercase tracking-widest text-xs transition-all ${
+                                   className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all ${
                                      isGraded 
-                                       ? 'bg-blue-50 text-blue-600 border-2 border-blue-100 hover:bg-blue-100 active:scale-95' 
-                                       : 'bg-emerald-500 text-white shadow-[0_6px_0_0_#059669] hover:bg-emerald-400 active:translate-y-1 active:shadow-none'
+                                       ? 'bg-blue-50 text-blue-600 border-2 border-blue-100 hover:bg-blue-100' 
+                                       : 'bg-emerald-500 text-white shadow-[0_4px_0_0_#059669] hover:bg-emerald-400 active:translate-y-1 active:shadow-none'
                                    }`}
                                  >
-                                   {isGraded ? <Eye size={18} /> : <Target size={18} />}
-                                   {isGraded ? 'Review Work' : 'Grade Worksheet'}
+                                   {isGraded ? <Eye size={16} /> : <Target size={16} />}
+                                   {isGraded ? 'Review' : 'Grade'}
                                  </button>
                                )}
                                
@@ -644,10 +643,10 @@ const TasksView = ({
                                      e.stopPropagation();
                                      generateResponsePDF(sub, task, false);
                                    }}
-                                   className="flex items-center justify-center gap-2 py-3 rounded-2xl font-black uppercase tracking-widest text-[9px] border-2 border-gray-100 text-gray-400 hover:bg-gray-50 hover:text-gray-600 transition-all font-black"
+                                   className="flex items-center justify-center gap-2 py-2 rounded-xl font-black uppercase tracking-widest text-[8px] border-2 border-gray-100 text-gray-400 hover:bg-gray-50 hover:text-gray-600 transition-all"
                                  >
-                                   <Download size={14} />
-                                   Raw PDF
+                                   <Download size={12} />
+                                   Raw
                                  </button>
                                  {isGraded && (
                                    <button 
@@ -655,10 +654,10 @@ const TasksView = ({
                                        e.stopPropagation();
                                        generateResponsePDF(sub, task, true);
                                      }}
-                                     className="flex items-center justify-center gap-2 py-3 rounded-2xl font-black uppercase tracking-widest text-[9px] border-2 border-emerald-100 text-emerald-500 bg-emerald-50/50 hover:bg-emerald-50 transition-all shadow-sm font-black"
+                                     className="flex items-center justify-center gap-2 py-2 rounded-xl font-black uppercase tracking-widest text-[8px] border-2 border-emerald-100 text-emerald-500 bg-emerald-50/50 hover:bg-emerald-50 transition-all shadow-sm"
                                    >
-                                     <FileText size={14} />
-                                     Full Report
+                                     <FileText size={12} />
+                                     Report
                                     </button>
                                  )}
                                </div>
@@ -669,10 +668,10 @@ const TasksView = ({
                                      e.stopPropagation();
                                      onDeleteSubmission(sub.id);
                                    }}
-                                   className="flex items-center justify-center gap-2 py-3 text-red-300 hover:text-red-500 rounded-xl font-black uppercase tracking-widest text-[9px] transition-all w-full mt-2"
+                                   className="flex items-center justify-center gap-2 py-2 text-red-300 hover:text-red-500 rounded-xl font-black uppercase tracking-widest text-[8px] transition-all w-full"
                                  >
-                                   <Trash2 size={14} />
-                                   Purge Submission
+                                   <Trash2 size={12} />
+                                   Purge
                                  </button>
                                )}
                              </div>

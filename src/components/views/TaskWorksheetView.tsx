@@ -149,7 +149,7 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
           throw new Error("Gemini API Key is missing. If you are the developer, please ensure GEMINI_API_KEY is set in your environment variables (e.g. on Vercel Build Settings).");
         }
 
-        const ai = new GoogleGenAI({ apiKey });
+        const ai = new GoogleGenAI({ apiKey: apiKey });
         const taskKey = task.title.replace('y8 ', '');
         const rubricText = rubrics[taskKey] || "Grade based on general scientific principles.";
 
@@ -175,7 +175,7 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
         `;
 
         const aiResponse = await ai.models.generateContent({
-          model: "gemini-1.5-flash",
+          model: "gemini-3.1-flash-lite-preview",
           contents: [{ text: prompt }],
           config: { responseMimeType: "application/json" },
         });
@@ -398,7 +398,7 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
             <div className="space-y-4 border-b border-gray-100 pb-8">
               <div className="flex flex-col">
                 <h3 className="text-3xl font-black text-gray-800 tracking-tight uppercase leading-none">Interactive Worksheet</h3>
-                <span className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em] mt-2">Powered by Gemini 3.1 Pro</span>
+                <span className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em] mt-2">Powered by Gemini 3.1 Flash Lite Preview</span>
               </div>
               <p className="text-sm text-gray-500 font-medium leading-relaxed bg-gray-50 p-4 rounded-2xl border-2 border-gray-100/50 italic">
                 Refer to the document on the left and provide your answers below. Your progress is saved automatically.
