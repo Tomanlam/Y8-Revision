@@ -164,44 +164,68 @@ const TasksView = ({
 
   const generateResponsePDF = (submission: TaskSubmission, task: Task, includeFeedback: boolean = false) => {
     const doc = new jsPDF();
-    const primaryColor = [16, 185, 129] as [number, number, number]; // Emerald 500
+    const primaryColor: [number, number, number] = includeFeedback ? [16, 185, 129] : [59, 130, 246]; // Emerald for reports, Blue for raw submissions
     
-    // Top Color Bar
+    // Top Color Bar (High-contrast aesthetic)
     doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-    doc.rect(0, 0, 210, 6, 'F');
+    doc.rect(0, 0, 210, 8, 'F');
     
+    let currentY = 22;
+
     // Header
     doc.setFont("helvetica", "bold");
     doc.setFontSize(22);
     doc.setTextColor(31, 41, 55);
-    doc.text(includeFeedback ? "Marked Worksheet Report" : "Student Worksheet Submission", 15, 22);
+    doc.text(includeFeedback ? "Performance Analysis Report" : "Submission Export", 15, currentY);
     
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
+    doc.setFontSize(9);
     doc.setTextColor(156, 163, 175);
-    doc.text(`Generated on ${format(new Date(), 'PPP p')}`, 15, 28);
+    doc.text(`Generated on ${format(new Date(), 'PPP p')}`, 15, currentY + 6);
     
+    currentY += 15;
+
+    // NEW: Teacher's General Feedback at the START (if report)
+    if (includeFeedback && submission.feedback) {
+      doc.setFillColor(240, 253, 244); // Light emerald background
+      doc.rect(15, currentY, 180, 25, 'F');
+      
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(16, 185, 129);
+      doc.text("Teacher's General Feedback", 20, currentY + 10);
+      
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(55, 65, 81);
+      doc.text("Comprehensive review of accuracy, reasoning, and conceptual understanding demonstrated in this task.", 20, currentY + 16);
+      
+      currentY += 35;
+    }
+
     // Student & Task Info Box
     autoTable(doc, {
-      startY: 35,
+      startY: currentY,
       body: [
         ['Student Name:', submission.studentName],
-        ['Task Title:', task.title],
-        ['Date Submitted:', format(new Date(submission.completedAt), 'PPP p')],
-        ['Overall Score:', submission.results ? `${submission.results.score} / ${submission.results.total}` : 'Pending Grading']
+        ['Assignment:', task.title],
+        ['Completion Time:', format(new Date(submission.completedAt), 'PPP p')],
+        ['Performance Metric:', submission.results ? `${submission.results.score} / ${submission.results.total} (${Math.round((submission.results.score/submission.results.total)*100)}%)` : 'Awaiting Grading']
       ],
       theme: 'grid',
       styles: { 
         fontSize: 10, 
         cellPadding: 4,
-        lineColor: [255, 255, 255],
-        lineWidth: 1
+        lineColor: [230, 230, 230],
+        lineWidth: 0.1
       },
       columnStyles: { 
-        0: { fontStyle: 'bold', cellWidth: 40, fillColor: [243, 244, 246], textColor: [55, 65, 81] },
-        1: { fillColor: [249, 250, 251], textColor: [17, 24, 39] }
+        0: { fontStyle: 'bold', cellWidth: 45, fillColor: [249, 250, 251], textColor: [100, 116, 139] },
+        1: { fillColor: [255, 255, 255], textColor: [15, 23, 42], fontStyle: 'bold' }
       }
     });
+
+    currentY = (doc as any).lastAutoTable.finalY + 12;
 
     const tableData = task.worksheetQuestions?.map((q, idx) => {
       let response = submission.responses?.[q.id];
@@ -222,15 +246,15 @@ const TasksView = ({
       ];
 
       if (includeFeedback) {
-        row.push(feedback ? `[Score: ${feedback.score}]\n\n${feedback.feedback}` : '---');
+        row.push(feedback ? `[Points: ${feedback.score}]\n${feedback.feedback}` : '---');
       }
 
       return row;
     }) || [];
 
     autoTable(doc, {
-      startY: (doc as any).lastAutoTable.finalY + 10,
-      head: [includeFeedback ? ['#', 'Question', 'Student Response', 'Teacher Feedback'] : ['#', 'Question', 'Student Response']],
+      startY: currentY,
+      head: [includeFeedback ? ['#', 'Question Stem', 'Student Response', 'Targeted Feedback'] : ['#', 'Question Stem', 'Student Response']],
       body: tableData,
       theme: 'grid',
       headStyles: { 
@@ -243,35 +267,22 @@ const TasksView = ({
         fontSize: 9, 
         cellPadding: 5, 
         overflow: 'linebreak',
-        lineColor: [255, 255, 255], // White borders to create bubble effect
-        lineWidth: 2
+        lineColor: [255, 255, 255], 
+        lineWidth: 1.5
       },
       columnStyles: includeFeedback ? {
-        0: { cellWidth: 10, halign: 'center', fillColor: [249, 250, 251], textColor: [100, 100, 100] },
-        1: { cellWidth: 50, fillColor: [249, 250, 251], textColor: [31, 41, 55], fontStyle: 'bold' },
-        2: { cellWidth: 65, fillColor: [239, 246, 255], textColor: [30, 58, 138], fontStyle: 'bold' }, // Blue bubble for student
-        3: { cellWidth: 65, fillColor: [254, 242, 242], textColor: [153, 27, 27], fontStyle: 'italic' } // Red bubble for teacher
+        0: { cellWidth: 10, halign: 'center', fillColor: [248, 250, 252], textColor: [100, 116, 139] },
+        1: { cellWidth: 50, fillColor: [248, 250, 252], textColor: [31, 41, 55], fontStyle: 'bold' },
+        2: { cellWidth: 65, fillColor: [241, 245, 249], textColor: [30, 58, 138], fontStyle: 'bold' }, 
+        3: { cellWidth: 65, fillColor: [254, 242, 242], textColor: [153, 27, 27], fontStyle: 'italic' } 
       } : {
-        0: { cellWidth: 10, halign: 'center', fillColor: [249, 250, 251], textColor: [100, 100, 100] },
-        1: { cellWidth: 80, fillColor: [249, 250, 251], textColor: [31, 41, 55], fontStyle: 'bold' },
+        0: { cellWidth: 10, halign: 'center', fillColor: [248, 250, 252], textColor: [100, 116, 139] },
+        1: { cellWidth: 80, fillColor: [248, 250, 252], textColor: [31, 41, 55], fontStyle: 'bold' },
         2: { cellWidth: 90, fillColor: [239, 246, 255], textColor: [30, 58, 138], fontStyle: 'bold' }
       }
     });
 
-    if (includeFeedback && submission.feedback) {
-      const finalY = (doc as any).lastAutoTable.finalY || 150;
-      doc.setFontSize(14);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(16, 185, 129);
-      doc.text("Teacher's General Feedback", 15, finalY + 15);
-      
-      doc.setFontSize(9);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(156, 163, 175);
-      doc.text("All responses are verified using Gemini AI Lite according to official mark schemes.", 15, finalY + 22);
-    }
-
-    doc.save(`${includeFeedback?'Report':'Submission'}_${submission.studentName.replace(/\s+/g, '_')}_${task.title.substring(0,15).replace(/\s+/g, '_')}.pdf`);
+    doc.save(`${includeFeedback?'Report':'Raw_Submission'}_${submission.studentName.replace(/\s+/g, '_')}_${task.title.substring(0,15).replace(/\s+/g, '_')}.pdf`);
   };
 
   return (
@@ -695,7 +706,7 @@ const TasksView = ({
                       ${isSelectedDate ? 'ring-4 ring-offset-4 ring-emerald-400' : ''}
                       ${isCompleted 
                         ? 'bg-gradient-to-br from-emerald-500 to-teal-600' 
-                        : 'bg-gradient-to-br from-blue-500 to-indigo-600'}
+                        : 'bg-gradient-to-br from-orange-400 to-amber-600'}
                     `}
                   >
                     <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
