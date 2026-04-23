@@ -9,6 +9,8 @@ import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 import { Task, Question } from '../../types';
 import { GoogleGenAI } from "@google/genai";
+import { db } from '../../firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 // PDF worker setup - Use unpkg for production reliability
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -84,6 +86,44 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
   const rightPaneRef = useRef<HTMLDivElement>(null);
   const pageRefs = useRef<Record<number, HTMLDivElement | null>>({});
 
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [showMarkschemeEditor, setShowMarkschemeEditor] = useState(false);
+  const taskKey = task.title.replace('y8 ', '');
+  const [markscheme, setMarkscheme] = useState<string>(rubrics[taskKey] || "Grade based on general scientific principles.");
+  const [editingMarkscheme, setEditingMarkscheme] = useState<string>("");
+  const [isSavingMarkscheme, setIsSavingMarkscheme] = useState(false);
+
+  useEffect(() => {
+    if (isAdmin) {
+      const loadMarkscheme = async () => {
+        try {
+          const docRef = doc(db, 'markschemes', taskKey);
+          const snap = await getDoc(docRef);
+          if (snap.exists()) {
+            setMarkscheme(snap.data().content);
+          }
+        } catch (e) {
+          console.error("Error loading markscheme:", e);
+        }
+      };
+      loadMarkscheme();
+    }
+  }, [isAdmin, taskKey]);
+
+  const handleSaveMarkscheme = async () => {
+    setIsSavingMarkscheme(true);
+    try {
+      await setDoc(doc(db, 'markschemes', taskKey), { content: editingMarkscheme });
+      setMarkscheme(editingMarkscheme);
+      setShowMarkschemeEditor(false);
+    } catch (e) {
+      console.error(e);
+      alert("Failed to save markscheme.");
+    } finally {
+      setIsSavingMarkscheme(false);
+    }
+  };
+
   // Handle resize debounced
   useEffect(() => {
     const handleResize = () => setViewerWidth(window.innerWidth * 0.45);
@@ -129,8 +169,6 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
     return () => observer.disconnect();
   }, [numPages]);
 
-  const [showConfirm, setShowConfirm] = useState(false);
-
   const handleResponse = (questionId: string, value: string) => {
     setResponses(prev => ({ ...prev, [questionId]: value }));
   };
@@ -150,8 +188,6 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
         }
 
         const ai = new GoogleGenAI({ apiKey: apiKey });
-        const taskKey = task.title.replace('y8 ', '');
-        const rubricText = rubrics[taskKey] || "Grade based on general scientific principles.";
 
         const prompt = `
           You are an expert science teacher. 
@@ -162,7 +198,7 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
           Task: Grade the student's responses based STRICTLY on the provided rubric for y8 ${taskKey}.
           
           Grading Rubric for y8 ${taskKey}:
-          ${rubricText}
+          ${markscheme}
           
           Student Responses:
           ${JSON.stringify(responses, null, 2)}
@@ -280,6 +316,17 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
           
           {(isAdmin || (!readOnly && !submitted)) && (
             <div className="flex items-center gap-2">
+              {isAdmin && readOnly && (
+                <button
+                  onClick={() => {
+                    setEditingMarkscheme(markscheme);
+                    setShowMarkschemeEditor(true);
+                  }}
+                  className="bg-blue-50 text-blue-600 border border-blue-200 px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-100 transition-all shadow-[0_4px_0_0_#bfdbfe] active:shadow-none active:translate-y-1"
+                >
+                  Edit Markscheme
+                </button>
+              )}
               <button
                 disabled={isValidating}
                 onClick={() => setShowConfirm(true)}
@@ -304,6 +351,58 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
       </header>
 
       {/* Confirmation Modal */}
+      <AnimatePresence>
+        {showMarkschemeEditor && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-6">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-3xl p-8 max-w-2xl w-full shadow-2xl flex flex-col max-h-[90vh]"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="bg-blue-100 p-2 rounded-xl text-blue-500">
+                    <FileText size={24} />
+                  </div>
+                  <h3 className="text-xl font-black text-gray-800 uppercase tracking-tight">Edit Markscheme</h3>
+                </div>
+                <button onClick={() => setShowMarkschemeEditor(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
+                  <X size={24} />
+                </button>
+              </div>
+              <p className="text-sm text-gray-500 mb-4 font-medium italic">
+                Changes will be saved for this specific task <span className="font-bold text-gray-700">({task.title})</span> and used for future grading.
+              </p>
+              <textarea
+                value={editingMarkscheme}
+                onChange={(e) => setEditingMarkscheme(e.target.value)}
+                className="w-full flex-1 min-h-[300px] p-6 rounded-2xl border-2 border-slate-100 font-mono text-sm leading-relaxed resize-none focus:border-blue-500 outline-none custom-scrollbar mb-6 bg-slate-50/50 text-gray-800"
+                placeholder="Enter the markscheme or rubric here..."
+              />
+              <div className="flex justify-end gap-4 shrink-0">
+                <button
+                  onClick={() => setShowMarkschemeEditor(false)}
+                  className="px-6 py-3 rounded-xl font-black uppercase text-xs text-gray-400 hover:bg-gray-50 hover:text-gray-600 tracking-widest transition-colors"
+                  disabled={isSavingMarkscheme}
+                >
+                  Discard Changes
+                </button>
+                <button
+                  onClick={handleSaveMarkscheme}
+                  className="px-8 py-3 bg-blue-500 text-white rounded-xl font-black uppercase text-xs shadow-[0_4px_0_0_#2563eb] active:shadow-none active:translate-y-1 transition-all tracking-widest flex items-center justify-center gap-2 min-w-[160px]"
+                  disabled={isSavingMarkscheme}
+                >
+                  {isSavingMarkscheme ? (
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : "Save Changes"}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       <AnimatePresence>
         {showConfirm && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-6">
