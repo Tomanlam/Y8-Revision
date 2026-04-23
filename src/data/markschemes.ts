@@ -92,5 +92,54 @@ export const rubrics: Record<string, string> = {
     4. Zinc anomaly: Misread timer, mas mistake, metal mix-up.
     5. Difficulties: Keeping tube in place, timing accuracy.
     6. Improvement: Repeat experiments, accuracy in setup/measuring.
+  `,
+  'Metal Reactions': `
+    Topic: Y8 Metal Reactions
+    Answer Key for Metal Reactions Worksheet:
+    
+    Part A - Reaction type practice
+    1. Rusting:
+    1. Iron + water + oxygen → hydrated iron oxide
+    
+    2. Metal + oxygen → metal oxide:
+    1. Magnesium + oxygen → magnesium oxide
+    2. Zinc + oxygen → zinc oxide
+    3. Copper + oxygen → copper oxide
+    4. Calcium + oxygen → calcium oxide
+    
+    3. Metal + cold water → metal hydroxide + hydrogen:
+    1. Sodium + cold water → sodium hydroxide + hydrogen
+    2. Potassium + cold water → potassium hydroxide + hydrogen
+    3. Calcium + cold water → calcium hydroxide + hydrogen
+    4. example: Calcium + cold water → calcium hydroxide + hydrogen (Accept any metal from K, Na, Ca with correct products)
+    
+    4. Metal + hot steam → metal oxide + hydrogen:
+    1. Magnesium + hot steam → magnesium oxide + hydrogen
+    2. Zinc + hot steam → zinc oxide + hydrogen
+    3. Iron + hot steam → iron oxide + hydrogen
+    4. Aluminium + hot steam → aluminium oxide + hydrogen
+    
+    5. Metal + acid → metal salt + hydrogen:
+    1. Magnesium + hydrochloric acid → magnesium chloride + hydrogen
+    2. Zinc + sulfuric acid → zinc sulfate + hydrogen
+    3. Iron + ethanoic acid → iron ethanoate + hydrogen
+    4. Calcium + hydrochloric acid → calcium chloride + hydrogen
+    
+    Part B - Mixed practice: write the reactants
+    1. Magnesium + oxygen -> magnesium oxide
+    2. Zinc + sulfuric acid -> zinc sulfate + hydrogen
+    3. Sodium + cold water -> sodium hydroxide + hydrogen
+    4. Iron + hot steam -> iron oxide + hydrogen
+    5. Copper + oxygen -> copper oxide
+    6. Calcium + hydrochloric acid -> calcium chloride + hydrogen
+    7. Potassium + cold water -> potassium hydroxide + hydrogen
+    8. Aluminium + hot steam -> aluminium oxide + hydrogen
+    9. Lead + oxygen -> lead oxide
+    10. Magnesium + ethanoic acid -> magnesium ethanoate + hydrogen
+    11. Calcium + cold water -> calcium hydroxide + hydrogen
+    12. Zinc + hot steam -> zinc oxide + hydrogen
+    13. Iron + hydrochloric acid -> iron chloride + hydrogen
+    14. Sodium + oxygen -> sodium oxide
+    15. Aluminium + sulfuric acid -> aluminium sulfate + hydrogen
   `
 };

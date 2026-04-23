@@ -22,12 +22,12 @@ const UserStatsView: React.FC<UserStatsViewProps> = ({ units, sessionStats }) =>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {units.map((unit) => {
             const stats = sessionStats[unit.id] || { attemptedQuestions: [], masteredVocab: [] };
-            const attemptedCount = stats.attemptedQuestions.length;
-            const totalQuestions = unit.questions.length;
+            const attemptedCount = stats.attemptedQuestions?.length || 0;
+            const totalQuestions = unit.questions?.length || 0;
             const notAttemptedCount = totalQuestions - attemptedCount;
-            const masteredCount = stats.masteredVocab.length;
-            const totalVocab = unit.vocab.length;
-            const totalNotes = unit.concepts.length;
+            const masteredCount = stats.masteredVocab?.length || 0;
+            const totalVocab = unit.vocab?.length || 0;
+            const totalNotes = unit.concepts?.length || 0;
 
             return (
               <motion.div

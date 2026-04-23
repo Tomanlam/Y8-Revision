@@ -175,6 +175,15 @@ const Y8Splash = ({ onClose }: { onClose: () => void }) => {
 };
 
 const DashboardView: React.FC<DashboardViewProps> = (props) => {
+  const [isMobile, setIsMobile] = React.useState(false);
+
+  React.useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   const {
     isY8Open, setIsY8Open, setIsQRModalOpen, showEasterNotice, setShowEasterNotice,
     easterNoticeAgreed, setEasterNoticeAgreed, proceedToEasterAssignment,
@@ -403,7 +412,7 @@ const DashboardView: React.FC<DashboardViewProps> = (props) => {
                     const dateB = b.dueDate.includes('T') ? parseISO(b.dueDate) : new Date(b.dueDate + 'T00:00:00');
                     return dateA.getTime() - dateB.getTime();
                   })
-                  .slice(0, 3)
+                  .slice(0, isMobile ? 1 : 3)
                   .map(task => {
                     const taskDate = task.dueDate.includes('T') ? parseISO(task.dueDate) : new Date(task.dueDate + 'T00:00:00');
                     return (
@@ -479,18 +488,6 @@ const DashboardView: React.FC<DashboardViewProps> = (props) => {
           <p className="text-gray-400 font-bold text-sm uppercase tracking-widest">
             Made with <Heart className="inline text-red-400 mx-1" size={16} fill="currentColor" /> for Y8 Students
           </p>
-          <button 
-            onClick={() => {
-              if (isAdminLoggedIn) {
-                setMode('tasks');
-              } else {
-                setIsAdminOpen(true);
-              }
-            }}
-            className="bg-red-500 text-white px-6 py-2 rounded-xl font-black uppercase tracking-widest text-xs shadow-[0_4px_0_0_#b91c1c] active:shadow-none active:translate-y-1 transition-all"
-          >
-            Admin Dashboard
-          </button>
         </footer>
       </main>
 

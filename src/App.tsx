@@ -31,6 +31,7 @@ import { units } from './data';
 import { ExothermicReactionsWorksheet } from './data/worksheets/ExothermicReactions';
 import { EnergyChangesWorksheet } from './data/worksheets/EnergyChanges';
 import { IronRustWorksheet } from './data/worksheets/IronRust';
+import { MetalReactionsWorksheet } from './data/worksheets/MetalReactions';
 
 // Components
 import DashboardView from './components/views/DashboardView';
@@ -230,7 +231,8 @@ const ADMIN_EMAIL = 'tomanlam@gmail.com';
 const INITIAL_TASKS: Task[] = [
     ExothermicReactionsWorksheet,
     EnergyChangesWorksheet,
-    IronRustWorksheet
+    IronRustWorksheet,
+    MetalReactionsWorksheet
   ];
 
 function AppContent() {
@@ -722,8 +724,6 @@ function AppContent() {
 
           {mode === 'tasks' && <TasksView 
             key="tasks"
-            currentEventMessageIndex={currentEventMessageIndex} 
-            eventMessages={eventMessages} 
             showEasterNotice={showEasterNotice}
             setShowEasterNotice={setShowEasterNotice} 
             easterNoticeAgreed={easterNoticeAgreed}

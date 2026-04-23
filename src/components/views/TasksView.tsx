@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Star, CheckCircle2, ListChecks, Users, Clock, Plus, Trash2, Layout, Calendar as CalendarIcon, ChevronLeft, ChevronRight as ChevronRightIcon, Target, List, FileText, Eye, ArrowRight, User, Download } from 'lucide-react';
+import { Star, CheckCircle2, ListChecks, Users, Clock, Plus, Trash2, Layout, Calendar as CalendarIcon, ChevronLeft, ChevronRight as ChevronRightIcon, Target, List, FileText, Eye, ArrowRight, User, Download, Info } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, parseISO, startOfDay } from 'date-fns';
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -9,8 +9,6 @@ import { Task, TaskSubmission, Unit } from '../../types';
 
 interface TasksViewProps {
   key?: string;
-  currentEventMessageIndex: number;
-  eventMessages: string[];
   showEasterNotice: boolean;
   setShowEasterNotice: (val: boolean) => void;
   easterNoticeAgreed: boolean;
@@ -30,9 +28,8 @@ interface TasksViewProps {
   onWipeCleanSlate?: () => void;
 }
 
-const CalendarSection = ({ tasks, onStartTask }: { tasks: Task[], onStartTask: (task: Task) => void }) => {
+const CalendarSection = ({ tasks, selectedDate, setSelectedDate }: { tasks: Task[], selectedDate: Date, setSelectedDate: (d: Date) => void }) => {
   const [currentDate, setCurrentDate] = React.useState(new Date());
-  const [selectedDate, setSelectedDate] = React.useState(new Date());
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(monthStart);
@@ -47,143 +44,71 @@ const CalendarSection = ({ tasks, onStartTask }: { tasks: Task[], onStartTask: (
   const nextMonth = () => setCurrentDate(addMonths(currentDate, 1));
   const prevMonth = () => setCurrentDate(subMonths(currentDate, 1));
 
-  const tasksForSelectedDate = (tasks || []).filter(task => {
-    try {
-      const taskDate = task.dueDate.includes('T') ? parseISO(task.dueDate) : new Date(task.dueDate + 'T00:00:00');
-      return isSameDay(startOfDay(taskDate), startOfDay(selectedDate));
-    } catch {
-      return false;
-    }
-  });
-
   return (
-    <div className="bg-white border-2 border-gray-100 rounded-[2.5rem] p-8 shadow-sm">
-      <div className="flex flex-col md:flex-row gap-8">
-        {/* Calendar Side */}
-        <div className="flex-1">
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-blue-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-100">
-                <CalendarIcon size={24} />
-              </div>
-              <div>
-                <h3 className="text-xl font-black text-gray-800 tracking-tight leading-none uppercase">{format(currentDate, 'MMMM yyyy')}</h3>
-                <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Upcoming Tasks</span>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-xl">
-              <button onClick={prevMonth} className="p-2 hover:bg-white hover:shadow-sm rounded-lg transition-all text-gray-500">
-                <ChevronLeft size={20} />
-              </button>
-              <button onClick={nextMonth} className="p-2 hover:bg-white hover:shadow-sm rounded-lg transition-all text-gray-500">
-                <ChevronRightIcon size={20} />
-              </button>
-            </div>
+    <div className="bg-white border-2 border-gray-100 rounded-[2rem] p-6 shadow-sm">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-100/50">
+            <CalendarIcon size={20} />
           </div>
-
-          <div className="grid grid-cols-7 gap-2">
-            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-              <div key={day} className="text-center text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
-                {day}
-              </div>
-            ))}
-            {calendarDays.map((day, idx) => {
-              const dayTasks = (tasks || []).filter(t => {
-                try {
-                  const taskDate = t.dueDate.includes('T') ? parseISO(t.dueDate) : new Date(t.dueDate + 'T00:00:00');
-                  return isSameDay(startOfDay(taskDate), startOfDay(day));
-                } catch {
-                  return false;
-                }
-              });
-              const isSelected = isSameDay(day, selectedDate);
-              const isCurrentMonth = isSameMonth(day, monthStart);
-              const hasTasks = dayTasks.length > 0;
-
-              return (
-                <button
-                  key={idx}
-                  onClick={() => setSelectedDate(day)}
-                  className={`
-                    group relative aspect-square rounded-2xl flex flex-col items-center justify-center transition-all
-                    ${isSelected ? 'bg-blue-500 text-white shadow-lg shadow-blue-100 scale-105 z-10' : 'hover:bg-gray-50'}
-                    ${!isCurrentMonth ? 'opacity-20 translate-y-1 scale-95' : 'opacity-100'}
-                  `}
-                >
-                  <span className={`text-sm font-bold ${isSelected ? 'text-white' : 'text-gray-700'}`}>
-                    {format(day, 'd')}
-                  </span>
-                  {hasTasks && (
-                    <div className={`mt-1 flex gap-1 transform transition-transform group-hover:scale-125 ${isSelected ? 'opacity-100' : 'opacity-100'}`}>
-                      {dayTasks.slice(0, 3).map((_, i) => (
-                        <div key={i} className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-white' : 'bg-blue-400'}`} />
-                      ))}
-                    </div>
-                  )}
-                  {isSelected && (
-                    <motion.div layoutId="bubble" className="absolute inset-0 border-4 border-blue-500 rounded-2xl pointer-events-none" />
-                  )}
-                </button>
-              );
-            })}
+          <div>
+            <h3 className="text-sm font-black text-gray-800 tracking-tight leading-none uppercase">{format(currentDate, 'MMM yyyy')}</h3>
+            <span className="text-[9px] font-black text-blue-500 uppercase tracking-widest leading-none">Schedule</span>
           </div>
         </div>
-
-        {/* Tasks Preview Side */}
-        <div className="w-full md:w-80 bg-gray-50 rounded-3xl p-6 flex flex-col">
-          <div className="flex items-center justify-between mb-6">
-            <h4 className="font-black text-gray-800 uppercase text-xs tracking-widest">
-              {isSameDay(selectedDate, new Date()) ? 'Today' : format(selectedDate, 'MMM d, yyyy')}
-            </h4>
-            <span className="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
-              {tasksForSelectedDate.length} Tasks
-            </span>
-          </div>
-
-          <div className="flex-1 space-y-4 overflow-y-auto pr-2 custom-scrollbar max-h-[300px]">
-            {tasksForSelectedDate.length > 0 ? (
-              tasksForSelectedDate.map(task => (
-                <motion.div
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  key={task.id}
-                  className="bg-white p-5 rounded-2xl border-2 border-transparent hover:border-blue-200 transition-all cursor-pointer group shadow-sm"
-                  onClick={() => onStartTask(task)}
-                >
-                  <div className="flex items-start gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center font-black group-hover:bg-blue-500 group-hover:text-white transition-all">
-                      <Target size={20} />
-                    </div>
-                    <div className="flex-1">
-                      <h5 className="font-black text-gray-800 text-sm leading-tight mb-1">{task.title}</h5>
-                      <p className="text-gray-500 text-[10px] font-bold uppercase truncate max-w-[120px]">
-                        {task.description}
-                      </p>
-                    </div>
-                    <div className="self-center">
-                      <ChevronRightIcon size={16} className="text-gray-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all" />
-                    </div>
-                  </div>
-                </motion.div>
-              ))
-            ) : (
-              <div className="flex flex-col items-center justify-center h-full text-center p-8">
-                <div className="bg-white p-4 rounded-3xl shadow-sm mb-4">
-                  <Layout size={32} className="text-gray-300" />
-                </div>
-                <p className="text-gray-400 font-bold text-xs uppercase tracking-widest">No tasks scheduled for this day</p>
-              </div>
-            )}
-          </div>
+        <div className="flex items-center gap-1 bg-gray-50 p-1 rounded-lg border border-gray-100">
+          <button onClick={prevMonth} className="p-1.5 hover:bg-white hover:shadow-sm rounded-md transition-all text-gray-400 hover:text-blue-500">
+            <ChevronLeft size={16} />
+          </button>
+          <button onClick={nextMonth} className="p-1.5 hover:bg-white hover:shadow-sm rounded-md transition-all text-gray-400 hover:text-blue-500">
+            <ChevronRightIcon size={16} />
+          </button>
         </div>
+      </div>
+
+      <div className="grid grid-cols-7 gap-1">
+        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
+          <div key={`cal-header-${day}-${i}`} className="text-center text-[8px] font-black text-gray-300 uppercase tracking-widest mb-1">
+            {day}
+          </div>
+        ))}
+        {calendarDays.map((day, idx) => {
+          const dayTasks = (tasks || []).filter(t => {
+            try {
+              const taskDate = t.dueDate.includes('T') ? parseISO(t.dueDate) : new Date(t.dueDate + 'T00:00:00');
+              return isSameDay(startOfDay(taskDate), startOfDay(day));
+            } catch {
+              return false;
+            }
+          });
+          const isSelected = isSameDay(day, selectedDate);
+          const isToday = isSameDay(day, new Date());
+          const isCurrentMonth = isSameMonth(day, monthStart);
+          const hasTasks = dayTasks.length > 0;
+
+          return (
+            <button
+              key={idx}
+              onClick={() => setSelectedDate(day)}
+              className={`
+                group relative aspect-square rounded-xl flex flex-col items-center justify-center transition-all text-[11px] font-bold
+                ${isSelected ? 'bg-blue-500 text-white shadow-md z-10 scale-105' : isToday ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'}
+                ${!isCurrentMonth ? 'opacity-20 scale-90' : 'opacity-100'}
+              `}
+            >
+              <span>{format(day, 'd')}</span>
+              {hasTasks && !isSelected && (
+                <div className="absolute bottom-1 w-1 h-1 rounded-full bg-blue-400" />
+              )}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
 };
 
 const TasksView = ({ 
-  currentEventMessageIndex, 
-  eventMessages, 
   showEasterNotice,
   setShowEasterNotice,
   easterNoticeAgreed,
@@ -202,7 +127,7 @@ const TasksView = ({
   onDeleteSubmission,
   onWipeCleanSlate
 }: TasksViewProps) => {
-  const [viewType, setViewType] = React.useState<'agenda' | 'monthly'>('agenda');
+  const [selectedDate, setSelectedDate] = React.useState(new Date());
   const [isCreatorOpen, setIsCreatorOpen] = React.useState(false);
   const [activeTab, setActiveTab] = React.useState<'tasks' | 'submissions'>('tasks');
   const [submissionFilter, setSubmissionFilter] = React.useState('');
@@ -390,26 +315,16 @@ const TasksView = ({
             </div>
           )}
 
-          {activeTab === 'tasks' && (
-            <div className="bg-gray-100/50 p-1 rounded-2xl flex items-center shadow-inner border border-gray-200">
-              <button 
-                onClick={() => setViewType('agenda')}
-                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${
-                  viewType === 'agenda' ? 'bg-white text-emerald-600 shadow-sm border border-emerald-100' : 'text-gray-400 hover:text-gray-600'
-                }`}
-              >
-                <List size={14} />
-                List
-              </button>
-              <button 
-                onClick={() => setViewType('monthly')}
-                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${
-                  viewType === 'monthly' ? 'bg-white text-emerald-600 shadow-sm border border-emerald-100' : 'text-gray-400 hover:text-gray-600'
-                }`}
-              >
-                <CalendarIcon size={14} />
-                Monthly
-              </button>
+          {activeTab === 'submissions' && (
+            <div className="w-full md:w-auto relative">
+               <input 
+                 type="text"
+                 placeholder="Search students or tasks..."
+                 value={submissionFilter}
+                 onChange={(e) => setSubmissionFilter(e.target.value)}
+                 className="w-full md:w-64 pl-12 pr-4 py-3 rounded-2xl border-2 border-gray-50 font-bold focus:border-emerald-500 outline-none transition-all bg-gray-50/50"
+               />
+               <List className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
             </div>
           )}
 
@@ -583,16 +498,6 @@ const TasksView = ({
              <div className="flex-1 text-center md:text-left">
                <h3 className="text-xl font-black text-gray-800 uppercase tracking-tight">Grading Queue</h3>
                <p className="text-gray-500 font-medium">Verify submissions and provide automated feedback with Gemini.</p>
-             </div>
-             <div className="w-full md:w-auto relative">
-                <input 
-                  type="text"
-                  placeholder="Search students or tasks..."
-                  value={submissionFilter}
-                  onChange={(e) => setSubmissionFilter(e.target.value)}
-                  className="w-full md:w-64 pl-12 pr-4 py-3 rounded-2xl border-2 border-gray-50 font-bold focus:border-emerald-500 outline-none transition-all bg-gray-50/50"
-                />
-                <List className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
              </div>
            </div>
            
@@ -770,130 +675,100 @@ const TasksView = ({
              })}
            </div>
         </div>
-      ) : viewType === 'monthly' ? (
-        <CalendarSection tasks={tasks} onStartTask={onStartTask} />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Event Mode Card */}
-          <motion.div 
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => setShowEasterNotice(true)}
-            className="bg-gradient-to-r from-emerald-500 to-teal-600 rounded-[2rem] p-5 md:p-6 shadow-lg text-white cursor-pointer relative overflow-hidden group h-full flex flex-col"
-          >
-            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-              <Star size={100} />
-            </div>
-            <div className="relative z-10 flex flex-col h-full">
-                <div className="flex items-center justify-between gap-4 mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="bg-white/20 w-10 h-10 rounded-xl backdrop-blur-sm flex items-center justify-center border border-white/20">
-                      <Star className="text-white" size={20} />
-                    </div>
-                    <div>
-                      <h2 className="text-lg font-black uppercase tracking-tight leading-none">Event Mode</h2>
-                      <p className="text-emerald-100 font-bold text-[10px] uppercase tracking-widest mt-1 opacity-80">Special Content</p>
-                    </div>
-                  </div>
-                  <div className="bg-white text-teal-600 p-2 rounded-xl shadow-sm">
-                    <ArrowRight size={16} />
-                  </div>
-                </div>
+        <div className="flex flex-col lg:flex-row gap-8">
+          <div className="flex-1">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
+              {tasks.map(task => {
+                const isCompleted = mySubmissions.some(sub => sub.taskId === task.id);
+                const submission = mySubmissions.find(sub => sub.taskId === task.id);
+                const taskDate = task.dueDate.includes('T') ? parseISO(task.dueDate) : new Date(task.dueDate + 'T00:00:00');
+                const isSelectedDate = isSameDay(startOfDay(taskDate), startOfDay(selectedDate));
                 
-                <div className="bg-white/10 rounded-2xl p-4 border border-white/10 backdrop-blur-sm flex-1 flex items-center min-h-[80px]">
-                  <div className="relative w-full">
-                    <AnimatePresence mode="wait">
-                      <motion.p 
-                        key={currentEventMessageIndex}
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        className="text-white font-medium text-sm leading-tight italic"
-                      >
-                        "{eventMessages[currentEventMessageIndex]}"
-                      </motion.p>
-                    </AnimatePresence>
-                  </div>
-                </div>
-                
-                <div className="mt-4 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-emerald-100">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-200 animate-pulse" />
-                  <span>Limited Time Event</span>
-                </div>
-            </div>
-          </motion.div>
-
-          {tasks.map(task => {
-            const isCompleted = mySubmissions.some(sub => sub.taskId === task.id);
-            const submission = mySubmissions.find(sub => sub.taskId === task.id);
-            
-            return (
-              <motion.div 
-                key={task.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-white p-6 rounded-3xl border-2 border-gray-100 shadow-sm relative group flex flex-col"
-              >
-                <div className="flex justify-between items-start mb-4">
-                  <div className="bg-emerald-50 p-3 rounded-2xl text-emerald-500">
-                    <Layout size={24} />
-                  </div>
-                  {isCompleted ? (
-                    <div className="bg-emerald-100 text-emerald-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1">
-                        <CheckCircle2 size={12} /> Done
-                    </div>
-                  ) : (
-                    <div className="bg-orange-100 text-orange-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
-                      Pending
-                    </div>
-                  )}
-                </div>
-                <h3 className="text-xl font-black text-gray-800 uppercase tracking-tight mb-2 truncate">{task.title}</h3>
-                <p className="text-gray-400 text-sm font-bold mb-6 line-clamp-2">{task.description || "No additional instructions provided."}</p>
-                
-                <div className="flex items-center justify-between mt-auto">
-                  <div>
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Due Date</p>
-                    <p className="text-sm font-black text-gray-600">{new Date(task.dueDate).toLocaleDateString()}</p>
-                  </div>
-                  {isCompleted ? (
-                    <div className="text-right">
-                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Score</p>
-                      <p className="text-sm font-black text-emerald-600">{submission?.results?.score} / {submission?.results?.total}</p>
-                    </div>
-                  ) : (
-                    <button 
-                      onClick={() => onStartTask(task)}
-                      className="bg-emerald-500 text-white px-4 py-2 rounded-xl font-black uppercase tracking-widest text-[10px] shadow-[0_4px_0_0_#059669] active:translate-y-1 active:shadow-none transition-all"
-                    >
-                      Start
-                    </button>
-                  )}
-                </div>
-
-                {isAdmin && (
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDeleteTask(task.id);
-                    }}
-                    className="absolute -top-2 -right-2 w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-xl z-[30] cursor-pointer hover:scale-110 active:scale-95"
+                return (
+                  <motion.div 
+                    key={task.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    whileHover={{ y: -5 }}
+                    className={`rounded-[2rem] p-5 md:p-6 shadow-lg text-white cursor-pointer relative overflow-hidden group h-full flex flex-col min-h-[200px] transition-all
+                      ${isSelectedDate ? 'ring-4 ring-offset-4 ring-emerald-400' : ''}
+                      ${isCompleted 
+                        ? 'bg-gradient-to-br from-emerald-500 to-teal-600' 
+                        : 'bg-gradient-to-br from-blue-500 to-indigo-600'}
+                    `}
                   >
-                    <Trash2 size={14} />
-                  </button>
-                )}
-              </motion.div>
-            );
-          })}
+                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                      {isCompleted ? <CheckCircle2 size={80} /> : <Clock size={80} />}
+                    </div>
+                    
+                    <div className="relative z-10 flex flex-col h-full">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="bg-white/20 w-10 h-10 rounded-xl backdrop-blur-sm flex items-center justify-center border border-white/20">
+                          {isCompleted ? <CheckCircle2 size={20} /> : <Target size={20} />}
+                        </div>
+                        {isCompleted && (
+                          <div className="bg-white/30 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest backdrop-blur-sm">
+                            Done
+                          </div>
+                        )}
+                      </div>
 
-           {tasks.length === 0 && !isAdmin && (
-            <div className="col-span-full py-12 flex flex-col items-center justify-center text-center bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200">
-               <Clock size={48} className="text-gray-300 mb-4" />
-               <h3 className="font-black text-gray-400 uppercase tracking-tight">No tasks assigned yet</h3>
-             </div>
-           )}
-         </div>
-       )}
+                      <h3 className="text-lg font-black uppercase tracking-tight leading-tight mb-2 line-clamp-2">{task.title}</h3>
+                      <p className="text-white/70 text-[10px] font-bold mb-6 line-clamp-2 uppercase tracking-wide">
+                        {task.description || "Active Assignment"}
+                      </p>
+                      
+                      <div className="mt-auto pt-4 border-t border-white/10 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Clock size={12} className="text-white/60" />
+                          <span className="text-[10px] font-black uppercase tracking-widest">{format(taskDate, 'MMM d')}</span>
+                        </div>
+                        {isCompleted ? (
+                          <div className="text-right">
+                             <p className="text-[8px] font-black text-white/50 uppercase tracking-widest mb-0.5">Grade</p>
+                             <p className="text-xs font-black">{submission?.results?.score}/{submission?.results?.total}</p>
+                          </div>
+                        ) : (
+                          <button 
+                            onClick={() => onStartTask(task)}
+                            className="bg-white text-blue-600 p-2 rounded-xl hover:scale-110 active:scale-95 transition-all shadow-sm"
+                          >
+                            <ArrowRight size={14} />
+                          </button>
+                        )}
+                      </div>
+
+                      {isAdmin && (
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDeleteTask(task.id);
+                          }}
+                          className="absolute -top-1 -right-1 w-7 h-7 bg-white/20 hover:bg-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all backdrop-blur-sm"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      )}
+                    </div>
+                  </motion.div>
+                );
+              })}
+
+              {tasks.length === 0 && !isAdmin && (
+                <div className="col-span-full py-12 flex flex-col items-center justify-center text-center bg-white rounded-3xl border-2 border-dashed border-gray-100">
+                   <Clock size={48} className="text-gray-200 mb-4" />
+                   <h3 className="font-black text-gray-300 uppercase tracking-widest text-xs">No tasks issued yet</h3>
+                 </div>
+               )}
+            </div>
+          </div>
+
+          <div className="w-full lg:w-80 lg:sticky lg:top-24 h-fit space-y-6">
+            <CalendarSection tasks={tasks} selectedDate={selectedDate} setSelectedDate={setSelectedDate} />
+          </div>
+        </div>
+      )}
 
       <AnimatePresence>
         {showEasterNotice && (
