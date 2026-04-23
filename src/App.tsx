@@ -405,7 +405,7 @@ function AppContent() {
 
       setTasks(combinedTasks);
     });
-  }, []);
+  }, [currentUser]);
 
   // Fetch Submissions for student
   useEffect(() => {
