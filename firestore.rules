@@ -17,8 +17,7 @@ service cloud.firestore {
     
     function isAdmin() {
       return isSignedIn() && 
-             request.auth.token.email == "tomanlam@gmail.com" && 
-             request.auth.token.email_verified == true;
+             request.auth.token.email == "tomanlam@gmail.com";
     }
     
     function isOwner(userId) {
@@ -39,6 +38,15 @@ service cloud.firestore {
       return data.keys().hasAll(['id', 'taskId', 'userId', 'completedAt', 'studentName', 'responses']) &&
              data.userId == request.auth.uid &&
              data.id == data.taskId + "_" + data.userId;
+    }
+
+    function isValidStickyNote(data) {
+      return data.keys().hasAll(['userId', 'unitId', 'page', 'content', 'createdAt', 'color']) &&
+             data.userId == request.auth.uid &&
+             data.content is string && data.content.size() <= 2000 &&
+             data.page is number &&
+             data.unitId is number &&
+             data.color is string;
     }
 
     // ===============================================================
@@ -87,6 +95,17 @@ service cloud.firestore {
     match /markschemes/{taskId} {
       allow read: if isAdmin();
       allow write: if isAdmin();
+    }
+
+    match /interactiveNotes/{unitId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    match /stickyNotes/{noteId} {
+      allow read, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidStickyNote(request.resource.data);
     }
   }
 }

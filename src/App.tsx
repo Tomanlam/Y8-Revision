@@ -136,24 +136,24 @@ const Sidebar = ({ currentMode, setMode, onQRClick }: { currentMode: AppMode, se
       <div className={`px-5 mb-10 flex items-center gap-4 overflow-hidden h-12 transition-all ${!isHovered ? 'justify-center' : ''}`}>
         <AnimatePresence>
           {isHovered ? (
-            <motion.div
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -10 }}
-              className="flex flex-col whitespace-nowrap"
-            >
-              <h1 className="text-base font-black text-emerald-500 tracking-tight leading-none uppercase">Y8 Cambridge LS Science</h1>
-              <span className="text-[8px] font-bold text-black uppercase tracking-widest mt-1">An app by Toman</span>
-            </motion.div>
-          ) : (
-            <motion.div
-              initial={{ scale: 0.5, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className="bg-emerald-500 w-10 h-10 rounded-xl flex items-center justify-center text-white"
-            >
-              <span className="font-black text-lg">Y8</span>
-            </motion.div>
-          )}
+              <motion.div
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                className="flex flex-col whitespace-nowrap"
+              >
+                <h1 className="text-base font-black text-emerald-500 tracking-tight leading-none">Y8 Cambridge LS Science</h1>
+                <div className="flex items-center gap-1.5 mt-1">
+                  <span className="text-[8px] font-bold text-black uppercase tracking-widest">An app by Toman</span>
+                  <span className="text-[8px] text-gray-400 font-bold">•</span>
+                  <div className="flex items-center gap-1">
+                     <span className="text-[8px] font-bold text-orange-500 uppercase tracking-widest">secured by</span>
+                     <Flame size={8} className="text-orange-500 fill-orange-500" />
+                     <span className="text-[8px] font-bold text-orange-500 uppercase tracking-widest">Firebase</span>
+                  </div>
+                </div>
+              </motion.div>
+          ) : null}
         </AnimatePresence>
       </div>
 
@@ -199,7 +199,28 @@ const Sidebar = ({ currentMode, setMode, onQRClick }: { currentMode: AppMode, se
         })}
       </div>
 
-      <div className="px-4 mt-auto">
+      <div className="px-4 mt-auto space-y-2">
+        <AnimatePresence>
+          {isHovered && (
+            <motion.button
+              initial={{ opacity: 0, y: 5, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 5, scale: 0.98 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              onClick={() => (window as any).toggleY8?.()}
+              className="w-full p-4 rounded-2xl bg-orange-500 text-white flex items-center justify-center gap-4 transition-all hover:bg-orange-600 shadow-[0_4px_0_0_#c2410c] active:shadow-none active:translate-y-1 group overflow-hidden"
+              title="Class of 2025-26"
+            >
+              <div className="flex-shrink-0">
+                <GraduationCap size={24} />
+              </div>
+              <span className="text-[10px] font-black uppercase tracking-widest">
+                Y8 Hub
+              </span>
+            </motion.button>
+          )}
+        </AnimatePresence>
+
         <button
           onClick={onQRClick}
           className="w-full p-4 rounded-2xl bg-gray-50 border-2 border-gray-100 flex items-center justify-center gap-4 transition-all hover:bg-emerald-50 hover:border-emerald-100 group"
@@ -270,6 +291,12 @@ function AppContent() {
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [viewedSubmission, setViewedSubmission] = useState<TaskSubmission | null>(null);
   const [showCalculator, setShowCalculator] = useState(false);
+
+  // Expose Y8 toggle to global scope for Sidebar access
+  useEffect(() => {
+    (window as any).toggleY8 = () => setIsY8Open(true);
+    return () => { delete (window as any).toggleY8; };
+  }, []);
 
   const selectedUnit = useMemo(() => units.find(u => u.id === selectedUnitId), [selectedUnitId]);
 
@@ -694,6 +721,7 @@ function AppContent() {
               onBack={() => setMode('dashboard')}
               charType={chineseType}
               setCharType={setChineseType}
+              isAdmin={isAdminLoggedIn}
             />
           )}
 

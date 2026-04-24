@@ -6,7 +6,7 @@ import {
   CheckCircle2, XCircle, Trophy, Trash2, Lock, FileText, 
   Download, Star, Zap, Chrome, LayoutGrid, Info, ArrowRight, RefreshCw,
   QrCode, Edit, Database, LogOut, User, Calendar as CalendarIcon, ChevronRight as ChevronRightIcon, Target,
-  Crown, Calculator, Clock
+  Crown, Calculator, Clock, Flame
 } from 'lucide-react';
 import { Unit, ChallengeRecord, ChallengeResponse, Question, UserProfile, Task, TaskSubmission } from '../../types';
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, parseISO, startOfDay } from 'date-fns';
@@ -216,6 +216,8 @@ const DashboardView: React.FC<DashboardViewProps> = (props) => {
 
   const nextDeadline = nextTask ? format(nextTask.dueDate.includes('T') ? parseISO(nextTask.dueDate) : new Date(nextTask.dueDate + 'T00:00:00'), 'MMM do') : 'None';
 
+  const [showStats, setShowStats] = React.useState(true);
+
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       <AnimatePresence>
@@ -225,12 +227,15 @@ const DashboardView: React.FC<DashboardViewProps> = (props) => {
       <header className="bg-white border-b-2 border-gray-200 p-4 sticky top-0 z-10">
         <div className="max-w-5xl mx-auto flex justify-between items-center px-4">
           <div className="flex flex-col">
-            <h1 className="text-2xl font-black text-emerald-500 tracking-tight leading-none">Y8 Cambridge LS Science</h1>
-            <div className="flex items-center gap-1 mt-1">
-              <span className="text-[10px] font-bold text-black uppercase tracking-widest leading-none">An app by Toman</span>
-              <span className="text-[10px] font-bold text-orange-500 uppercase tracking-widest flex items-center gap-1">
-                | secured by <img src="/Firebase.png" alt="Firebase" className="h-2.5 w-auto inline-block" />
-              </span>
+            <h1 className="text-xl font-black text-emerald-500 tracking-tight leading-none">Y8 Cambridge LS Science</h1>
+            <div className="flex items-center gap-2 mt-1 px-1">
+              <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none">An app by Toman</span>
+              <span className="text-[9px] text-gray-300 font-bold">•</span>
+              <div className="flex items-center gap-1.5 transition-all">
+                <span className="text-[9px] font-black text-orange-500 uppercase tracking-widest leading-none">secured by</span>
+                <Flame size={12} className="text-orange-500 fill-orange-500" />
+                <span className="text-[9px] font-black text-orange-500 uppercase tracking-widest leading-none">Firebase</span>
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -255,9 +260,18 @@ const DashboardView: React.FC<DashboardViewProps> = (props) => {
                   <span className="text-xs font-bold text-gray-700 truncate max-w-[120px]">{currentUser.displayName || currentUser.email}</span>
                 </div>
                 {currentUser.photoURL ? (
-                  <img src={currentUser.photoURL} alt="User" className="w-8 h-8 rounded-full border-2 border-emerald-100" referrerPolicy="no-referrer" />
+                  <img 
+                    src={currentUser.photoURL} 
+                    alt="User" 
+                    className="w-8 h-8 rounded-full border-2 border-emerald-100 cursor-pointer hover:scale-110 active:scale-95 transition-all shadow-sm" 
+                    referrerPolicy="no-referrer" 
+                    onClick={() => setShowStats(!showStats)}
+                  />
                 ) : (
-                  <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold text-xs">
+                  <div 
+                    onClick={() => setShowStats(!showStats)}
+                    className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold text-xs cursor-pointer hover:bg-emerald-200"
+                  >
                     {currentUser.displayName?.charAt(0) || 'U'}
                   </div>
                 )}
@@ -280,12 +294,6 @@ const DashboardView: React.FC<DashboardViewProps> = (props) => {
                 <span>Login</span>
               </button>
             )}
-            <button 
-              onClick={() => setIsY8Open(true)}
-              className="bg-orange-500 text-white px-4 py-1.5 rounded-full font-black text-sm uppercase tracking-widest shadow-[0_4px_0_0_#c2410c] active:shadow-none active:translate-y-1 transition-all"
-            >
-              Y8
-            </button>
           </div>
         </div>
       </header>
@@ -393,100 +401,76 @@ const DashboardView: React.FC<DashboardViewProps> = (props) => {
         )}
       </AnimatePresence>
 
-      <main className="max-w-7xl mx-auto p-6 space-y-8 mt-4 pb-24">
-        <motion.div 
-          animate={outstandingTasks.length > 0 ? {
-            boxShadow: ["0 0 0 0px rgba(16, 185, 129, 0)", "0 0 0 10px rgba(16, 185, 129, 0.2)", "0 0 0 0px rgba(16, 185, 129, 0)"]
-          } : {}}
-          transition={outstandingTasks.length > 0 ? {
-            duration: 2,
-            repeat: Infinity,
-            ease: "easeInOut"
-          } : {}}
-          className="bg-gradient-to-r from-emerald-500 to-teal-600 rounded-[2rem] p-8 shadow-lg text-white"
-        >
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
-            <div>
-              <h2 className="text-3xl font-black uppercase tracking-tight mb-1">
-                {currentUser ? `Welcome back, ${currentUser.displayName?.split(' ')[0]}` : 'Welcome back'}
-              </h2>
-              <p className="text-emerald-100 font-medium text-sm">{format(new Date(), 'EEEE, MMMM do yyyy')}</p>
-            </div>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 flex-1 lg:max-w-2xl">
-              <div className="bg-white/20 p-4 rounded-3xl backdrop-blur-sm border border-white/20 flex flex-col justify-center">
-                <div className="flex items-center gap-2 mb-1">
-                  <div className="bg-white/30 p-1 rounded-lg">
-                    <Target size={14} className="text-white" />
-                  </div>
-                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-50">Tasks Left</span>
+      <main className="max-w-7xl mx-auto p-4 space-y-2 pb-24">
+        <AnimatePresence>
+          {showStats && (
+            <motion.div 
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden"
+            >
+              <motion.div 
+                onClick={() => setMode('tasks')}
+                whileHover={{ scale: 1.005, cursor: 'pointer' }}
+                whileTap={{ scale: 0.995 }}
+                animate={outstandingTasks.length > 0 ? {
+                  boxShadow: ["0 0 0 0px rgba(16, 185, 129, 0)", "0 0 0 10px rgba(16, 185, 129, 0.1)", "0 0 0 0px rgba(16, 185, 129, 0)"]
+                } : {}}
+                transition={outstandingTasks.length > 0 ? {
+                  duration: 3,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                } : {}}
+                className="bg-gradient-to-r from-emerald-500 to-teal-600 rounded-2xl p-5 shadow-xl text-white relative overflow-hidden group mb-2"
+              >
+                <div className="absolute top-0 right-0 p-6 opacity-10 pointer-events-none group-hover:scale-110 transition-transform duration-500">
+                  <Target size={80} />
                 </div>
-                <div className="text-3xl font-black">{outstandingTasks.length}</div>
-              </div>
 
-              <div className="bg-white/20 p-4 rounded-3xl backdrop-blur-sm border border-white/20 flex flex-col justify-center">
-                <div className="flex items-center gap-2 mb-1">
-                  <div className="bg-white/30 p-1 rounded-lg">
-                    <CalendarIcon size={14} className="text-white" />
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 relative z-10">
+                  <div>
+                    <h2 className="text-xl font-black tracking-tight mb-0.5">
+                      {currentUser ? `Welcome Back, ${currentUser.displayName?.split(' ')[0]}` : 'Welcome Back'}
+                    </h2>
+                    <p className="text-emerald-100 font-bold text-[9px] uppercase tracking-widest opacity-80">{format(new Date(), 'EEEE, MMMM do yyyy')}</p>
                   </div>
-                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-50">Next Deadline</span>
-                </div>
-                <div className="text-xl font-black truncate">{nextDeadline}</div>
-              </div>
-
-              <div className="bg-white/20 p-4 rounded-3xl backdrop-blur-sm border border-white/20 flex flex-col justify-center relative overflow-hidden group">
-                <div className="flex items-center gap-2 mb-1">
-                  <div className="bg-white/30 p-1 rounded-lg">
-                    <FileText size={14} className="text-white" />
-                  </div>
-                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-50">Graded Reports</span>
-                </div>
-                <div className="text-xl font-black flex items-center gap-2">
-                  {gradedReports.length}
-                  {gradedReports.length > 0 && (
-                    <span className="flex h-2 w-2 rounded-full bg-orange-400 animate-ping" />
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          {outstandingTasks.length > 0 && (
-            <div className="mt-8 pt-8 border-t border-white/20">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xs font-black uppercase tracking-widest text-emerald-100 flex items-center gap-2">
-                  <Clock size={14} /> Outstanding Work
-                </h3>
-                <button 
-                  onClick={() => setMode('tasks')}
-                  className="text-[10px] font-bold uppercase tracking-widest hover:text-emerald-200 transition-colors flex items-center gap-1"
-                >
-                  View Tasks <ChevronRightIcon size={12} />
-                </button>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {outstandingTasks
-                  .slice(0, isMobile ? 1 : 3)
-                  .map(task => {
-                    const taskDate = task.dueDate.includes('T') ? parseISO(task.dueDate) : new Date(task.dueDate + 'T00:00:00');
-                    return (
-                      <div key={task.id} className="bg-white/10 hover:bg-white/20 transition-all rounded-2xl p-4 flex items-center justify-between gap-4 border border-white/10 group cursor-pointer" onClick={() => { setMode('tasks'); onStartTask(task); }}>
-                        <div className="truncate flex-1">
-                          <p className="font-black truncate text-sm" title={task.title}>{task.title}</p>
-                          <p className="text-[10px] font-bold text-emerald-100 uppercase tracking-widest mt-1 opacity-80">
-                            Due {format(taskDate, 'MMM do')}
-                          </p>
-                        </div>
-                        <div className="bg-white text-teal-600 p-2 rounded-xl group-hover:scale-110 transition-transform shadow-sm">
-                          <ArrowRight size={16} />
-                        </div>
+                  
+                  <div className="grid grid-cols-3 gap-2 flex-1 lg:max-w-xl">
+                    <div className="bg-white/10 hover:bg-white/15 transition-colors p-2.5 rounded-xl backdrop-blur-md border border-white/10 flex flex-col justify-center">
+                      <div className="flex items-center gap-2 mb-0.5 opacity-70">
+                        <Target size={10} className="text-white" />
+                        <span className="text-[8px] font-black uppercase tracking-widest">Tasks</span>
                       </div>
-                    );
-                  })}
-              </div>
-            </div>
+                      <div className="text-lg font-black">{outstandingTasks.length}</div>
+                    </div>
+
+                    <div className="bg-white/10 hover:bg-white/15 transition-colors p-2.5 rounded-xl backdrop-blur-md border border-white/10 flex flex-col justify-center">
+                      <div className="flex items-center gap-2 mb-0.5 opacity-70">
+                        <CalendarIcon size={10} className="text-white" />
+                        <span className="text-[8px] font-black uppercase tracking-widest">Next</span>
+                      </div>
+                      <div className="text-lg font-black truncate">{nextDeadline}</div>
+                    </div>
+
+                    <div className="bg-white/10 hover:bg-white/15 transition-colors p-2.5 rounded-xl backdrop-blur-md border border-white/10 flex flex-col justify-center relative overflow-hidden group">
+                      <div className="flex items-center gap-2 mb-0.5 opacity-70">
+                        <FileText size={10} className="text-white" />
+                        <span className="text-[8px] font-black uppercase tracking-widest">Graded</span>
+                      </div>
+                      <div className="text-lg font-black flex items-center gap-2">
+                        {gradedReports.length}
+                        {gradedReports.length > 0 && (
+                          <span className="flex h-1 w-1 rounded-full bg-orange-400 animate-ping" />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
           )}
-        </motion.div>
+        </AnimatePresence>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {units.map((unit) => (
