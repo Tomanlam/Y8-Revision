@@ -24,6 +24,7 @@ interface TasksViewProps {
   currentUser: any;
   units: Unit[];
   onCreateTask: (task: Partial<Task>) => void;
+  onUpdateTask?: (id: string, updates: Partial<Task>) => void;
   onDeleteTask: (id: string) => void;
   onStartTask: (task: Task) => void;
   onViewSubmission?: (sub: TaskSubmission, task: Task) => void;
@@ -124,6 +125,7 @@ const TasksView = ({
   currentUser,
   units,
   onCreateTask,
+  onUpdateTask,
   onDeleteTask,
   onStartTask,
   onViewSubmission,
@@ -140,6 +142,8 @@ const TasksView = ({
   const [markschemeContent, setMarkschemeContent] = React.useState('');
   const [showQuestionsPrompt, setShowQuestionsPrompt] = React.useState(false);
   const [showMarkschemePrompt, setShowMarkschemePrompt] = React.useState(false);
+
+  const [editingTask, setEditingTask] = React.useState<Task | null>(null);
 
   const [newTask, setNewTask] = React.useState<Partial<Task>>({
     title: '',
@@ -163,16 +167,44 @@ const TasksView = ({
     
     // Parse Questions JSON if provided
     let parsedQuestions = undefined;
+    let finalMarkscheme = markschemeContent.trim() || undefined;
+
     if (worksheetQuestionsJson.trim()) {
       try {
         parsedQuestions = JSON.parse(worksheetQuestionsJson);
         // Fix Firebase nested array limitation: convert tableData arrays-of-arrays to array-of-objects
         if (Array.isArray(parsedQuestions)) {
+          const existingIds = new Set<string>();
+          tasks.forEach(t => {
+            t.worksheetQuestions?.forEach(q => existingIds.add(q.id.trim()));
+          });
+
+          // Track replacements to also update the markscheme JSON/text globally
+          const idReplacements: Record<string, string> = {};
+
           parsedQuestions.forEach((q: any) => {
             if (q.tableData && Array.isArray(q.tableData[0])) {
               q.tableData = q.tableData.map((row: any) => ({ row }));
             }
+            if (q.id && existingIds.has(q.id.trim())) {
+              const oldId = q.id.trim();
+              const newId = `q_${Math.random().toString(36).substring(2,8)}_${oldId}`;
+              q.id = newId;
+              idReplacements[oldId] = newId;
+            }
           });
+
+          // If we had conflicts and we have a markscheme, try to replace the old IDs with the new ones globally.
+          // This ensures that if the markscheme references "oldId", it will now reference "newId".
+          if (Object.keys(idReplacements).length > 0 && finalMarkscheme) {
+            for (const [oldId, newId] of Object.entries(idReplacements)) {
+              // Replace all occurrences of oldId string literal, e.g. "q1" in JSON
+              // We use a global regex that matches the exact string or key.
+              finalMarkscheme = finalMarkscheme.replace(new RegExp(`"${oldId}"`, 'g'), `"${newId}"`);
+              finalMarkscheme = finalMarkscheme.replace(new RegExp(`'${oldId}'`, 'g'), `'${newId}'`);
+              finalMarkscheme = finalMarkscheme.replace(new RegExp(`\\b${oldId}\\b`, 'g'), newId);
+            }
+          }
         }
       } catch (err) {
         alert("Invalid JSON in Worksheet Questions. Please check your formatting.");
@@ -184,16 +216,16 @@ const TasksView = ({
       ...newTask,
       type: (newTask.pdfUrl || parsedQuestions) ? ('worksheet' as const) : undefined,
       worksheetQuestions: parsedQuestions,
-      markschemeContent: markschemeContent.trim() || undefined
+      markschemeContent: finalMarkscheme
     };
 
     await onCreateTask(taskToCreate);
     
     // Save Markscheme to Firestore
-    if (markschemeContent.trim() && taskToCreate.title) {
+    if (finalMarkscheme && taskToCreate.title) {
       try {
         const taskKey = taskToCreate.title.replace('y8 ', '');
-        await setDoc(doc(db, 'markschemes', taskKey), { content: markschemeContent });
+        await setDoc(doc(db, 'markschemes', taskKey), { content: finalMarkscheme });
       } catch (err) {
         console.error("Failed to save markscheme:", err);
       }
@@ -353,14 +385,7 @@ const TasksView = ({
             </h1>
           </div>
           <p className="text-gray-500 font-medium px-1 flex flex-col md:flex-row md:items-center gap-2">
-            {isAdmin ? (
-              <>
-                Oversee performance, manage assignments, and review work.
-                <span className="inline-flex items-center gap-1 bg-purple-50 text-purple-600 px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border border-purple-100">
-                  <Sparkles size={10} /> Model: gemini-3.1-flash-lite-preview
-                </span>
-              </>
-            ) : "Your learning journey at a glance."}
+            {isAdmin ? "Oversee performance, manage assignments, and review work." : "Your learning journey at a glance."}
           </p>
         </div>
         
@@ -425,7 +450,7 @@ const TasksView = ({
       {isAdmin && (
         <div className="space-y-6">
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-6">
             <div className="bg-white p-6 rounded-[2rem] border-2 border-gray-100 shadow-sm">
               <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Tasks</p>
               <p className="text-2xl font-black text-gray-800 tracking-tight">{tasks.length}</p>
@@ -445,6 +470,11 @@ const TasksView = ({
               <p className="text-2xl font-black text-emerald-500 tracking-tight">
                 {new Set(allSubmissions.map(s => s.userId)).size}
               </p>
+            </div>
+            <div className="bg-purple-50 p-6 rounded-[2rem] border-2 border-purple-100 shadow-sm flex flex-col justify-center relative overflow-hidden">
+              <Sparkles className="absolute right-[-10px] bottom-[-10px] text-purple-200/50" size={80} />
+              <p className="text-[10px] font-black text-purple-600 uppercase tracking-widest mb-1 relative z-10">AI Model Protocol</p>
+              <p className="text-[14px] font-black text-purple-900 tracking-tight leading-none relative z-10">Gemini 3.1<br/><span className="text-[10px] uppercase opacity-70">Flash Lite Preview</span></p>
             </div>
           </div>
         </div>
@@ -701,6 +731,69 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
         </motion.div>
       )}
 
+      {editingTask && (
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          className="bg-white rounded-[3rem] p-6 md:p-12 shadow-xl border-2 border-emerald-100 max-w-2xl w-full mx-auto mb-12 fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 max-h-[90vh] overflow-y-auto"
+        >
+          <div className="flex items-center gap-6 mb-8">
+            <div className="w-16 h-16 bg-emerald-50 rounded-[2rem] flex items-center justify-center text-emerald-500 shadow-inner">
+              <Plus size={32} />
+            </div>
+            <div>
+              <h2 className="text-3xl font-black text-gray-800 uppercase tracking-tight">Edit Task Details</h2>
+              <p className="text-gray-500 font-medium">Update the task name or due date instantly.</p>
+            </div>
+          </div>
+          
+          <div className="space-y-6">
+            <div className="space-y-4">
+              <label className="block text-xs font-black text-gray-400 uppercase tracking-widest">Task Name</label>
+              <input 
+                type="text" 
+                value={editingTask.title}
+                onChange={e => setEditingTask({...editingTask, title: e.target.value})}
+                className="w-full p-4 rounded-2xl border-2 border-gray-100 font-bold focus:border-emerald-500 outline-none text-xl"
+              />
+            </div>
+            
+            <div className="space-y-4">
+              <label className="block text-xs font-black text-gray-400 uppercase tracking-widest">Due Date</label>
+              <input 
+                type="date" 
+                value={editingTask.dueDate.split('T')[0]}
+                onChange={e => setEditingTask({...editingTask, dueDate: e.target.value})}
+                className="w-full p-4 rounded-2xl border-2 border-gray-100 font-bold outline-none focus:border-emerald-500"
+              />
+            </div>
+
+            <div className="flex justify-end gap-4 mt-8">
+              <button 
+                type="button"
+                onClick={() => setEditingTask(null)}
+                className="px-8 py-3 rounded-2xl font-black uppercase tracking-widest text-xs text-gray-400 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={async () => {
+                  if (onUpdateTask) {
+                    await onUpdateTask(editingTask.id, { title: editingTask.title, dueDate: editingTask.dueDate });
+                  }
+                  setEditingTask(null);
+                }}
+                className="bg-emerald-500 text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest shadow-[0_6px_0_0_#059669] active:translate-y-1 active:shadow-none transition-all"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      )}
+      
+      {editingTask && <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 transition-opacity" onClick={() => setEditingTask(null)} />}
+
       {activeTab === 'submissions' && isAdmin ? (
         <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
            <div className="flex flex-col md:flex-row items-center gap-4">
@@ -756,6 +849,20 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
                        </div>
                      </div>
                      <div className="hidden md:flex gap-3">
+                       <div className="flex flex-col gap-2 mr-2 justify-center">
+                         <button 
+                           onClick={() => filteredSubs.forEach(s => generateResponsePDF(s, task, false))}
+                           className="text-[9px] uppercase font-black tracking-widest text-blue-600 bg-blue-50/50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-all flex items-center gap-2 border border-blue-100"
+                         >
+                           <Download size={10} /> Raw PDFs
+                         </button>
+                         <button 
+                           onClick={() => filteredSubs.filter(s => s.feedback).forEach(s => generateResponsePDF(s, task, true))}
+                           className="text-[9px] uppercase font-black tracking-widest text-emerald-600 bg-emerald-50/50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg transition-all flex items-center gap-2 border border-emerald-100"
+                         >
+                           <Download size={10} /> Graded Reports
+                         </button>
+                       </div>
                        <div className="bg-emerald-50 border-2 border-emerald-100 px-4 py-2 rounded-2xl text-center">
                          <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Total</p>
                          <p className="text-xl font-black text-emerald-700">{filteredSubs.length}</p>
@@ -915,6 +1022,11 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     whileHover={{ y: -5 }}
+                    onClick={() => {
+                      if (isAdmin && onUpdateTask) {
+                        setEditingTask(task);
+                      }
+                    }}
                     className={`rounded-[2rem] p-5 md:p-6 shadow-lg text-white cursor-pointer relative overflow-hidden group h-full flex flex-col min-h-[200px] transition-all
                       ${isSelectedDate ? 'ring-4 ring-offset-4 ring-emerald-400' : ''}
                       ${isCompleted 
@@ -969,7 +1081,10 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
                           </div>
                         ) : (
                           <button 
-                            onClick={() => onStartTask(task)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onStartTask(task);
+                            }}
                             className="bg-white text-blue-600 p-2 rounded-xl hover:scale-110 active:scale-95 transition-all shadow-sm"
                           >
                             <ArrowRight size={14} />

@@ -160,6 +160,13 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
     setIsSavingQuestions(true);
     try {
       const parsedQuestions = JSON.parse(editingQuestions);
+      if (Array.isArray(parsedQuestions)) {
+        parsedQuestions.forEach((q: any) => {
+          if (q.tableData && Array.isArray(q.tableData[0])) {
+            q.tableData = q.tableData.map((row: any) => ({ row }));
+          }
+        });
+      }
       await setDoc(doc(db, 'tasks', task.id), { worksheetQuestions: parsedQuestions }, { merge: true });
       setShowQuestionsEditor(false);
       // It will auto-refresh via App.tsx task listener, but let's notify user
@@ -598,7 +605,7 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
                 </button>
               </div>
               <p className="text-sm text-gray-500 mb-4 font-medium italic">
-                Changes will be saved for this specific task <span className="font-bold text-gray-700">({task.title})</span> and used for future grading.
+                Changes will be saved for this specific task <span className="font-bold text-gray-700">({task.title})</span> and used for future grading. Both JSON and plain-text markschemes are supported.
               </p>
               <textarea
                 value={editingMarkscheme}

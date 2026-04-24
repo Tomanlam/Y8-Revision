@@ -555,6 +555,15 @@ function AppContent() {
     }
   };
 
+  const onUpdateTask = async (taskId: string, updates: Partial<Task>) => {
+    try {
+      await setDoc(doc(db, 'tasks', taskId), updates, { merge: true });
+    } catch (e) {
+      console.error("Error updating task:", e);
+      alert("Failed to update task. Check console for details.");
+    }
+  };
+
   const onDeleteTask = async (id: string) => {
     try { 
       await deleteDoc(doc(db, 'tasks', id)); 
@@ -711,6 +720,7 @@ function AppContent() {
             currentUser={currentUser}
             units={units}
             onCreateTask={onCreateTask}
+            onUpdateTask={onUpdateTask}
             onDeleteTask={onDeleteTask}
             onStartTask={onStartTask}
             onViewSubmission={(sub, task) => {
