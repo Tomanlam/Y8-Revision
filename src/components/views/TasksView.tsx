@@ -512,7 +512,7 @@ const TasksView = ({
             <div className="bg-purple-50 p-6 rounded-[2rem] border-2 border-purple-100 shadow-sm flex flex-col justify-center relative overflow-hidden">
               <Sparkles className="absolute right-[-10px] bottom-[-10px] text-purple-200/50" size={80} />
               <p className="text-[10px] font-black text-purple-600 uppercase tracking-widest mb-1 relative z-10">AI Model Protocol</p>
-              <p className="text-[14px] font-black text-purple-900 tracking-tight leading-none relative z-10">Gemini 1.5<br/><span className="text-[10px] uppercase opacity-70">Flash Lite</span></p>
+              <p className="text-[14px] font-black text-purple-900 tracking-tight leading-none relative z-10">Gemini 3.1<br/><span className="text-[10px] uppercase opacity-70">Flash Lite</span></p>
             </div>
           </div>
         </div>

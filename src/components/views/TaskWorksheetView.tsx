@@ -284,18 +284,22 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
         
         const prompt = `Grade this student submission for the worksheet "${task.title}".
         
+        CRITICAL INSTRUCTION: You must provide a specific teacher's feedback for EVERY SINGLE QUESTION listed in the student responses, even if the answer is correct. Use the provided rubric to justify your score and feedback.
+
         MARKSCHEME/RUBRIC:
         ${markscheme}
         
         STUDENT RESPONSES (Format: QuestionID: Response):
         ${Object.entries(responses).map(([id, req]) => `${id}: ${req}`).join('\n')}
         
-        INSTRUCTIONS:
-        1. Compare responses to markscheme.
-        2. Assign score in "earned/total" format (e.g. "2/2", "0/1").
-        3. Provide helpful feedback.
-        4. Match QuestionID exactly.
-        5. Return JSON with 'questions' array and 'generalFeedback' string.`;
+        GRADING PROTOCOL:
+        1. Evaluate each response strictly against the markscheme/rubric.
+        2. Assign a score in "earned/total" format (e.g. "2/2", "0.5/1", "0/3").
+        3. Write a concise, encouraging, and pedagogically helpful feedback comment for EVERY question.
+        4. Match QuestionID exactly as provided in the input.
+        5. Provide a 'generalFeedback' summary at the end.
+        
+        Return ONLY valid JSON.`;
 
         const response = await ai.models.generateContent({
           model: "gemini-3.1-flash-lite-preview",

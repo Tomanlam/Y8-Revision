@@ -246,14 +246,14 @@ const DashboardView: React.FC<DashboardViewProps> = (props) => {
                   <div className="flex items-center gap-1">
                     <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">Logged in as</span>
                     {isAdminLoggedIn ? (
-                      <div className="flex items-center gap-1 bg-amber-50 px-2 py-0.5 rounded-full">
-                        <Crown size={10} className="text-amber-500 fill-amber-500" />
-                        <span className="text-[9px] font-black text-amber-600 uppercase tracking-tight">God Mode</span>
+                      <div className="flex items-center gap-1 bg-amber-500 px-2 py-0.5 rounded-full text-white shadow-sm">
+                        <Crown size={10} className="fill-white" />
+                        <span className="text-[9px] font-black uppercase tracking-tight">God Mode</span>
                       </div>
                     ) : (
-                      <div className="flex items-center gap-1 bg-emerald-50 px-2 py-0.5 rounded-full">
-                        <GraduationCap size={10} className="text-emerald-500" />
-                        <span className="text-[9px] font-black text-emerald-600 uppercase tracking-tight">Student Mode</span>
+                      <div className="flex items-center gap-1 bg-emerald-500 px-2 py-0.5 rounded-full text-white shadow-sm">
+                        <GraduationCap size={10} className="fill-white" />
+                        <span className="text-[9px] font-black uppercase tracking-tight">Student Mode</span>
                       </div>
                     )}
                   </div>

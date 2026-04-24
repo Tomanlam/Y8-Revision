@@ -166,19 +166,19 @@ const Sidebar = ({ currentMode, setMode, onQRClick, hasOutstandingTasks, user, i
                 exit={{ opacity: 0, x: -10 }}
                 className="flex flex-col items-start whitespace-nowrap overflow-hidden"
               >
-                <span className="font-black uppercase tracking-tight text-xs text-gray-800 leading-none">
-                  {user?.displayName?.split(' ')[0] || 'Member'}
+                <span className="font-black tracking-tight text-xs text-gray-800 leading-none">
+                  {user?.displayName || 'Member'}
                 </span>
                 <div className="mt-1">
                   {isAdmin ? (
-                    <div className="flex items-center gap-1.5 bg-amber-50 px-3 py-1.5 rounded-full border-2 border-amber-200 shadow-[0_0_20px_rgba(245,158,11,0.4)] animate-[pulse_2s_infinite]">
-                      <ShieldCheck size={12} className="text-amber-500 fill-amber-500" />
-                      <span className="text-[12px] font-black text-amber-600 uppercase tracking-tight">God Mode</span>
+                    <div className="flex items-center gap-1.5 bg-amber-500 px-2 py-0.5 rounded-full text-white shadow-sm">
+                      <ShieldCheck size={10} className="fill-white" />
+                      <span className="text-[9px] font-black uppercase tracking-tight">God Mode</span>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-1.5 bg-emerald-50 px-3 py-1.5 rounded-full border-2 border-emerald-200 shadow-[0_0_20px_rgba(16,185,129,0.4)] animate-[pulse_2s_infinite]">
-                      <GraduationCap size={12} className="text-emerald-500" />
-                      <span className="text-[12px] font-black text-emerald-600 uppercase tracking-tight">Student Mode</span>
+                    <div className="flex items-center gap-1.5 bg-emerald-500 px-2 py-0.5 rounded-full text-white shadow-sm">
+                      <GraduationCap size={10} className="fill-white" />
+                      <span className="text-[9px] font-black uppercase tracking-tight">Student Mode</span>
                     </div>
                   )}
                 </div>
