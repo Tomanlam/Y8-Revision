@@ -122,7 +122,7 @@ const APP_NAV_ITEMS: NavItem[] = [
   { mode: 'about', icon: Info, label: 'About' }
 ];
 
-const Sidebar = ({ currentMode, setMode, onQRClick }: { currentMode: AppMode, setMode: (m: AppMode) => void, onQRClick: () => void }) => {
+const Sidebar = ({ currentMode, setMode, onQRClick, hasOutstandingTasks }: { currentMode: AppMode, setMode: (m: AppMode) => void, onQRClick: () => void, hasOutstandingTasks?: boolean }) => {
   const [isHovered, setIsHovered] = useState(false);
 
   return (
@@ -161,6 +161,7 @@ const Sidebar = ({ currentMode, setMode, onQRClick }: { currentMode: AppMode, se
         {APP_NAV_ITEMS.map((item) => {
           const Icon = item.icon;
           const isActive = currentMode === item.mode;
+          const isTasks = item.mode === 'tasks';
           
           return (
             <button
@@ -173,8 +174,11 @@ const Sidebar = ({ currentMode, setMode, onQRClick }: { currentMode: AppMode, se
                 }
               `}
             >
-              <div className="flex-shrink-0">
+              <div className="flex-shrink-0 relative">
                 <Icon size={24} fill={isActive ? "currentColor" : "none"} />
+                {isTasks && hasOutstandingTasks && (
+                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-orange-500 rounded-full border-2 border-white ring-2 ring-orange-500/20 animate-pulse" />
+                )}
               </div>
               <AnimatePresence>
                 {isHovered && (
@@ -648,10 +652,23 @@ function AppContent() {
      setMode('tasks');
   };
 
+  const outstandingTasks = useMemo(() => {
+    if (!currentUser || isAdminLoggedIn) return [];
+    return tasks.filter(task => {
+      const isSubmitted = mySubmissions.some(s => s.taskId === task.id);
+      return !isSubmitted;
+    });
+  }, [tasks, mySubmissions, currentUser, isAdminLoggedIn]);
+
   return (
     <div className="font-sans selection:bg-emerald-200 min-h-screen bg-gray-50 flex">
       {['dashboard', 'user-stats', 'about', 'quick-facts', 'tasks'].includes(mode) && (
-        <Sidebar currentMode={mode} setMode={setMode} onQRClick={() => setIsQRModalOpen(true)} />
+        <Sidebar 
+          currentMode={mode} 
+          setMode={setMode} 
+          onQRClick={() => setIsQRModalOpen(true)} 
+          hasOutstandingTasks={outstandingTasks.length > 0}
+        />
       )}
 
       <div className={`flex-1 transition-all duration-300 ${['dashboard', 'user-stats', 'about', 'quick-facts', 'tasks'].includes(mode) ? 'md:pl-[80px]' : ''}`}>

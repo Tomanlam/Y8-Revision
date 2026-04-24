@@ -50,14 +50,21 @@ export interface Task {
   dueDate: string;
   status: 'active' | 'archived';
   createdAt?: string;
-  type?: 'standard' | 'worksheet';
+  type?: 'standard' | 'worksheet' | 'test';
   pdfUrl?: string;
   markschemeContent?: string;
+  passcode?: string;
+  timeLimit?: number; // in minutes
+  isABVersion?: boolean;
+  partnerTaskJson?: string; // For B version if applicable
   worksheetQuestions?: (Question & { 
     page?: number; 
     section?: string; 
     instruction?: string;
     tableData?: string[][];
+    columnHeaders?: string[];
+    rowHeaders?: string[];
+    items?: string[]; // for reordering
   })[];
 }
 

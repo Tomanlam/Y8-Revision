@@ -85,6 +85,38 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
   const [validationFeedback, setValidationFeedback] = useState<Record<string, { score: string, feedback: string }>>(initialFeedback || {});
   const [generalFeedback, setGeneralFeedback] = useState<string>(initialGeneralFeedback || "");
   
+  // Timer State
+  const [timeLeft, setTimeLeft] = useState<number | null>(task.type === 'test' ? (task.timeLimit || 60) * 60 : null);
+  const [isTimeUp, setIsTimeUp] = useState(false);
+
+  useEffect(() => {
+    if (task.type === 'test' && timeLeft !== null && timeLeft > 0 && !submitted && !readOnly) {
+      const timer = setInterval(() => {
+        setTimeLeft(prev => {
+          if (prev !== null && prev <= 1) {
+            clearInterval(timer);
+            setIsTimeUp(true);
+            return 0;
+          }
+          return prev !== null ? prev - 1 : null;
+        });
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [task.type, timeLeft, submitted, readOnly]);
+
+   useEffect(() => {
+    if (isTimeUp && !submitted && !readOnly) {
+      handleFinalSubmit(); // Auto-submit when time is up
+    }
+  }, [isTimeUp]);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
   const rightPaneRef = useRef<HTMLDivElement>(null);
   const pageRefs = useRef<Record<number, HTMLDivElement | null>>({});
 
@@ -223,7 +255,7 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
     return () => observer.disconnect();
   }, [numPages]);
 
-  const handleResponse = (questionId: string, value: string) => {
+  const handleResponse = (questionId: string, value: any) => {
     setResponses(prev => ({ ...prev, [questionId]: value }));
   };
 
@@ -242,7 +274,7 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
           throw new Error("Gemini API Key is missing. If you are the developer, please ensure GEMINI_API_KEY is set in your environment variables (e.g. on Vercel Build Settings).");
         }
 
-        const ai = new GoogleGenAI({ apiKey: apiKey });
+        const genAI: any = new GoogleGenAI({ apiKey: apiKey });
 
         const prompt = `
           You are an expert science teacher. 
@@ -266,6 +298,8 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
             id: q.id, 
             question: (q as any).question || (q as any).text, 
             type: q.type,
+            options: q.options,
+            items: (q as any).items,
             instruction: (q as any).instruction
           })), null, 2)}
           
@@ -273,7 +307,14 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
           - Use the Official Marking Scheme provided above to evaluate the student's reasoning and accuracy for each question.
           - If the marking scheme is a JSON object, match the Question IDs. If it is text, use your judgment based on the provided descriptors.
           - REQUIRED: You must evaluate every question provided in the "Worksheet Questions" list regardless of whether the student answered it.
+          - For Multiple Choice, compare the student response to the marking rubric.
+          - For Short Responses, award partial or full points based on reasoning and keywords.
+          - For Table questions, check each cell.
+          - For "reorder" questions, check if the student's list matches the correct sequential logical order.
+          - For "tick-cross" questions, '✓' is typically for true/correct and '✕' for false/incorrect.
           - If a student response is missing, mark score as "0/X" and feedback as "No response provided."
+          - PROVIDE SPECIFIC, ENCOURAGING FEEDBACK for each question.
+          - Use a supportive tone.
           
           Response Format:
           Return a JSON object with:
@@ -323,16 +364,17 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
           required: ["generalFeedback", "questions"]
         };
 
-        const result = await ai.models.generateContent({
-          model: "gemini-3.1-flash-lite-preview",
-          contents: [{ text: prompt }],
-          config: {
+        const model = genAI.getGenerativeModel({ 
+          model: "gemini-1.5-flash-lite",
+          generationConfig: {
             responseMimeType: "application/json",
-            responseSchema: responseSchema
+            responseSchema: responseSchema as any
           }
         });
 
-        const aiText = result.text;
+        const result = await model.generateContent(prompt);
+        const aiResponse = result.response;
+        const aiText = aiResponse.text();
 
         if (aiText) {
           try {
@@ -449,13 +491,24 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
               {task.title}
             </h2>
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">
-                Interactive Worksheet
+              <span className={`text-[10px] font-black uppercase tracking-widest ${task.type === 'test' ? 'text-red-500' : 'text-emerald-500'}`}>
+                {task.type === 'test' ? 'Secure Assessment' : 'Interactive Worksheet'}
               </span>
               <span className="text-[10px] text-gray-300">•</span>
               <span className="text-[10px] font-bold text-gray-400">
                 Page {activePage} of {numPages || '?'}
               </span>
+              {timeLeft !== null && (
+                <>
+                  <span className="text-[10px] text-gray-300">•</span>
+                  <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md font-black text-[10px] uppercase tracking-widest border ${
+                    timeLeft < 300 ? 'bg-red-50 text-red-600 border-red-200 animate-pulse' : 'bg-orange-50 text-orange-600 border-orange-200'
+                  }`}>
+                    <Timer size={12} />
+                    {formatTime(timeLeft)}
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -482,44 +535,44 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
             </span>
           </div>
           
-          {(isAdmin || (!readOnly && !submitted)) && (
-            <div className="flex items-center gap-2">
-              {isAdmin && (
-                <>
-                  <button
-                    onClick={() => {
-                      setEditingQuestions(JSON.stringify(task.worksheetQuestions || [], null, 2));
-                      setShowQuestionsEditor(true);
-                    }}
-                    className="bg-purple-50 text-purple-600 border border-purple-200 px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-purple-100 transition-all shadow-[0_4px_0_0_#d8b4fe] active:shadow-none active:translate-y-1 block"
-                  >
-                    Edit Questions
-                  </button>
-                  <button
-                    onClick={() => {
-                      setEditingMarkscheme(markscheme);
-                      setShowMarkschemeEditor(true);
-                    }}
-                    className="bg-blue-50 text-blue-600 border border-blue-200 px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-100 transition-all shadow-[0_4px_0_0_#bfdbfe] active:shadow-none active:translate-y-1 block"
-                  >
-                    Edit Markscheme
-                  </button>
-                </>
-              )}
-              {(!readOnly || isAdmin) && (
+        {(isAdmin || (!readOnly && !submitted)) && (
+          <div className="flex items-center gap-2">
+            {isAdmin && (
+              <>
                 <button
-                  disabled={isValidating}
-                  onClick={() => setShowConfirm(true)}
-                  className="bg-emerald-500 text-white px-5 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-[0_4px_0_0_#059669] active:shadow-none active:translate-y-1 transition-all disabled:opacity-50 disabled:translate-y-0 disabled:shadow-none flex items-center gap-2"
+                  onClick={() => {
+                    setEditingQuestions(JSON.stringify(task.worksheetQuestions || [], null, 2));
+                    setShowQuestionsEditor(true);
+                  }}
+                  className={`${task.type === 'test' ? 'bg-red-50 text-red-600 border-red-200' : 'bg-purple-50 text-purple-600 border-purple-200'} px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest hover:brightness-95 transition-all shadow-sm active:translate-y-1 block`}
                 >
-                  {isValidating ? (
-                    <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  ) : <CheckCircle2 size={14} />}
-                  {isValidating ? 'Grading...' : (isAdmin && readOnly ? 'Grade & Feedback' : 'Submit Worksheet')}
+                  Edit Questions
                 </button>
-              )}
-            </div>
-          )}
+                <button
+                  onClick={() => {
+                    setEditingMarkscheme(markscheme);
+                    setShowMarkschemeEditor(true);
+                  }}
+                  className={`${task.type === 'test' ? 'bg-red-50 text-red-600 border-red-200' : 'bg-blue-50 text-blue-600 border-blue-200'} px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest hover:brightness-95 transition-all shadow-sm active:translate-y-1 block`}
+                >
+                  Edit Markscheme
+                </button>
+              </>
+            )}
+            {(!readOnly || isAdmin) && (
+              <button
+                disabled={isValidating}
+                onClick={() => setShowConfirm(true)}
+                className={`${task.type === 'test' ? 'bg-red-600 shadow-[0_4px_0_0_#991b1b]' : 'bg-emerald-500 shadow-[0_4px_0_0_#059669]'} text-white px-5 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest active:shadow-none active:translate-y-1 transition-all disabled:opacity-50 disabled:translate-y-0 disabled:shadow-none flex items-center gap-2`}
+              >
+                {isValidating ? (
+                  <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : <Send size={14} />}
+                {isValidating ? 'Grading...' : (isAdmin && readOnly ? 'Finish Review' : (task.type === 'test' ? 'Submit Assessment' : 'Submit Worksheet'))}
+              </button>
+            )}
+          </div>
+        )}
           {submitted && isAdmin && !readOnly && (
             <button
               onClick={handleEdit}
@@ -838,6 +891,104 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
                                   <span>{opt}</span>
                                   {responses[typedQ.id] === opt && <CheckCircle2 size={20} />}
                                 </button>
+                              ))}
+                              {(submitted || readOnly) && validationFeedback[typedQ.id] && (
+                                <motion.div 
+                                  initial={{ opacity: 0, y: 10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  className={`p-4 rounded-2xl border mt-2 ${
+                                    validationFeedback[typedQ.id].score.includes('/0') || validationFeedback[typedQ.id].score.startsWith('0/') 
+                                      ? 'bg-red-50 border-red-100 text-red-800' 
+                                      : 'bg-emerald-50 border-emerald-100 text-emerald-800'
+                                  }`}
+                                >
+                                  <div className="flex items-center justify-between mb-2">
+                                    <span className="text-[10px] font-black uppercase tracking-widest">Teacher Feedback</span>
+                                    <span className="text-xs font-black">{validationFeedback[typedQ.id].score}</span>
+                                  </div>
+                                  <p className="text-xs font-medium italic">"{validationFeedback[typedQ.id].feedback}"</p>
+                                </motion.div>
+                              )}
+                            </div>
+                          )}
+
+                          {typedQ.type === 'tick-cross' && (
+                            <div className="grid grid-cols-2 gap-4">
+                              {['✓', '✕'].map((opt) => (
+                                <button
+                                  key={opt}
+                                  onClick={() => !(readOnly || submitted) && handleResponse(typedQ.id, opt)}
+                                  disabled={readOnly || submitted}
+                                  className={`p-8 rounded-3xl border-4 font-black text-3xl transition-all shadow-sm ${
+                                    responses[typedQ.id] === opt
+                                      ? opt === '✓' ? 'bg-emerald-500 border-emerald-600 text-white shadow-emerald-100' : 'bg-red-500 border-red-600 text-white shadow-red-100'
+                                      : 'bg-white border-gray-100 text-gray-300 hover:border-gray-200'
+                                  }`}
+                                >
+                                  {opt}
+                                </button>
+                              ))}
+                              {(submitted || readOnly) && validationFeedback[typedQ.id] && (
+                                <motion.div 
+                                  initial={{ opacity: 0, y: 10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  className={`col-span-2 p-4 rounded-2xl border ${
+                                    validationFeedback[typedQ.id].score.includes('/0') || validationFeedback[typedQ.id].score.startsWith('0/') 
+                                      ? 'bg-red-50 border-red-100 text-red-800' 
+                                      : 'bg-emerald-50 border-emerald-100 text-emerald-800'
+                                  }`}
+                                >
+                                  <div className="flex items-center justify-between mb-2">
+                                    <span className="text-[10px] font-black uppercase tracking-widest">Teacher Feedback</span>
+                                    <span className="text-xs font-black">{validationFeedback[typedQ.id].score}</span>
+                                  </div>
+                                  <p className="text-xs font-medium italic">"{validationFeedback[typedQ.id].feedback}"</p>
+                                </motion.div>
+                              )}
+                            </div>
+                          )}
+
+                          {typedQ.type === 'reorder' && typedQ.items && (
+                            <div className="space-y-3">
+                              {(responses[typedQ.id] || typedQ.items).map((item: string, iIdx: number) => (
+                                <motion.div
+                                  key={`${typedQ.id}_item_${iIdx}`}
+                                  layout
+                                  className="flex items-center gap-4 bg-white p-4 rounded-2xl border-2 border-gray-100 shadow-sm"
+                                >
+                                  <span className="bg-gray-100 text-gray-500 w-8 h-8 rounded-lg flex items-center justify-center font-black text-xs shrink-0">
+                                    {iIdx + 1}
+                                  </span>
+                                  <span className="flex-1 font-bold text-gray-700">{item}</span>
+                                  {!(readOnly || submitted) && (
+                                    <div className="flex gap-1">
+                                      <button
+                                        onClick={() => {
+                                          const currentArr = [...(responses[typedQ.id] || typedQ.items)];
+                                          if (iIdx > 0) {
+                                            [currentArr[iIdx], currentArr[iIdx-1]] = [currentArr[iIdx-1], currentArr[iIdx]];
+                                            handleResponse(typedQ.id, currentArr);
+                                          }
+                                        }}
+                                        className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-emerald-500 transition-colors"
+                                      >
+                                        <ChevronLeft size={16} className="rotate-90" />
+                                      </button>
+                                      <button
+                                        onClick={() => {
+                                          const currentArr = [...(responses[typedQ.id] || typedQ.items)];
+                                          if (iIdx < currentArr.length - 1) {
+                                            [currentArr[iIdx], currentArr[iIdx+1]] = [currentArr[iIdx+1], currentArr[iIdx]];
+                                            handleResponse(typedQ.id, currentArr);
+                                          }
+                                        }}
+                                        className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-emerald-500 transition-colors"
+                                      >
+                                        <ChevronLeft size={16} className="-rotate-90" />
+                                      </button>
+                                    </div>
+                                  )}
+                                </motion.div>
                               ))}
                               {(submitted || readOnly) && validationFeedback[typedQ.id] && (
                                 <motion.div 

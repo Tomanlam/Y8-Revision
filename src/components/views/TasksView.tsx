@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Star, CheckCircle2, ListChecks, Users, Clock, Plus, Trash2, Layout, Calendar as CalendarIcon, ChevronLeft, ChevronRight as ChevronRightIcon, Target, List, FileText, Eye, ArrowRight, User, Download, Info, Copy, Sparkles } from 'lucide-react';
+import { Star, CheckCircle2, ListChecks, Users, Clock, Plus, Trash2, Layout, Calendar as CalendarIcon, ChevronLeft, ChevronRight as ChevronRightIcon, Target, List, FileText, Eye, ArrowRight, User, Download, Info, Copy, Sparkles, ShieldCheck, Lock, Timer, Send, RefreshCw, X } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, parseISO, startOfDay } from 'date-fns';
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -134,6 +134,12 @@ const TasksView = ({
 }: TasksViewProps) => {
   const [selectedDate, setSelectedDate] = React.useState(new Date());
   const [isCreatorOpen, setIsCreatorOpen] = React.useState(false);
+  const [isTestCreatorOpen, setIsTestCreatorOpen] = React.useState(false);
+  const [isPasscodeModalOpen, setIsPasscodeModalOpen] = React.useState(false);
+  const [selectedTaskForPasscode, setSelectedTaskForPasscode] = React.useState<Task | null>(null);
+  const [enteredPasscode, setEnteredPasscode] = React.useState('');
+  const [passcodeError, setPasscodeError] = React.useState(false);
+
   const [activeTab, setActiveTab] = React.useState<'tasks' | 'submissions'>('tasks');
   const [submissionFilter, setSubmissionFilter] = React.useState('');
   const [nukeLevel, setNukeLevel] = React.useState(0);
@@ -150,7 +156,11 @@ const TasksView = ({
     description: '',
     units: [1],
     dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    status: 'active'
+    status: 'active',
+    type: 'standard',
+    passcode: '',
+    timeLimit: 60,
+    isABVersion: false
   });
 
   const submissionsByTask = React.useMemo(() => {
@@ -214,7 +224,7 @@ const TasksView = ({
 
     const taskToCreate = {
       ...newTask,
-      type: (newTask.pdfUrl || parsedQuestions) ? ('worksheet' as const) : undefined,
+      type: newTask.type === 'test' ? 'test' : ((newTask.pdfUrl || parsedQuestions) ? ('worksheet' as const) : undefined),
       worksheetQuestions: parsedQuestions,
       markschemeContent: finalMarkscheme
     };
@@ -232,12 +242,17 @@ const TasksView = ({
     }
 
     setIsCreatorOpen(false);
+    setIsTestCreatorOpen(false);
     setNewTask({
       title: '',
       description: '',
       units: [1],
       dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      status: 'active'
+      status: 'active',
+      type: 'standard',
+      passcode: '',
+      timeLimit: 60,
+      isABVersion: false
     });
     setWorksheetQuestionsJson('');
     setMarkschemeContent('');
@@ -245,7 +260,8 @@ const TasksView = ({
 
   const generateResponsePDF = (submission: TaskSubmission, task: Task, includeFeedback: boolean = false) => {
     const doc = new jsPDF();
-    const primaryColor: [number, number, number] = includeFeedback ? [16, 185, 129] : [59, 130, 246]; // Emerald for reports, Blue for raw submissions
+    const isTest = task.type === 'test';
+    const primaryColor: [number, number, number] = isTest ? [220, 38, 38] : (includeFeedback ? [16, 185, 129] : [59, 130, 246]); 
     
     // Top Color Bar (High-contrast aesthetic)
     doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
@@ -257,7 +273,10 @@ const TasksView = ({
     doc.setFont("helvetica", "bold");
     doc.setFontSize(22);
     doc.setTextColor(31, 41, 55);
-    doc.text(includeFeedback ? "Performance Analysis Report" : "Submission Export", 15, currentY);
+    const headerTitle = includeFeedback 
+      ? (isTest ? "Secure Assessment Analysis" : "Performance Analysis Report")
+      : (isTest ? "Assessment Submission Export" : "Submission Export");
+    doc.text(headerTitle, 15, currentY);
     
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
@@ -266,19 +285,19 @@ const TasksView = ({
     
     currentY += 15;
 
-    // NEW: Teacher's General Feedback at the START (if report)
+    // Teacher's General Feedback at the START (if report)
     if (includeFeedback && submission.feedback) {
-      const feedbackText = submission.generalFeedback || "Comprehensive review of accuracy, reasoning, and conceptual understanding demonstrated in this task.";
+      const feedbackText = submission.generalFeedback || "Comprehensive review of accuracy, reasoning, and conceptual understanding demonstrated in this evaluation.";
       const splitFeedback = doc.splitTextToSize(feedbackText, 170);
       const textHeight = splitFeedback.length * 5;
       const boxHeight = 15 + textHeight + 5;
 
-      doc.setFillColor(240, 253, 244); // Light emerald background
+      doc.setFillColor(isTest ? 254 : 240, isTest ? 242 : 253, isTest ? 242 : 244); 
       doc.rect(15, currentY, 180, boxHeight, 'F');
       
       doc.setFontSize(12);
       doc.setFont("helvetica", "bold");
-      doc.setTextColor(16, 185, 129);
+      doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
       doc.text("Teacher's General Feedback", 20, currentY + 10);
       
       doc.setFontSize(9);
@@ -294,7 +313,7 @@ const TasksView = ({
       startY: currentY,
       body: [
         ['Student Name:', submission.studentName],
-        ['Assignment:', task.title],
+        [isTest ? 'Assessment Title:' : 'Assignment Title:', task.title],
         ['Completion Time:', format(new Date(submission.completedAt), 'PPP p')],
         ['Performance Metric:', submission.results ? `${submission.results.score} / ${submission.results.total} (${Math.round((submission.results.score/submission.results.total)*100)}%)` : 'Awaiting Grading']
       ],
@@ -416,11 +435,24 @@ const TasksView = ({
           {isAdmin && (
             <div className="flex gap-2">
               <button 
-                onClick={() => setIsCreatorOpen(true)}
+                onClick={() => {
+                  setNewTask(prev => ({ ...prev, type: 'standard' }));
+                  setIsCreatorOpen(true);
+                }}
                 className="bg-emerald-500 text-white px-6 py-3 rounded-2xl font-black uppercase tracking-widest text-xs flex items-center gap-2 shadow-[0_4px_0_0_#059669] active:translate-y-1 active:shadow-none transition-all h-[42px]"
               >
                 <Plus size={18} />
                 New Task
+              </button>
+              <button 
+                onClick={() => {
+                  setNewTask(prev => ({ ...prev, type: 'test' }));
+                  setIsTestCreatorOpen(true);
+                }}
+                className="bg-red-500 text-white px-6 py-3 rounded-2xl font-black uppercase tracking-widest text-xs flex items-center gap-2 shadow-[0_4px_0_0_#ef4444] active:translate-y-1 active:shadow-none transition-all h-[42px]"
+              >
+                <ShieldCheck size={18} />
+                New Test
               </button>
               {onWipeCleanSlate && (
                 <button 
@@ -474,11 +506,320 @@ const TasksView = ({
             <div className="bg-purple-50 p-6 rounded-[2rem] border-2 border-purple-100 shadow-sm flex flex-col justify-center relative overflow-hidden">
               <Sparkles className="absolute right-[-10px] bottom-[-10px] text-purple-200/50" size={80} />
               <p className="text-[10px] font-black text-purple-600 uppercase tracking-widest mb-1 relative z-10">AI Model Protocol</p>
-              <p className="text-[14px] font-black text-purple-900 tracking-tight leading-none relative z-10">Gemini 3.1<br/><span className="text-[10px] uppercase opacity-70">Flash Lite Preview</span></p>
+              <p className="text-[14px] font-black text-purple-900 tracking-tight leading-none relative z-10">Gemini 1.5<br/><span className="text-[10px] uppercase opacity-70">Flash Lite</span></p>
             </div>
           </div>
         </div>
       )}
+
+      {/* Test Creator Modal */}
+      {isAdmin && isTestCreatorOpen && (
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white p-8 rounded-3xl border-4 border-red-100 shadow-xl fixed inset-0 md:inset-10 z-[300] overflow-y-auto"
+        >
+          <div className="flex justify-between items-center mb-8 border-b-2 border-red-50 pb-4">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-red-100 rounded-2xl flex items-center justify-center text-red-600">
+                <ShieldCheck size={24} />
+              </div>
+              <div>
+                <h2 className="text-2xl font-black uppercase text-gray-800 tracking-tight">Create New Assessment</h2>
+                <p className="text-gray-500 font-bold text-sm">Design a secure interactive test for your students.</p>
+              </div>
+            </div>
+            <button onClick={() => setIsTestCreatorOpen(false)} className="p-2 hover:bg-gray-100 rounded-xl transition-all">
+              <X size={24} className="text-gray-400 hover:text-red-500" />
+            </button>
+          </div>
+
+          <form onSubmit={handleCreate} className="space-y-6 max-w-5xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Left Column: Basic Info */}
+              <div className="space-y-6">
+                <div className="space-y-4">
+                  <label className="block text-xs font-black text-gray-400 uppercase tracking-widest">Test Title</label>
+                  <input 
+                    required
+                    type="text" 
+                    value={newTask.title}
+                    onChange={e => setNewTask({...newTask, title: e.target.value})}
+                    className="w-full p-4 rounded-2xl border-2 border-gray-100 font-bold focus:border-red-500 outline-none"
+                    placeholder="e.g. End of Unit 2 Assessment"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-4">
+                    <label className="block text-xs font-black text-gray-400 uppercase tracking-widest">Select Unit</label>
+                    <select 
+                      value={newTask.units?.[0]}
+                      onChange={e => setNewTask({...newTask, units: [parseInt(e.target.value)]})}
+                      className="w-full p-4 rounded-2xl border-2 border-gray-100 font-bold outline-none focus:border-red-500"
+                    >
+                      {units.map(u => (
+                        <option key={u.id} value={u.id}>{u.title}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-4">
+                    <label className="block text-xs font-black text-gray-400 uppercase tracking-widest">Test Date</label>
+                    <input 
+                      type="date" 
+                      value={newTask.dueDate}
+                      onChange={e => setNewTask({...newTask, dueDate: e.target.value})}
+                      className="w-full p-4 rounded-2xl border-2 border-gray-100 font-bold outline-none focus:border-red-500"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <label className="block text-xs font-black text-gray-400 uppercase tracking-widest">Passcode (REQUIRED FOR SECURITY)</label>
+                  <div className="relative">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                    <input 
+                      required
+                      type="text" 
+                      value={newTask.passcode}
+                      onChange={e => setNewTask({...newTask, passcode: e.target.value})}
+                      className="w-full pl-12 p-4 rounded-2xl border-2 border-gray-100 font-black tracking-widest focus:border-red-500 outline-none text-red-600"
+                      placeholder="e.g. SCIENCE2024"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-4">
+                    <label className="block text-xs font-black text-gray-400 uppercase tracking-widest">Time Limit (Mins)</label>
+                    <div className="relative">
+                      <Timer className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                      <input 
+                        type="number" 
+                        value={newTask.timeLimit}
+                        onChange={e => setNewTask({...newTask, timeLimit: parseInt(e.target.value)})}
+                        className="w-full pl-12 p-4 rounded-2xl border-2 border-gray-100 font-bold focus:border-red-500 outline-none"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-4 flex flex-col justify-end">
+                    <label className="flex items-center gap-3 cursor-pointer p-4 rounded-2xl border-2 border-gray-100 hover:border-blue-100 transition-all select-none">
+                      <input 
+                        type="checkbox" 
+                        checked={newTask.isABVersion}
+                        onChange={e => setNewTask({...newTask, isABVersion: e.target.checked})}
+                        className="w-5 h-5 rounded border-gray-300 text-red-600 focus:ring-red-500"
+                      />
+                      <span className="text-[10px] font-black uppercase tracking-widest text-gray-600">A/B Testing Mode</span>
+                    </label>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <label className="block text-xs font-black text-gray-400 uppercase tracking-widest">Test PDF URL (Optional)</label>
+                  <input 
+                    type="url" 
+                    value={newTask.pdfUrl || ''}
+                    onChange={e => setNewTask({...newTask, pdfUrl: e.target.value})}
+                    className="w-full p-4 rounded-2xl border-2 border-gray-100 font-bold focus:border-red-500 outline-none"
+                    placeholder="https://.../assessment.pdf"
+                  />
+                </div>
+              </div>
+
+              {/* Right Column: Interactive Content */}
+              <div className="space-y-6">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-black text-gray-400 uppercase tracking-widest">Interactive Test Mode JSON</label>
+                    <div className="flex gap-2">
+                       <button
+                        type="button"
+                        onClick={async () => {
+                          const prompt = `You are a curriculum expert. Generate a balanced set of 10 questions for unit ${newTask.units?.[0] || 1} in JSON format. include MCQ, Short Response, and Table types. use IDs like "test_${Date.now()}_q1".`;
+                          const genAI: any = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+                          const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-lite" });
+                          const result = await model.generateContent(prompt);
+                          const aiResponse = result.response;
+                          const text = aiResponse.text();
+                          const json = text.match(/\[[\s\S]*\]/)?.[0];
+                          if (json) {
+                            setWorksheetQuestionsJson(json);
+                            alert("AI Generated sample questions!");
+                          } else {
+                            alert("AI failed to generate parseable JSON. Try again.");
+                          }
+                        }}
+                        disabled={!newTask.units?.length}
+                        className="text-[10px] uppercase font-black tracking-widest bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg border border-blue-200 hover:bg-blue-100 transition-all disabled:opacity-50"
+                      >
+                        AI Generate
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const workId = (newTask.title || 'test').toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+                          const prompt = `Generate interactive test JSON for: ${newTask.title || '[Untitled Test]'}
+Support Question Types:
+1. "mcq" (Multiple Choice)
+2. "short-response" (Open text)
+3. "table" (requires tableData: array of arrays, and columnHeaders/rowHeaders)
+4. "tick-cross" (Binary selection)
+5. "reorder" (requires items: array of strings)
+
+JSON Schema Example:
+[
+  {
+    "id": "${workId}_q1",
+    "section": "Section A",
+    "question": "Choose the correct answer...",
+    "type": "mcq",
+    "options": ["A", "B", "C", "D"],
+    "page": 1
+  },
+  {
+    "id": "${workId}_q2",
+    "section": "Section B",
+    "question": "Reorder the steps of photosynthesis:",
+    "type": "reorder",
+    "items": ["Absorb Light", "Split Water", "Fix Carbon"],
+    "page": 2
+  }
+]
+Output ONLY the JSON array.`;
+                          navigator.clipboard.writeText(prompt);
+                          alert("Test extraction prompt copied!");
+                        }}
+                        className="flex items-center gap-1 text-[10px] uppercase font-black tracking-widest bg-zinc-50 text-zinc-600 px-3 py-1.5 rounded-lg border border-zinc-200 hover:bg-zinc-100 transition-all"
+                      >
+                        <Copy size={12} /> Copy Prompt
+                      </button>
+                    </div>
+                  </div>
+                  <textarea 
+                    value={worksheetQuestionsJson}
+                    onChange={e => setWorksheetQuestionsJson(e.target.value)}
+                    className="w-full h-48 p-4 rounded-2xl border-2 border-gray-100 font-mono text-[10px] focus:border-red-500 outline-none resize-none custom-scrollbar bg-slate-50/30"
+                    placeholder="Provide test questions JSON structure..."
+                  />
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-black text-gray-400 uppercase tracking-widest">Marking Scheme (JSON or Text)</label>
+                    <button
+                        type="button"
+                        onClick={() => {
+                          const workId = (newTask.title || 'test').toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+                          const prompt = `Generate marking scheme mapping for test questions: ${worksheetQuestionsJson}
+Include specific rubric per point.
+Output ONLY the JSON object.`;
+                          navigator.clipboard.writeText(prompt);
+                          alert("Markscheme prompt copied!");
+                        }}
+                        className="flex items-center gap-1 text-[10px] uppercase font-black tracking-widest bg-emerald-50 text-emerald-600 px-3 py-1.5 rounded-lg border border-emerald-200 hover:bg-emerald-100 transition-all"
+                      >
+                        <Copy size={12} /> Sync Rubric Prompt
+                      </button>
+                  </div>
+                  <textarea 
+                    value={markschemeContent}
+                    onChange={e => setMarkschemeContent(e.target.value)}
+                    className="w-full h-48 p-4 rounded-2xl border-2 border-gray-100 font-mono text-[10px] focus:border-red-500 outline-none resize-none custom-scrollbar bg-slate-50/30"
+                    placeholder="Provide marking rubric for AI grading..."
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-4 mt-12 bg-white sticky bottom-0 pt-4 border-t-2 border-red-50">
+              <button 
+                type="button"
+                onClick={() => setIsTestCreatorOpen(false)}
+                className="px-8 py-3 rounded-2xl font-black uppercase tracking-widest text-xs text-gray-400 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button 
+                type="submit"
+                className="bg-red-600 text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest shadow-[0_6px_0_0_#991b1b] active:translate-y-1 active:shadow-none transition-all flex items-center gap-2"
+              >
+                <ShieldCheck size={18} />
+                Deploy Test
+              </button>
+            </div>
+          </form>
+        </motion.div>
+      )}
+
+      {/* Passcode Unlock Modal */}
+      <AnimatePresence>
+        {isPasscodeModalOpen && selectedTaskForPasscode && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[600] flex items-center justify-center p-6">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="bg-white rounded-[2.5rem] p-10 max-w-md w-full shadow-2xl border-4 border-red-50"
+            >
+              <div className="bg-red-50 w-20 h-20 rounded-3xl flex items-center justify-center text-red-500 mx-auto mb-8 shadow-inner">
+                <Lock size={40} className="animate-bounce" />
+              </div>
+              
+              <h2 className="text-2xl font-black text-center text-gray-800 uppercase tracking-tight mb-2">Secure Assessment</h2>
+              <p className="text-gray-500 text-center text-sm font-bold mb-8 px-4">
+                This assessment is locked. Please enter the passcode provided by your instructor to begin.
+              </p>
+
+              <div className="space-y-6">
+                <div className="space-y-2 text-center">
+                  <input 
+                    type="password"
+                    value={enteredPasscode}
+                    onChange={(e) => {
+                      setEnteredPasscode(e.target.value.toUpperCase());
+                      setPasscodeError(false);
+                    }}
+                    autoFocus
+                    placeholder="••••••••"
+                    className={`w-full text-center text-3xl font-black tracking-[0.5em] p-6 rounded-2xl border-4 outline-none transition-all ${
+                      passcodeError ? 'border-red-500 bg-red-50' : 'border-gray-100 focus:border-red-200'
+                    }`}
+                  />
+                  {passcodeError && (
+                    <p className="text-red-500 text-[10px] font-black uppercase tracking-widest animate-pulse">Incorrect Passcode</p>
+                  )}
+                </div>
+
+                <div className="flex gap-4">
+                  <button 
+                    onClick={() => {
+                      setIsPasscodeModalOpen(false);
+                      setSelectedTaskForPasscode(null);
+                      setEnteredPasscode('');
+                      setPasscodeError(false);
+                    }}
+                    className="flex-1 py-4 px-6 rounded-2xl font-black uppercase tracking-widest text-xs text-gray-400 hover:bg-gray-50 bg-white border-2 border-gray-100 transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={() => {
+                      if (enteredPasscode === selectedTaskForPasscode.passcode) {
+                        onStartTask(selectedTaskForPasscode);
+                        setIsPasscodeModalOpen(false);
+                        setSelectedTaskForPasscode(null);
+                        setEnteredPasscode('');
+                      } else {
+                        setPasscodeError(true);
+                      }
+                    }}
+                    className="flex-1 py-4 px-6 rounded-2xl font-black uppercase tracking-widest text-xs text-white bg-red-600 shadow-[0_4px_0_0_#991b1b] active:translate-y-1 active:shadow-none transition-all"
+                  >
+                    Unlock
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {isAdmin && isCreatorOpen && (
         <motion.div 
@@ -1009,88 +1350,108 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
       ) : (
         <div className="flex flex-col lg:flex-row gap-8">
           <div className="flex-1">
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
-              {tasks.map(task => {
-                const isCompleted = mySubmissions.some(sub => sub.taskId === task.id);
-                const submission = mySubmissions.find(sub => sub.taskId === task.id);
-                const taskDate = task.dueDate.includes('T') ? parseISO(task.dueDate) : new Date(task.dueDate + 'T00:00:00');
-                const isSelectedDate = isSameDay(startOfDay(taskDate), startOfDay(selectedDate));
-                
-                return (
-                  <motion.div 
-                    key={task.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    whileHover={{ y: -5 }}
-                    onClick={() => {
-                      if (isAdmin && onUpdateTask) {
-                        setEditingTask(task);
-                      }
-                    }}
-                    className={`rounded-[2rem] p-5 md:p-6 shadow-lg text-white cursor-pointer relative overflow-hidden group h-full flex flex-col min-h-[200px] transition-all
-                      ${isSelectedDate ? 'ring-4 ring-offset-4 ring-emerald-400' : ''}
-                      ${isCompleted 
-                        ? 'bg-gradient-to-br from-emerald-500 to-teal-600' 
-                        : 'bg-gradient-to-br from-orange-400 to-amber-600'}
-                    `}
-                  >
-                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                      {isCompleted ? <CheckCircle2 size={80} /> : <Clock size={80} />}
-                    </div>
-                    
-                    <div className="relative z-10 flex flex-col h-full">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="bg-white/20 w-10 h-10 rounded-xl backdrop-blur-sm flex items-center justify-center border border-white/20">
-                          {isCompleted ? <CheckCircle2 size={20} /> : <Target size={20} />}
-                        </div>
-                        {isCompleted && (
-                          <div className="bg-white/30 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest backdrop-blur-sm">
-                            Done
-                          </div>
-                        )}
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">                {tasks.map(task => {
+                  const isCompleted = mySubmissions.some(sub => sub.taskId === task.id);
+                  const submission = mySubmissions.find(sub => sub.taskId === task.id);
+                  const taskDate = task.dueDate.includes('T') ? parseISO(task.dueDate) : new Date(task.dueDate + 'T00:00:00');
+                  const isSelectedDate = isSameDay(startOfDay(taskDate), startOfDay(selectedDate));
+                  const isTest = task.type === 'test';
+                  
+                  return (
+                    <motion.div 
+                      key={task.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      whileHover={{ y: -5 }}
+                      onClick={() => {
+                        if (isAdmin && onUpdateTask) {
+                          setEditingTask(task);
+                        }
+                      }}
+                      className={`rounded-[2rem] p-5 md:p-6 shadow-lg text-white cursor-pointer relative overflow-hidden group h-full flex flex-col min-h-[220px] transition-all
+                        ${isSelectedDate ? 'ring-4 ring-offset-4 ring-emerald-400' : ''}
+                        ${isCompleted 
+                          ? 'bg-gradient-to-br from-emerald-500 to-teal-600 shadow-emerald-200' 
+                          : isTest 
+                            ? 'bg-gradient-to-br from-red-500 to-rose-700 shadow-red-200'
+                            : 'bg-gradient-to-br from-orange-400 to-amber-600 shadow-orange-200'}
+                      `}
+                    >
+                      <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                        {isCompleted ? <CheckCircle2 size={80} /> : isTest ? <ShieldCheck size={80} /> : <Clock size={80} />}
                       </div>
-
-                      <h3 className="text-lg font-black uppercase tracking-tight leading-tight mb-2 line-clamp-2">{task.title}</h3>
-                      <p className="text-white/70 text-[10px] font-bold mb-6 line-clamp-2 uppercase tracking-wide">
-                        {task.description || "Active Assignment"}
-                      </p>
                       
-                      <div className="mt-auto pt-4 border-t border-white/10 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Clock size={12} className="text-white/60" />
-                          <span className="text-[10px] font-black uppercase tracking-widest">{format(taskDate, 'MMM d')}</span>
-                        </div>
-                        {isCompleted ? (
-                          <div className="flex items-center gap-3">
-                            <div className="text-right">
-                               <p className="text-[8px] font-black text-white/50 uppercase tracking-widest mb-0.5">Grade</p>
-                               <p className="text-xs font-black">{submission?.results?.score !== undefined ? `${submission?.results?.score}/${submission?.results?.total}` : 'Pending'}</p>
-                            </div>
-                            {submission && submission.feedback && (
-                              <button 
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  generateResponsePDF(submission, task, true);
-                                }}
-                                className="bg-white/20 text-white p-2 rounded-xl hover:bg-white hover:text-emerald-600 hover:scale-110 active:scale-95 transition-all shadow-sm backdrop-blur-sm border border-white/20"
-                                title="Download Graded Report"
-                              >
-                                <FileText size={14} />
-                              </button>
+                      <div className="relative z-10 flex flex-col h-full">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="bg-white/20 w-10 h-10 rounded-xl backdrop-blur-sm flex items-center justify-center border border-white/20">
+                            {isCompleted ? <CheckCircle2 size={20} /> : isTest ? <Lock size={20} /> : <Target size={20} />}
+                          </div>
+                          <div className="flex items-center gap-2">
+                             {isTest && (
+                               <div className="bg-red-950/20 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest backdrop-blur-sm border border-white/10 flex items-center gap-1">
+                                 <Timer size={10} /> {task.timeLimit}m
+                               </div>
+                             )}
+                            {isCompleted && (
+                              <div className="bg-white/30 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest backdrop-blur-sm">
+                                Done
+                              </div>
                             )}
                           </div>
-                        ) : (
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onStartTask(task);
-                            }}
-                            className="bg-white text-blue-600 p-2 rounded-xl hover:scale-110 active:scale-95 transition-all shadow-sm"
-                          >
-                            <ArrowRight size={14} />
-                          </button>
-                        )}
-                      </div>
+                        </div>
+
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            {isTest && <span className="text-[9px] font-black uppercase bg-white/20 px-2 py-0.5 rounded border border-white/20">Assessment</span>}
+                            <h3 className="text-lg font-black uppercase tracking-tight leading-tight line-clamp-2">{task.title}</h3>
+                          </div>
+                          <p className="text-white/70 text-[10px] font-bold mb-6 line-clamp-2 uppercase tracking-wide">
+                            {task.description || (isTest ? "Secure Examination Mode" : "Active Assignment")}
+                          </p>
+                        </div>
+                        
+                        <div className="mt-auto pt-4 border-t border-white/10 flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <CalendarIcon size={12} className="text-white/60" />
+                            <span className="text-[10px] font-black uppercase tracking-widest">{format(taskDate, 'MMM d')}</span>
+                          </div>
+                          {isCompleted ? (
+                            <div className="flex items-center gap-3">
+                              <div className="text-right">
+                                 <p className="text-[8px] font-black text-white/50 uppercase tracking-widest mb-0.5">Grade</p>
+                                 <p className="text-xs font-black">{submission?.results?.score !== undefined ? `${submission?.results?.score}/${submission?.results?.total}` : 'Pending'}</p>
+                              </div>
+                              {submission && submission.feedback && (
+                                <button 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    generateResponsePDF(submission, task, true);
+                                  }}
+                                  className="bg-white/20 text-white p-2 rounded-xl hover:bg-white hover:text-emerald-600 hover:scale-110 active:scale-95 transition-all shadow-sm backdrop-blur-sm border border-white/20"
+                                  title="Download Graded Report"
+                                >
+                                  <FileText size={14} />
+                                </button>
+                              )}
+                            </div>
+                          ) : (
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (isTest) {
+                                  setSelectedTaskForPasscode(task);
+                                  setIsPasscodeModalOpen(true);
+                                } else {
+                                  onStartTask(task);
+                                }
+                              }}
+                              className={`bg-white p-2 rounded-xl hover:scale-110 active:scale-95 transition-all shadow-sm ${isTest ? 'text-red-600' : 'text-blue-600'}`}
+                            >
+                              <ArrowRight size={14} />
+                            </button>
+                          )}
+                        </div>
+
 
                       {isAdmin && (
                         <button 
