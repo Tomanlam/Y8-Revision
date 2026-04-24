@@ -34,11 +34,13 @@ export interface Unit {
   keyTerms?: { [term: string]: string };
   vocab: Vocab[];
   questions: Question[];
+  pdfUrl?: string;
 }
 
 export const units: Unit[] = [
   {
     "id": 1,
+    "pdfUrl": "https://msk8tathmqnxjo8k.public.blob.vercel-storage.com/NOTES/Compressed/UNIT%201_compressed.pdf",
     "title": "Respiration",
     "titleTraditional": "呼吸作用",
     "titleSimplified": "呼吸作用",
@@ -1741,6 +1743,7 @@ export const units: Unit[] = [
   },
   {
     "id": 2,
+    "pdfUrl": "https://msk8tathmqnxjo8k.public.blob.vercel-storage.com/NOTES/Compressed/UNIT%202_compressed.pdf",
     "title": "Properties of materials",
     "titleTraditional": "物質的性質",
     "titleSimplified": "物质的性质",
@@ -3021,6 +3024,7 @@ export const units: Unit[] = [
   },
   {
     "id": 3,
+    "pdfUrl": "https://msk8tathmqnxjo8k.public.blob.vercel-storage.com/NOTES/Compressed/UNIT%203_compressed.pdf",
     "title": "Forces and energy",
     "titleTraditional": "力與能量",
     "titleSimplified": "力与能量",
@@ -4676,6 +4680,7 @@ export const units: Unit[] = [
   },
   {
     "id": 4,
+    "pdfUrl": "https://msk8tathmqnxjo8k.public.blob.vercel-storage.com/NOTES/Compressed/UNIT%204_compressed.pdf",
     "title": "Ecosystems",
     "titleTraditional": "生態系統",
     "titleSimplified": "生态系统",
@@ -5786,6 +5791,7 @@ export const units: Unit[] = [
   },
   {
     "id": 5,
+    "pdfUrl": "https://msk8tathmqnxjo8k.public.blob.vercel-storage.com/NOTES/Compressed/UNIT%205_compressed.pdf",
     "title": "Materials and cycles on Earth",
     "titleTraditional": "地球上的物質與循環",
     "titleSimplified": "地球上的物质与循环",
@@ -6756,6 +6762,7 @@ export const units: Unit[] = [
   },
   {
     "id": 6,
+    "pdfUrl": "https://msk8tathmqnxjo8k.public.blob.vercel-storage.com/NOTES/Compressed/UNIT%206_compressed.pdf",
     "title": "Light",
     "titleTraditional": "光",
     "titleSimplified": "光",
@@ -8154,6 +8161,7 @@ export const units: Unit[] = [
   },
   {
     "id": 7,
+    "pdfUrl": "https://msk8tathmqnxjo8k.public.blob.vercel-storage.com/NOTES/Compressed/UNIT%207_compressed.pdf",
     "title": "Diet and growth",
     "description": "Nutrition, human development, and the skeletal system.",
     "color": "bg-pink-500",
@@ -9257,6 +9265,7 @@ export const units: Unit[] = [
   },
   {
     "id": 8,
+    "pdfUrl": "https://msk8tathmqnxjo8k.public.blob.vercel-storage.com/NOTES/Compressed/UNIT%208_compressed.pdf",
     "title": "Chemical Reactions & Energy",
     "description": "Chemical changes, energy transformations, and properties of metals.",
     "color": "bg-purple-600",
@@ -10255,6 +10264,7 @@ export const units: Unit[] = [
   },
   {
     "id": 9,
+    "pdfUrl": "https://msk8tathmqnxjo8k.public.blob.vercel-storage.com/NOTES/Compressed/UNIT%209_compressed.pdf",
     "title": "Magnetism",
     "description": "Properties of magnets and electromagnets.",
     "color": "bg-indigo-900",

@@ -134,4 +134,5 @@ export interface Unit {
   conceptsSimplified?: string[];
   vocab: Vocab[];
   questions: Question[];
+  pdfUrl?: string;
 }

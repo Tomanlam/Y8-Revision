@@ -8,7 +8,7 @@ import {
   QrCode, Edit, Database, LogOut, User, Calendar as CalendarIcon, ChevronRight as ChevronRightIcon, Target,
   Crown, Calculator, Clock
 } from 'lucide-react';
-import { Unit, ChallengeRecord, ChallengeResponse, Question, UserProfile, Task } from '../../types';
+import { Unit, ChallengeRecord, ChallengeResponse, Question, UserProfile, Task, TaskSubmission } from '../../types';
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, parseISO, startOfDay } from 'date-fns';
 import { User as FirebaseUser } from 'firebase/auth';
 
@@ -78,6 +78,7 @@ interface DashboardViewProps {
   setMode: (mode: any) => void;
   showCalculator: boolean;
   setShowCalculator: (v: boolean) => void;
+  mySubmissions: TaskSubmission[];
 }
 
 const Y8Splash = ({ onClose }: { onClose: () => void }) => {
@@ -201,8 +202,19 @@ const DashboardView: React.FC<DashboardViewProps> = (props) => {
     startQuiz, startRevision, startVocab,
     currentUser, loginWithGoogle, logout, allUsers, selectedStudent, setSelectedStudent,
     tasks, onCreateTask, onDeleteTask, onStartTask, setMode,
-    showCalculator, setShowCalculator
+    showCalculator, setShowCalculator, mySubmissions
   } = props;
+
+  const outstandingTasks = tasks.filter(t => t.status === 'active' && !mySubmissions.some(s => s.taskId === t.id));
+  const gradedReports = mySubmissions.filter(s => s.feedback || s.generalFeedback);
+  
+  const nextTask = [...outstandingTasks].sort((a,b) => {
+    const dateA = a.dueDate.includes('T') ? parseISO(a.dueDate) : new Date(a.dueDate + 'T00:00:00');
+    const dateB = b.dueDate.includes('T') ? parseISO(b.dueDate) : new Date(b.dueDate + 'T00:00:00');
+    return dateA.getTime() - dateB.getTime();
+  })[0];
+
+  const nextDeadline = nextTask ? format(nextTask.dueDate.includes('T') ? parseISO(nextTask.dueDate) : new Date(nextTask.dueDate + 'T00:00:00'), 'MMM do') : 'None';
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
@@ -214,7 +226,12 @@ const DashboardView: React.FC<DashboardViewProps> = (props) => {
         <div className="max-w-5xl mx-auto flex justify-between items-center px-4">
           <div className="flex flex-col">
             <h1 className="text-2xl font-black text-emerald-500 tracking-tight leading-none">Y8 Cambridge LS Science</h1>
-            <span className="text-[10px] font-bold text-black uppercase tracking-widest mt-1">An app by Toman</span>
+            <div className="flex items-center gap-1 mt-1">
+              <span className="text-[10px] font-bold text-black uppercase tracking-widest leading-none">An app by Toman</span>
+              <span className="text-[10px] font-bold text-orange-500 uppercase tracking-widest flex items-center gap-1">
+                | secured by <img src="/Firebase.png" alt="Firebase" className="h-2.5 w-auto inline-block" />
+              </span>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             
@@ -377,65 +394,99 @@ const DashboardView: React.FC<DashboardViewProps> = (props) => {
       </AnimatePresence>
 
       <main className="max-w-7xl mx-auto p-6 space-y-8 mt-4 pb-24">
-        <div className="bg-gradient-to-r from-emerald-500 to-teal-600 rounded-[2rem] p-5 md:p-6 shadow-lg text-white">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <motion.div 
+          animate={outstandingTasks.length > 0 ? {
+            boxShadow: ["0 0 0 0px rgba(16, 185, 129, 0)", "0 0 0 10px rgba(16, 185, 129, 0.2)", "0 0 0 0px rgba(16, 185, 129, 0)"]
+          } : {}}
+          transition={outstandingTasks.length > 0 ? {
+            duration: 2,
+            repeat: Infinity,
+            ease: "easeInOut"
+          } : {}}
+          className="bg-gradient-to-r from-emerald-500 to-teal-600 rounded-[2rem] p-8 shadow-lg text-white"
+        >
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
             <div>
-              <h2 className="text-2xl font-black uppercase tracking-tight mb-1">At a Glance</h2>
+              <h2 className="text-3xl font-black uppercase tracking-tight mb-1">
+                {currentUser ? `Welcome back, ${currentUser.displayName?.split(' ')[0]}` : 'Welcome back'}
+              </h2>
               <p className="text-emerald-100 font-medium text-sm">{format(new Date(), 'EEEE, MMMM do yyyy')}</p>
             </div>
-            <div className="flex items-center gap-3 bg-white/20 p-3 rounded-2xl backdrop-blur-sm border border-white/20">
-              <div className="bg-white p-2 rounded-xl text-teal-600 shadow-sm">
-                <Target size={24} />
+            
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 flex-1 lg:max-w-2xl">
+              <div className="bg-white/20 p-4 rounded-3xl backdrop-blur-sm border border-white/20 flex flex-col justify-center">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="bg-white/30 p-1 rounded-lg">
+                    <Target size={14} className="text-white" />
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-50">Tasks Left</span>
+                </div>
+                <div className="text-3xl font-black">{outstandingTasks.length}</div>
               </div>
-              <div>
-                <div className="text-2xl font-black leading-none">{tasks.filter(t => t.status === 'active').length}</div>
-                <div className="text-[10px] font-bold uppercase tracking-widest mt-0.5 opacity-90 text-emerald-50">Active Tasks</div>
+
+              <div className="bg-white/20 p-4 rounded-3xl backdrop-blur-sm border border-white/20 flex flex-col justify-center">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="bg-white/30 p-1 rounded-lg">
+                    <CalendarIcon size={14} className="text-white" />
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-50">Next Deadline</span>
+                </div>
+                <div className="text-xl font-black truncate">{nextDeadline}</div>
+              </div>
+
+              <div className="bg-white/20 p-4 rounded-3xl backdrop-blur-sm border border-white/20 flex flex-col justify-center relative overflow-hidden group">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="bg-white/30 p-1 rounded-lg">
+                    <FileText size={14} className="text-white" />
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-50">Graded Reports</span>
+                </div>
+                <div className="text-xl font-black flex items-center gap-2">
+                  {gradedReports.length}
+                  {gradedReports.length > 0 && (
+                    <span className="flex h-2 w-2 rounded-full bg-orange-400 animate-ping" />
+                  )}
+                </div>
               </div>
             </div>
           </div>
           
-          {tasks.filter(t => t.status === 'active').length > 0 && (
-            <div className="mt-5 pt-5 border-t border-white/20">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-xs font-black uppercase tracking-widest text-emerald-100">Next Deadlines</h3>
+          {outstandingTasks.length > 0 && (
+            <div className="mt-8 pt-8 border-t border-white/20">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xs font-black uppercase tracking-widest text-emerald-100 flex items-center gap-2">
+                  <Clock size={14} /> Outstanding Work
+                </h3>
                 <button 
                   onClick={() => setMode('tasks')}
                   className="text-[10px] font-bold uppercase tracking-widest hover:text-emerald-200 transition-colors flex items-center gap-1"
                 >
-                  View All <ChevronRightIcon size={12} />
+                  View Tasks <ChevronRightIcon size={12} />
                 </button>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {tasks.filter(t => t.status === 'active')
-                  .sort((a,b) => {
-                    const dateA = a.dueDate.includes('T') ? parseISO(a.dueDate) : new Date(a.dueDate + 'T00:00:00');
-                    const dateB = b.dueDate.includes('T') ? parseISO(b.dueDate) : new Date(b.dueDate + 'T00:00:00');
-                    return dateA.getTime() - dateB.getTime();
-                  })
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {outstandingTasks
                   .slice(0, isMobile ? 1 : 3)
                   .map(task => {
                     const taskDate = task.dueDate.includes('T') ? parseISO(task.dueDate) : new Date(task.dueDate + 'T00:00:00');
                     return (
-                      <div key={task.id} className="bg-white/10 hover:bg-white/20 transition-colors rounded-xl p-3 flex items-center justify-between gap-3 border border-white/10">
+                      <div key={task.id} className="bg-white/10 hover:bg-white/20 transition-all rounded-2xl p-4 flex items-center justify-between gap-4 border border-white/10 group cursor-pointer" onClick={() => { setMode('tasks'); onStartTask(task); }}>
                         <div className="truncate flex-1">
-                          <p className="font-bold truncate text-sm" title={task.title}>{task.title}</p>
-                          <p className="text-[10px] font-semibold text-emerald-100 uppercase tracking-wider mt-0.5 flex items-center gap-1">
-                            <Clock size={10} /> {format(taskDate, 'MMM do')}
+                          <p className="font-black truncate text-sm" title={task.title}>{task.title}</p>
+                          <p className="text-[10px] font-bold text-emerald-100 uppercase tracking-widest mt-1 opacity-80">
+                            Due {format(taskDate, 'MMM do')}
                           </p>
                         </div>
-                        <button
-                          onClick={() => { setMode('tasks'); onStartTask(task); }}
-                          className="bg-white text-teal-600 p-2 rounded-lg hover:scale-105 active:scale-95 transition-all shadow-sm"
-                        >
-                          <ArrowRight size={14} />
-                        </button>
+                        <div className="bg-white text-teal-600 p-2 rounded-xl group-hover:scale-110 transition-transform shadow-sm">
+                          <ArrowRight size={16} />
+                        </div>
                       </div>
                     );
                   })}
               </div>
             </div>
           )}
-        </div>
+        </motion.div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {units.map((unit) => (

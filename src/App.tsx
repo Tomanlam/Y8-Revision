@@ -663,6 +663,7 @@ function AppContent() {
               tasks={tasks} onCreateTask={onCreateTask} onDeleteTask={onDeleteTask} onStartTask={onStartTask}
               setMode={setMode}
               showCalculator={showCalculator} setShowCalculator={setShowCalculator}
+              mySubmissions={mySubmissions}
             />
           )}
 

@@ -12,7 +12,8 @@ async function main() {
   const querySnapshot = await getDocs(collection(db, "tasks"));
   for (const item of querySnapshot.docs) {
     const data = item.data();
-    if (data.title && (data.title.toLowerCase() === "y8 8.4" || data.title.toLowerCase() === "y8 8.5")) {
+    const templateTitles = ["y8 8.1", "y8 8.2", "y8 8.3", "y8 metal reactions"];
+    if (data.title && templateTitles.includes(data.title.toLowerCase())) {
       await deleteDoc(doc(db, "tasks", item.id));
       console.log(`Deleted task: ${data.title} (${item.id})`);
     }
