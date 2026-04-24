@@ -166,6 +166,14 @@ const TasksView = ({
     if (worksheetQuestionsJson.trim()) {
       try {
         parsedQuestions = JSON.parse(worksheetQuestionsJson);
+        // Fix Firebase nested array limitation: convert tableData arrays-of-arrays to array-of-objects
+        if (Array.isArray(parsedQuestions)) {
+          parsedQuestions.forEach((q: any) => {
+            if (q.tableData && Array.isArray(q.tableData[0])) {
+              q.tableData = q.tableData.map((row: any) => ({ row }));
+            }
+          });
+        }
       } catch (err) {
         alert("Invalid JSON in Worksheet Questions. Please check your formatting.");
         return;

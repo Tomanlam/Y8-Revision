@@ -372,6 +372,16 @@ function AppContent() {
     return onSnapshot(q, (snap) => {
       const firestoreTasks = snap.docs.map(d => {
         const data = { id: d.id, ...d.data() } as Task;
+        
+        // Fix Firebase nested array limitation: restore array-of-arrays from array-of-objects
+        if (data.worksheetQuestions) {
+          data.worksheetQuestions.forEach(q => {
+            if (q.tableData && Array.isArray(q.tableData) && q.tableData[0]?.row) {
+              q.tableData = q.tableData.map((r: any) => r.row);
+            }
+          });
+        }
+        
         return data;
       });
 
