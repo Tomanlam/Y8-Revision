@@ -91,6 +91,91 @@ const TaskTestView: React.FC<TaskTestViewProps> = ({
   const [timeLeft, setTimeLeft] = useState<number | null>((task.timeLimit || 60) * 60);
   const [isTimeUp, setIsTimeUp] = useState(false);
 
+  // Admin Features
+  const [showMarkschemeEditor, setShowMarkschemeEditor] = useState(false);
+  const [editingMarkscheme, setEditingMarkscheme] = useState<string>("");
+  const [isSavingMarkscheme, setIsSavingMarkscheme] = useState(false);
+
+  const [showQuestionsEditor, setShowQuestionsEditor] = useState(false);
+  const [editingQuestions, setEditingQuestions] = useState<string>("");
+  const [isSavingQuestions, setIsSavingQuestions] = useState(false);
+
+  // Anti-Cheat State
+  const [tabSwitchesCount, setTabSwitchesCount] = useState(0);
+  const [cheatDetected, setCheatDetected] = useState(false);
+  const audioContextRef = useRef<AudioContext | null>(null);
+
+  // Siren Sound Synthesis
+  const playSiren = () => {
+    try {
+      if (!audioContextRef.current) {
+        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      }
+      const ctx = audioContextRef.current;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(440, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.5);
+      osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 1.0);
+      osc.loop = true;
+
+      gain.gain.setValueAtTime(0.2, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.0);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start();
+      osc.stop(ctx.currentTime + 1.0);
+    } catch (e) {
+      console.warn("Audio Context failed", e);
+    }
+  };
+
+  useEffect(() => {
+    if (readOnly || submitted) return;
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        setTabSwitchesCount(prev => prev + 1);
+        setCheatDetected(true);
+        playSiren();
+      }
+    };
+
+    const handleBlur = () => {
+      setTabSwitchesCount(prev => prev + 1);
+      setCheatDetected(true);
+      playSiren();
+    };
+
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Prevent Print, Save, Inspect
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'p' || e.key === 's' || e.key === 'u')) {
+        e.preventDefault();
+        setCheatDetected(true);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('blur', handleBlur);
+    window.addEventListener('contextmenu', handleContextMenu as any);
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('blur', handleBlur);
+      window.removeEventListener('contextmenu', handleContextMenu as any);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [readOnly, submitted]);
+
   useEffect(() => {
     if (timeLeft !== null && timeLeft > 0 && !submitted && !readOnly) {
       const timer = setInterval(() => {
@@ -137,46 +222,113 @@ const TaskTestView: React.FC<TaskTestViewProps> = ({
     "Grade based on general scientific principles."
   );
 
-  // Sync scroll from PDF to Questions - EXCLUSIVE Implementation for TestView
+  useEffect(() => {
+    // If the task already has a markscheme embedded, we use that first
+    if (task.markschemeContent) {
+      setMarkscheme(task.markschemeContent);
+      return;
+    }
+
+    if (isAdmin) {
+      const loadMarkscheme = async () => {
+        try {
+          // Try both variants for backwards compatibility
+          const docRef = doc(db, 'markschemes', taskKeyRaw);
+          const snap = await getDoc(docRef);
+          if (snap.exists()) {
+            setMarkscheme(snap.data().content);
+          } else {
+            // Fallback to title with y8 if that's how it was saved
+            const docRefAlt = doc(db, 'markschemes', task.title);
+            const snapAlt = await getDoc(docRefAlt);
+            if (snapAlt.exists()) {
+              setMarkscheme(snapAlt.data().content);
+            }
+          }
+        } catch (e) {
+          console.error("Error loading markscheme:", e);
+        }
+      };
+      loadMarkscheme();
+    }
+  }, [isAdmin, taskKeyRaw, task.title, task.markschemeContent]);
+
+  const handleSaveMarkscheme = async () => {
+    setIsSavingMarkscheme(true);
+    try {
+      await updateDoc(doc(db, 'tasks', task.id), { markschemeContent: editingMarkscheme });
+      setMarkscheme(editingMarkscheme);
+      setShowMarkschemeEditor(false);
+    } catch (e) {
+      console.error(e);
+      alert("Failed to save markscheme.");
+    } finally {
+      setIsSavingMarkscheme(false);
+    }
+  };
+
+  const handleSaveQuestions = async () => {
+    setIsSavingQuestions(true);
+    try {
+      const parsedQuestions = JSON.parse(editingQuestions);
+      if (Array.isArray(parsedQuestions)) {
+        parsedQuestions.forEach((q: any) => {
+          if (q.tableData && Array.isArray(q.tableData[0])) {
+            q.tableData = q.tableData.map((row: any) => ({ row }));
+          }
+        });
+      }
+      await setDoc(doc(db, 'tasks', task.id), { worksheetQuestions: parsedQuestions }, { merge: true });
+      setShowQuestionsEditor(false);
+    } catch (e) {
+      console.error(e);
+      alert("Failed to save questions. Please ensure valid JSON formatting.");
+    } finally {
+      setIsSavingQuestions(false);
+    }
+  };
+
+  // Sync scroll from PDF to Questions (Matching Worksheet Logic)
   useEffect(() => {
     if (!numPages || !pdfContainerRef.current) return;
     
-    // Observer options for precise tracking
-    const options = {
-      root: pdfContainerRef.current,
-      threshold: [0, 0.5, 1],
-      rootMargin: '-5% 0px -40% 0px'
-    };
-
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting && entry.intersectionRatio > 0.1) {
-          const target = entry.target as HTMLElement;
-          const pageNum = parseInt(target.getAttribute('data-page-index') || '1');
-          
-          if (pageNum !== activePage) {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const target = entry.target as HTMLElement;
+            const pageNum = parseInt(target.getAttribute('data-page-index') || '1');
             setActivePage(pageNum);
             
-            // Sync with right pane
+            // Sync with right pane using robust coordinate calculation
             const questionElement = document.getElementById(`test-questions-page-${pageNum}`);
             if (questionElement && rightPaneRef.current) {
-              const elementTop = questionElement.offsetTop;
+              const rect = questionElement.getBoundingClientRect();
+              const parentRect = rightPaneRef.current.getBoundingClientRect();
+              const offset = rect.top - parentRect.top;
+              
               rightPaneRef.current.scrollTo({
-                top: elementTop - 10,
+                top: rightPaneRef.current.scrollTop + offset - 20,
                 behavior: 'smooth'
               });
             }
           }
-        }
-      });
-    }, options);
+        });
+      },
+      { 
+        root: pdfContainerRef.current,
+        threshold: 0, 
+        rootMargin: '-10% 0px -80% 0px'
+      }
+    );
 
     // Dynamic selection of pages
-    const pageElements = pdfContainerRef.current.querySelectorAll('.pdf-page-container');
-    pageElements.forEach(el => observer.observe(el));
+    Object.values(pageRefs.current).forEach((el) => {
+      if (el) observer.observe(el as Element);
+    });
 
     return () => observer.disconnect();
-  }, [numPages, task.id, activePage]);
+  }, [numPages, task.id]);
 
   const handleResponse = (questionId: string, value: any) => {
     if (readOnly || submitted) return;
@@ -278,10 +430,11 @@ const TaskTestView: React.FC<TaskTestViewProps> = ({
           score: computedEarned,
           total: computedTotal || task.worksheetQuestions?.length || 0,
           feedback: feedbackResult,
-          generalFeedback: generalResult
+          generalFeedback: generalResult,
+          tabSwitches: tabSwitchesCount
         });
       } else {
-        await onComplete(responses);
+        await onComplete(responses, { tabSwitches: tabSwitchesCount });
         setSubmitted(true);
       }
     } catch (error: any) {
@@ -301,6 +454,31 @@ const TaskTestView: React.FC<TaskTestViewProps> = ({
 
   return (
     <div className="fixed inset-0 bg-white z-[200] flex flex-col overflow-hidden font-sans">
+      <AnimatePresence>
+        {cheatDetected && !submitted && !readOnly && (
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-red-600/90 backdrop-blur-md z-[1000] flex flex-col items-center justify-center p-12 text-center"
+          >
+            <div className="bg-white p-8 rounded-full mb-8 animate-pulse">
+              <AlertCircle size={80} className="text-red-600" />
+            </div>
+            <h1 className="text-5xl font-black text-white mb-4 uppercase tracking-tighter">Anti-Cheat Triggered</h1>
+            <p className="text-white/80 text-xl font-bold max-w-lg mb-12">
+              Focus loss or forbidden interaction detected. Your switch count has been updated and logged for review.
+            </p>
+            <button 
+              onClick={() => setCheatDetected(false)}
+              className="bg-white text-red-600 px-12 py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-gray-100 transition-colors shadow-xl"
+            >
+              Resume Test
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <header className="h-16 border-b border-red-100 px-6 flex items-center justify-between bg-white sticky top-0 z-10">
         <div className="flex items-center gap-4">
           <button onClick={onBack} className="p-2 hover:bg-red-50 rounded-xl transition-all text-gray-500">
@@ -328,6 +506,29 @@ const TaskTestView: React.FC<TaskTestViewProps> = ({
           >
             <Calculator size={20} />
           </button>
+
+          {isAdmin && (
+            <>
+              <button
+                onClick={() => {
+                  setEditingQuestions(JSON.stringify(task.worksheetQuestions || [], null, 2));
+                  setShowQuestionsEditor(true);
+                }}
+                className="bg-purple-50 text-purple-600 border border-purple-200 px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest hover:brightness-95 transition-all shadow-sm active:translate-y-1"
+              >
+                Edit Questions
+              </button>
+              <button
+                onClick={() => {
+                  setEditingMarkscheme(markscheme);
+                  setShowMarkschemeEditor(true);
+                }}
+                className="bg-blue-50 text-blue-600 border border-blue-200 px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest hover:brightness-95 transition-all shadow-sm active:translate-y-1"
+              >
+                Edit Markscheme
+              </button>
+            </>
+          )}
           
           {(!readOnly || isAdmin) && (
             <button
@@ -360,6 +561,110 @@ const TaskTestView: React.FC<TaskTestViewProps> = ({
         )}
       </AnimatePresence>
 
+      <AnimatePresence>
+        {showQuestionsEditor && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-6">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-3xl p-8 max-w-2xl w-full shadow-2xl flex flex-col max-h-[90vh]"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="bg-purple-100 p-2 rounded-xl text-purple-500">
+                    <Layout size={24} />
+                  </div>
+                  <h3 className="text-xl font-black text-gray-800 uppercase tracking-tight">Edit Assessment Questions</h3>
+                </div>
+                <button onClick={() => setShowQuestionsEditor(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
+                  <X size={24} />
+                </button>
+              </div>
+              <p className="text-sm text-gray-500 mb-4 font-medium italic">
+                Edit the JSON payload for the questions directly. Ensure the format adheres to the required schema.
+              </p>
+              <textarea
+                value={editingQuestions}
+                onChange={(e) => setEditingQuestions(e.target.value)}
+                className="w-full flex-1 min-h-[300px] p-6 rounded-2xl border-2 border-slate-100 font-mono text-xs leading-relaxed resize-none focus:border-purple-500 outline-none custom-scrollbar mb-6 bg-slate-50/50 text-gray-800"
+                placeholder="Enter the questions JSON here..."
+              />
+              <div className="flex justify-end gap-4 shrink-0">
+                <button
+                  onClick={() => setShowQuestionsEditor(false)}
+                  className="px-6 py-3 rounded-xl font-black uppercase text-xs text-gray-400 hover:bg-gray-50 tracking-widest transition-colors"
+                  disabled={isSavingQuestions}
+                >
+                  Discard Changes
+                </button>
+                <button
+                  onClick={handleSaveQuestions}
+                  className="px-8 py-3 bg-purple-500 text-white rounded-xl font-black uppercase text-xs shadow-[0_4px_0_0_#9333ea] active:shadow-none active:translate-y-1 transition-all tracking-widest flex items-center justify-center gap-2 min-w-[160px]"
+                  disabled={isSavingQuestions}
+                >
+                  {isSavingQuestions ? (
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : "Save Changes"}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showMarkschemeEditor && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-6">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-3xl p-8 max-w-2xl w-full shadow-2xl flex flex-col max-h-[90vh]"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="bg-blue-100 p-2 rounded-xl text-blue-500">
+                    <FileText size={24} />
+                  </div>
+                  <h3 className="text-xl font-black text-gray-800 uppercase tracking-tight">Edit Markscheme</h3>
+                </div>
+                <button onClick={() => setShowMarkschemeEditor(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
+                  <X size={24} />
+                </button>
+              </div>
+              <p className="text-sm text-gray-500 mb-4 font-medium italic">
+                Changes will be used for future grading.
+              </p>
+              <textarea
+                value={editingMarkscheme}
+                onChange={(e) => setEditingMarkscheme(e.target.value)}
+                className="w-full flex-1 min-h-[300px] p-6 rounded-2xl border-2 border-slate-100 font-mono text-sm leading-relaxed resize-none focus:border-blue-500 outline-none custom-scrollbar mb-6 bg-slate-50/50 text-gray-800"
+                placeholder="Enter the markscheme here..."
+              />
+              <div className="flex justify-end gap-4 shrink-0">
+                <button
+                  onClick={() => setShowMarkschemeEditor(false)}
+                  className="px-6 py-3 rounded-xl font-black uppercase text-xs text-gray-400 hover:bg-gray-50 tracking-widest transition-colors"
+                  disabled={isSavingMarkscheme}
+                >
+                  Discard Changes
+                </button>
+                <button
+                  onClick={handleSaveMarkscheme}
+                  className="px-8 py-3 bg-blue-500 text-white rounded-xl font-black uppercase text-xs shadow-[0_4px_0_0_#2563eb] active:shadow-none active:translate-y-1 transition-all tracking-widest flex items-center justify-center gap-2 min-w-[160px]"
+                  disabled={isSavingMarkscheme}
+                >
+                  {isSavingMarkscheme ? (
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : "Save Changes"}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       <main className="flex-1 flex overflow-hidden bg-gray-50">
         <div ref={pdfContainerRef} className="flex-1 overflow-y-auto custom-scrollbar p-8 flex justify-center bg-gray-100">
           <div className="max-w-4xl w-full">
@@ -372,6 +677,7 @@ const TaskTestView: React.FC<TaskTestViewProps> = ({
                 <div 
                   key={`page_${index + 1}`} 
                   data-page-index={index + 1}
+                  ref={el => pageRefs.current[index + 1] = el}
                   className="mb-8 shadow-2xl rounded-sm overflow-hidden bg-white pdf-page-container"
                 >
                   <Page pageNumber={index + 1} width={Math.min(viewerWidth, 800)} renderTextLayer={false} renderAnnotationLayer={false} />

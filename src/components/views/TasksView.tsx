@@ -334,6 +334,7 @@ const TasksView = ({
         [isTest ? 'Assessment Title:' : 'Assignment Title:', task.title],
         ['Completion Time:', format(new Date(submission.completedAt), 'PPP p')],
         ['Punctuality:', punctuality],
+        ['Security Alerts:', `${submission.results?.tabSwitches || 0} Tab Switches Detected`],
         ['Performance Metric:', submission.results ? `${submission.results.score} / ${submission.results.total} (${Math.round((submission.results.score/submission.results.total)*100)}%)` : 'Awaiting Grading']
       ],
       theme: 'grid',

@@ -956,7 +956,8 @@ function AppContent() {
                     submissionToSave.results = { 
                       score: 0, 
                       total: activeTask.worksheetQuestions?.length || 0, 
-                      unitId: (activeTask.units && activeTask.units.length > 0) ? activeTask.units[0] : 0
+                      unitId: (activeTask.units && activeTask.units.length > 0) ? activeTask.units[0] : 0,
+                      tabSwitches: 0
                     };
                   }
 
@@ -967,7 +968,15 @@ function AppContent() {
                     submissionToSave.generalFeedback = results.generalFeedback;
                   }
                   
-                  console.log("Saving submission to Firestore:", submissionId);
+                  // Security logging specific to test mode
+                  if (results?.tabSwitches !== undefined) {
+                    submissionToSave.results = {
+                      ...(submissionToSave.results || {}),
+                      tabSwitches: results.tabSwitches
+                    };
+                  }
+                  
+                  console.log("Saving test submission to Firestore:", submissionId);
                   await setDoc(doc(db, 'submissions', submissionId), submissionToSave);
                   
                   // Optimistically update local state to show "Done" immediately
@@ -977,8 +986,8 @@ function AppContent() {
                   });
                   
                 } catch (e) {
-                  console.error("Firestore submission error:", e);
-                  throw e; // Rethrow so it's caught in TaskTestView and shows alert
+                  console.error("Firestore test submission error:", e);
+                  throw e; 
                 }
               }}
             />

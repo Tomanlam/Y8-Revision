@@ -245,10 +245,12 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
             // Scroll matching questions into view on the right
             const questionElement = document.getElementById(`questions-page-${pageNum}`);
             if (questionElement && rightPaneRef.current) {
-              const elementTop = questionElement.offsetTop;
+              const rect = questionElement.getBoundingClientRect();
+              const parentRect = rightPaneRef.current.getBoundingClientRect();
+              const offset = rect.top - parentRect.top;
               
               rightPaneRef.current.scrollTo({
-                top: elementTop - 20,
+                top: rightPaneRef.current.scrollTop + offset - 20,
                 behavior: 'smooth'
               });
             }
