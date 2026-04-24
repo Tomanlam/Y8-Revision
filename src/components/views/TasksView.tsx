@@ -1,14 +1,16 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Star, CheckCircle2, ListChecks, Users, Clock, Plus, Trash2, Layout, Calendar as CalendarIcon, ChevronLeft, ChevronRight as ChevronRightIcon, Target, List, FileText, Eye, ArrowRight, User, Download, Info, Copy, Sparkles, ShieldCheck, Lock, Timer, Send, RefreshCw, X } from 'lucide-react';
+import { Star, CheckCircle2, ListChecks, Users, Clock, Plus, Trash2, Layout, Calendar as CalendarIcon, ChevronLeft, ChevronRight as ChevronRightIcon, Target, List, FileText, Eye, ArrowRight, User, Download, Info, Copy, Sparkles, ShieldCheck, Lock, Timer, Send, RefreshCw, X, Edit } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, parseISO, startOfDay } from 'date-fns';
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
-import { GoogleGenAI } from "@google/genai";
 import { db } from '../../firebase';
 import { doc, setDoc } from 'firebase/firestore';
 
 import { Task, TaskSubmission, Unit } from '../../types';
+import { GoogleGenAI } from "@google/genai";
+
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY as string });
 
 interface TasksViewProps {
   key?: string;
@@ -139,6 +141,7 @@ const TasksView = ({
   const [selectedTaskForPasscode, setSelectedTaskForPasscode] = React.useState<Task | null>(null);
   const [enteredPasscode, setEnteredPasscode] = React.useState('');
   const [passcodeError, setPasscodeError] = React.useState(false);
+  const [showPasscode, setShowPasscode] = React.useState(false);
 
   const [activeTab, setActiveTab] = React.useState<'tasks' | 'submissions'>('tasks');
   const [submissionFilter, setSubmissionFilter] = React.useState('');
@@ -162,6 +165,9 @@ const TasksView = ({
     timeLimit: 60,
     isABVersion: false
   });
+
+  const [isEditingPasscode, setIsEditingPasscode] = React.useState(false);
+  const [editedPasscodeValue, setEditedPasscodeValue] = React.useState('');
 
   const submissionsByTask = React.useMemo(() => {
     const grouped: Record<string, TaskSubmission[]> = {};
@@ -631,21 +637,28 @@ const TasksView = ({
                     <div className="flex gap-2">
                        <button
                         type="button"
-                        onClick={async () => {
-                          const prompt = `You are a curriculum expert. Generate a balanced set of 10 questions for unit ${newTask.units?.[0] || 1} in JSON format. include MCQ, Short Response, and Table types. use IDs like "test_${Date.now()}_q1".`;
-                          const genAI: any = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
-                          const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-lite" });
-                          const result = await model.generateContent(prompt);
-                          const aiResponse = result.response;
-                          const text = aiResponse.text();
-                          const json = text.match(/\[[\s\S]*\]/)?.[0];
-                          if (json) {
-                            setWorksheetQuestionsJson(json);
-                            alert("AI Generated sample questions!");
-                          } else {
-                            alert("AI failed to generate parseable JSON. Try again.");
-                          }
-                        }}
+                         onClick={async () => {
+                           const prompt = `You are a curriculum expert. Generate a balanced set of 10 questions for unit ${newTask.units?.[0] || 1} in JSON format. include MCQ, Short Response, and Table types. use IDs like "test_${Date.now()}_q1".`;
+                           try {
+                             const response = await fetch('/api/generate-questions', {
+                               method: 'POST',
+                               headers: { 'Content-Type': 'application/json' },
+                               body: JSON.stringify({ prompt })
+                             });
+                             
+                             if (!response.ok) throw new Error("Failed to generate questions");
+                             
+                             const data = await response.json();
+                             if (data.json) {
+                               setWorksheetQuestionsJson(data.json);
+                               alert("AI Generated sample questions!");
+                             } else {
+                               alert("AI failed to generate parseable JSON. Try again.");
+                             }
+                           } catch (err: any) {
+                             alert("Error generating questions: " + err.message);
+                           }
+                         }}
                         disabled={!newTask.units?.length}
                         className="text-[10px] uppercase font-black tracking-widest bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg border border-blue-200 hover:bg-blue-100 transition-all disabled:opacity-50"
                       >
@@ -762,30 +775,116 @@ Output ONLY the JSON object.`;
                 <Lock size={40} className="animate-bounce" />
               </div>
               
-              <h2 className="text-2xl font-black text-center text-gray-800 uppercase tracking-tight mb-2">Secure Assessment</h2>
-              <p className="text-gray-500 text-center text-sm font-bold mb-8 px-4">
-                This assessment is locked. Please enter the passcode provided by your instructor to begin.
-              </p>
+              <h2 className="text-2xl font-black text-center text-gray-800 uppercase tracking-tight mb-2">
+                {isAdmin ? 'Assessment Controls' : 'Secure Assessment'}
+              </h2>
+              
+              {isAdmin ? (
+                <div className="space-y-4 mb-6">
+                  <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 flex flex-col items-center gap-2">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Time Limit</span>
+                    <div className="flex items-center gap-3">
+                      <button 
+                        onClick={() => {
+                          const newLimit = (selectedTaskForPasscode.timeLimit || 60) - 5;
+                          if (newLimit > 0 && onUpdateTask) {
+                            onUpdateTask(selectedTaskForPasscode.id, { timeLimit: newLimit });
+                            setSelectedTaskForPasscode({...selectedTaskForPasscode, timeLimit: newLimit});
+                          }
+                        }}
+                        className="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors"
+                      >
+                        -
+                      </button>
+                      <span className="text-xl font-black text-gray-800">{selectedTaskForPasscode.timeLimit}m</span>
+                      <button 
+                        onClick={() => {
+                          const newLimit = (selectedTaskForPasscode.timeLimit || 60) + 5;
+                          if (onUpdateTask) {
+                            onUpdateTask(selectedTaskForPasscode.id, { timeLimit: newLimit });
+                            setSelectedTaskForPasscode({...selectedTaskForPasscode, timeLimit: newLimit});
+                          }
+                        }}
+                        className="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="bg-red-50 p-4 rounded-2xl border border-red-100 flex flex-col items-center gap-2">
+                     <span className="text-[10px] font-black uppercase tracking-widest text-red-500">Live Passcode</span>
+                     {isEditingPasscode ? (
+                       <div className="flex gap-2 w-full">
+                         <input 
+                           type="text"
+                           value={editedPasscodeValue}
+                           onChange={(e) => setEditedPasscodeValue(e.target.value.toUpperCase())}
+                           className="flex-1 text-center font-black p-2 rounded-xl border-2 border-red-200 outline-none uppercase"
+                           autoFocus
+                         />
+                         <button 
+                           onClick={async () => {
+                             if (onUpdateTask && selectedTaskForPasscode) {
+                               await onUpdateTask(selectedTaskForPasscode.id, { passcode: editedPasscodeValue });
+                               setSelectedTaskForPasscode({...selectedTaskForPasscode, passcode: editedPasscodeValue});
+                               setIsEditingPasscode(false);
+                             }
+                           }}
+                           className="bg-red-500 text-white px-4 rounded-xl font-bold text-xs"
+                         >
+                           Save
+                         </button>
+                       </div>
+                     ) : (
+                       <div className="flex items-center gap-4">
+                         <span className="text-3xl font-black text-red-600 tracking-tighter">{showPasscode ? selectedTaskForPasscode.passcode : '••••••'}</span>
+                         <div className="flex items-center gap-1">
+                            <button 
+                              onClick={() => setShowPasscode(!showPasscode)}
+                              className="p-2 hover:bg-red-100 rounded-lg text-red-500 transition-colors"
+                            >
+                              {showPasscode ? <Eye size={18} /> : <Eye size={18} className="opacity-40" />}
+                            </button>
+                            <button 
+                              onClick={() => setIsEditingPasscode(true)}
+                              className="p-2 hover:bg-red-100 rounded-lg text-red-500 transition-colors"
+                            >
+                              <Edit size={18} />
+                            </button>
+                         </div>
+                       </div>
+                     )}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-gray-500 text-center text-sm font-bold mb-8 px-4">
+                  This assessment is locked. Please enter the passcode provided by your instructor to begin.
+                </p>
+              )}
 
               <div className="space-y-6">
-                <div className="space-y-2 text-center">
-                  <input 
-                    type="password"
-                    value={enteredPasscode}
-                    onChange={(e) => {
-                      setEnteredPasscode(e.target.value.toUpperCase());
-                      setPasscodeError(false);
-                    }}
-                    autoFocus
-                    placeholder="••••••••"
-                    className={`w-full text-center text-3xl font-black tracking-[0.5em] p-6 rounded-2xl border-4 outline-none transition-all ${
-                      passcodeError ? 'border-red-500 bg-red-50' : 'border-gray-100 focus:border-red-200'
-                    }`}
-                  />
-                  {passcodeError && (
-                    <p className="text-red-500 text-[10px] font-black uppercase tracking-widest animate-pulse">Incorrect Passcode</p>
-                  )}
-                </div>
+                {!isAdmin && (
+                  <div className="space-y-2 text-center">
+                    <input 
+                      type="password"
+                      value={enteredPasscode}
+                      onChange={(e) => {
+                        setEnteredPasscode(e.target.value.toUpperCase());
+                        setPasscodeError(false);
+                      }}
+                      autoFocus
+                      placeholder="••••••••"
+                      className={`w-full text-center text-3xl font-black tracking-[0.5em] p-6 rounded-2xl border-4 outline-none transition-all ${
+                        passcodeError ? 'border-red-500 bg-red-50' : 'border-gray-100 focus:border-red-200'
+                      }`}
+                    />
+                    {passcodeError && (
+                      <p className="text-red-500 text-[10px] font-black uppercase tracking-widest animate-pulse">Incorrect Passcode</p>
+                    )}
+                  </div>
+                )}
+              </div>
 
                 <div className="flex gap-4">
                   <button 
@@ -801,7 +900,7 @@ Output ONLY the JSON object.`;
                   </button>
                   <button 
                     onClick={() => {
-                      if (enteredPasscode === selectedTaskForPasscode.passcode) {
+                      if (isAdmin || enteredPasscode === selectedTaskForPasscode.passcode) {
                         onStartTask(selectedTaskForPasscode);
                         setIsPasscodeModalOpen(false);
                         setSelectedTaskForPasscode(null);
@@ -812,10 +911,23 @@ Output ONLY the JSON object.`;
                     }}
                     className="flex-1 py-4 px-6 rounded-2xl font-black uppercase tracking-widest text-xs text-white bg-red-600 shadow-[0_4px_0_0_#991b1b] active:translate-y-1 active:shadow-none transition-all"
                   >
-                    Unlock
+                    {isAdmin ? 'Admin Entry' : 'Unlock'}
                   </button>
                 </div>
-              </div>
+                {isAdmin && (
+                  <button 
+                    onClick={async () => {
+                      if (confirm("Delete this assessment permanently?")) {
+                         if (onDeleteTask) await onDeleteTask(selectedTaskForPasscode.id);
+                         setIsPasscodeModalOpen(false);
+                      }
+                    }}
+                    className="w-full py-3 rounded-xl text-red-500 font-black uppercase text-[10px] tracking-widest hover:bg-red-50 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Trash2 size={12} />
+                    Revoke Assessment
+                  </button>
+                )}
             </motion.div>
           </div>
         )}
@@ -1364,8 +1476,16 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
                       animate={{ opacity: 1, y: 0 }}
                       whileHover={{ y: -5 }}
                       onClick={() => {
-                        if (isAdmin && onUpdateTask) {
+                        if (isAdmin && isTest) {
+                          setSelectedTaskForPasscode(task);
+                          setIsPasscodeModalOpen(true);
+                        } else if (isAdmin && onUpdateTask) {
                           setEditingTask(task);
+                        } else if (!isAdmin && isTest && !isCompleted) {
+                          setSelectedTaskForPasscode(task);
+                          setIsPasscodeModalOpen(true);
+                        } else if (!isAdmin && !isCompleted) {
+                          onStartTask(task);
                         }
                       }}
                       className={`rounded-[2rem] p-5 md:p-6 shadow-lg text-white cursor-pointer relative overflow-hidden group h-full flex flex-col min-h-[220px] transition-all
@@ -1373,7 +1493,7 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
                         ${isCompleted 
                           ? 'bg-gradient-to-br from-emerald-500 to-teal-600 shadow-emerald-200' 
                           : isTest 
-                            ? 'bg-gradient-to-br from-red-500 to-rose-700 shadow-red-200'
+                            ? 'bg-gradient-to-br from-red-500 to-rose-700 shadow-red-200 ring-1 ring-red-400/50'
                             : 'bg-gradient-to-br from-orange-400 to-amber-600 shadow-orange-200'}
                       `}
                     >
@@ -1392,6 +1512,11 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
                                  <Timer size={10} /> {task.timeLimit}m
                                </div>
                              )}
+                            {isAdmin && isTest && (
+                              <div className="bg-white text-red-600 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest shadow-sm">
+                                PASS: {task.passcode}
+                              </div>
+                            )}
                             {isCompleted && (
                               <div className="bg-white/30 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest backdrop-blur-sm">
                                 Done

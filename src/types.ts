@@ -1,6 +1,6 @@
 import { LucideIcon } from 'lucide-react';
 
-export type AppMode = 'splash' | 'dashboard' | 'revision' | 'quiz' | 'vocab' | 'user-stats' | 'about' | 'playground' | 'quick-facts' | 'tasks' | 'worksheet';
+export type AppMode = 'splash' | 'dashboard' | 'revision' | 'quiz' | 'vocab' | 'user-stats' | 'about' | 'playground' | 'quick-facts' | 'tasks' | 'worksheet' | 'achievement';
 
 export interface QuizSubMode {
   id: string;
@@ -20,6 +20,7 @@ export interface UserProfile {
   userId: string;
   email: string;
   displayName: string;
+  photoURL?: string;
   progress: SessionStats;
   lastSeen: string;
   isAdmin?: boolean;

@@ -38,6 +38,7 @@ import UserStatsView from './components/views/UserStatsView';
 import AboutView from './components/views/AboutView';
 import QuickFacts from './QuickFacts';
 import TasksView from './components/views/TasksView';
+import AchievementView from './components/views/AchievementView';
 import TaskWorksheetView from './components/views/TaskWorksheetView';
 import Calculator from './components/Calculator';
 
@@ -117,12 +118,11 @@ class AppErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundary
 const APP_NAV_ITEMS: NavItem[] = [
   { mode: 'dashboard', icon: LayoutGrid, label: 'Hub' },
   { mode: 'tasks', icon: Target, label: 'Tasks' },
-  { mode: 'user-stats', icon: User, label: 'Stats' },
   { mode: 'quick-facts', icon: Lightbulb, label: 'Facts' },
   { mode: 'about', icon: Info, label: 'About' }
 ];
 
-const Sidebar = ({ currentMode, setMode, onQRClick, hasOutstandingTasks }: { currentMode: AppMode, setMode: (m: AppMode) => void, onQRClick: () => void, hasOutstandingTasks?: boolean }) => {
+const Sidebar = ({ currentMode, setMode, onQRClick, hasOutstandingTasks, user, isAdmin }: { currentMode: AppMode, setMode: (m: AppMode) => void, onQRClick: () => void, hasOutstandingTasks?: boolean, user: UserProfile | null, isAdmin: boolean }) => {
   const [isHovered, setIsHovered] = useState(false);
 
   return (
@@ -133,28 +133,67 @@ const Sidebar = ({ currentMode, setMode, onQRClick, hasOutstandingTasks }: { cur
       animate={{ width: isHovered ? 300 : 80 }}
       className="fixed left-0 top-0 bottom-0 bg-white border-r-2 border-gray-100 z-50 hidden md:flex flex-col py-8 transition-all duration-300 ease-in-out shadow-xl"
     >
-      <div className={`px-5 mb-10 flex items-center gap-4 overflow-hidden h-12 transition-all ${!isHovered ? 'justify-center' : ''}`}>
-        <AnimatePresence>
-          {isHovered ? (
+      <div className="px-4 mb-2 flex flex-col gap-2">
+        {/* Overhauled User Card to look like a Button */}
+        <button 
+          onClick={() => setMode('achievement')}
+          className={`w-full flex items-center gap-4 p-3 rounded-2xl transition-all relative group h-14
+            ${currentMode === 'achievement' 
+              ? 'bg-emerald-50 text-emerald-600 shadow-[0_4px_0_0_#10b98133]' 
+              : 'text-gray-400 hover:bg-gray-50 hover:text-emerald-400'
+            }
+          `}
+        >
+          <div className="flex-shrink-0 relative">
+            {user?.photoURL ? (
+              <img 
+                src={user.photoURL} 
+                alt="Profile" 
+                className={`w-8 h-8 rounded-full border-2 shadow-sm transition-transform group-hover:scale-105 ${currentMode === 'achievement' ? 'border-emerald-500' : 'border-gray-200'}`}
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shadow-sm transition-transform group-hover:scale-105 ${isAdmin ? 'bg-amber-100 text-amber-600' : 'bg-emerald-100 text-emerald-600'}`}>
+                {user?.displayName?.charAt(0) || 'U'}
+              </div>
+            )}
+          </div>
+          <AnimatePresence>
+            {isHovered && (
               <motion.div
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -10 }}
-                className="flex flex-col whitespace-nowrap"
+                className="flex flex-col items-start whitespace-nowrap overflow-hidden"
               >
-                <h1 className="text-base font-black text-emerald-500 tracking-tight leading-none">Y8 Cambridge LS Science</h1>
-                <div className="flex items-center gap-1.5 mt-1">
-                  <span className="text-[8px] font-bold text-black uppercase tracking-widest">An app by Toman</span>
-                  <span className="text-[8px] text-gray-400 font-bold">•</span>
-                  <div className="flex items-center gap-1">
-                     <span className="text-[8px] font-bold text-orange-500 uppercase tracking-widest">secured by</span>
-                     <Flame size={8} className="text-orange-500 fill-orange-500" />
-                     <span className="text-[8px] font-bold text-orange-500 uppercase tracking-widest">Firebase</span>
-                  </div>
+                <span className="font-black uppercase tracking-tight text-xs text-gray-800 leading-none">
+                  {user?.displayName?.split(' ')[0] || 'Member'}
+                </span>
+                <div className="mt-1">
+                  {isAdmin ? (
+                    <div className="flex items-center gap-1.5 bg-amber-50 px-3 py-1.5 rounded-full border-2 border-amber-200 shadow-[0_0_20px_rgba(245,158,11,0.4)] animate-[pulse_2s_infinite]">
+                      <ShieldCheck size={12} className="text-amber-500 fill-amber-500" />
+                      <span className="text-[12px] font-black text-amber-600 uppercase tracking-tight">God Mode</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1.5 bg-emerald-50 px-3 py-1.5 rounded-full border-2 border-emerald-200 shadow-[0_0_20px_rgba(16,185,129,0.4)] animate-[pulse_2s_infinite]">
+                      <GraduationCap size={12} className="text-emerald-500" />
+                      <span className="text-[12px] font-black text-emerald-600 uppercase tracking-tight">Student Mode</span>
+                    </div>
+                  )}
                 </div>
               </motion.div>
-          ) : null}
-        </AnimatePresence>
+            )}
+          </AnimatePresence>
+          {!isHovered && currentMode === 'achievement' && (
+            <motion.div 
+              layoutId="active-indicator-user"
+              className="absolute left-0 w-1 h-8 bg-emerald-500 rounded-r-full"
+            />
+          )}
+        </button>
+
+        <div className="h-px bg-gray-100 mx-2 mb-2" />
       </div>
 
       <div className="flex-1 px-4 space-y-2">
@@ -203,27 +242,16 @@ const Sidebar = ({ currentMode, setMode, onQRClick, hasOutstandingTasks }: { cur
         })}
       </div>
 
-      <div className="px-4 mt-auto space-y-2">
-        <AnimatePresence>
-          {isHovered && (
-            <motion.button
-              initial={{ opacity: 0, y: 5, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 5, scale: 0.98 }}
-              transition={{ duration: 0.2, ease: "easeOut" }}
-              onClick={() => (window as any).toggleY8?.()}
-              className="w-full p-4 rounded-2xl bg-orange-500 text-white flex items-center justify-center gap-4 transition-all hover:bg-orange-600 shadow-[0_4px_0_0_#c2410c] active:shadow-none active:translate-y-1 group overflow-hidden"
-              title="Class of 2025-26"
-            >
-              <div className="flex-shrink-0">
-                <GraduationCap size={24} />
-              </div>
-              <span className="text-[10px] font-black uppercase tracking-widest">
-                Y8 Hub
-              </span>
-            </motion.button>
-          )}
-        </AnimatePresence>
+      <div className="px-4 mt-auto space-y-3">
+        <button
+          onClick={() => (window as any).toggleY8?.()}
+          className="w-full p-4 rounded-2xl bg-orange-500 text-white flex items-center justify-center gap-4 transition-all hover:bg-orange-600 shadow-[0_4px_0_0_#c2410c] active:shadow-none active:translate-y-1 group"
+          title="Class of 2025-26"
+        >
+          <div className="flex-shrink-0">
+            <GraduationCap size={24} />
+          </div>
+        </button>
 
         <button
           onClick={onQRClick}
@@ -319,14 +347,18 @@ function AppContent() {
           setUserProfile(data);
           setSessionStats(data.progress || {});
           
-          // Update last seen
-          await updateDoc(userRef, { lastSeen: new Date().toISOString() });
+          // Update last seen and photoURL
+          await updateDoc(userRef, { 
+            lastSeen: new Date().toISOString(),
+            photoURL: user.photoURL || data.photoURL || null
+          });
         } else {
           // Initialize profile
           const newProfile: UserProfile = {
             userId: user.uid,
             email: user.email || '',
             displayName: user.displayName || 'Student',
+            photoURL: user.photoURL || null,
             progress: {},
             lastSeen: new Date().toISOString(),
             isAdmin: user.email === ADMIN_EMAIL
@@ -426,9 +458,9 @@ function AppContent() {
     });
   }, [currentUser, isAdminLoggedIn, tasks]);
 
-  // Fetch all Submissions for Admin
+  // Fetch all Submissions (Enabled for all to support class rank)
   useEffect(() => {
-    if (!isAdminLoggedIn) return;
+    if (!currentUser) return;
     const q = query(collection(db, 'submissions'), orderBy('completedAt', 'desc'));
     return onSnapshot(q, (snap) => {
         const subs = snap.docs.map(d => ({ id: d.id, ...d.data() } as TaskSubmission));
@@ -442,9 +474,9 @@ function AppContent() {
         });
         setAllSubmissions(fixedSubs);
     }, (error) => {
-      console.error("Admin submissions fetch failed:", error);
+      console.error("Submissions fetch failed:", error);
     });
-  }, [isAdminLoggedIn, tasks]);
+  }, [currentUser, tasks]);
 
   const loginWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
@@ -653,7 +685,7 @@ function AppContent() {
   };
 
   const outstandingTasks = useMemo(() => {
-    if (!currentUser || isAdminLoggedIn) return [];
+    if (!currentUser) return [];
     return tasks.filter(task => {
       const isSubmitted = mySubmissions.some(s => s.taskId === task.id);
       return !isSubmitted;
@@ -662,16 +694,18 @@ function AppContent() {
 
   return (
     <div className="font-sans selection:bg-emerald-200 min-h-screen bg-gray-50 flex">
-      {['dashboard', 'user-stats', 'about', 'quick-facts', 'tasks'].includes(mode) && (
+      {['dashboard', 'user-stats', 'about', 'quick-facts', 'tasks', 'achievement'].includes(mode) && (
         <Sidebar 
           currentMode={mode} 
           setMode={setMode} 
           onQRClick={() => setIsQRModalOpen(true)} 
           hasOutstandingTasks={outstandingTasks.length > 0}
+          user={userProfile}
+          isAdmin={isAdminLoggedIn}
         />
       )}
 
-      <div className={`flex-1 transition-all duration-300 ${['dashboard', 'user-stats', 'about', 'quick-facts', 'tasks'].includes(mode) ? 'md:pl-[80px]' : ''}`}>
+      <div className={`flex-1 transition-all duration-300 ${['dashboard', 'user-stats', 'about', 'quick-facts', 'tasks', 'achievement'].includes(mode) ? 'md:pl-[80px]' : ''}`}>
         <AnimatePresence mode="wait">
           {mode === 'dashboard' && (
             <DashboardView 
@@ -862,6 +896,17 @@ function AppContent() {
             />
           )}
 
+          {mode === 'achievement' && (
+            <AchievementView 
+              key="achievement"
+              user={userProfile}
+              tasks={tasks}
+              submissions={isAdminLoggedIn ? allSubmissions : mySubmissions}
+              allSubmissions={allSubmissions}
+              isAdmin={isAdminLoggedIn}
+            />
+          )}
+
           {mode === 'user-stats' && <UserStatsView key="user-stats" units={units} sessionStats={sessionStats} />}
           {mode === 'about' && <AboutView key="about" />}
           {mode === 'quick-facts' && <QuickFacts key="quick-facts" />}
@@ -909,7 +954,7 @@ function AppContent() {
       </AnimatePresence>
 
       {/* Mobile Nav */}
-      {['dashboard', 'user-stats', 'about', 'quick-facts', 'tasks'].includes(mode) && (
+      {['dashboard', 'user-stats', 'about', 'quick-facts', 'tasks', 'achievement'].includes(mode) && (
         <nav className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-gray-100 px-2 py-1 z-40 md:hidden h-20">
           <div className="max-w-md mx-auto flex justify-between items-stretch h-full">
             {APP_NAV_ITEMS.map((item) => {
