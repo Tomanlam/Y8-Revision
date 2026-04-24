@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Star, CheckCircle2, ListChecks, Users, Clock, Plus, Trash2, Layout, Calendar as CalendarIcon, ChevronLeft, ChevronRight as ChevronRightIcon, Target, List, FileText, Eye, ArrowRight, User, Download, Info, Copy } from 'lucide-react';
+import { Star, CheckCircle2, ListChecks, Users, Clock, Plus, Trash2, Layout, Calendar as CalendarIcon, ChevronLeft, ChevronRight as ChevronRightIcon, Target, List, FileText, Eye, ArrowRight, User, Download, Info, Copy, Sparkles } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, parseISO, startOfDay } from 'date-fns';
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -352,8 +352,15 @@ const TasksView = ({
               {isAdmin ? "Admin Command Center" : "Tasks Dashboard"}
             </h1>
           </div>
-          <p className="text-gray-500 font-medium px-1">
-            {isAdmin ? "Oversee performance, manage assignments, and review work." : "Your learning journey at a glance."}
+          <p className="text-gray-500 font-medium px-1 flex flex-col md:flex-row md:items-center gap-2">
+            {isAdmin ? (
+              <>
+                Oversee performance, manage assignments, and review work.
+                <span className="inline-flex items-center gap-1 bg-purple-50 text-purple-600 px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border border-purple-100">
+                  <Sparkles size={10} /> Model: gemini-3.1-flash-lite-preview
+                </span>
+              </>
+            ) : "Your learning journey at a glance."}
           </p>
         </div>
         
@@ -417,35 +424,6 @@ const TasksView = ({
       {/* Admin Quick Stats Bar */}
       {isAdmin && (
         <div className="space-y-6">
-          {tasks.some(t => t.title.toLowerCase() === 'y8 8.4' || t.title.toLowerCase() === 'y8 8.5') && (
-            <motion.div 
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              className="bg-amber-50 border-2 border-amber-200 rounded-[2.5rem] p-6 flex flex-col md:flex-row items-center justify-between gap-4"
-            >
-              <div className="flex items-center gap-4 text-amber-700">
-                <div className="bg-amber-200 p-3 rounded-2xl">
-                  <Trash2 size={24} />
-                </div>
-                <div>
-                  <p className="font-black uppercase tracking-tight">Legacy Tasks Detected</p>
-                  <p className="text-sm font-medium opacity-80">Tasks y8 8.4 and/or y8 8.5 are still in your database. These were requested for deletion.</p>
-                </div>
-              </div>
-              <button 
-                onClick={() => {
-                  tasks.forEach(t => {
-                    if (t.title.toLowerCase() === 'y8 8.4' || t.title.toLowerCase() === 'y8 8.5') {
-                      onDeleteTask(t.id);
-                    }
-                  });
-                }}
-                className="bg-amber-500 text-white px-6 py-3 rounded-2xl font-black uppercase tracking-widest text-xs shadow-[0_4px_0_0_#d97706] active:translate-y-1 active:shadow-none transition-all"
-              >
-                Purge Now
-              </button>
-            </motion.div>
-          )}
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             <div className="bg-white p-6 rounded-[2rem] border-2 border-gray-100 shadow-sm">
@@ -971,9 +949,23 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
                           <span className="text-[10px] font-black uppercase tracking-widest">{format(taskDate, 'MMM d')}</span>
                         </div>
                         {isCompleted ? (
-                          <div className="text-right">
-                             <p className="text-[8px] font-black text-white/50 uppercase tracking-widest mb-0.5">Grade</p>
-                             <p className="text-xs font-black">{submission?.results?.score}/{submission?.results?.total}</p>
+                          <div className="flex items-center gap-3">
+                            <div className="text-right">
+                               <p className="text-[8px] font-black text-white/50 uppercase tracking-widest mb-0.5">Grade</p>
+                               <p className="text-xs font-black">{submission?.results?.score !== undefined ? `${submission?.results?.score}/${submission?.results?.total}` : 'Pending'}</p>
+                            </div>
+                            {submission && submission.feedback && (
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  generateResponsePDF(submission, task, true);
+                                }}
+                                className="bg-white/20 text-white p-2 rounded-xl hover:bg-white hover:text-emerald-600 hover:scale-110 active:scale-95 transition-all shadow-sm backdrop-blur-sm border border-white/20"
+                                title="Download Graded Report"
+                              >
+                                <FileText size={14} />
+                              </button>
+                            )}
                           </div>
                         ) : (
                           <button 

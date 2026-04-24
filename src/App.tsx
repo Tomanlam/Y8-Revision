@@ -28,10 +28,6 @@ import { eventMessages, facts, navItems } from './constants';
 
 // Data
 import { units } from './data';
-import { ExothermicReactionsWorksheet } from './data/worksheets/ExothermicReactions';
-import { EnergyChangesWorksheet } from './data/worksheets/EnergyChanges';
-import { IronRustWorksheet } from './data/worksheets/IronRust';
-import { MetalReactionsWorksheet } from './data/worksheets/MetalReactions';
 
 // Components
 import DashboardView from './components/views/DashboardView';
@@ -228,13 +224,6 @@ export default function App() {
 
 const ADMIN_EMAIL = 'tomanlam@gmail.com';
 
-const INITIAL_TASKS: Task[] = [
-    ExothermicReactionsWorksheet,
-    EnergyChangesWorksheet,
-    IronRustWorksheet,
-    MetalReactionsWorksheet
-  ];
-
 function AppContent() {
 
   const [mode, setMode] = useState<AppMode>('dashboard');
@@ -269,7 +258,7 @@ function AppContent() {
   const [adminPassword, setAdminPassword] = useState("");
   const [adminError, setAdminError] = useState("");
   const [challengeRecords, setChallengeRecords] = useState<ChallengeRecord[]>([]);
-  const [tasks, setTasks] = useState<Task[]>(INITIAL_TASKS);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [mySubmissions, setMySubmissions] = useState<TaskSubmission[]>([]);
   const [allSubmissions, setAllSubmissions] = useState<TaskSubmission[]>([]);
   const [editingRecord, setEditingRecord] = useState<ChallengeRecord | null>(null);
@@ -365,7 +354,7 @@ function AppContent() {
   // Fetch Tasks for everyone
   useEffect(() => {
     if (!currentUser) {
-      setTasks(INITIAL_TASKS);
+      setTasks([]);
       return;
     }
     const q = query(collection(db, 'tasks'), orderBy('dueDate', 'asc'));
@@ -376,7 +365,7 @@ function AppContent() {
         // Fix Firebase nested array limitation: restore array-of-arrays from array-of-objects
         if (data.worksheetQuestions) {
           data.worksheetQuestions.forEach(q => {
-            if (q.tableData && Array.isArray(q.tableData) && q.tableData[0]?.row) {
+            if (q.tableData && Array.isArray(q.tableData) && (q.tableData[0] as any)?.row) {
               q.tableData = q.tableData.map((r: any) => r.row);
             }
           });
@@ -385,35 +374,7 @@ function AppContent() {
         return data;
       });
 
-      // Merge Firestore tasks with INITIAL_TASKS
-      const combinedTasks = [...INITIAL_TASKS];
-      
-      firestoreTasks.forEach(ft => {
-        const normalize = (s: string) => s.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-        const existingIdx = combinedTasks.findIndex(it => 
-          it.id === ft.id || 
-          normalize(it.title) === normalize(ft.title) ||
-          (it.type === 'worksheet' && ft.title.toLowerCase().includes(it.title.toLowerCase()))
-        );
-
-        if (existingIdx !== -1) {
-          // Merge Firestore data (like dueDate or manual edits) with local definition (questions, pdfUrl)
-          const it = combinedTasks[existingIdx];
-          combinedTasks[existingIdx] = {
-            ...it,
-            ...ft,
-            id: ft.id, // Prefer Firestore ID for primary key
-            originalId: it.id, // Store local ID for submission mapping
-            worksheetQuestions: it.worksheetQuestions || ft.worksheetQuestions,
-            pdfUrl: it.pdfUrl || ft.pdfUrl,
-            type: it.type || ft.type
-          };
-        } else {
-          combinedTasks.push(ft);
-        }
-      });
-
-      setTasks(combinedTasks);
+      setTasks(firestoreTasks.filter((ft: any) => !ft.deleted));
     });
   }, [currentUser]);
 
