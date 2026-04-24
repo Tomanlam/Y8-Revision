@@ -397,12 +397,24 @@ const TaskTestView: React.FC<TaskTestViewProps> = ({
         
         const prompt = `Grade this student submission for the assessment "${task.title}".
         
-        CRITICAL INSTRUCTION: You must provide a specific teacher's feedback for EVERY SINGLE QUESTION listed in the student responses.
+        CRITICAL INSTRUCTION: You must provide a specific teacher's feedback for EVERY SINGLE QUESTION listed.
+        
+        GRADING LOGIC:
+        - IF RESPONSE IS MISSING (empty string or whitespace): 
+          * Score: 0/Total
+          * Feedback: Must start with "Student did not attempt this question." then provide the correct answer and a full explanation of the scientific concept.
+        - IF RESPONSE IS INCORRECT (scientific error or incomplete): 
+          * Score: Partial or 0
+          * Feedback: Must start with "Incorrect." or "Partially correct." then explain exactly why the student's reasoning was wrong and state the correct answer with justification.
+        - IF RESPONSE IS CORRECT: 
+          * Score: Full marks
+          * Feedback: Confirm why the answer is fully correct according to the markscheme.
+        
         For EACH question:
-        1. Explain EXPLICITLY why the answer is correct, partially correct, or incorrect. If incorrect, explain the error in simple, easy-to-understand terms.
+        1. Explicitly identify if it's an attempted answer or a skip.
         2. Reference the provided Markscheme/Rubric directly to justify the score.
-        3. Give context and feedback that helps the student improve.
-        4. DO NOT use generic phrases like "Requirement met based on rubric". Every comment must be unique and descriptive.
+        3. Never use generic phrases like "Response not fully addressed in rubric" or "Requirement met".
+        4. Use pedagogical, encouraging yet firm scientific language.
 
         MARKSCHEME/RUBRIC:
         ${markscheme}
@@ -413,7 +425,7 @@ const TaskTestView: React.FC<TaskTestViewProps> = ({
         GRADING PROTOCOL:
         1. Evaluate response strictly against markscheme.
         2. Score in "earned/total" format.
-        3. Write concise, pedagogically helpful feedback for EVERY question.
+        3. Case-sensitive matching of QuestionID is mandatory.
         4. Return ONLY valid JSON.`;
 
         const response = await ai.models.generateContent({
@@ -458,10 +470,13 @@ const TaskTestView: React.FC<TaskTestViewProps> = ({
           if (aiMatch) {
             feedbackResult[targetId] = {
               score: aiMatch.score || "0/0",
-              feedback: aiMatch.feedback || "Answer correctly addresses the scientific requirement."
+              feedback: aiMatch.feedback || "Detailed feedback provided in report."
             };
           } else {
-            feedbackResult[targetId] = { score: "0/0", feedback: "Response not fully addressed in rubric." };
+            feedbackResult[targetId] = { 
+              score: "0/0", 
+              feedback: "Question not addressed. The correct answer should be derived from the provided markscheme." 
+            };
           }
         });
         

@@ -327,15 +327,22 @@ const TasksView = ({
     }
 
     // Student & Task Info Box
-    const securityEntry = isTest 
-      ? ['Security Violations:', submission.results?.cheatLogs 
+    const securityMap: Record<string, string> = {
+      tabSwitches: "Tab switching/opening",
+      blur: "Window focus lost",
+      copyPaste: "CMD+C or V",
+      shortcutAttempts: "Shortcut attempts (Inspect/Save)",
+      printAttempts: "Print/Screenshot attempts"
+    };
+
+    const securityValue = isTest 
+      ? (submission.results?.cheatLogs 
           ? Object.entries(submission.results.cheatLogs)
               .filter(([_, count]) => (count as number) > 0)
-              .map(([key, count]) => `${key}: ${count}`)
+              .map(([key, count]) => `${securityMap[key] || key}: ${count}`)
               .join(', ') || 'NONE DETECTED'
-          : `${submission.results?.tabSwitches || 0} Tab Switches Detected`
-        ]
-      : ['Security Alerts:', 'OFF'];
+          : `${submission.results?.tabSwitches || 0} Tab Switches Detected`)
+      : 'OFF';
 
     autoTable(doc, {
       startY: currentY,
@@ -344,10 +351,22 @@ const TasksView = ({
         [isTest ? 'Assessment Title:' : 'Assignment Title:', task.title],
         ['Completion Time:', format(new Date(submission.completedAt), 'PPP p')],
         ['Punctuality:', punctuality],
-        securityEntry,
+        ['Security Violations:', securityValue],
         ['Performance Metric:', submission.results ? `${submission.results.score} / ${submission.results.total} (${Math.round((submission.results.score/submission.results.total)*100)}%)` : 'Awaiting Grading']
       ],
       theme: 'grid',
+      didParseCell: (data) => {
+        // Handle Security Violations color (Row 4, Column 1 in info table)
+        if (data.row.index === 4 && data.column.index === 1 && isTest && securityValue !== 'NONE DETECTED') {
+          data.cell.styles.textColor = [220, 38, 38]; // Red
+        }
+        // Handle Punctuality color
+        if (data.column.index === 1 && data.cell.text[0] === punctuality) {
+          if (punctuality === "EARLY") data.cell.styles.textColor = [16, 185, 129] as any;
+          if (punctuality === "LATE") data.cell.styles.textColor = [239, 68, 68] as any;
+          if (punctuality === "ON-TIME") data.cell.styles.textColor = [245, 158, 11] as any;
+        }
+      },
       styles: { 
         fontSize: 10, 
         cellPadding: 4,
@@ -358,13 +377,6 @@ const TasksView = ({
         0: { fontStyle: 'bold', cellWidth: 45, fillColor: [249, 250, 251], textColor: [100, 116, 139] },
         1: { fillColor: [255, 255, 255], textColor: [15, 23, 42], fontStyle: 'bold' }
       },
-      didParseCell: (data) => {
-        if (data.column.index === 1 && data.cell.text[0] === punctuality) {
-          if (punctuality === "EARLY") data.cell.styles.textColor = [16, 185, 129] as any;
-          if (punctuality === "LATE") data.cell.styles.textColor = [239, 68, 68] as any;
-          if (punctuality === "ON-TIME") data.cell.styles.textColor = [245, 158, 11] as any;
-        }
-      }
     });
 
     currentY = (doc as any).lastAutoTable.finalY + 12;
@@ -436,7 +448,7 @@ const TasksView = ({
             <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white ${isAdmin ? 'bg-emerald-500 shadow-lg shadow-emerald-100' : 'bg-blue-500 shadow-lg shadow-blue-100'}`}>
               {isAdmin ? <Layout size={20} /> : <Target size={20} />}
             </div>
-            <h1 className="text-3xl font-black text-gray-800 uppercase tracking-tight">
+            <h1 className="text-3xl font-black text-gray-800 tracking-tight">
               {isAdmin ? "Admin Command Center" : "Tasks Dashboard"}
             </h1>
           </div>
@@ -1471,7 +1483,9 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
                                  <button 
                                    onClick={(e) => {
                                      e.stopPropagation();
-                                     onDeleteSubmission(sub.id);
+                                     if (window.confirm("Are you sure you want to permanently delete this student submission? This action cannot be undone.")) {
+                                       onDeleteSubmission(sub.id);
+                                     }
                                    }}
                                    className="flex items-center justify-center gap-2 py-2 text-red-300 hover:text-red-500 rounded-xl font-black uppercase tracking-widest text-[8px] transition-all w-full"
                                  >
@@ -1524,7 +1538,7 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
                         ${isCompleted 
                           ? 'bg-gradient-to-br from-emerald-500 to-teal-600 shadow-emerald-200 border-emerald-700' 
                           : isTest 
-                            ? 'bg-gradient-to-br from-slate-900 via-red-950 to-red-900 shadow-red-200 border-red-800'
+                            ? 'bg-red-600 shadow-red-200 border-red-800'
                             : 'bg-gradient-to-br from-orange-400 to-amber-600 shadow-orange-200 border-orange-700'}
                       `}
                     >
@@ -1621,7 +1635,9 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
                         <button 
                           onClick={(e) => {
                             e.stopPropagation();
-                            onDeleteTask(task.id);
+                            if (window.confirm("Are you sure you want to delete this task? All student submissions will remain but the task will be hidden from the dashboard.")) {
+                              onDeleteTask(task.id);
+                            }
                           }}
                           className="absolute -top-1 -right-1 w-7 h-7 bg-white/20 hover:bg-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all backdrop-blur-sm"
                         >

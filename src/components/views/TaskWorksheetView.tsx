@@ -286,11 +286,24 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
         
         const prompt = `Grade this student submission for the worksheet "${task.title}".
         
-        CRITICAL INSTRUCTION: You must provide a specific teacher's feedback for EVERY SINGLE QUESTION listed in the student responses.
+        CRITICAL INSTRUCTION: You must provide a specific teacher's feedback for EVERY SINGLE QUESTION listed.
+        
+        GRADING LOGIC:
+        - IF RESPONSE IS MISSING (empty string or whitespace): 
+          * Score: 0/Total
+          * Feedback: Must start with "Student did not attempt this question." then provide the correct answer and a full explanation of the scientific concept.
+        - IF RESPONSE IS INCORRECT (scientific error or incomplete): 
+          * Score: Partial or 0
+          * Feedback: Must start with "Incorrect." or "Partially correct." then explain exactly why the student's reasoning was wrong and state the correct answer with justification.
+        - IF RESPONSE IS CORRECT: 
+          * Score: Full marks
+          * Feedback: Confirm why the answer is fully correct according to the markscheme.
+        
         For EACH question:
-        1. Explain EXPLICITLY why the answer is correct, partially correct, or incorrect.
-        2. Reference the provided Markscheme/Rubric directly.
-        3. Give context and feedback that helps the student understand their performance and how it aligns with the expected learning outcome.
+        1. Explicitly identify if it's an attempted answer or a skip.
+        2. Reference the provided Markscheme/Rubric directly to justify the score.
+        3. Never use generic phrases like "Response not fully addressed in rubric" or "Requirement met".
+        4. Use pedagogical, encouraging yet firm scientific language.
 
         MARKSCHEME/RUBRIC:
         ${markscheme}
@@ -299,9 +312,9 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
         ${Object.entries(responses).map(([id, req]) => `${id}: ${req}`).join('\n')}
         
         GRADING PROTOCOL:
-        1. Evaluate each response strictly against the markscheme/rubric.
+        1. Evaluate each response strictly.
         2. Assign a score in "earned/total" format (e.g. "2/2", "0.5/1", "0/3").
-        3. Match QuestionID exactly as provided in the input.
+        3. Case-sensitive matching of QuestionID is mandatory.
         4. Provide a 'generalFeedback' summary at the end.
         
         Return ONLY valid JSON.`;
@@ -357,10 +370,13 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
           if (aiMatch) {
             feedbackResult[targetId] = {
               score: aiMatch.score || "0/0",
-              feedback: aiMatch.feedback || "Checked against rubric."
+              feedback: aiMatch.feedback || "Detailed feedback provided in report."
             };
           } else {
-            feedbackResult[targetId] = { score: "0/0", feedback: "Could not correlate with provided rubric." };
+            feedbackResult[targetId] = { 
+              score: "0/0", 
+              feedback: "Question not addressed. The correct answer should be derived from the provided markscheme." 
+            };
           }
         });
         
