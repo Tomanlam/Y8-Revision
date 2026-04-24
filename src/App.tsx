@@ -629,31 +629,57 @@ function AppContent() {
   };
 
   const onDeleteTask = async (id: string) => {
+    console.log("App.tsx: onDeleteTask called for id:", id, "isAdmin:", isAdminLoggedIn);
+    if (!isAdminLoggedIn) {
+      console.warn("App.tsx: onDeleteTask rejected - not admin");
+      return;
+    }
     try { 
       await deleteDoc(doc(db, 'tasks', id)); 
       setTasks(prev => prev.filter(t => t.id !== id)); // Immediate local UI update
+      console.log("App.tsx: onDeleteTask success");
     }
-    catch (e) { console.error(e); }
+    catch (e) { console.error("App.tsx: onDeleteTask error:", e); }
   };
 
   const handleDeleteSubmission = async (submissionId: string) => {
-    if (!isAdminLoggedIn) return;
-    // Remove window.confirm which fails in iframe
+    console.log("App.tsx: handleDeleteSubmission called for id:", submissionId, "isAdmin:", isAdminLoggedIn);
+    if (!isAdminLoggedIn) {
+      console.warn("App.tsx: handleDeleteSubmission rejected - not admin");
+      return;
+    }
     try {
       await deleteDoc(doc(db, 'submissions', submissionId));
+      // Immediate local UI update
+      setAllSubmissions(prev => prev.filter(s => s.id !== submissionId));
+      if (mySubmissions) {
+        setMySubmissions(prev => prev.filter(s => s.id !== submissionId));
+      }
+      console.log("App.tsx: handleDeleteSubmission success");
     } catch (e) {
-      console.error("Error deleting submission:", e);
+      console.error("App.tsx: handleDeleteSubmission error:", e);
     }
   };
 
   const handleWipeCleanSlate = async () => {
-    if (!isAdminLoggedIn) return;
+    console.log("App.tsx: handleWipeCleanSlate called", "isAdmin:", isAdminLoggedIn);
+    if (!isAdminLoggedIn) {
+      console.warn("App.tsx: handleWipeCleanSlate rejected - not admin");
+      return;
+    }
     try {
-      for (const t of tasks) await deleteDoc(doc(db, 'tasks', t.id));
-      for (const s of allSubmissions) await deleteDoc(doc(db, 'submissions', s.id));
+      for (const t of tasks) {
+        console.log("App.tsx: deleting task", t.id);
+        await deleteDoc(doc(db, 'tasks', t.id));
+      }
+      for (const s of allSubmissions) {
+        console.log("App.tsx: deleting submission", s.id);
+        await deleteDoc(doc(db, 'submissions', s.id));
+      }
       setTasks([]);
+      console.log("App.tsx: handleWipeCleanSlate success");
     } catch (e) {
-      console.error("Error wiping data:", e);
+      console.error("App.tsx: handleWipeCleanSlate error:", e);
     }
   };
 

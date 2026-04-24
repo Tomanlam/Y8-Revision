@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Star, CheckCircle2, ListChecks, Users, Clock, Plus, Trash2, Layout, Calendar as CalendarIcon, ChevronLeft, ChevronRight as ChevronRightIcon, Target, List, FileText, Eye, ArrowRight, User, Download, Info, Copy, Sparkles, ShieldCheck, Lock, Timer, Send, RefreshCw, X, Edit } from 'lucide-react';
+import { Star, CheckCircle2, ListChecks, Users, Clock, Plus, Trash2, Layout, Calendar as CalendarIcon, ChevronLeft, ChevronRight as ChevronRightIcon, Target, List, FileText, Eye, ArrowRight, User, Download, Info, Copy, Sparkles, ShieldCheck, Lock, Timer, Send, RefreshCw, X, Edit, Inbox } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, parseISO, startOfDay } from 'date-fns';
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -440,124 +440,226 @@ const TasksView = ({
     doc.save(`${includeFeedback?'Report':'Raw_Submission'}_${submission.studentName.replace(/\s+/g, '_')}_${task.title.substring(0,15).replace(/\s+/g, '_')}.pdf`);
   };
 
+  const [deleteConfirmation, setDeleteConfirmation] = React.useState<{ id: string, type: 'task' | 'submission', title: string } | null>(null);
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteConfirmation) return;
+    
+    if (deleteConfirmation.type === 'task') {
+      await onDeleteTask(deleteConfirmation.id);
+    } else {
+      if (onDeleteSubmission) await onDeleteSubmission(deleteConfirmation.id);
+    }
+    
+    setDeleteConfirmation(null);
+  };
+
   return (
-    <div className="flex flex-col flex-1 h-full max-w-7xl mx-auto w-full p-6 space-y-8 pb-24 mt-4">
-      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white ${isAdmin ? 'bg-emerald-500 shadow-lg shadow-emerald-100' : 'bg-blue-500 shadow-lg shadow-blue-100'}`}>
-              {isAdmin ? <Layout size={20} /> : <Target size={20} />}
-            </div>
-            <h1 className="text-3xl font-black text-gray-800 tracking-tight">
-              {isAdmin ? "Admin Command Center" : "Tasks Dashboard"}
-            </h1>
+    <div className="flex flex-col flex-1 h-full max-w-7xl mx-auto w-full p-4 md:p-8 space-y-10 pb-32 mt-4 bg-slate-50/50 rounded-[3rem] border border-slate-100">
+      <AnimatePresence>
+        {deleteConfirmation && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setDeleteConfirmation(null)}
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-md" 
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative w-full max-w-md bg-white rounded-[2.5rem] p-8 shadow-2xl border-2 border-red-50"
+            >
+              <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center text-red-500 mb-6 mx-auto">
+                <Trash2 size={32} />
+              </div>
+              <h3 className="text-2xl font-black text-slate-900 text-center mb-2 uppercase tracking-tight">Confirm Deletion</h3>
+              <p className="text-slate-500 text-center font-medium mb-8">
+                Are you sure you want to permanently remove <span className="text-slate-900 font-bold">"{deleteConfirmation.title}"</span>? This action is irreversible.
+              </p>
+              <div className="flex gap-4">
+                <button 
+                  onClick={() => setDeleteConfirmation(null)}
+                  className="flex-1 py-4 rounded-xl font-black uppercase tracking-widest text-xs text-slate-400 bg-slate-50 hover:bg-slate-100 transition-all border-2 border-slate-100"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleDeleteConfirm}
+                  className="flex-1 py-4 rounded-xl font-black uppercase tracking-widest text-xs text-white bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/20 transition-all"
+                >
+                  Confirm Delete
+                </button>
+              </div>
+            </motion.div>
           </div>
-          <p className="text-gray-500 font-medium px-1 flex flex-col md:flex-row md:items-center gap-2">
-            {isAdmin ? "Oversee performance, manage assignments, and review work." : "Your learning journey at a glance."}
+        )}
+      </AnimatePresence>
+      <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 bg-slate-900 px-10 py-12 rounded-[3.5rem] text-white shadow-[0_20px_50px_-12px_rgba(15,23,42,0.5)] relative overflow-hidden ring-1 ring-white/10">
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-[100px] -mr-64 -mt-64" />
+        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-blue-500/5 rounded-full blur-[100px] -ml-56 -mb-56" />
+        
+        <div className="relative z-10">
+          <div className="flex flex-col md:flex-row md:items-center gap-8 mb-4">
+            <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-white shadow-2xl shadow-emerald-500/30 scale-110 ring-4 ring-emerald-500/20">
+              <Layout size={40} className="drop-shadow-lg" />
+            </div>
+            <div>
+              <div className="flex items-center gap-4 mb-3">
+                <div className="flex items-center gap-2 px-3 py-1 bg-emerald-500/20 rounded-full border border-emerald-500/30 backdrop-blur-md">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest leading-none">v4.5 Stable</span>
+                </div>
+                <div className="h-4 w-px bg-slate-700" />
+                <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Deployment Active</span>
+              </div>
+              <h1 className="text-5xl font-black tracking-tighter leading-none mb-3 bg-clip-text text-transparent bg-gradient-to-r from-white via-white to-slate-400">
+                Admin Command Center
+              </h1>
+            </div>
+          </div>
+          <p className="text-slate-400 text-lg font-medium px-1 max-w-xl leading-relaxed tracking-tight">
+            Comprehensive system management interface. Monitor student progress metrics, deploy secure assessments, and organize pedagogical resources.
           </p>
         </div>
         
-        <div className="flex flex-wrap items-center gap-4">
-          {isAdmin && (
-            <div className="bg-white p-1 rounded-2xl flex items-center border-2 border-gray-100 shadow-sm">
-              <button 
-                onClick={() => setActiveTab('tasks')}
-                className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${
-                  activeTab === 'tasks' ? 'bg-emerald-500 text-white shadow-md' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
-                }`}
-              >
-                <ListChecks size={14} />
-                Assignments
-              </button>
-              <button 
-                onClick={() => setActiveTab('submissions')}
-                className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${
-                  activeTab === 'submissions' ? 'bg-emerald-500 text-white shadow-md' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
-                }`}
-              >
-                <Users size={14} />
-                Active Inbox
-              </button>
-            </div>
-          )}
-
-          {isAdmin && (
-            <div className="flex gap-2">
-              <button 
-                onClick={() => {
-                  setNewTask(prev => ({ ...prev, type: 'standard' }));
-                  setIsCreatorOpen(true);
-                }}
-                className="bg-emerald-500 text-white px-6 py-3 rounded-2xl font-black uppercase tracking-widest text-xs flex items-center gap-2 shadow-[0_4px_0_0_#059669] active:translate-y-1 active:shadow-none transition-all h-[42px]"
-              >
-                <Plus size={18} />
-                New Task
-              </button>
-              <button 
-                onClick={() => {
-                  setNewTask(prev => ({ ...prev, type: 'test' }));
-                  setIsTestCreatorOpen(true);
-                }}
-                className="bg-red-500 text-white px-6 py-3 rounded-2xl font-black uppercase tracking-widest text-xs flex items-center gap-2 shadow-[0_4px_0_0_#ef4444] active:translate-y-1 active:shadow-none transition-all h-[42px]"
-              >
-                <ShieldCheck size={18} />
-                New Test
-              </button>
-              {onWipeCleanSlate && (
-                <button 
-                  onClick={() => {
-                    if (nukeLevel < 2) {
-                      setNukeLevel(prev => prev + 1);
-                    } else {
-                      onWipeCleanSlate();
-                      setNukeLevel(0);
-                    }
-                  }}
-                  onMouseLeave={() => {
-                    if (nukeLevel > 0) setNukeLevel(0);
-                  }}
-                  className={`bg-red-500 text-white px-6 py-3 rounded-2xl font-black uppercase tracking-widest text-xs flex items-center gap-2 shadow-[0_4px_0_0_#ef4444] active:translate-y-1 active:shadow-none transition-all h-[42px] ${nukeLevel > 0 ? 'animate-pulse' : ''}`}
-                >
-                  <Trash2 size={18} />
-                  {nukeLevel === 0 ? "Purge" : nukeLevel === 1 ? "Confirm?" : "WIPE ALL!"}
-                </button>
-              )}
-            </div>
-          )}
+        <div className="flex items-center relative z-10 shrink-0">
+          <div className="bg-slate-800/80 backdrop-blur-xl p-2 rounded-[2rem] flex items-center border border-white/5 shadow-2xl">
+            <button 
+              onClick={() => setActiveTab('tasks')}
+              className={`px-10 py-4 rounded-[1.5rem] font-black uppercase tracking-wider transition-all flex items-center gap-3 text-[11px] ${
+                activeTab === 'tasks' 
+                  ? 'bg-white text-slate-900 shadow-[0_10px_20px_-5px_rgba(255,255,255,0.2)] scale-105' 
+                  : 'text-slate-400 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <ListChecks size={18} className={activeTab === 'tasks' ? 'text-emerald-500' : ''} />
+              Resources
+            </button>
+            <button 
+              onClick={() => setActiveTab('submissions')}
+              className={`px-10 py-4 rounded-[1.5rem] font-black uppercase tracking-wider transition-all flex items-center gap-3 text-[11px] ${
+                activeTab === 'submissions' 
+                  ? 'bg-white text-slate-900 shadow-[0_10px_20px_-5px_rgba(255,255,255,0.2)] scale-105' 
+                  : 'text-slate-400 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <Users size={18} className={activeTab === 'submissions' ? 'text-blue-500' : ''} />
+              Inbox
+            </button>
+          </div>
         </div>
       </header>
 
       {/* Admin Quick Stats Bar */}
       {isAdmin && (
-        <div className="space-y-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="bg-white p-8 rounded-[2.5rem] border-2 border-slate-50 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex justify-between items-start mb-4">
+              <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl">
+                <ListChecks size={24} />
+              </div>
+              <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-1 rounded-lg">ACTIVE</span>
+            </div>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Assignments</p>
+            <p className="text-3xl font-black text-slate-900 tracking-tight">{tasks.filter(t => t.type !== 'test').length}</p>
+          </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-5 gap-6">
-            <div className="bg-white p-6 rounded-[2rem] border-2 border-gray-100 shadow-sm">
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Tasks</p>
-              <p className="text-2xl font-black text-gray-800 tracking-tight">{tasks.length}</p>
+          <div className="bg-white p-8 rounded-[2.5rem] border-2 border-slate-50 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex justify-between items-start mb-4">
+              <div className="p-3 bg-red-50 text-red-600 rounded-2xl">
+                <ShieldCheck size={24} />
+              </div>
+              <span className="text-[10px] font-black text-red-600 bg-red-50 px-2 py-1 rounded-lg">SECURE</span>
             </div>
-            <div className="bg-white p-6 rounded-[2rem] border-2 border-gray-100 shadow-sm">
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Submissions</p>
-              <p className="text-2xl font-black text-blue-500 tracking-tight">{allSubmissions.length}</p>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Secure Assessments</p>
+            <p className="text-3xl font-black text-slate-900 tracking-tight">{tasks.filter(t => t.type === 'test').length}</p>
+          </div>
+
+          <div className="bg-white p-8 rounded-[2.5rem] border-2 border-slate-50 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex justify-between items-start mb-4">
+              <div className="p-3 bg-amber-50 text-amber-600 rounded-2xl">
+                <Clock size={24} />
+              </div>
+              {allSubmissions.filter(s => !s.feedback).length > 0 && (
+                <span className="text-[10px] font-black text-white bg-amber-500 px-2 py-1 rounded-lg animate-pulse">ACTION NEEDED</span>
+              )}
             </div>
-            <div className="bg-white p-6 rounded-[2rem] border-2 border-gray-100 shadow-sm">
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Pending Grading</p>
-              <p className="text-2xl font-black text-orange-500 tracking-tight">
-                {allSubmissions.filter(s => !s.feedback).length}
-              </p>
-            </div>
-            <div className="bg-white p-6 rounded-[2rem] border-2 border-gray-100 shadow-sm">
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Students Active</p>
-              <p className="text-2xl font-black text-emerald-500 tracking-tight">
-                {new Set(allSubmissions.map(s => s.userId)).size}
-              </p>
-            </div>
-            <div className="bg-purple-50 p-6 rounded-[2rem] border-2 border-purple-100 shadow-sm flex flex-col justify-center relative overflow-hidden">
-              <Sparkles className="absolute right-[-10px] bottom-[-10px] text-purple-200/50" size={80} />
-              <p className="text-[10px] font-black text-purple-600 uppercase tracking-widest mb-1 relative z-10">AI Model Protocol</p>
-              <p className="text-[14px] font-black text-purple-900 tracking-tight leading-none relative z-10">Gemini 3.1<br/><span className="text-[10px] uppercase opacity-70">Flash Lite</span></p>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Pending Grading</p>
+            <p className="text-3xl font-black text-slate-900 tracking-tight">
+              {allSubmissions.filter(s => !s.feedback).length}
+            </p>
+          </div>
+
+          <div className="bg-slate-900 p-8 rounded-[2.5rem] shadow-xl relative overflow-hidden">
+            <Sparkles className="absolute right-[-10px] bottom-[-10px] text-emerald-500/20" size={100} />
+            <div className="relative z-10">
+              <div className="flex items-center gap-2 mb-4">
+                <Sparkles size={16} className="text-emerald-400" />
+                <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">AI Engine</span>
+              </div>
+              <p className="text-2xl font-black text-white tracking-tight">Gemini 3.1 Flash</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Autonomous Grading v2</p>
             </div>
           </div>
+        </div>
+      )}
+
+      {isAdmin && (
+        <div className="flex flex-wrap items-center gap-3">
+          <button 
+            onClick={() => {
+              setNewTask(prev => ({ ...prev, type: 'standard' }));
+              setIsCreatorOpen(true);
+            }}
+            className="group bg-white border-2 border-emerald-100 p-4 rounded-2xl flex items-center gap-3 hover:bg-emerald-500 hover:border-emerald-500 transition-all shadow-sm"
+          >
+            <div className="w-10 h-10 bg-emerald-50 group-hover:bg-white/20 rounded-xl flex items-center justify-center text-emerald-600 group-hover:text-white transition-all">
+              <Plus size={20} />
+            </div>
+            <span className="text-[10px] font-black text-emerald-700 group-hover:text-white uppercase tracking-widest">New Assignment</span>
+          </button>
+
+          <button 
+            onClick={() => {
+              setNewTask(prev => ({ ...prev, type: 'test' }));
+              setIsTestCreatorOpen(true);
+            }}
+            className="group bg-white border-2 border-red-100 p-4 rounded-2xl flex items-center gap-3 hover:bg-red-500 hover:border-red-500 transition-all shadow-sm"
+          >
+            <div className="w-10 h-10 bg-red-50 group-hover:bg-white/20 rounded-xl flex items-center justify-center text-red-600 group-hover:text-white transition-all">
+              <ShieldCheck size={20} />
+            </div>
+            <span className="text-[10px] font-black text-red-700 group-hover:text-white uppercase tracking-widest">New Secure Test</span>
+          </button>
+
+          {onWipeCleanSlate && (
+            <button 
+              onClick={() => {
+                if (nukeLevel < 2) {
+                  setNukeLevel(prev => prev + 1);
+                } else {
+                  onWipeCleanSlate();
+                  setNukeLevel(0);
+                }
+              }}
+              onMouseLeave={() => {
+                if (nukeLevel > 0) setNukeLevel(0);
+              }}
+              className={`ml-auto p-4 rounded-2xl flex items-center gap-3 transition-all border-2 border-dashed ${
+                nukeLevel > 0 
+                  ? 'bg-red-600 border-red-600 text-white shadow-lg' 
+                  : 'bg-white border-red-100 text-red-500 hover:bg-red-50'
+              }`}
+            >
+              <Trash2 size={20} />
+              <span className="text-[10px] font-black uppercase tracking-widest">
+                {nukeLevel === 0 ? "Purge System" : nukeLevel === 1 ? "Are you sure?" : "TERMINATE DATA"}
+              </span>
+            </button>
+          )}
         </div>
       )}
 
@@ -960,10 +1062,8 @@ Output ONLY the JSON object.`;
                 {isAdmin && (
                   <button 
                     onClick={async () => {
-                      if (confirm("Delete this assessment permanently?")) {
-                         if (onDeleteTask) await onDeleteTask(selectedTaskForPasscode.id);
-                         setIsPasscodeModalOpen(false);
-                      }
+                      setDeleteConfirmation({ id: selectedTaskForPasscode!.id, type: 'task', title: selectedTaskForPasscode!.title });
+                      setIsPasscodeModalOpen(false);
                     }}
                     className="w-full py-3 rounded-xl text-red-500 font-black uppercase text-[10px] tracking-widest hover:bg-red-50 transition-colors flex items-center justify-center gap-2"
                   >
@@ -1291,32 +1391,40 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
       {editingTask && <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 transition-opacity" onClick={() => setEditingTask(null)} />}
 
       {activeTab === 'submissions' && isAdmin ? (
-        <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
-           <div className="flex flex-col md:flex-row items-center gap-4">
-             <div className="flex-1 bg-white p-4 rounded-[2rem] border-2 border-gray-100 shadow-sm flex items-center gap-4">
-               <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-500 shadow-inner shrink-0">
-                 <Users size={24} />
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+           <div className="flex flex-col md:flex-row items-center gap-6 bg-white p-8 rounded-[2.5rem] border-2 border-slate-50 shadow-sm">
+             <div className="flex items-center gap-5 flex-1">
+               <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 shadow-inner shrink-0 scale-110">
+                 <Users size={32} />
                </div>
                <div>
-                 <h3 className="text-lg font-black text-gray-800 uppercase tracking-tight">Grading Queue</h3>
-                 <p className="text-gray-500 text-xs font-medium">Review and grade student worksheet submissions.</p>
+                 <h3 className="text-2xl font-black text-slate-800 uppercase tracking-tighter">Grading Inbox</h3>
+                 <p className="text-slate-500 text-sm font-medium">Review, analyze, and grade student submissions across all active units.</p>
                </div>
              </div>
-
-             <div className="w-full md:w-96 relative">
+ 
+             <div className="w-full md:w-96 relative group">
                <input 
                  type="text"
-                 placeholder="Search students or tasks..."
+                 placeholder="Search students or records..."
                  value={submissionFilter}
                  onChange={(e) => setSubmissionFilter(e.target.value)}
-                 className="w-full pl-12 pr-4 py-4 rounded-[2rem] border-2 border-gray-100 font-bold focus:border-emerald-500 outline-none transition-all bg-white shadow-sm"
+                 className="w-full pl-14 pr-6 py-5 rounded-2xl border-2 border-slate-100 font-bold focus:border-emerald-500 outline-none transition-all bg-slate-50/50 group-hover:bg-white shadow-inner focus:shadow-emerald-100/20"
                />
-               <List className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+               <List className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 group-hover:text-emerald-400 transition-colors" size={24} />
              </div>
            </div>
            
            <div className="space-y-8">
-             {(Object.entries(submissionsByTask) as [string, TaskSubmission[]][]).map(([taskId, subs]) => {
+             {Object.keys(submissionsByTask).length === 0 ? (
+               <div className="col-span-full py-24 flex flex-col items-center justify-center text-center bg-white rounded-[3rem] border-2 border-dashed border-slate-100 shadow-inner">
+                 <div className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center text-slate-200 mb-6">
+                   <Inbox size={40} />
+                 </div>
+                 <h3 className="font-black text-slate-400 uppercase tracking-[0.2em] text-sm mb-2">No Submissions Recorded</h3>
+                 <p className="text-slate-300 font-medium max-w-xs">Student work will automatically appear here once assignments are completed.</p>
+               </div>
+             ) : (Object.entries(submissionsByTask) as [string, TaskSubmission[]][]).map(([taskId, subs]) => {
                const task = tasks.find(t => t.id === taskId) || { id: taskId, title: `Unlinked Task (${taskId})`, dueDate: new Date().toISOString(), type: "worksheet" } as Task;
                
                const filteredSubs = subs.filter(s => 
@@ -1483,9 +1591,7 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
                                  <button 
                                    onClick={(e) => {
                                      e.stopPropagation();
-                                     if (window.confirm("Are you sure you want to permanently delete this student submission? This action cannot be undone.")) {
-                                       onDeleteSubmission(sub.id);
-                                     }
+                                     setDeleteConfirmation({ id: sub.id, type: 'submission', title: `${sub.studentName}'s submission` });
                                    }}
                                    className="flex items-center justify-center gap-2 py-2 text-red-300 hover:text-red-500 rounded-xl font-black uppercase tracking-widest text-[8px] transition-all w-full"
                                  >
@@ -1552,9 +1658,21 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
                       <div className="relative z-10 flex flex-col h-full">
                         <div className="flex items-center justify-between mb-4">
                           <div className={`w-10 h-10 rounded-2xl backdrop-blur-md flex items-center justify-center border border-white/20 transition-transform group-hover:scale-110 ${isTest && !isCompleted ? 'bg-red-500 shadow-lg shadow-red-500/50' : 'bg-white/20'}`}>
-                            {isCompleted ? <CheckCircle2 size={20} /> : isTest ? <Lock size={20} /> : <Target size={20} />}
+                            {isCompleted ? <CheckCircle2 size={20} /> : isTest ? <ShieldCheck size={20} /> : <Target size={20} />}
                           </div>
                           <div className="flex items-center gap-2">
+                             {isAdmin && (
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setDeleteConfirmation({ id: task.id, type: 'task', title: task.title });
+                                }}
+                                className="w-8 h-8 rounded-xl bg-white/20 hover:bg-red-500 flex items-center justify-center transition-all backdrop-blur-sm border border-white/10 group/trash"
+                                title="Delete Assignment"
+                              >
+                                <Trash2 size={14} className="group-hover/trash:scale-110" />
+                              </button>
+                            )}
                              {isTest && (
                                <div className="bg-white/10 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest backdrop-blur-md border border-white/10 flex items-center gap-1">
                                  <Timer size={10} className="text-red-400" /> {task.timeLimit}m
@@ -1631,19 +1749,7 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
                         </div>
 
 
-                      {isAdmin && (
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (window.confirm("Are you sure you want to delete this task? All student submissions will remain but the task will be hidden from the dashboard.")) {
-                              onDeleteTask(task.id);
-                            }
-                          }}
-                          className="absolute -top-1 -right-1 w-7 h-7 bg-white/20 hover:bg-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all backdrop-blur-sm"
-                        >
-                          <Trash2 size={12} />
-                        </button>
-                      )}
+                      {/* Task Info Area */}
                     </div>
                   </motion.div>
                 );
