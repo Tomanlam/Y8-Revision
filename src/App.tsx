@@ -40,6 +40,7 @@ import QuickFacts from './QuickFacts';
 import TasksView from './components/views/TasksView';
 import AchievementView from './components/views/AchievementView';
 import TaskWorksheetView from './components/views/TaskWorksheetView';
+import TaskTestView from './components/views/TaskTestView';
 import Calculator from './components/Calculator';
 
 // Icons
@@ -166,19 +167,19 @@ const Sidebar = ({ currentMode, setMode, onQRClick, hasOutstandingTasks, user, i
                 exit={{ opacity: 0, x: -10 }}
                 className="flex flex-col items-start whitespace-nowrap overflow-hidden"
               >
-                <span className="font-black tracking-tight text-xs text-gray-800 leading-none">
+                <span className="font-black tracking-tight text-xs text-gray-800 leading-tight">
                   {user?.displayName || 'Member'}
                 </span>
-                <div className="mt-1">
+                <div className="mt-0.5">
                   {isAdmin ? (
-                    <div className="flex items-center gap-1.5 bg-amber-500 px-2 py-0.5 rounded-full text-white shadow-sm">
-                      <ShieldCheck size={10} className="fill-white" />
-                      <span className="text-[9px] font-black uppercase tracking-tight">God Mode</span>
+                    <div className="flex items-center gap-1 bg-amber-500 px-1.5 py-0.5 rounded-full text-white">
+                      <ShieldCheck size={8} className="fill-white" />
+                      <span className="text-[8px] font-black uppercase tracking-tight">God Mode</span>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-1.5 bg-emerald-500 px-2 py-0.5 rounded-full text-white shadow-sm">
-                      <GraduationCap size={10} className="fill-white" />
-                      <span className="text-[9px] font-black uppercase tracking-tight">Student Mode</span>
+                    <div className="flex items-center gap-1 bg-emerald-500 px-1.5 py-0.5 rounded-full text-white">
+                      <GraduationCap size={8} className="fill-white" />
+                      <span className="text-[8px] font-black uppercase tracking-tight">Student Mode</span>
                     </div>
                   )}
                 </div>
@@ -658,7 +659,9 @@ function AppContent() {
 
   const onStartTask = (task: Task) => {
     setActiveTask(task);
-    if (task.type === 'worksheet' || task.worksheetQuestions || task.pdfUrl) {
+    if (task.type === 'test') {
+      setMode('test');
+    } else if (task.type === 'worksheet' || task.worksheetQuestions || task.pdfUrl) {
       setMode('worksheet');
     } else {
       setSelectedUnitId(task.units[0]);
@@ -806,7 +809,7 @@ function AppContent() {
             onViewSubmission={(sub, task) => {
               setViewedSubmission(sub);
               setActiveTask(task);
-              setMode('worksheet');
+              setMode(task.type === 'test' ? 'test' : 'worksheet');
             }}
             onDeleteSubmission={handleDeleteSubmission}
             onWipeCleanSlate={handleWipeCleanSlate}
@@ -891,6 +894,91 @@ function AppContent() {
                 } catch (e) {
                   console.error("Firestore submission error:", e);
                   throw e; // Rethrow so it's caught in TaskWorksheetView and shows alert
+                }
+              }}
+            />
+          )}
+
+          {mode === 'test' && activeTask && (
+            <TaskTestView 
+              key={`test_${activeTask.id}_${viewedSubmission?.id || 'submit'}`}
+              task={activeTask}
+              onBack={() => {
+                setMode('tasks');
+                setActiveTask(null);
+                setViewedSubmission(null);
+              }}
+              initialResponses={viewedSubmission ? viewedSubmission.responses : mySubmissions.find(s => s.taskId === activeTask.id)?.responses}
+              initialFeedback={viewedSubmission ? viewedSubmission.feedback : mySubmissions.find(s => s.taskId === activeTask.id)?.feedback}
+              initialGeneralFeedback={viewedSubmission ? viewedSubmission.generalFeedback : mySubmissions.find(s => s.taskId === activeTask.id)?.generalFeedback}
+              readOnly={!!viewedSubmission || (!isAdminLoggedIn && mySubmissions.some(s => s.taskId === activeTask.id))}
+              isAdmin={isAdminLoggedIn}
+              showCalculator={showCalculator}
+              setShowCalculator={setShowCalculator}
+              onComplete={async (responses, results) => {
+                if (!currentUser) return;
+
+                if (isAdminLoggedIn && viewedSubmission) {
+                  // Admin is grading an existing submission
+                  const updateData: any = {
+                    gradedAt: new Date().toISOString()
+                  };
+                  if (results !== undefined) updateData.results = results;
+                  if (results?.feedback !== undefined) updateData.feedback = results.feedback;
+                  if (results?.generalFeedback !== undefined) updateData.generalFeedback = results.generalFeedback;
+
+                  await updateDoc(doc(db, 'submissions', viewedSubmission.id), updateData);
+                  
+                  setViewedSubmission({
+                    ...viewedSubmission,
+                    results: results,
+                    feedback: results?.feedback,
+                    generalFeedback: results?.generalFeedback
+                  });
+                  alert("Student responses graded successfully!");
+                  return;
+                }
+
+                try {
+                  const submissionId = `${activeTask.id}_${currentUser.uid}`.replace(/[^a-zA-Z0-9_\-]/g, '_');
+                  const submissionToSave: any = {
+                    id: submissionId,
+                    taskId: activeTask.id,
+                    userId: currentUser.uid,
+                    studentName: currentUser.displayName || 'Student',
+                    completedAt: new Date().toISOString(),
+                    responses: responses
+                  };
+                  
+                  if (results !== undefined) {
+                    submissionToSave.results = results;
+                  } else {
+                    submissionToSave.results = { 
+                      score: 0, 
+                      total: activeTask.worksheetQuestions?.length || 0, 
+                      unitId: (activeTask.units && activeTask.units.length > 0) ? activeTask.units[0] : 0
+                    };
+                  }
+
+                  if (results?.feedback !== undefined) {
+                    submissionToSave.feedback = results.feedback;
+                  }
+                  if (results?.generalFeedback !== undefined) {
+                    submissionToSave.generalFeedback = results.generalFeedback;
+                  }
+                  
+                  console.log("Saving submission to Firestore:", submissionId);
+                  await setDoc(doc(db, 'submissions', submissionId), submissionToSave);
+                  
+                  // Optimistically update local state to show "Done" immediately
+                  setMySubmissions(prev => {
+                    const filtered = prev.filter(s => s.id !== submissionId);
+                    return [...filtered, submissionToSave as TaskSubmission];
+                  });
+                  
+                } catch (e) {
+                  console.error("Firestore submission error:", e);
+                  throw e; // Rethrow so it's caught in TaskTestView and shows alert
                 }
               }}
             />

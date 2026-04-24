@@ -284,7 +284,11 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
         
         const prompt = `Grade this student submission for the worksheet "${task.title}".
         
-        CRITICAL INSTRUCTION: You must provide a specific teacher's feedback for EVERY SINGLE QUESTION listed in the student responses, even if the answer is correct. Use the provided rubric to justify your score and feedback.
+        CRITICAL INSTRUCTION: You must provide a specific teacher's feedback for EVERY SINGLE QUESTION listed in the student responses.
+        For EACH question:
+        1. Explain EXPLICITLY why the answer is correct, partially correct, or incorrect.
+        2. Reference the provided Markscheme/Rubric directly.
+        3. Give context and feedback that helps the student understand their performance and how it aligns with the expected learning outcome.
 
         MARKSCHEME/RUBRIC:
         ${markscheme}
@@ -295,9 +299,8 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
         GRADING PROTOCOL:
         1. Evaluate each response strictly against the markscheme/rubric.
         2. Assign a score in "earned/total" format (e.g. "2/2", "0.5/1", "0/3").
-        3. Write a concise, encouraging, and pedagogically helpful feedback comment for EVERY question.
-        4. Match QuestionID exactly as provided in the input.
-        5. Provide a 'generalFeedback' summary at the end.
+        3. Match QuestionID exactly as provided in the input.
+        4. Provide a 'generalFeedback' summary at the end.
         
         Return ONLY valid JSON.`;
 

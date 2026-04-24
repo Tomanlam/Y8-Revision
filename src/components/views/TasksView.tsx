@@ -314,6 +314,18 @@ const TasksView = ({
       currentY += boxHeight + 10;
     }
 
+    // Punctuality Logic
+    const completedAt = new Date(submission.completedAt);
+    const dueDateStr = task.dueDate.includes('T') ? task.dueDate : `${task.dueDate}T23:59:59`;
+    const dueDate = new Date(dueDateStr);
+    
+    let punctuality = "ON-TIME";
+    if (completedAt > dueDate) {
+      punctuality = "LATE";
+    } else if (dueDate.getTime() - completedAt.getTime() > 24 * 60 * 60 * 1000) {
+      punctuality = "EARLY";
+    }
+
     // Student & Task Info Box
     autoTable(doc, {
       startY: currentY,
@@ -321,6 +333,7 @@ const TasksView = ({
         ['Student Name:', submission.studentName],
         [isTest ? 'Assessment Title:' : 'Assignment Title:', task.title],
         ['Completion Time:', format(new Date(submission.completedAt), 'PPP p')],
+        ['Punctuality:', punctuality],
         ['Performance Metric:', submission.results ? `${submission.results.score} / ${submission.results.total} (${Math.round((submission.results.score/submission.results.total)*100)}%)` : 'Awaiting Grading']
       ],
       theme: 'grid',
@@ -333,6 +346,13 @@ const TasksView = ({
       columnStyles: { 
         0: { fontStyle: 'bold', cellWidth: 45, fillColor: [249, 250, 251], textColor: [100, 116, 139] },
         1: { fillColor: [255, 255, 255], textColor: [15, 23, 42], fontStyle: 'bold' }
+      },
+      didParseCell: (data) => {
+        if (data.column.index === 1 && data.cell.text[0] === punctuality) {
+          if (punctuality === "EARLY") data.cell.styles.textColor = [16, 185, 129] as any;
+          if (punctuality === "LATE") data.cell.styles.textColor = [239, 68, 68] as any;
+          if (punctuality === "ON-TIME") data.cell.styles.textColor = [245, 158, 11] as any;
+        }
       }
     });
 
