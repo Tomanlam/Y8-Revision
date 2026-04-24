@@ -102,8 +102,17 @@ const TaskTestView: React.FC<TaskTestViewProps> = ({
 
   // Anti-Cheat State
   const [tabSwitchesCount, setTabSwitchesCount] = useState(0);
+  const [cheatLogs, setCheatLogs] = useState<Record<string, number>>({
+    tabSwitches: 0,
+    blur: 0,
+    copyPaste: 0,
+    shortcutAttempts: 0,
+    printAttempts: 0
+  });
   const [cheatDetected, setCheatDetected] = useState(false);
   const audioContextRef = useRef<AudioContext | null>(null);
+  const sirenIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const sirenVolumeRef = useRef(0.1);
 
   // Siren Sound Synthesis
   const playSiren = () => {
@@ -119,9 +128,8 @@ const TaskTestView: React.FC<TaskTestViewProps> = ({
       osc.frequency.setValueAtTime(440, ctx.currentTime);
       osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.5);
       osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 1.0);
-      osc.loop = true;
 
-      gain.gain.setValueAtTime(0.2, ctx.currentTime);
+      gain.gain.setValueAtTime(sirenVolumeRef.current, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.0);
 
       osc.connect(gain);
@@ -129,26 +137,59 @@ const TaskTestView: React.FC<TaskTestViewProps> = ({
 
       osc.start();
       osc.stop(ctx.currentTime + 1.0);
+      
+      // Increase volume for next time, cap at 0.8
+      sirenVolumeRef.current = Math.min(sirenVolumeRef.current + 0.1, 0.8);
     } catch (e) {
       console.warn("Audio Context failed", e);
+    }
+  };
+
+  const startRepeatedSiren = () => {
+    if (sirenIntervalRef.current) return;
+    sirenVolumeRef.current = 0.2;
+    playSiren();
+    sirenIntervalRef.current = setInterval(playSiren, 1200);
+  };
+
+  const stopSiren = () => {
+    if (sirenIntervalRef.current) {
+      clearInterval(sirenIntervalRef.current);
+      sirenIntervalRef.current = null;
     }
   };
 
   useEffect(() => {
     if (readOnly || submitted) return;
 
+    const logCheat = (category: string) => {
+      setCheatLogs(prev => ({ ...prev, [category]: (prev[category] || 0) + 1 }));
+      setCheatDetected(true);
+      startRepeatedSiren();
+    };
+
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
-        setTabSwitchesCount(prev => prev + 1);
-        setCheatDetected(true);
-        playSiren();
+        logCheat('tabSwitches');
       }
     };
 
     const handleBlur = () => {
-      setTabSwitchesCount(prev => prev + 1);
-      setCheatDetected(true);
-      playSiren();
+      logCheat('blur');
+    };
+
+    const handleCopy = (e: ClipboardEvent) => {
+      e.preventDefault();
+      logCheat('copyPaste');
+    };
+
+    const handlePaste = (e: ClipboardEvent) => {
+      e.preventDefault();
+      logCheat('copyPaste');
+    };
+
+    const handleBeforePrint = () => {
+      logCheat('printAttempts');
     };
 
     const handleContextMenu = (e: MouseEvent) => {
@@ -156,10 +197,13 @@ const TaskTestView: React.FC<TaskTestViewProps> = ({
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Prevent Print, Save, Inspect
-      if ((e.ctrlKey || e.metaKey) && (e.key === 'p' || e.key === 's' || e.key === 'u')) {
+      // Prevent Print, Save, Inspect, PrintScreen
+      if (e.key === 'PrintScreen') {
+        logCheat('printAttempts');
+      }
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'p' || e.key === 's' || e.key === 'u' || e.key === 'c' || e.key === 'v')) {
         e.preventDefault();
-        setCheatDetected(true);
+        logCheat('shortcutAttempts');
       }
     };
 
@@ -167,12 +211,19 @@ const TaskTestView: React.FC<TaskTestViewProps> = ({
     window.addEventListener('blur', handleBlur);
     window.addEventListener('contextmenu', handleContextMenu as any);
     window.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('copy', handleCopy);
+    document.addEventListener('paste', handlePaste);
+    window.addEventListener('beforeprint', handleBeforePrint);
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('blur', handleBlur);
       window.removeEventListener('contextmenu', handleContextMenu as any);
       window.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('copy', handleCopy);
+      document.removeEventListener('paste', handlePaste);
+      window.removeEventListener('beforeprint', handleBeforePrint);
+      stopSiren();
     };
   }, [readOnly, submitted]);
 
@@ -348,9 +399,10 @@ const TaskTestView: React.FC<TaskTestViewProps> = ({
         
         CRITICAL INSTRUCTION: You must provide a specific teacher's feedback for EVERY SINGLE QUESTION listed in the student responses.
         For EACH question:
-        1. Explain EXPLICITLY why the answer is correct, partially correct, or incorrect.
-        2. Reference the provided Markscheme/Rubric directly.
-        3. Give context and feedback that helps the student understand their performance.
+        1. Explain EXPLICITLY why the answer is correct, partially correct, or incorrect. If incorrect, explain the error in simple, easy-to-understand terms.
+        2. Reference the provided Markscheme/Rubric directly to justify the score.
+        3. Give context and feedback that helps the student improve.
+        4. DO NOT use generic phrases like "Requirement met based on rubric". Every comment must be unique and descriptive.
 
         MARKSCHEME/RUBRIC:
         ${markscheme}
@@ -406,7 +458,7 @@ const TaskTestView: React.FC<TaskTestViewProps> = ({
           if (aiMatch) {
             feedbackResult[targetId] = {
               score: aiMatch.score || "0/0",
-              feedback: aiMatch.feedback || "Requirement met based on rubric."
+              feedback: aiMatch.feedback || "Answer correctly addresses the scientific requirement."
             };
           } else {
             feedbackResult[targetId] = { score: "0/0", feedback: "Response not fully addressed in rubric." };
@@ -431,10 +483,10 @@ const TaskTestView: React.FC<TaskTestViewProps> = ({
           total: computedTotal || task.worksheetQuestions?.length || 0,
           feedback: feedbackResult,
           generalFeedback: generalResult,
-          tabSwitches: tabSwitchesCount
+          cheatLogs: cheatLogs
         });
       } else {
-        await onComplete(responses, { tabSwitches: tabSwitchesCount });
+        await onComplete(responses, { cheatLogs: cheatLogs });
         setSubmitted(true);
       }
     } catch (error: any) {
@@ -465,13 +517,16 @@ const TaskTestView: React.FC<TaskTestViewProps> = ({
             <div className="bg-white p-8 rounded-full mb-8 animate-pulse">
               <AlertCircle size={80} className="text-red-600" />
             </div>
-            <h1 className="text-5xl font-black text-white mb-4 uppercase tracking-tighter">Anti-Cheat Triggered</h1>
+            <h1 className="text-5xl font-black text-white mb-4 uppercase tracking-tighter text-shadow-lg">Security Protocol Warning</h1>
             <p className="text-white/80 text-xl font-bold max-w-lg mb-12">
-              Focus loss or forbidden interaction detected. Your switch count has been updated and logged for review.
+              Suspicious behavior (focus loss, copy-paste, or shortcut usage) has been detected and logged.
             </p>
             <button 
-              onClick={() => setCheatDetected(false)}
-              className="bg-white text-red-600 px-12 py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-gray-100 transition-colors shadow-xl"
+              onClick={() => {
+                setCheatDetected(false);
+                stopSiren();
+              }}
+              className="bg-white text-red-600 px-12 py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-gray-100 transition-colors shadow-2xl active:scale-95"
             >
               Resume Test
             </button>
@@ -689,11 +744,20 @@ const TaskTestView: React.FC<TaskTestViewProps> = ({
 
         <div ref={rightPaneRef} className="w-[45%] border-l border-red-100 bg-white overflow-y-auto custom-scrollbar p-8">
           <div className="max-w-xl mx-auto space-y-12 pb-20">
-            <div className="space-y-2 border-b border-red-50 pb-8">
-              <h3 className="text-3xl font-black text-gray-800 tracking-tight uppercase">Formal Assessment</h3>
-              <p className="text-sm font-bold text-gray-400 uppercase tracking-widest italic flex items-center gap-2">
-                <ShieldCheck size={14} className="text-red-500" /> Secure Protocol v3.1 Enabled
-              </p>
+            <div className="space-y-4 border-b border-red-50 pb-8">
+              <div className="space-y-1">
+                <h3 className="text-3xl font-black text-gray-800 tracking-tight uppercase">Formal Assessment</h3>
+                <p className="text-sm font-bold text-gray-400 uppercase tracking-widest italic flex items-center gap-2">
+                  <ShieldCheck size={14} className="text-red-500" /> Secure Protocol v3.1 Enabled
+                </p>
+              </div>
+              <div className="bg-red-50 border border-red-100 p-4 rounded-2xl">
+                <p className="text-[10px] font-black text-red-700 uppercase tracking-widest leading-relaxed">
+                  <AlertCircle size={10} className="inline mr-1 -mt-0.5" /> 
+                  You are now under exam conditions. Any suspicious behavior will be logged and subject to review. 
+                  If you attempt to cheat, your results may be disqualified.
+                </p>
+              </div>
             </div>
 
             {generalFeedback && (
@@ -760,12 +824,21 @@ const TaskTestView: React.FC<TaskTestViewProps> = ({
                         )}
 
                         {(submitted || readOnly) && validationFeedback[typedQ.id] && (
-                          <div className="mt-4 p-4 rounded-2xl bg-gray-50 border-2 border-gray-100">
-                            <div className="flex justify-between items-center mb-1">
-                              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Examiner Feedback</span>
-                              <span className={`text-xs font-black ${validationFeedback[typedQ.id].score.startsWith('0/') ? 'text-red-500' : 'text-emerald-500'}`}>{validationFeedback[typedQ.id].score}</span>
+                          <div className="mt-6 space-y-3 bg-red-50/30 p-6 rounded-3xl border border-red-100/50">
+                            <div className="flex justify-between items-center">
+                              <div className="flex items-center gap-2">
+                                <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                                <span className="text-[10px] font-black text-red-800 uppercase tracking-widest">Examiner feedback</span>
+                              </div>
+                              <div className="bg-white px-3 py-1 rounded-full border border-red-100 shadow-sm">
+                                <span className={`text-[10px] font-black uppercase tracking-tight ${validationFeedback[typedQ.id].score.startsWith('0/') ? 'text-red-500' : 'text-emerald-500'}`}>
+                                  Awarded: {validationFeedback[typedQ.id].score}
+                                </span>
+                              </div>
                             </div>
-                            <p className="text-xs font-bold text-gray-700 italic">"{validationFeedback[typedQ.id].feedback}"</p>
+                            <p className="text-xs font-bold text-gray-700 italic leading-relaxed">
+                              "{validationFeedback[typedQ.id].feedback}"
+                            </p>
                           </div>
                         )}
                       </motion.div>

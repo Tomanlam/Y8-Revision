@@ -969,10 +969,11 @@ function AppContent() {
                   }
                   
                   // Security logging specific to test mode
-                  if (results?.tabSwitches !== undefined) {
+                  if (results?.cheatLogs !== undefined) {
                     submissionToSave.results = {
                       ...(submissionToSave.results || {}),
-                      tabSwitches: results.tabSwitches
+                      cheatLogs: results.cheatLogs,
+                      tabSwitches: results.cheatLogs.tabSwitches || 0
                     };
                   }
                   
@@ -984,6 +985,12 @@ function AppContent() {
                     const filtered = prev.filter(s => s.id !== submissionId);
                     return [...filtered, submissionToSave as TaskSubmission];
                   });
+
+                  // Finalize Test Flow: Exit to tasks and show success
+                  setMode('tasks');
+                  setActiveTask(null);
+                  setViewedSubmission(null);
+                  alert("Your test result has been successfully recorded.");
                   
                 } catch (e) {
                   console.error("Firestore test submission error:", e);

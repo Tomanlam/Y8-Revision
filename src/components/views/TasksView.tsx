@@ -327,6 +327,16 @@ const TasksView = ({
     }
 
     // Student & Task Info Box
+    const securityEntry = isTest 
+      ? ['Security Violations:', submission.results?.cheatLogs 
+          ? Object.entries(submission.results.cheatLogs)
+              .filter(([_, count]) => (count as number) > 0)
+              .map(([key, count]) => `${key}: ${count}`)
+              .join(', ') || 'NONE DETECTED'
+          : `${submission.results?.tabSwitches || 0} Tab Switches Detected`
+        ]
+      : ['Security Alerts:', 'OFF'];
+
     autoTable(doc, {
       startY: currentY,
       body: [
@@ -334,7 +344,7 @@ const TasksView = ({
         [isTest ? 'Assessment Title:' : 'Assignment Title:', task.title],
         ['Completion Time:', format(new Date(submission.completedAt), 'PPP p')],
         ['Punctuality:', punctuality],
-        ['Security Alerts:', `${submission.results?.tabSwitches || 0} Tab Switches Detected`],
+        securityEntry,
         ['Performance Metric:', submission.results ? `${submission.results.score} / ${submission.results.total} (${Math.round((submission.results.score/submission.results.total)*100)}%)` : 'Awaiting Grading']
       ],
       theme: 'grid',
@@ -1509,37 +1519,40 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
                           onStartTask(task);
                         }
                       }}
-                      className={`rounded-[2rem] p-5 md:p-6 shadow-lg text-white cursor-pointer relative overflow-hidden group h-full flex flex-col min-h-[220px] transition-all
+                      className={`rounded-[2.5rem] p-6 shadow-xl text-white cursor-pointer relative overflow-hidden group h-full flex flex-col min-h-[220px] transition-all border-b-4
                         ${isSelectedDate ? 'ring-4 ring-offset-4 ring-emerald-400' : ''}
                         ${isCompleted 
-                          ? 'bg-gradient-to-br from-emerald-500 to-teal-600 shadow-emerald-200' 
+                          ? 'bg-gradient-to-br from-emerald-500 to-teal-600 shadow-emerald-200 border-emerald-700' 
                           : isTest 
-                            ? 'bg-gradient-to-br from-red-500 to-rose-700 shadow-red-200 ring-1 ring-red-400/50'
-                            : 'bg-gradient-to-br from-orange-400 to-amber-600 shadow-orange-200'}
+                            ? 'bg-gradient-to-br from-slate-900 via-red-950 to-red-900 shadow-red-200 border-red-800'
+                            : 'bg-gradient-to-br from-orange-400 to-amber-600 shadow-orange-200 border-orange-700'}
                       `}
                     >
+                      {isTest && !isCompleted && (
+                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 via-transparent to-red-500 animate-pulse opacity-50" />
+                      )}
                       <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                        {isCompleted ? <CheckCircle2 size={80} /> : isTest ? <ShieldCheck size={80} /> : <Clock size={80} />}
+                        {isCompleted ? <CheckCircle2 size={100} /> : isTest ? <ShieldCheck size={100} /> : <Clock size={100} />}
                       </div>
                       
                       <div className="relative z-10 flex flex-col h-full">
                         <div className="flex items-center justify-between mb-4">
-                          <div className="bg-white/20 w-10 h-10 rounded-xl backdrop-blur-sm flex items-center justify-center border border-white/20">
+                          <div className={`w-10 h-10 rounded-2xl backdrop-blur-md flex items-center justify-center border border-white/20 transition-transform group-hover:scale-110 ${isTest && !isCompleted ? 'bg-red-500 shadow-lg shadow-red-500/50' : 'bg-white/20'}`}>
                             {isCompleted ? <CheckCircle2 size={20} /> : isTest ? <Lock size={20} /> : <Target size={20} />}
                           </div>
                           <div className="flex items-center gap-2">
                              {isTest && (
-                               <div className="bg-red-950/20 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest backdrop-blur-sm border border-white/10 flex items-center gap-1">
-                                 <Timer size={10} /> {task.timeLimit}m
+                               <div className="bg-white/10 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest backdrop-blur-md border border-white/10 flex items-center gap-1">
+                                 <Timer size={10} className="text-red-400" /> {task.timeLimit}m
                                </div>
                              )}
                             {isAdmin && isTest && (
-                              <div className="bg-white text-red-600 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest shadow-sm">
-                                PASS: {task.passcode}
+                              <div className="bg-red-600 text-white px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest shadow-lg border border-red-400/30">
+                                KEY: {task.passcode}
                               </div>
                             )}
                             {isCompleted && (
-                              <div className="bg-white/30 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest backdrop-blur-sm">
+                              <div className="bg-white/30 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest backdrop-blur-md">
                                 Done
                               </div>
                             )}
@@ -1547,19 +1560,24 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
                         </div>
 
                         <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            {isTest && <span className="text-[9px] font-black uppercase bg-white/20 px-2 py-0.5 rounded border border-white/20">Assessment</span>}
-                            <h3 className="text-lg font-black uppercase tracking-tight leading-tight line-clamp-2">{task.title}</h3>
+                          <div className="flex flex-col gap-0.5 mb-1">
+                            {isTest && (
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[8px] font-black uppercase bg-red-600 px-2 py-0.5 rounded text-white shadow-sm">Secure Examination</span>
+                                {task.isABVersion && <span className="text-[8px] font-black uppercase bg-blue-600 px-2 py-0.5 rounded text-white italic">A/B</span>}
+                              </div>
+                            )}
+                            <h3 className="text-xl font-black uppercase tracking-tight leading-none line-clamp-2 mt-1 group-hover:translate-x-1 transition-transform">{task.title}</h3>
                           </div>
-                          <p className="text-white/70 text-[10px] font-bold mb-6 line-clamp-2 uppercase tracking-wide">
-                            {task.description || (isTest ? "Secure Examination Mode" : "Active Assignment")}
+                          <p className={`text-white/70 text-[10px] font-bold mb-6 line-clamp-2 uppercase tracking-wide italic ${isTest ? 'text-red-200' : ''}`}>
+                            {task.description || (isTest ? "Standard Security Protocol Active" : "Active Assignment")}
                           </p>
                         </div>
                         
                         <div className="mt-auto pt-4 border-t border-white/10 flex items-center justify-between">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 bg-black/10 px-3 py-1.5 rounded-xl border border-white/5">
                             <CalendarIcon size={12} className="text-white/60" />
-                            <span className="text-[10px] font-black uppercase tracking-widest">{format(taskDate, 'MMM d')}</span>
+                            <span className="text-[9px] font-black uppercase tracking-widest">{format(taskDate, 'MMM d, yyyy')}</span>
                           </div>
                           {isCompleted ? (
                             <div className="flex items-center gap-3">
