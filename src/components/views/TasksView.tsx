@@ -9,6 +9,7 @@ import { doc, setDoc } from 'firebase/firestore';
 
 import { Task, TaskSubmission, Unit } from '../../types';
 import { GoogleGenAI, Type } from "@google/genai";
+import { GOLDEN_STANDARD_WORKSHEET, GOLDEN_STANDARD_TEST } from '../../constants/goldenStandard';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY as string });
 
@@ -146,15 +147,40 @@ const TasksView = ({
         const markscheme = task.markschemeContent || "No markscheme provided.";
         const responses = sub.responses || {};
         
-        const formattedResponses = Object.entries(responses)
-          .map(([id, req]) => {
-            let textReq = req;
-            if (typeof req === 'string' && req.trim() === '') textReq = "[NO RESPONSE PROVIDED]";
-            else if (req === undefined || req === null) textReq = "[NO RESPONSE PROVIDED]";
-            else if (Array.isArray(req) && req.length === 0) textReq = "[NO RESPONSE PROVIDED]";
-            else if (typeof req === 'object' && !Array.isArray(req) && Object.keys(req).length === 0) textReq = "[NO RESPONSE PROVIDED]";
-            return `${id}: ${textReq}`;
-          }).join('\n');
+        const cleanQuestions = (task.worksheetQuestions || []).map((q: any) => {
+          const newQ = { ...q };
+          if (newQ.type === 'table' && newQ.tableData) {
+            newQ.tableData = newQ.tableData.map((r: any) => Array.isArray(r) ? r : (r.row || r));
+          }
+          return newQ;
+        });
+
+        const formattedResponses = cleanQuestions.map((q: any) => {
+          let req = responses[q.id];
+          let textReq = req;
+          if (typeof req === 'string' && req.trim() === '') textReq = "[NO RESPONSE PROVIDED]";
+          else if (req === undefined || req === null) textReq = "[NO RESPONSE PROVIDED]";
+          else if (Array.isArray(req) && req.length === 0) textReq = "[NO RESPONSE PROVIDED]";
+          else if (typeof req === 'object' && !Array.isArray(req) && Object.keys(req).length === 0) textReq = "[NO RESPONSE PROVIDED]";
+          else if (q.type === 'table' && q.tableData && typeof req === 'object') {
+            const tableMap: Record<string, string> = {};
+            for (const [key, val] of Object.entries(req)) {
+              const [rStr, cStr] = key.split('_');
+              const r = parseInt(rStr, 10);
+              const c = parseInt(cStr, 10);
+              if (!isNaN(r) && !isNaN(c) && q.tableData[r] && q.tableData[0]) {
+                 tableMap[`${q.tableData[0][c]} of ${q.tableData[r][0]}`] = String(val);
+              } else {
+                 tableMap[key] = String(val);
+              }
+            }
+            textReq = JSON.stringify(tableMap);
+          }
+          else if (typeof req === 'object') textReq = JSON.stringify(req);
+          return `Question ID "${q.id}": ${textReq}`;
+        }).join('\n');
+
+        const questionsJsonString = JSON.stringify(cleanQuestions, null, 2);
 
         const prompt = `Grade this student submission.\n
         CRITICAL INSTRUCTION: You must provide specific, detailed feedback for EVERY SINGLE QUESTION. Do NOT generate generic fallback messages like "Detailed feedback provided in report."
@@ -172,21 +198,25 @@ const TasksView = ({
           * Score: Full marks (e.g. X of X)
           * Feedback MUST start with exactly: "Correct." followed by a brief explanation.
 
+        QUESTIONS JSON:
+        ${questionsJsonString}
+
         MARKSCHEME/RUBRIC:
         ${markscheme}
 
-        STUDENT RESPONSES (Format: QuestionID: Response):
+        STUDENT RESPONSES:
         ${formattedResponses}
 
         GRADING PROTOCOL:
-        1. FIRST, check each student response against the markscheme.
+        1. FIRST, check each student response against the markscheme for ALL questions. Ignore all page reference in the question JSON and grade student's response from EACH question against the corresponding markscheme rubric.
         2. Provide TEACHER'S FEEDBACK for each question using the strict format above. DO NOT use HTML or markdown in the feedback strings.
         3. LASTLY, generate the OVERALL COMMENTS (generalFeedback field). This MUST be done after grading all questions to accurately assess overall student performance, strengths, and weaknesses in this task based on the evaluated responses.
         4. Assign a score in "earned of total" format (e.g. "2 of 2", "0.5 of 1", "0 of 3") for the "score" field of each question.
-        5. The JSON must have an array of "questions" and a string "generalFeedback" for the Overall comments. Return ONLY valid JSON.`;
+        5. For the "id" field in your JSON output, you MUST return the EXACT identical Question ID as given in the Student Responses (e.g., "gs_q1"). DO NOT modify the Question ID.
+        6. The JSON must have an array of "questions" and a string "generalFeedback" for the Overall comments. Return ONLY valid JSON.`;
 
         const response = await ai.models.generateContent({
-          model: "gemini-3.1-flash-lite-preview",
+          model: "gemini-3-flash-preview",
           contents: prompt,
           config: {
             responseMimeType: "application/json",
@@ -230,7 +260,7 @@ const TasksView = ({
           });
           
           if (!aiFeedback) aiFeedback = { score: "0 of 1", feedback: "Could not evaluate response against markscheme." };
-          feedbackResult[targetId] = { score: String(aiFeedback.score), feedback: String(aiFeedback.feedback) };
+          feedbackResult[targetId] = { score: String(aiFeedback.score), feedback: String(aiFeedback.feedback).replace(/\*\*/g, '') };
         });
 
         let earned = 0; let total = 0;
@@ -293,6 +323,22 @@ const TasksView = ({
   const [showMarkschemePrompt, setShowMarkschemePrompt] = React.useState(false);
 
   const [editingTask, setEditingTask] = React.useState<Task | null>(null);
+
+  const [seedingStatus, setSeedingStatus] = React.useState<'idle' | 'seeding' | 'success'>('idle');
+
+  const seedGoldenStandardTasks = async () => {
+    setSeedingStatus('seeding');
+    try {
+      const ts = Date.now();
+      await onCreateTask({ ...GOLDEN_STANDARD_WORKSHEET, id: `gs_worksheet_${ts}` });
+      await onCreateTask({ ...GOLDEN_STANDARD_TEST, id: `gs_test_${ts}` });
+      setSeedingStatus('success');
+      setTimeout(() => setSeedingStatus('idle'), 3000);
+    } catch (error) {
+      console.error("Manual seeding failed:", error);
+      setSeedingStatus('idle');
+    }
+  };
 
   const [newTask, setNewTask] = React.useState<Partial<Task>>({
     title: '',
@@ -768,7 +814,7 @@ const TasksView = ({
                 <Sparkles size={16} className="text-emerald-400" />
                 <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">AI Engine</span>
               </div>
-              <p className="text-2xl font-black text-white tracking-tight">Gemini 3.1 Flash</p>
+              <p className="text-2xl font-black text-white tracking-tight">Gemini 3 Flash</p>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Autonomous Grading v2</p>
             </div>
           </div>
@@ -801,6 +847,27 @@ const TasksView = ({
               <ShieldCheck size={20} />
             </div>
             <span className="text-[10px] font-black text-red-700 group-hover:text-white uppercase tracking-widest">New Secure Test</span>
+          </button>
+
+          <button 
+            onClick={seedGoldenStandardTasks}
+            disabled={seedingStatus !== 'idle'}
+            className={`group border-2 p-4 rounded-2xl flex items-center gap-3 transition-all shadow-sm ${
+              seedingStatus === 'success' 
+                ? 'bg-emerald-500 border-emerald-500 text-white' 
+                : seedingStatus === 'seeding'
+                ? 'bg-amber-100 border-amber-200 text-amber-500 opacity-50 cursor-wait'
+                : 'bg-white border-amber-100 text-amber-700 hover:bg-amber-500 hover:border-amber-500 hover:text-white'
+            }`}
+          >
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
+              seedingStatus === 'success' ? 'bg-white/20' : 'bg-amber-50 group-hover:bg-white/20 text-amber-600 group-hover:text-white'
+            }`}>
+              {seedingStatus === 'success' ? <CheckCircle2 size={20} /> : seedingStatus === 'seeding' ? <RefreshCw size={20} className="animate-spin" /> : <Star size={20} />}
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-widest">
+              {seedingStatus === 'success' ? 'Injected!' : seedingStatus === 'seeding' ? 'Seeding...' : 'Golden Standards'}
+            </span>
           </button>
 
           {onWipeCleanSlate && (
@@ -1123,7 +1190,7 @@ Output ONLY the JSON object.`;
                       onClick={() => {
                         setIsPasscodeModalOpen(false);
                         setSelectedTaskForPasscode(null);
-                        setPasscode('');
+                        setEnteredPasscode('');
                         setPasscodeError(false);
                         setEditingTaskQuestionsJson('');
                         setEditingTaskMarkscheme('');

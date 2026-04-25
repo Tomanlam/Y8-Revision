@@ -1,0 +1,1548 @@
+1:import React, { useState, useRef, useEffect, useMemo } from 'react';
+2:import { motion, AnimatePresence } from 'motion/react';
+3:import { 
+4:  ChevronLeft, CheckCircle2, AlertCircle, FileText, Layout, ArrowRight, X, 
+5:  Calculator, Edit, Eye, Send, Trash2, Timer, RefreshCw, ShieldCheck
+6:} from 'lucide-react';
+7:import { Document, Page, pdfjs } from 'react-pdf';
+8:import 'react-pdf/dist/Page/AnnotationLayer.css';
+9:import 'react-pdf/dist/Page/TextLayer.css';
+10:import { Task, Question } from '../../types';
+11:import { GoogleGenAI, Type } from "@google/genai";
+12:import { db } from '../../firebase';
+13:import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+14:
+15:// PDF worker setup
+16:pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+17:
+18:interface TaskTestViewProps {
+19:  task: Task;
+20:  onBack: () => void;
+21:  onComplete: (responses: Record<string, any>, results?: any) => void;
+22:  onProgress?: (partialResults: any) => Promise<void>;
+23:  initialResponses?: Record<string, any>;
+24:  initialFeedback?: Record<string, { score: string, feedback: string }>;
+25:  initialGeneralFeedback?: string;
+26:  readOnly?: boolean;
+27:  isAdmin?: boolean;
+28:  showCalculator: boolean;
+29:  setShowCalculator: (v: boolean) => void;
+30:}
+31:
+32:import { rubrics } from '../../data/markschemes';
+33:
+34:const COMMAND_TERMS: Record<string, string> = {
+35:  state: "Give a specific name, value or other brief positive answer without explanation or calculation.",
+36:  explain: "Give a detailed account including reasons or causes.",
+37:  describe: "Give a detailed account.",
+38:  compare: "Give an account of similarities and differences between two (or more) items.",
+39:  evaluate: "Assess the implications and limitations.",
+40:  calculate: "Find an answer using mathematical methods.",
+41:  suggest: "Propose a hypothesis or other possible answer.",
+42:  define: "Give the precise meaning of a word, phrase, concept or physical quantity.",
+43:  analyze: "Break down in order to bring out the essential elements or structure.",
+44:  analyse: "Break down in order to bring out the essential elements or structure.",
+45:  outline: "Give a brief account or summary.",
+46:  design: "Produce a plan, simulation or model.",
+47:  identify: "Provide an answer from a number of possibilities.",
+48:  justify: "Give valid reasons or evidence to support an answer or conclusion."
+49:};
+50:
+51:const QuestionTextWithCommandTerms = ({ text }: { text: string }) => {
+52:  if (!text) return null;
+53:  const regex = new RegExp(`\\b(${Object.keys(COMMAND_TERMS).join('|')})\\b`, 'gi');
+54:  const parts = text.split(regex);
+55:
+56:  return (
+57:    <h4 className="font-black text-gray-800 text-lg leading-tight pt-1">
+58:      {parts.map((part, i) => {
+59:        const lowerPart = part.toLowerCase();
+60:        if (COMMAND_TERMS[lowerPart]) {
+61:          return (
+62:            <span key={i} className="relative inline-block group">
+63:              <span className="text-red-500 underline decoration-red-200 decoration-2 underline-offset-4 cursor-help">{part}</span>
+64:              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-3 bg-red-600 text-white text-xs font-bold rounded-xl shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 leading-relaxed text-center">
+65:                <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-red-600"></div>
+66:                {COMMAND_TERMS[lowerPart]}
+67:              </div>
+68:            </span>
+69:          );
+70:        }
+71:        return <span key={i}>{part}</span>;
+72:      })}
+73:    </h4>
+74:  );
+75:};
+76:
+77:const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY as string });
+78:
+79:const TaskTestView: React.FC<TaskTestViewProps> = ({ 
+80:  task, onBack, onComplete, onProgress, initialResponses, initialFeedback, initialGeneralFeedback, readOnly, isAdmin, showCalculator, setShowCalculator 
+81:}) => {
+82:  const [numPages, setNumPages] = useState<number | null>(null);
+83:  const [activePage, setActivePage] = useState(1);
+84:  const [responses, setResponses] = useState<Record<string, any>>(initialResponses || {});
+85:  const [submitted, setSubmitted] = useState(false);
+86:  const [viewerWidth, setViewerWidth] = useState(window.innerWidth * 0.45);
+87:  const [isValidating, setIsValidating] = useState(false);
+88:  const [validationFeedback, setValidationFeedback] = useState<Record<string, { score: string, feedback: string }>>(initialFeedback || {});
+89:  const [generalFeedback, setGeneralFeedback] = useState<string>(initialGeneralFeedback || "");
+90:
+91:  const [isGradingWorkflow, setIsGradingWorkflow] = useState(false);
+92:  const [gradingPhase, setGradingPhase] = useState('idle');
+93:  const [extractedRubrics, setExtractedRubrics] = useState<Record<string, string>>({});
+94:  const [rubricMeta, setRubricMeta] = useState<Record<string, { type: string, marks: string }>>({});
+95:  const [currentlyProcessingId, setCurrentlyProcessingId] = useState(null);
+96:  const [currentlyProcessingIndex, setCurrentlyProcessingIndex] = useState(null);
+97:  
+98:  
+99:  // Timer State
+100:  const [timeLeft, setTimeLeft] = useState<number | null>((task.timeLimit || 60) * 60);
+101:  const [isTimeUp, setIsTimeUp] = useState(false);
+102:
+103:  // Admin Features
+104:  const [showMarkschemeEditor, setShowMarkschemeEditor] = useState(false);
+105:  const [editingMarkscheme, setEditingMarkscheme] = useState<string>("");
+106:  const [isSavingMarkscheme, setIsSavingMarkscheme] = useState(false);
+107:
+108:  const [showQuestionsEditor, setShowQuestionsEditor] = useState(false);
+109:  const [editingQuestions, setEditingQuestions] = useState<string>("");
+110:  const [isSavingQuestions, setIsSavingQuestions] = useState(false);
+111:
+112:  const pdfOptions = useMemo(() => ({
+113:    cMapUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/cmaps/`,
+114:    cMapPacked: true,
+115:    standardFontDataUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/standard_fonts/`,
+116:  }), []);
+117:
+118:  // Anti-Cheat State
+119:  const [tabSwitchesCount, setTabSwitchesCount] = useState(0);
+120:  const [cheatLogs, setCheatLogs] = useState<Record<string, number>>({
+121:    tabSwitches: 0,
+122:    blur: 0,
+123:    copyPaste: 0,
+124:    shortcutAttempts: 0,
+125:    printAttempts: 0
+126:  });
+127:  const [cheatDetected, setCheatDetected] = useState(false);
+128:  const audioContextRef = useRef<AudioContext | null>(null);
+129:  const sirenIntervalRef = useRef<NodeJS.Timeout | null>(null);
+130:  const sirenVolumeRef = useRef(0.1);
+131:
+132:  // Siren Sound Synthesis
+133:  const playSiren = () => {
+134:    try {
+135:      if (!audioContextRef.current) {
+136:        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+137:      }
+138:      const ctx = audioContextRef.current;
+139:      const osc = ctx.createOscillator();
+140:      const gain = ctx.createGain();
+141:      
+142:      osc.type = 'triangle';
+143:      osc.frequency.setValueAtTime(440, ctx.currentTime);
+144:      osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.5);
+145:      osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 1.0);
+146:
+147:      gain.gain.setValueAtTime(sirenVolumeRef.current, ctx.currentTime);
+148:      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.0);
+149:
+150:      osc.connect(gain);
+151:      gain.connect(ctx.destination);
+152:
+153:      osc.start();
+154:      osc.stop(ctx.currentTime + 1.0);
+155:      
+156:      // Increase volume for next time, cap at 0.8
+157:      sirenVolumeRef.current = Math.min(sirenVolumeRef.current + 0.1, 0.8);
+158:    } catch (e) {
+159:      console.warn("Audio Context failed", e);
+160:    }
+161:  };
+162:
+163:  const startRepeatedSiren = () => {
+164:    if (sirenIntervalRef.current) return;
+165:    sirenVolumeRef.current = 0.2;
+166:    playSiren();
+167:    sirenIntervalRef.current = setInterval(playSiren, 1200);
+168:  };
+169:
+170:  const stopSiren = () => {
+171:    if (sirenIntervalRef.current) {
+172:      clearInterval(sirenIntervalRef.current);
+173:      sirenIntervalRef.current = null;
+174:    }
+175:  };
+176:
+177:  useEffect(() => {
+178:    if (readOnly || submitted) return;
+179:
+180:    const logCheat = (category: string) => {
+181:      setCheatLogs(prev => ({ ...prev, [category]: (prev[category] || 0) + 1 }));
+182:      setCheatDetected(true);
+183:      startRepeatedSiren();
+184:    };
+185:
+186:    const handleVisibilityChange = () => {
+187:      if (document.visibilityState === 'hidden') {
+188:        logCheat('tabSwitches');
+189:      }
+190:    };
+191:
+192:    const handleBlur = () => {
+193:      logCheat('blur');
+194:    };
+195:
+196:    const handleCopy = (e: ClipboardEvent) => {
+197:      e.preventDefault();
+198:      logCheat('copyPaste');
+199:    };
+200:
+201:    const handlePaste = (e: ClipboardEvent) => {
+202:      e.preventDefault();
+203:      logCheat('copyPaste');
+204:    };
+205:
+206:    const handleBeforePrint = () => {
+207:      logCheat('printAttempts');
+208:    };
+209:
+210:    const handleContextMenu = (e: MouseEvent) => {
+211:      e.preventDefault();
+212:    };
+213:
+214:    const handleKeyDown = (e: KeyboardEvent) => {
+215:      // Prevent Print, Save, Inspect, PrintScreen
+216:      if (e.key === 'PrintScreen') {
+217:        logCheat('printAttempts');
+218:      }
+219:      if ((e.ctrlKey || e.metaKey) && (e.key === 'p' || e.key === 's' || e.key === 'u' || e.key === 'c' || e.key === 'v')) {
+220:        e.preventDefault();
+221:        logCheat('shortcutAttempts');
+222:      }
+223:    };
+224:
+225:    document.addEventListener('visibilitychange', handleVisibilityChange);
+226:    window.addEventListener('blur', handleBlur);
+227:    window.addEventListener('contextmenu', handleContextMenu as any);
+228:    window.addEventListener('keydown', handleKeyDown);
+229:    document.addEventListener('copy', handleCopy);
+230:    document.addEventListener('paste', handlePaste);
+231:    window.addEventListener('beforeprint', handleBeforePrint);
+232:
+233:    return () => {
+234:      document.removeEventListener('visibilitychange', handleVisibilityChange);
+235:      window.removeEventListener('blur', handleBlur);
+236:      window.removeEventListener('contextmenu', handleContextMenu as any);
+237:      window.removeEventListener('keydown', handleKeyDown);
+238:      document.removeEventListener('copy', handleCopy);
+239:      document.removeEventListener('paste', handlePaste);
+240:      window.removeEventListener('beforeprint', handleBeforePrint);
+241:      stopSiren();
+242:    };
+243:  }, [readOnly, submitted]);
+244:
+245:  useEffect(() => {
+246:    if (timeLeft !== null && timeLeft > 0 && !submitted && !readOnly) {
+247:      const timer = setInterval(() => {
+248:        setTimeLeft(prev => {
+249:          if (prev !== null && prev <= 1) {
+250:            clearInterval(timer);
+251:            setIsTimeUp(true);
+252:            return 0;
+253:          }
+254:          return prev !== null ? prev - 1 : null;
+255:        });
+256:      }, 1000);
+257:      return () => clearInterval(timer);
+258:    }
+259:  }, [timeLeft, submitted, readOnly]);
+260:
+261:   useEffect(() => {
+262:    if (isTimeUp && !submitted && !readOnly) {
+263:      handleFinalSubmit(); // Auto-submit when time is up
+264:    }
+265:  }, [isTimeUp]);
+266:
+267:  const formatTime = (seconds: number) => {
+268:    const mins = Math.floor(seconds / 60);
+269:    const secs = seconds % 60;
+270:    return `${mins}:${secs.toString().padStart(2, '0')}`;
+271:  };
+272:
+273:  const rightPaneRef = useRef<HTMLDivElement>(null);
+274:  const pdfContainerRef = useRef<HTMLDivElement>(null);
+275:  const pageRefs = useRef<Record<number, HTMLDivElement | null>>({});
+276:
+277:  useEffect(() => {
+278:    if (initialFeedback) setValidationFeedback(initialFeedback);
+279:    if (initialGeneralFeedback) setGeneralFeedback(initialGeneralFeedback);
+280:  }, [initialFeedback, initialGeneralFeedback]);
+281:
+282:  const [showConfirm, setShowConfirm] = useState(false);
+283:  const taskKeyRaw = task.title.replace(/y8\s+/i, '').trim();
+284:  const [markscheme, setMarkscheme] = useState<string>(
+285:    task.markschemeContent || 
+286:    rubrics[taskKeyRaw] || 
+287:    rubrics[task.title] || 
+288:    "Grade based on general scientific principles."
+289:  );
+290:
+291:  useEffect(() => {
+292:    // If the task already has a markscheme embedded, we use that first
+293:    if (task.markschemeContent) {
+294:      setMarkscheme(task.markschemeContent);
+295:      return;
+296:    }
+297:
+298:    if (isAdmin) {
+299:      const loadMarkscheme = async () => {
+300:        try {
+301:          // Try both variants for backwards compatibility
+302:          const docRef = doc(db, 'markschemes', taskKeyRaw);
+303:          const snap = await getDoc(docRef);
+304:          if (snap.exists()) {
+305:            setMarkscheme(snap.data().content);
+306:          } else {
+307:            // Fallback to title with y8 if that's how it was saved
+308:            const docRefAlt = doc(db, 'markschemes', task.title);
+309:            const snapAlt = await getDoc(docRefAlt);
+310:            if (snapAlt.exists()) {
+311:              setMarkscheme(snapAlt.data().content);
+312:            }
+313:          }
+314:        } catch (e) {
+315:          console.error("Error loading markscheme:", e);
+316:        }
+317:      };
+318:      loadMarkscheme();
+319:    }
+320:  }, [isAdmin, taskKeyRaw, task.title, task.markschemeContent]);
+321:
+322:  const handleSaveMarkscheme = async () => {
+323:    setIsSavingMarkscheme(true);
+324:    try {
+325:      await updateDoc(doc(db, 'tasks', task.id), { markschemeContent: editingMarkscheme });
+326:      setMarkscheme(editingMarkscheme);
+327:      setShowMarkschemeEditor(false);
+328:    } catch (e) {
+329:      console.error(e);
+330:      alert("Failed to save markscheme.");
+331:    } finally {
+332:      setIsSavingMarkscheme(false);
+333:    }
+334:  };
+335:
+336:  const handleSaveQuestions = async () => {
+337:    setIsSavingQuestions(true);
+338:    try {
+339:      const parsedQuestions = JSON.parse(editingQuestions);
+340:      if (Array.isArray(parsedQuestions)) {
+341:        parsedQuestions.forEach((q: any) => {
+342:          if (q.tableData && Array.isArray(q.tableData[0])) {
+343:            q.tableData = q.tableData.map((row: any) => ({ row }));
+344:          }
+345:        });
+346:      }
+347:      await setDoc(doc(db, 'tasks', task.id), { worksheetQuestions: parsedQuestions }, { merge: true });
+348:      setShowQuestionsEditor(false);
+349:    } catch (e) {
+350:      console.error(e);
+351:      alert("Failed to save questions. Please ensure valid JSON formatting.");
+352:    } finally {
+353:      setIsSavingQuestions(false);
+354:    }
+355:  };
+356:
+357:  // Sync scroll from PDF to Questions (Matching Worksheet Logic)
+358:  useEffect(() => {
+359:    if (!numPages || !pdfContainerRef.current) return;
+360:    
+361:    const observer = new IntersectionObserver(
+362:      (entries) => {
+363:        entries.forEach((entry) => {
+364:          if (entry.isIntersecting) {
+365:            const target = entry.target as HTMLElement;
+366:            const pageNum = parseInt(target.getAttribute('data-page-index') || '1');
+367:            setActivePage(pageNum);
+368:            
+369:            // Sync with right pane using robust coordinate calculation
+370:            const questionElement = document.getElementById(`test-questions-page-${pageNum}`);
+371:            if (questionElement && rightPaneRef.current) {
+372:              const rect = questionElement.getBoundingClientRect();
+373:              const parentRect = rightPaneRef.current.getBoundingClientRect();
+374:              const offset = rect.top - parentRect.top;
+375:              
+376:              rightPaneRef.current.scrollTo({
+377:                top: rightPaneRef.current.scrollTop + offset - 20,
+378:                behavior: 'smooth'
+379:              });
+380:            }
+381:          }
+382:        });
+383:      },
+384:      { 
+385:        root: pdfContainerRef.current,
+386:        threshold: 0, 
+387:        rootMargin: '-10% 0px -80% 0px'
+388:      }
+389:    );
+390:
+391:    // Observe all pages
+392:    const pageElements = document.querySelectorAll('.pdf-page-container');
+393:    pageElements.forEach(el => observer.observe(el));
+394:
+395:    return () => observer.disconnect();
+396:  }, [numPages, task.id]);
+397:
+398:  const handleResponse = (questionId: string, value: any) => {
+399:    if (readOnly || submitted) return;
+400:    setResponses(prev => ({ ...prev, [questionId]: value }));
+401:  };
+402:
+403:  
+404:  const startGradingWorkflow = async () => {
+405:    setIsGradingWorkflow(true);
+406:    setGradingPhase('extracting_rubrics');
+407:    
+408:    const cleanQuestions = (task.worksheetQuestions || []).map((q) => {
+409:      const newQ = { ...q };
+410:      if (newQ.type === 'table' && newQ.tableData) {
+411:        newQ.tableData = newQ.tableData.map((r) => Array.isArray(r) ? r : (r.row || r));
+412:      }
+413:      return newQ;
+414:    });
+415:
+416:    const newRubrics = {};
+417:    let parsedMarkscheme = null;
+418:    try {
+419:      if (typeof markscheme === 'string') {
+420:        const cleaned = markscheme.replace(/```json/gi, '').replace(/```/g, '').trim();
+421:        parsedMarkscheme = JSON.parse(cleaned);
+422:      } else {
+423:        parsedMarkscheme = markscheme;
+424:      }
+425:    } catch(e) {}
+426:
+427:    const extractedUiInfo = {};
+428:
+429:    for (const q of cleanQuestions) {
+430:       let rawText = "No specific rubric found for this question. Grading based on generalized principles.";
+431:       let foundVal = null;
+432:       
+433:       if (parsedMarkscheme && typeof parsedMarkscheme === 'object') {
+434:          const lowerId = String(q.id).toLowerCase();
+435:          
+436:          let suffix = lowerId;
+437:          const qMatch = lowerId.match(/_?(q\d+[a-z]*)$/i);
+438:          if (qMatch) suffix = qMatch[1].toLowerCase();
+439:          else {
+440:             const mMatch = lowerId.match(/(\d+[a-z]*)$/i);
+441:             if (mMatch) suffix = 'q' + mMatch[1].toLowerCase();
+442:          }
+443:
+444:          function isMatch(str) {
+445:             if (!str) return false;
+446:             const s = String(str).toLowerCase();
+447:             return (s === lowerId || 
+448:                     s.endsWith('_' + suffix) || 
+449:                     s === suffix || 
+450:                     s.includes('_' + suffix + '_') || 
+451:                     s.startsWith(suffix + '_'));
+452:          }
+453:
+454:          function findDeep(obj) {
+455:             if (!obj || typeof obj !== 'object') return null;
+456:             
+457:             if (Array.isArray(obj)) {
+458:                 for (const item of obj) {
+459:                     if (item && typeof item === 'object' && item.id && isMatch(item.id)) {
+460:                         return item;
+461:                     }
+462:                 }
+463:                 for (const item of obj) {
+464:                     const res = findDeep(item);
+465:                     if (res) return res;
+466:                 }
+467:             } else {
+468:                 if (obj.id && isMatch(obj.id)) return obj;
+469:                 
+470:                 for (const key of Object.keys(obj)) {
+471:                     if (isMatch(key)) return obj[key];
+472:                 }
+473:                 
+474:                 for (const key of Object.keys(obj)) {
+475:                     if (typeof obj[key] === 'object') {
+476:                         const res = findDeep(obj[key]);
+477:                         if (res) return res;
+478:                     }
+479:                 }
+480:             }
+481:             return null;
+482:          }
+483:
+484:          foundVal = findDeep(parsedMarkscheme);
+485:       } else if (typeof markscheme === 'string') {
+486:          rawText = markscheme;
+487:       }
+488:       
+489:       if (foundVal) {
+490:          // If we found it, keep the full object as JSON!
+491:          let extractedObj = foundVal;
+492:          if (typeof foundVal === 'object') {
+493:             // Create a clean object with specifically requested priority fields first (if present)
+494:             const ordered = {};
+495:             const priorityKeys = ['id', 'type', 'question', 'data', 'correct_answer', 'rubric', 'explanation', 'page'];
+496:             for (const pk of priorityKeys) {
+497:                 if (foundVal[pk] !== undefined) ordered[pk] = foundVal[pk];
+498:             }
+499:             for (const k of Object.keys(foundVal)) {
+500:                 if (!priorityKeys.includes(k)) ordered[k] = foundVal[k];
+501:             }
+502:             extractedObj = ordered;
+503:          }
+504:          rawText = typeof extractedObj === 'string' ? extractedObj : JSON.stringify(extractedObj, null, 2);
+505:          
+506:          const type = foundVal.type || foundVal.questionType || 'Unknown';
+507:          const marks = foundVal.marks || foundVal.total_marks || foundVal.score || '';
+508:          extractedUiInfo[q.id] = { type, marks };
+509:       }
+510:
+511:       newRubrics[q.id] = rawText; // Don't strip characters with replace, let raw text be preserved
+512:    }
+513:    
+514:    setRubricMeta(extractedUiInfo);
+515:    setExtractedRubrics(newRubrics);
+516:    setCurrentlyProcessingId(null);
+517:    setCurrentlyProcessingIndex(null);
+518:    setGradingPhase('ready_to_grade');
+519:  };
+520:
+521:  const getStudentOriginalResponse = (q) => {
+522:      let req = responses[q.id];
+523:      let textReq = req;
+524:      if (typeof req === 'string' && req.trim() === '') textReq = "[NO RESPONSE PROVIDED]";
+525:      else if (req === undefined || req === null) textReq = "[NO RESPONSE PROVIDED]";
+526:      else if (Array.isArray(req) && req.length === 0) textReq = "[NO RESPONSE PROVIDED]";
+527:      else if (typeof req === 'object' && !Array.isArray(req) && Object.keys(req).length === 0) textReq = "[NO RESPONSE PROVIDED]";
+528:      else if (q.type === 'table' && q.tableData && typeof req === 'object') {
+529:        const tableMap = {};
+530:        for (const [key, val] of Object.entries(req)) {
+531:          const [rStr, cStr] = key.split('_');
+532:          const r = parseInt(rStr, 10);
+533:          const c = parseInt(cStr, 10);
+534:          if (!isNaN(r) && !isNaN(c) && q.tableData[r] && q.tableData[0]) {
+535:             tableMap[`${q.tableData[0][c]} of ${q.tableData[r][0]}`] = String(val);
+536:          } else {
+537:             tableMap[key] = String(val);
+538:          }
+539:        }
+540:        textReq = JSON.stringify(tableMap);
+541:      }
+542:      else if (typeof req === 'object') textReq = JSON.stringify(req);
+543:      return textReq;
+544:  };
+545:
+546:  const gradeAgainstRubric = async () => {
+547:    setGradingPhase('grading');
+548:    setValidationFeedback({});
+549:    
+550:    const cleanQuestions = (task.worksheetQuestions || []).map((q) => {
+551:      const newQ = { ...q };
+552:      if (newQ.type === 'table' && newQ.tableData) {
+553:        newQ.tableData = newQ.tableData.map((r) => Array.isArray(r) ? r : (r.row || r));
+554:      }
+555:      return newQ;
+556:    });
+557:
+558:    const currentFeedback = {};
+559:
+560:    let gradingIdx = 1;
+561:    for (const q of cleanQuestions) {
+562:       setCurrentlyProcessingId(q.id);
+563:       setCurrentlyProcessingIndex(gradingIdx++);
+564:       const textReq = getStudentOriginalResponse(q);
+565:       const rubricString = extractedRubrics[q.id] || markscheme;
+566:       let parsedRubricObj = null;
+567:       try {
+568:          parsedRubricObj = JSON.parse(rubricString);
+569:       } catch(e) {}
+570:       
+571:       let correct_answer = "Derived from overall markscheme";
+572:       let specific_rubric = rubricString;
+573:       let explanation = "Not provided";
+574:       let total_marks = 1;
+575:
+576:       if (parsedRubricObj && typeof parsedRubricObj === 'object') {
+577:          correct_answer = parsedRubricObj.correct_answer || parsedRubricObj.answer || correct_answer;
+578:          specific_rubric = parsedRubricObj.rubric || parsedRubricObj.grading_instructions || specific_rubric;
+579:          explanation = parsedRubricObj.explanation || explanation;
+580:          total_marks = typeof parsedRubricObj.marks !== 'undefined' ? parsedRubricObj.marks : (parsedRubricObj.total_marks || parsedRubricObj.score || 1);
+581:       }
+582:
+583:       const prompt = \`Grade this student response.
+584:
+585:CRITICAL INSTRUCTION: You MUST strictly limit your text feedback to under 150 words. Do NOT generate generic messages.
+586:DO NOT perform fractional math logic or return decimal strings for scores unless explicitly given.
+587:
+588:STUDENT RESPONSE:
+589:\${textReq}
+590:
+591:CORRECT RESPONSE (from markscheme):
+592:\${typeof correct_answer === 'object' ? JSON.stringify(correct_answer) : correct_answer}
+593:
+594:RUBRIC / GRADING CONSTRAINTS:
+595:\${typeof specific_rubric === 'object' ? JSON.stringify(specific_rubric) : specific_rubric}
+596:
+597:EXPLANATION / REASONING:
+598:\${explanation}
+599:
+600:TOTAL MARKS AVAILABLE: \${total_marks}
+601:
+602:GRADING LOGIC:
+603:Evaluate the student response against the correct response and rubric.
+604:1. IF RESPONSE IS "[NO RESPONSE PROVIDED]" or Missing/Empty:
+605:  * Feedback MUST start with exactly: "No response."
+606:2. IF RESPONSE IS INCORRECT:
+607:  * Feedback MUST start with exactly: "Incorrect."
+608:3. IF RESPONSE IS CORRECT or PARTIALLY CORRECT:
+609:  * Feedback MUST start with exactly: "Correct." (or "Partially correct.")
+610:
+611:RETURN EXACTLY A JSON OBJECT in this format:
+612:{
+613:  "earned_marks": 0,
+614:  "total_marks": \${total_marks},
+615:  "feedback": "Your 150-word max teacher's feedback here. Be direct and helpful."
+616:}
+617:
+618:Return ONLY valid JSON.\`;
+619:
+620:       try {
+621:         const response = await ai.models.generateContent({
+622:            model: "gemini-3.1-flash-lite-preview",
+623:            contents: prompt,
+624:            config: {
+625:              responseMimeType: "application/json",
+626:              responseSchema: {
+627:                type: Type.OBJECT,
+628:                properties: {
+629:                  earned_marks: { type: Type.NUMBER },
+630:                  total_marks: { type: Type.NUMBER },
+631:                  feedback: { type: Type.STRING }
+632:                }
+633:              }
+634:            }
+635:         });
+636:         
+637:         if (response.text) {
+638:           let cleanText = response.text.replace(/\`\`\`json/gi, '').replace(/\`\`\`/g, '').trim();
+639:           const parsed = JSON.parse(cleanText);
+640:           
+641:           const strAns = typeof correct_answer === 'string' ? correct_answer : JSON.stringify(correct_answer);
+642:           const strExplanation = typeof explanation === 'string' ? explanation : JSON.stringify(explanation);
+643:           
+644:           const formattedParsed = {
+645:             score: \`\${parsed.earned_marks || 0} of \${parsed.total_marks || total_marks}\`,
+646:             feedback: \`**Student Response:**\n\${textReq}\n\n**Correct Response:**\n\${strAns}\n\n**Teacher's Feedback:**\n\${parsed.feedback || ''}\`
+647:           };
+648:           currentFeedback[q.id] = formattedParsed;
+649:           setValidationFeedback(prev => ({ ...prev, [q.id]: formattedParsed }));
+650:           if (onProgress) {
+651:              await onProgress({ feedback: currentFeedback });
+652:           }
+653:         }
+654:       } catch (e) {
+655:          currentFeedback[q.id] = { score: "0 of 1", feedback: "Error grading this question. " + e.message };
+656:          setValidationFeedback(prev => ({ ...prev, [q.id]: currentFeedback[q.id] }));
+657:          if (onProgress) {
+658:             await onProgress({ feedback: currentFeedback });
+659:          }
+660:       }
+661:    }
+662:    setGradingPhase('generating_overall');
+663:    setCurrentlyProcessingId(null);
+664:    setCurrentlyProcessingIndex(null);
+665:    
+666:    // Generate overall feedback
+667:    try {
+668:      const overallPrompt = `Based on the following grading results for all questions, provide an overall comment on the student's performance, strengths, and weaknesses. Return ONLY a plain text paragraph.\n\nGrading Results:\n${JSON.stringify(currentFeedback, null, 2)}`;
+669:      const overallResponse = await ai.models.generateContent({
+670:         model: "gemini-3.1-flash-lite-preview",
+671:         contents: overallPrompt
+672:      });
+673:      const overallComments = overallResponse.text || "Assessment graded successfully.";
+674:      setGeneralFeedback(overallComments);
+675:      
+676:      setGradingPhase('done');
+677:      onComplete(responses, { feedback: currentFeedback, generalFeedback: overallComments });
+678:    } catch(e) {
+679:      setGeneralFeedback("Assessment graded generally.");
+680:      setGradingPhase('done');
+681:      onComplete(responses, { feedback: currentFeedback, generalFeedback: "Assessment graded generally." });
+682:    }
+683:  };
+684:  
+685:  const handleFinalSubmit = async () => {
+686:    if (isValidating) return;
+687:    setShowConfirm(false);
+688:    setIsValidating(true);
+689:    
+690:    try {
+691:      if (isAdmin && readOnly) {
+692:        setValidationFeedback({});
+693:        
+694:        const cleanQuestions = (task.worksheetQuestions || []).map((q: any) => {
+695:          const newQ = { ...q };
+696:          if (newQ.type === 'table' && newQ.tableData) {
+697:            newQ.tableData = newQ.tableData.map((r: any) => Array.isArray(r) ? r : (r.row || r));
+698:          }
+699:          return newQ;
+700:        });
+701:
+702:        const evaluationData = cleanQuestions.map((q: any) => {
+703:          let req = responses[q.id];
+704:          let textReq = req;
+705:          if (typeof req === 'string' && req.trim() === '') textReq = "[NO RESPONSE PROVIDED]";
+706:          else if (req === undefined || req === null) textReq = "[NO RESPONSE PROVIDED]";
+707:          else if (Array.isArray(req) && req.length === 0) textReq = "[NO RESPONSE PROVIDED]";
+708:          else if (typeof req === 'object' && !Array.isArray(req) && Object.keys(req).length === 0) textReq = "[NO RESPONSE PROVIDED]";
+709:          else if (q.type === 'table' && q.tableData && typeof req === 'object') {
+710:            textReq = JSON.stringify(req);
+711:          }
+712:          else if (typeof req === 'object') textReq = JSON.stringify(req);
+713:          
+714:          const rubricString = extractedRubrics[q.id] || markscheme;
+715:          let parsedRubricObj = null;
+716:          try { parsedRubricObj = JSON.parse(rubricString); } catch(e) {}
+717:          
+718:          let correct_answer = "Derived from overall markscheme";
+719:          let specific_rubric = rubricString;
+720:          let total_marks = 1;
+721:          
+722:          if (parsedRubricObj && typeof parsedRubricObj === 'object') {
+723:             correct_answer = parsedRubricObj.correct_answer || parsedRubricObj.answer || correct_answer;
+724:             specific_rubric = parsedRubricObj.rubric || specific_rubric;
+725:             total_marks = typeof parsedRubricObj.marks !== 'undefined' ? parsedRubricObj.marks : (parsedRubricObj.total_marks || parsedRubricObj.score || 1);
+726:          }
+727:          
+728:          return {
+729:             id: q.id,
+730:             student_response: textReq,
+731:             correct_answer: correct_answer,
+732:             rubric: typeof specific_rubric === 'object' ? JSON.stringify(specific_rubric) : specific_rubric,
+733:             total_marks: total_marks
+734:          };
+735:        });
+736:
+737:        const prompt = \`Grade this student submission.\n
+738:        CRITICAL INSTRUCTION: Limit your text feedback to under 150 words per question. 
+739:
+740:        EVALUATION DATA (JSON Array of Student Responses vs Correct Answers):
+741:        \${JSON.stringify(evaluationData, null, 2)}
+742:
+743:        GRADING PROTOCOL:
+744:        1. FIRST, check each student response against its corresponding correct answer and rubric.
+745:        2. Provide TEACHER'S FEEDBACK for each question. Start with "Correct.", "Incorrect.", or "No response.".
+746:        3. LASTLY, generate the OVERALL COMMENTS (generalFeedback field).
+747:        4. For the "id" field in your JSON output, use EXACTLY the Question ID provided.
+748:
+749:        RETURN EXACTLY A JSON OBJECT in this format:
+750:        {
+751:          "questions": [
+752:            {
+753:              "id": "q1",
+754:              "earned_marks": 1,
+755:              "total_marks": 2,
+756:              "correct_answer": "Extracted correct answer",
+757:              "feedback": "Your brief feedback here"
+758:            }
+759:          ],
+760:          "generalFeedback": "Overall assessment statement"
+761:        }
+762:
+763:        Return ONLY valid JSON.\`;\n\n        const response = await ai.models.generateContent({
+764:            model: "gemini-3.1-flash-lite-preview",
+765:            contents: prompt,
+766:            config: {
+767:              responseMimeType: "application/json",
+768:              responseSchema: {
+769:                type: Type.OBJECT,
+770:                properties: {
+771:                  earned_marks: { type: Type.NUMBER },
+772:                  total_marks: { type: Type.NUMBER },
+773:                  feedback: { type: Type.STRING }
+774:                }
+775:              }
+776:            }
+777:         });
+778:         
+779:         if (response.text) {
+780:           let cleanText = response.text.replace(/\`\`\`json/gi, '').replace(/\`\`\`/g, '').trim();
+781:           const parsed = JSON.parse(cleanText);
+782:           
+783:           const strAns = typeof correct_answer === 'string' ? correct_answer : JSON.stringify(correct_answer);
+784:           const strExplanation = typeof explanation === 'string' ? explanation : JSON.stringify(explanation);
+785:           
+786:           const formattedParsed = {
+787:             score: \`\${parsed.earned_marks || 0} of \${parsed.total_marks || total_marks}\`,
+788:             feedback: \`**Student Response:**\n\${textReq}\n\n**Correct Response:**\n\${strAns}\n\n**Teacher's Feedback:**\n\${parsed.feedback || ''}\`
+789:           };
+790:           currentFeedback[q.id] = formattedParsed;
+791:           setValidationFeedback(prev => ({ ...prev, [q.id]: formattedParsed }));
+792:           if (onProgress) {
+793:              await onProgress({ feedback: currentFeedback });
+794:           }
+795:         }
+796:       } catch (e) {
+797:          currentFeedback[q.id] = { score: "0 of 1", feedback: "Error grading this question. " + e.message };
+798:          setValidationFeedback(prev => ({ ...prev, [q.id]: currentFeedback[q.id] }));
+799:          if (onProgress) {
+800:             await onProgress({ feedback: currentFeedback });
+801:          }
+802:       }
+803:    }
+804:    setGradingPhase('generating_overall');
+805:    setCurrentlyProcessingId(null);
+806:    setCurrentlyProcessingIndex(null);
+807:    
+808:    // Generate overall feedback
+809:    try {
+810:      const overallPrompt = `Based on the following grading results for all questions, provide an overall comment on the student's performance, strengths, and weaknesses. Return ONLY a plain text paragraph.\n\nGrading Results:\n${JSON.stringify(currentFeedback, null, 2)}`;
+811:      const overallResponse = await ai.models.generateContent({
+812:         model: "gemini-3.1-flash-lite-preview",
+813:         contents: overallPrompt
+814:      });
+815:      const overallComments = overallResponse.text || "Assessment graded successfully.";
+816:      setGeneralFeedback(overallComments);
+817:      
+818:      setGradingPhase('done');
+819:      onComplete(responses, { feedback: currentFeedback, generalFeedback: overallComments });
+820:    } catch(e) {
+821:      setGeneralFeedback("Assessment graded generally.");
+822:      setGradingPhase('done');
+823:      onComplete(responses, { feedback: currentFeedback, generalFeedback: "Assessment graded generally." });
+824:    }
+825:  };
+826:  
+827:  const handleFinalSubmit = async () => {
+828:    if (isValidating) return;
+829:    setShowConfirm(false);
+830:    setIsValidating(true);
+831:    
+832:    try {
+833:      if (isAdmin && readOnly) {
+834:        setValidationFeedback({});
+835:        
+836:        const cleanQuestions = (task.worksheetQuestions || []).map((q: any) => {
+837:          const newQ = { ...q };
+838:          if (newQ.type === 'table' && newQ.tableData) {
+839:            newQ.tableData = newQ.tableData.map((r: any) => Array.isArray(r) ? r : (r.row || r));
+840:          }
+841:          return newQ;
+842:        });
+843:
+844:        const formattedResponses = cleanQuestions.map((q: any) => {
+845:          let req = responses[q.id];
+846:          let textReq = req;
+847:          if (typeof req === 'string' && req.trim() === '') textReq = "[NO RESPONSE PROVIDED]";
+848:          else if (req === undefined || req === null) textReq = "[NO RESPONSE PROVIDED]";
+849:          else if (Array.isArray(req) && req.length === 0) textReq = "[NO RESPONSE PROVIDED]";
+850:          else if (typeof req === 'object' && !Array.isArray(req) && Object.keys(req).length === 0) textReq = "[NO RESPONSE PROVIDED]";
+851:          else if (q.type === 'table' && q.tableData && typeof req === 'object') {
+852:            const tableMap: Record<string, string> = {};
+853:            for (const [key, val] of Object.entries(req)) {
+854:              const [rStr, cStr] = key.split('_');
+855:              const r = parseInt(rStr, 10);
+856:              const c = parseInt(cStr, 10);
+857:              if (!isNaN(r) && !isNaN(c) && q.tableData[r] && q.tableData[0]) {
+858:                 tableMap[`${q.tableData[0][c]} of ${q.tableData[r][0]}`] = String(val);
+859:              } else {
+860:                 tableMap[key] = String(val);
+861:              }
+862:            }
+863:            textReq = JSON.stringify(tableMap);
+864:          }
+865:          else if (typeof req === 'object') textReq = JSON.stringify(req);
+866:          return `Question ID "${q.id}": ${textReq}`;
+867:        }).join('\n');
+868:
+869:        const questionsJsonString = JSON.stringify(cleanQuestions, null, 2);
+870:
+871:        const prompt = `Grade this student submission.\n
+872:        CRITICAL INSTRUCTION: You MUST strictly limit your text feedback to under 150 words per question. Do NOT generate generic fallback messages.
+873:
+874:        EXTRA GRADING STEP:
+875:        1. Extract the literal "correct_answer" from the markscheme/rubric for EACH question.
+876:        2. Grade the student response against this correct answer.
+877:        3. Then use the "rubric" constraints and "explanation" to formulate the "Teacher's feedback".
+878:
+879:        GRADING LOGIC:
+880:        Evaluate each question 1-to-1 against this rubric.
+881:        1. IF RESPONSE IS "[NO RESPONSE PROVIDED]" or Missing/Empty:
+882:          * Feedback MUST start with exactly: "No response." followed by the correct answer from the rubric.
+883:        2. IF RESPONSE IS INCORRECT:
+884:          * Feedback MUST start with exactly: "Incorrect." followed by the correct answer and a brief explanation why it is incorrect based on the rubric.
+885:        3. IF RESPONSE IS CORRECT or PARTIALLY CORRECT:
+886:          * Feedback MUST start with exactly: "Correct." followed by a brief explanation.
+887:
+888:        QUESTIONS JSON:
+889:        ${questionsJsonString}
+890:
+891:        MARKSCHEME/RUBRIC:
+892:        ${markscheme}
+893:
+894:        STUDENT RESPONSES:
+895:        ${formattedResponses}
+896:
+897:        GRADING PROTOCOL:
+898:        1. FIRST, check each student response against the markscheme for ALL questions.
+899:        2. Provide TEACHER'S FEEDBACK for each question using the strict format above. DO NOT use HTML or markdown in the feedback strings.
+900:        3. LASTLY, generate the OVERALL COMMENTS (generalFeedback field).
+901:        4. For the "id" field in your JSON output, you MUST return the EXACT identical Question ID as given in the Student Responses (e.g., "gs_q1").
+902:
+903:        RETURN EXACTLY A JSON OBJECT in this format:
+904:        {
+905:          "questions": [
+906:            {
+907:              "id": "q1",
+908:              "earned_marks": 1,
+909:              "total_marks": 2,
+910:              "correct_answer": "Extracted correct answer",
+911:              "feedback": "Your brief feedback here"
+912:            }
+913:          ],
+914:          "generalFeedback": "Overall assessment statement"
+915:        }
+916:
+917:        Return ONLY valid JSON.`;
+918:
+919:        const response = await ai.models.generateContent({
+920:          model: "gemini-3.1-flash-lite-preview",
+921:          contents: prompt,
+922:          config: {
+923:            responseMimeType: "application/json",
+924:            responseSchema: {
+925:              type: Type.OBJECT,
+926:              properties: {
+927:                questions: {
+928:                  type: Type.ARRAY,
+929:                  items: {
+930:                    type: Type.OBJECT,
+931:                    properties: {
+932:                      id: { type: Type.STRING },
+933:                      earned_marks: { type: Type.NUMBER }, total_marks: { type: Type.NUMBER }, correct_answer: { type: Type.STRING },
+934:                      feedback: { type: Type.STRING }
+935:                    }
+936:                  }
+937:                },
+938:                generalFeedback: { type: Type.STRING }
+939:              }
+940:            }
+941:          }
+942:        });
+943:
+944:        if (!response.text) throw new Error("AI returned an empty response.");
+945:
+946:        let cleanText = response.text.replace(/```json/gi, '').replace(/```/g, '').trim();
+947:        const parsed = JSON.parse(cleanText);
+948:        const rawFeedbackArray = Array.isArray(parsed.questions) ? parsed.questions : [];
+949:        const generalResult = parsed.generalFeedback || "";
+950:        
+951:        const feedbackResult: Record<string, { score: string, feedback: string }> = {};
+952:        task.worksheetQuestions?.forEach(q => {
+953:          const targetId = q.id.trim();
+954:          const targetIdLower = targetId.toLowerCase();
+955:          
+956:          let aiMatch = rawFeedbackArray.find((f: any) => f.id === targetId) || 
+957:                        rawFeedbackArray.find((f: any) => f.id?.toLowerCase() === targetIdLower);
+958:          
+959:          if (aiMatch) {
+960:            feedbackResult[targetId] = {
+961:              score: `${aiMatch.earned_marks || 0} of ${aiMatch.total_marks || 1}`,
+962:              feedback: (aiMatch.correct_answer ? `**Correct Answer:** ${aiMatch.correct_answer}\n\n${aiMatch.feedback}` : aiMatch.feedback) || "Could not evaluate response against markscheme."
+963:            };
+964:          } else {
+965:            feedbackResult[targetId] = { 
+966:              score: "0 of 0", 
+967:              feedback: "Question not addressed. The correct answer should be derived from the provided markscheme." 
+968:            };
+969:          }
+970:        });
+971:        
+972:        setValidationFeedback(feedbackResult);
+973:        setGeneralFeedback(generalResult);
+974:        
+975:        let computedTotal = 0;
+976:        let computedEarned = 0;
+977:        Object.values(feedbackResult).forEach((f: any) => {
+978:          const parts = f.score.toString().split(/\s*(?:\/|of)\s*/i);
+979:          if (parts.length === 2) {
+980:            computedEarned += parseFloat(parts[0]);
+981:            computedTotal += parseFloat(parts[1]);
+982:          }
+983:        });
+984:
+985:        await onComplete(responses, {
+986:          score: computedEarned,
+987:          total: computedTotal || task.worksheetQuestions?.length || 0,
+988:          feedback: feedbackResult,
+989:          generalFeedback: generalResult,
+990:          cheatLogs: cheatLogs
+991:        });
+992:      } else {
+993:        await onComplete(responses, { cheatLogs: cheatLogs });
+994:        setSubmitted(true);
+995:      }
+996:    } catch (error: any) {
+997:      console.error(error);
+998:      alert(isAdmin ? `Grading failed: ${error.message}` : `Submission failed. Please try again. ${error.message}`);
+999:    } finally {
+1000:      setIsValidating(false);
+1001:    }
+1002:  };
+1003:
+1004:  const questionsByPage = task.worksheetQuestions?.reduce((acc, q) => {
+1005:    const page = (q as any).page || 1;
+1006:    if (!acc[page]) acc[page] = [];
+1007:    acc[page].push(q);
+1008:    return acc;
+1009:  }, {} as Record<number, Question[]>) || {};
+1010:
+1011:  return (
+1012:    <div className="fixed inset-0 bg-white z-[200] flex flex-col overflow-hidden font-sans">
+1013:      <AnimatePresence>
+1014:        {cheatDetected && !submitted && !readOnly && (
+1015:          <motion.div 
+1016:            initial={{ opacity: 0 }} 
+1017:            animate={{ opacity: 1 }} 
+1018:            exit={{ opacity: 0 }}
+1019:            className="fixed inset-0 bg-red-600/90 backdrop-blur-md z-[1000] flex flex-col items-center justify-center p-12 text-center"
+1020:          >
+1021:            <div className="bg-white p-8 rounded-full mb-8 animate-pulse">
+1022:              <AlertCircle size={80} className="text-red-600" />
+1023:            </div>
+1024:            <h1 className="text-5xl font-black text-white mb-4 uppercase tracking-tighter text-shadow-lg">Security Protocol Warning</h1>
+1025:            <p className="text-white/80 text-xl font-bold max-w-lg mb-12">
+1026:              Suspicious behavior (focus loss, copy-paste, or shortcut usage) has been detected and logged.
+1027:            </p>
+1028:            <button 
+1029:              onClick={() => {
+1030:                setCheatDetected(false);
+1031:                stopSiren();
+1032:              }}
+1033:              className="bg-white text-red-600 px-12 py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-gray-100 transition-colors shadow-2xl active:scale-95"
+1034:            >
+1035:              Resume Test
+1036:            </button>
+1037:          </motion.div>
+1038:        )}
+1039:      </AnimatePresence>
+1040:
+1041:      <header className="h-16 border-b border-red-100 px-6 flex items-center justify-between bg-white sticky top-0 z-10">
+1042:        <div className="flex items-center gap-4">
+1043:          <button onClick={onBack} className="p-2 hover:bg-red-50 rounded-xl transition-all text-gray-500">
+1044:            <ChevronLeft size={24} />
+1045:          </button>
+1046:          <div className="h-8 w-px bg-red-100 mx-2" />
+1047:          <div className="flex flex-col">
+1048:            <h2 className="text-sm font-black text-gray-800 uppercase tracking-tighter truncate max-w-[300px]">
+1049:              {task.title}
+1050:            </h2>
+1051:            <div className="flex items-center gap-2">
+1052:              <span className="text-[10px] font-black uppercase tracking-widest text-red-600">Secure Assessment Mode</span>
+1053:              <span className="text-[10px] text-gray-300">•</span>
+1054:              <span className="text-[10px] items-center gap-1.5 px-2 py-0.5 rounded-md font-black uppercase tracking-widest bg-red-50 text-red-600 border border-red-100 flex">
+1055:                <Timer size={10} /> {formatTime(timeLeft || 0)}
+1056:              </span>
+1057:            </div>
+1058:          </div>
+1059:        </div>
+1060:
+1061:        <div className="flex items-center gap-4">
+1062:          <button 
+1063:            onClick={() => setShowCalculator(!showCalculator)}
+1064:            className={`p-2 rounded-xl transition-all ${showCalculator ? 'bg-red-600 text-white' : 'bg-red-50 text-red-600'}`}
+1065:          >
+1066:            <Calculator size={20} />
+1067:          </button>
+1068:
+1069:          {isAdmin && (
+1070:            <>
+1071:              <button
+1072:                onClick={() => {
+1073:                  setEditingQuestions(JSON.stringify(task.worksheetQuestions || [], null, 2));
+1074:                  setShowQuestionsEditor(true);
+1075:                }}
+1076:                className="bg-purple-50 text-purple-600 border border-purple-200 px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest hover:brightness-95 transition-all shadow-sm active:translate-y-1"
+1077:              >
+1078:                Edit Questions
+1079:              </button>
+1080:              <button
+1081:                onClick={() => {
+1082:                  setEditingMarkscheme(markscheme);
+1083:                  setShowMarkschemeEditor(true);
+1084:                }}
+1085:                className="bg-blue-50 text-blue-600 border border-blue-200 px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest hover:brightness-95 transition-all shadow-sm active:translate-y-1"
+1086:              >
+1087:                Edit Markscheme
+1088:              </button>
+1089:            </>
+1090:          )}
+1091:          
+1092:          {(!readOnly || isAdmin) && (
+1093:            <button
+1094:              disabled={isValidating}
+1095:              onClick={() => {
+1096:                if (isAdmin && readOnly && !isGradingWorkflow) {
+1097:                  startGradingWorkflow();
+1098:                } else if (!isGradingWorkflow) {
+1099:                  setShowConfirm(true);
+1100:                }
+1101:              }}
+1102:              className="bg-red-600 text-white px-6 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-[0_4px_0_0_#991b1b] active:shadow-none active:translate-y-1 transition-all disabled:opacity-50 flex items-center gap-2"
+1103:            >
+1104:              {isValidating ? <RefreshCw className="animate-spin" size={14} /> : <Send size={14} />}
+1105:              {isValidating ? 'Grading...' : (isAdmin && readOnly ? 'Finalize Grading' : 'Submit Assessment')}
+1106:            </button>
+1107:          )}
+1108:        </div>
+1109:      </header>
+1110:
+1111:      <AnimatePresence>
+1112:        {showConfirm && (
+1113:          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-6">
+1114:            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl text-center">
+1115:              <div className="bg-red-100 w-16 h-16 rounded-2xl flex items-center justify-center text-red-500 mx-auto mb-6">
+1116:                <AlertCircle size={32} />
+1117:              </div>
+1118:              <h3 className="text-xl font-black text-gray-800 mb-2 uppercase">Ready to Submit?</h3>
+1119:              <p className="text-gray-500 font-bold mb-8">Your work will be finalized and sent for analysis. You cannot change your answers once submitted.</p>
+1120:              <div className="flex gap-4">
+1121:                <button onClick={() => setShowConfirm(false)} className="flex-1 py-3 rounded-xl font-black uppercase text-xs text-gray-400 hover:bg-gray-50">Back</button>
+1122:                <button onClick={isAdmin && readOnly && !isGradingWorkflow ? startGradingWorkflow : handleFinalSubmit} className="flex-1 bg-red-600 text-white py-3 rounded-xl font-black uppercase text-xs shadow-[0_4px_0_0_#991b1b] active:shadow-none active:translate-y-1 transition-all">{isAdmin && readOnly && !isGradingWorkflow ? "Finalize Grading" : "Submit Now"}</button>
+1123:              </div>
+1124:            </motion.div>
+1125:          </div>
+1126:        )}
+1127:      </AnimatePresence>
+1128:
+1129:      <AnimatePresence>
+1130:        {showQuestionsEditor && (
+1131:          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-6">
+1132:            <motion.div
+1133:              initial={{ scale: 0.9, opacity: 0 }}
+1134:              animate={{ scale: 1, opacity: 1 }}
+1135:              exit={{ scale: 0.9, opacity: 0 }}
+1136:              className="bg-white rounded-3xl p-8 max-w-2xl w-full shadow-2xl flex flex-col max-h-[90vh]"
+1137:            >
+1138:              <div className="flex justify-between items-center mb-6">
+1139:                <div className="flex items-center gap-3">
+1140:                  <div className="bg-purple-100 p-2 rounded-xl text-purple-500">
+1141:                    <Layout size={24} />
+1142:                  </div>
+1143:                  <h3 className="text-xl font-black text-gray-800 uppercase tracking-tight">Edit Assessment Questions</h3>
+1144:                </div>
+1145:                <button onClick={() => setShowQuestionsEditor(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
+1146:                  <X size={24} />
+1147:                </button>
+1148:              </div>
+1149:              <p className="text-sm text-gray-500 mb-4 font-medium italic">
+1150:                Edit the JSON payload for the questions directly. Ensure the format adheres to the required schema.
+1151:              </p>
+1152:              <textarea
+1153:                value={editingQuestions}
+1154:                onChange={(e) => setEditingQuestions(e.target.value)}
+1155:                className="w-full flex-1 min-h-[300px] p-6 rounded-2xl border-2 border-slate-100 font-mono text-xs leading-relaxed resize-none focus:border-purple-500 outline-none custom-scrollbar mb-6 bg-slate-50/50 text-gray-800"
+1156:                placeholder="Enter the questions JSON here..."
+1157:              />
+1158:              <div className="flex justify-end gap-4 shrink-0">
+1159:                <button
+1160:                  onClick={() => setShowQuestionsEditor(false)}
+1161:                  className="px-6 py-3 rounded-xl font-black uppercase text-xs text-gray-400 hover:bg-gray-50 tracking-widest transition-colors"
+1162:                  disabled={isSavingQuestions}
+1163:                >
+1164:                  Discard Changes
+1165:                </button>
+1166:                <button
+1167:                  onClick={handleSaveQuestions}
+1168:                  className="px-8 py-3 bg-purple-500 text-white rounded-xl font-black uppercase text-xs shadow-[0_4px_0_0_#9333ea] active:shadow-none active:translate-y-1 transition-all tracking-widest flex items-center justify-center gap-2 min-w-[160px]"
+1169:                  disabled={isSavingQuestions}
+1170:                >
+1171:                  {isSavingQuestions ? (
+1172:                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+1173:                  ) : "Save Changes"}
+1174:                </button>
+1175:              </div>
+1176:            </motion.div>
+1177:          </div>
+1178:        )}
+1179:      </AnimatePresence>
+1180:
+1181:      <AnimatePresence>
+1182:        {showMarkschemeEditor && (
+1183:          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-6">
+1184:            <motion.div
+1185:              initial={{ scale: 0.9, opacity: 0 }}
+1186:              animate={{ scale: 1, opacity: 1 }}
+1187:              exit={{ scale: 0.9, opacity: 0 }}
+1188:              className="bg-white rounded-3xl p-8 max-w-2xl w-full shadow-2xl flex flex-col max-h-[90vh]"
+1189:            >
+1190:              <div className="flex justify-between items-center mb-6">
+1191:                <div className="flex items-center gap-3">
+1192:                  <div className="bg-blue-100 p-2 rounded-xl text-blue-500">
+1193:                    <FileText size={24} />
+1194:                  </div>
+1195:                  <h3 className="text-xl font-black text-gray-800 uppercase tracking-tight">Edit Markscheme</h3>
+1196:                </div>
+1197:                <button onClick={() => setShowMarkschemeEditor(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
+1198:                  <X size={24} />
+1199:                </button>
+1200:              </div>
+1201:              <p className="text-sm text-gray-500 mb-4 font-medium italic">
+1202:                Changes will be used for future grading.
+1203:              </p>
+1204:              <textarea
+1205:                value={editingMarkscheme}
+1206:                onChange={(e) => setEditingMarkscheme(e.target.value)}
+1207:                className="w-full flex-1 min-h-[300px] p-6 rounded-2xl border-2 border-slate-100 font-mono text-sm leading-relaxed resize-none focus:border-blue-500 outline-none custom-scrollbar mb-6 bg-slate-50/50 text-gray-800"
+1208:                placeholder="Enter the markscheme here..."
+1209:              />
+1210:              <div className="flex justify-end gap-4 shrink-0">
+1211:                <button
+1212:                  onClick={() => setShowMarkschemeEditor(false)}
+1213:                  className="px-6 py-3 rounded-xl font-black uppercase text-xs text-gray-400 hover:bg-gray-50 tracking-widest transition-colors"
+1214:                  disabled={isSavingMarkscheme}
+1215:                >
+1216:                  Discard Changes
+1217:                </button>
+1218:                <button
+1219:                  onClick={handleSaveMarkscheme}
+1220:                  className="px-8 py-3 bg-blue-500 text-white rounded-xl font-black uppercase text-xs shadow-[0_4px_0_0_#2563eb] active:shadow-none active:translate-y-1 transition-all tracking-widest flex items-center justify-center gap-2 min-w-[160px]"
+1221:                  disabled={isSavingMarkscheme}
+1222:                >
+1223:                  {isSavingMarkscheme ? (
+1224:                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+1225:                  ) : "Save Changes"}
+1226:                </button>
+1227:              </div>
+1228:            </motion.div>
+1229:          </div>
+1230:        )}
+1231:      </AnimatePresence>
+1232:
+1233:      <main className="flex-1 flex overflow-hidden bg-gray-50">
+1234:        <div ref={pdfContainerRef} className={`${isGradingWorkflow ? 'w-[30%]' : 'flex-1'} overflow-y-auto custom-scrollbar p-8 flex justify-center bg-gray-100 transition-all duration-500`}>
+1235:          <div className="max-w-4xl w-full">
+1236:            <Document
+1237:              file={task.pdfUrl || ''}
+1238:              onLoadSuccess={({ numPages }) => setNumPages(numPages)}
+1239:              options={pdfOptions}
+1240:              loading={<div className="flex items-center justify-center py-20"><RefreshCw className="animate-spin text-red-500" size={32} /></div>}
+1241:            >
+1242:              {Array.from(new Array(numPages), (el, index) => (
+1243:                <div 
+1244:                  key={`page_${index + 1}`} 
+1245:                  data-page-index={index + 1}
+1246:                  ref={el => pageRefs.current[index + 1] = el}
+1247:                  className="mb-8 shadow-2xl rounded-sm overflow-hidden bg-white pdf-page-container"
+1248:                >
+1249:                  <Page pageNumber={index + 1} width={Math.min(viewerWidth, 800)} renderTextLayer={false} renderAnnotationLayer={false} />
+1250:                </div>
+1251:              ))}
+1252:            </Document>
+1253:          </div>
+1254:        </div>
+1255:
+1256:        <div ref={rightPaneRef} className={`${isGradingWorkflow ? 'w-[35%]' : 'w-[45%]'}  border-l border-red-100 bg-white overflow-y-auto custom-scrollbar p-8"`}>
+1257:          <div className="max-w-xl mx-auto space-y-12 pb-20">
+1258:            <div className="space-y-4 border-b border-red-50 pb-8">
+1259:              <div className="space-y-1">
+1260:                <h3 className="text-3xl font-black text-gray-800 tracking-tight uppercase">Formal Assessment</h3>
+1261:                <p className="text-sm font-bold text-gray-400 uppercase tracking-widest italic flex items-center gap-2">
+1262:                  <ShieldCheck size={14} className="text-red-500" /> Secure Protocol v3.1 Enabled
+1263:                </p>
+1264:              </div>
+1265:              <div className="bg-red-50 border border-red-100 p-4 rounded-2xl">
+1266:                <p className="text-[10px] font-black text-red-700 uppercase tracking-widest leading-relaxed">
+1267:                  <AlertCircle size={10} className="inline mr-1 -mt-0.5" /> 
+1268:                  You are now under exam conditions. Any suspicious behavior will be logged and subject to review. 
+1269:                  If you attempt to cheat, your results may be disqualified.
+1270:                </p>
+1271:              </div>
+1272:            </div>
+1273:
+1274:            {Object.keys(questionsByPage).sort((a, b) => parseInt(a) - parseInt(b)).map(pageStr => {
+1275:              const pageNum = parseInt(pageStr);
+1276:              return (
+1277:                <div key={pageNum} id={`test-questions-page-${pageNum}`} className="space-y-6 scroll-mt-20">
+1278:                  <div className="flex items-center gap-3">
+1279:                    <span className="text-[10px] font-black text-red-400 uppercase tracking-widest px-4 py-1 bg-red-50 rounded-lg border border-red-100/50">Questions for Page {pageNum}</span>
+1280:                    <div className="h-px flex-1 bg-red-50" />
+1281:                  </div>
+1282:
+1283:                  {questionsByPage[pageNum].map((q, idx) => {
+1284:                    const typedQ = q as any;
+1285:                    return (
+1286:                      <motion.div 
+1287:                        key={typedQ.id}
+1288:                        initial={{ opacity: 0, y: 10 }}
+1289:                        whileInView={{ opacity: 1, y: 0 }}
+1290:                        viewport={{ once: true }}
+1291:                        className={`p-8 rounded-[2rem] border-2 transition-all ${
+1292:                          responses[typedQ.id] ? 'bg-red-50/10 border-red-200' : 'bg-white border-gray-100'
+1293:                        }`}
+1294:                      >
+1295:                        <div className="flex items-start gap-4 mb-6">
+1296:                          <span className="flex-shrink-0 w-8 h-8 rounded-xl bg-red-600 text-white flex items-center justify-center font-black text-xs">
+1297:                            {idx + 1}
+1298:                          </span>
+1299:                          <QuestionTextWithCommandTerms text={typedQ.question} />
+1300:                        </div>
+1301:
+1302:                        {typedQ.type === 'mcq' && (
+1303:                          <div className="grid gap-2">
+1304:                            {typedQ.options?.map((opt: string, oIdx: number) => (
+1305:                              <button
+1306:                                key={oIdx}
+1307:                                onClick={() => !(readOnly || submitted) && handleResponse(typedQ.id, opt)}
+1308:                                disabled={readOnly || submitted}
+1309:                                className={`w-full text-left p-4 rounded-xl border-2 font-black text-sm transition-all ${
+1310:                                  responses[typedQ.id] === opt ? 'bg-red-600 border-red-600 text-white' : 'bg-white border-gray-50 text-gray-600 hover:border-red-200'
+1311:                                } ${(readOnly || submitted) && responses[typedQ.id] !== opt ? 'opacity-50 cursor-not-allowed' : ''}`}
+1312:                              >
+1313:                                {opt}
+1314:                              </button>
+1315:                            ))}
+1316:                          </div>
+1317:                        )}
+1318:
+1319:                        {typedQ.type === 'tick-cross' && (
+1320:                          <div className="grid grid-cols-2 gap-4">
+1321:                            {['✓', '✕'].map((opt) => (
+1322:                              <button
+1323:                                key={opt}
+1324:                                onClick={() => !(readOnly || submitted) && handleResponse(typedQ.id, opt)}
+1325:                                disabled={readOnly || submitted}
+1326:                                className={`p-8 rounded-3xl border-4 font-black text-3xl transition-all shadow-sm ${
+1327:                                  responses[typedQ.id] === opt
+1328:                                    ? opt === '✓' ? 'bg-emerald-500 border-emerald-600 text-white' : 'bg-red-500 border-red-600 text-white'
+1329:                                    : 'bg-white border-gray-100 text-gray-300 hover:border-gray-200'
+1330:                                }`}
+1331:                              >
+1332:                                {opt}
+1333:                              </button>
+1334:                            ))}
+1335:                          </div>
+1336:                        )}
+1337:
+1338:                        {typedQ.type === 'reorder' && typedQ.items && (
+1339:                          <div className="space-y-3">
+1340:                            {(responses[typedQ.id] || typedQ.items).map((item: string, iIdx: number) => (
+1341:                              <motion.div
+1342:                                key={`${typedQ.id}_item_${iIdx}`}
+1343:                                layout
+1344:                                className="flex items-center gap-4 bg-white p-4 rounded-2xl border-2 border-gray-100 shadow-sm"
+1345:                              >
+1346:                                <span className="bg-gray-100 text-gray-500 w-8 h-8 rounded-lg flex items-center justify-center font-black text-xs shrink-0">
+1347:                                  {iIdx + 1}
+1348:                                </span>
+1349:                                <span className="flex-1 font-bold text-gray-700">{item}</span>
+1350:                                {!(readOnly || submitted) && (
+1351:                                  <div className="flex gap-1">
+1352:                                    <button
+1353:                                      onClick={() => {
+1354:                                        const currentArr = [...(responses[typedQ.id] || typedQ.items)];
+1355:                                        if (iIdx > 0) {
+1356:                                          [currentArr[iIdx], currentArr[iIdx-1]] = [currentArr[iIdx-1], currentArr[iIdx]];
+1357:                                          handleResponse(typedQ.id, currentArr);
+1358:                                        }
+1359:                                      }}
+1360:                                      className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-red-500 transition-colors"
+1361:                                    >
+1362:                                      <ChevronLeft size={16} className="rotate-90" />
+1363:                                    </button>
+1364:                                    <button
+1365:                                      onClick={() => {
+1366:                                        const currentArr = [...(responses[typedQ.id] || typedQ.items)];
+1367:                                        if (iIdx < currentArr.length - 1) {
+1368:                                          [currentArr[iIdx], currentArr[iIdx+1]] = [currentArr[iIdx+1], currentArr[iIdx]];
+1369:                                          handleResponse(typedQ.id, currentArr);
+1370:                                        }
+1371:                                      }}
+1372:                                      className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-red-500 transition-colors"
+1373:                                    >
+1374:                                      <ChevronLeft size={16} className="-rotate-90" />
+1375:                                    </button>
+1376:                                  </div>
+1377:                                )}
+1378:                              </motion.div>
+1379:                            ))}
+1380:                          </div>
+1381:                        )}
+1382:
+1383:                        {typedQ.type === 'table' && typedQ.tableData && (
+1384:                          <div className="overflow-hidden rounded-3xl border-2 border-red-100 bg-white">
+1385:                            <table className="w-full border-collapse">
+1386:                              <thead>
+1387:                                <tr className="bg-red-50">
+1388:                                  {typedQ.tableData[0].map((header: string, hIdx: number) => (
+1389:                                    <th key={hIdx} className="p-4 text-[10px] font-black text-red-800 uppercase tracking-widest border-b-2 border-red-100 border-r border-red-100 last:border-r-0">
+1390:                                      {header}
+1391:                                    </th>
+1392:                                  ))}
+1393:                                </tr>
+1394:                              </thead>
+1395:                              <tbody>
+1396:                                {typedQ.tableData.slice(1).map((row: string[], rIdx: number) => (
+1397:                                  <tr key={rIdx} className="last:border-b-0 border-b border-red-50">
+1398:                                    {row.map((cell: string, cIdx: number) => {
+1399:                                      const isEditableCell = cell === "";
+1400:                                      return (
+1401:                                        <td key={cIdx} className={`p-0 border-r border-red-50 last:border-r-0 ${!isEditableCell ? 'bg-gray-50/50' : 'bg-white'}`}>
+1402:                                          {!isEditableCell ? (
+1403:                                            <div className="p-4 text-xs font-bold text-gray-600">{cell}</div>
+1404:                                          ) : (
+1405:                                            <input
+1406:                                              type="text"
+1407:                                              placeholder="..."
+1408:                                              readOnly={readOnly || submitted}
+1409:                                              value={responses[typedQ.id]?.[`${rIdx}_${cIdx}`] || ''}
+1410:                                              onChange={(e) => {
+1411:                                                const newTableResponse = { ...(responses[typedQ.id] || {}) };
+1412:                                                newTableResponse[`${rIdx}_${cIdx}`] = e.target.value;
+1413:                                                handleResponse(typedQ.id, newTableResponse);
+1414:                                              }}
+1415:                                              className="w-full h-full p-4 text-xs font-black text-red-600 outline-none focus:bg-red-50/30 transition-colors placeholder:text-gray-200"
+1416:                                            />
+1417:                                          )}
+1418:                                        </td>
+1419:                                      );
+1420:                                    })}
+1421:                                  </tr>
+1422:                                ))}
+1423:                              </tbody>
+1424:                            </table>
+1425:                          </div>
+1426:                        )}
+1427:
+1428:                        {typedQ.type === 'short-response' && (
+1429:                          <textarea
+1430:                            placeholder="Type assessment response..."
+1431:                            value={responses[typedQ.id] || ''}
+1432:                            readOnly={readOnly || submitted}
+1433:                            onChange={(e) => handleResponse(typedQ.id, e.target.value)}
+1434:                            className="w-full p-4 rounded-2xl border-2 border-gray-100 font-bold text-sm outline-none focus:border-red-500 min-h-[120px] bg-red-50/10"
+1435:                          />
+1436:                        )}
+1437:
+1438:                        {(submitted || readOnly) && validationFeedback[typedQ.id] && (
+1439:                          <div className="mt-6 space-y-3 bg-red-50/30 p-6 rounded-3xl border border-red-100/50">
+1440:                            <div className="flex justify-between items-center">
+1441:                              <div className="flex items-center gap-2">
+1442:                                <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+1443:                                <span className="text-[10px] font-black text-red-800 uppercase tracking-widest">Teacher's Feedback</span>
+1444:                              </div>
+1445:                              <div className="bg-white px-3 py-1 rounded-full border border-red-100 shadow-sm">
+1446:                                <span className={`text-[10px] font-black uppercase tracking-tight ${validationFeedback[typedQ.id].score.startsWith('0 of') ? 'text-red-500' : 'text-emerald-500'}`}>
+1447:                                  Awarded: {validationFeedback[typedQ.id].score}
+1448:                                </span>
+1449:                              </div>
+1450:                            </div>
+1451:                            <p className="text-xs font-bold text-gray-700 italic leading-relaxed">
+1452:                              "{validationFeedback[typedQ.id].feedback}"
+1453:                            </p>
+1454:                          </div>
+1455:                        )}
+1456:                      </motion.div>
+1457:                    );
+1458:                  })}
+1459:                </div>
+1460:              );
+1461:            })}
+1462:
+1463:            {generalFeedback && (
+1464:              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-red-50 border-2 border-red-100 rounded-3xl p-6 space-y-3">
+1465:                <h4 className="text-xs font-black text-red-800 uppercase tracking-widest flex items-center gap-2">
+1466:                  <Eye size={16} /> Overall comments
+1467:                </h4>
+1468:                <p className="text-sm font-bold text-gray-700 italic">"{generalFeedback}"</p>
+1469:              </motion.div>
+1470:            )}
+1471:
+1472:
+1473:
+1474:          </div>
+1475:        </div>
+1476:      
+1477:        {isGradingWorkflow && (
+1478:          <div className="w-[35%] border-l-4 border-emerald-500 bg-emerald-50 overflow-y-auto custom-scrollbar p-8 flex flex-col shadow-[-10px_0_20px_rgba(0,0,0,0.05)] z-10 transition-all duration-500">
+1479:            <h3 className="text-2xl font-black text-emerald-800 uppercase tracking-tight mb-6">Markscheme & Grading</h3>
+1480:            
+1481:            <div className="flex-1 space-y-6">
+1482:               {(task.worksheetQuestions || []).map((q, idx) => (
+1483:                 <div key={q.id} className={`p-4 rounded-xl border-2 transition-all ${currentlyProcessingId === q.id ? 'bg-white border-emerald-500 ring-4 ring-emerald-500/20 shadow-xl scale-[1.02]' : 'bg-white/50 border-emerald-200'}`}>
+1484:                    <div className="flex items-center justify-between mb-2">
+1485:                       <div className="flex items-center gap-2">
+1486:                         <span className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs"><ShieldCheck size={12} className="mr-1"/> Q{idx + 1}</span>
+1487:                         <span className="text-xs font-black text-emerald-600 uppercase tracking-widest">Rubric</span>
+1488:                       </div>
+1489:                       {rubricMeta && rubricMeta[q.id] && (
+1490:                         <div className="flex items-center gap-2 text-[9px] font-black uppercase text-emerald-500 tracking-wider">
+1491:                            {rubricMeta[q.id].type && <span className="bg-emerald-50 px-2 py-1 rounded">TYPE: {String(rubricMeta[q.id].type)}</span>}
+1492:                            {rubricMeta[q.id].marks && <span className="bg-emerald-50 px-2 py-1 rounded">PTS: {String(rubricMeta[q.id].marks)}</span>}
+1493:                         </div>
+1494:                       )}
+1495:                    </div>
+1496:                    <div className="text-sm font-medium text-emerald-900 bg-emerald-50 p-3 rounded-lg whitespace-pre-wrap">
+1497:                       {gradingPhase === 'extracting_rubrics' && currentlyProcessingId === q.id ? (
+1498:                         <div className="flex items-center text-emerald-600 gap-2"><RefreshCw size={14} className="animate-spin" /> Extracting rubric from markscheme...</div>
+1499:                       ) : extractedRubrics[q.id] ? (
+1500:                         extractedRubrics[q.id]
+1501:                       ) : gradingPhase === 'extracting_rubrics' ? (
+1502:                         <span className="text-emerald-400">Waiting...</span>
+1503:                       ) : "Extracted rubric will appear here."}
+1504:                    </div>
+1505:                    
+1506:                    {/* Removed Redundant AI Feedback in third panel */}
+1507:                 </div>
+1508:               ))}
+1509:               
+1510:               {generalFeedback && (
+1511:                 <div className="p-4 rounded-xl bg-purple-50 border-2 border-purple-200 mt-6">
+1512:                    <span className="text-xs font-black text-purple-600 uppercase tracking-widest mb-2 block">Overall Comments</span>
+1513:                    <p className="text-sm text-purple-900 leading-relaxed">{generalFeedback}</p>
+1514:                 </div>
+1515:               )}
+1516:            </div>
+1517:
+1518:            <div className="mt-8 pt-6 border-t-2 border-emerald-200 sticky bottom-0 bg-emerald-50 pb-4">
+1519:              {gradingPhase === 'ready_to_grade' ? (
+1520:                <button onClick={gradeAgainstRubric} className="w-full bg-emerald-600 text-white py-4 rounded-xl font-black uppercase text-sm tracking-widest shadow-[0_4px_0_0_#059669] active:shadow-none active:translate-y-1 transition-all">
+1521:                  Grade Against Rubric
+1522:                </button>
+1523:              ) : gradingPhase === 'grading' ? (
+1524:                <button disabled className="w-full bg-emerald-400 text-white py-4 rounded-xl font-black uppercase text-sm tracking-widest flex items-center justify-center gap-2">
+1525:                  <RefreshCw size={18} className="animate-spin" /> {currentlyProcessingIndex !== null ? `Grading Question ${currentlyProcessingIndex}...` : 'Grading Responses...'}
+1526:                </button>
+1527:              ) : gradingPhase === 'generating_overall' ? (
+1528:                <button disabled className="w-full bg-emerald-400 text-white py-4 rounded-xl font-black uppercase text-sm tracking-widest flex items-center justify-center gap-2">
+1529:                  <RefreshCw size={18} className="animate-spin" /> Generating Report...
+1530:                </button>
+1531:              ) : gradingPhase === 'done' ? (
+1532:                <button disabled className="w-full bg-slate-800 text-white py-4 rounded-xl font-black uppercase text-sm tracking-widest">
+1533:                  Grading Completed
+1534:                </button>
+1535:              ) : gradingPhase === 'extracting_rubrics' ? (
+1536:                <button disabled className="w-full bg-emerald-400 text-white py-4 rounded-xl font-black uppercase text-sm tracking-widest flex items-center justify-center gap-2">
+1537:                  <RefreshCw size={18} className="animate-spin" /> Extracting Rubrics...
+1538:                </button>
+1539:              ) : null}
+1540:            </div>
+1541:          </div>
+1542:        )}
+1543:      </main>
+1544:    </div>
+1545:  );
+1546:};
+1547:
+1548:export default TaskTestView;

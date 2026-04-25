@@ -78,10 +78,14 @@ export interface TaskSubmission {
   results: {
     score: number;
     total: number;
-    unitId: number;
+    unitId?: number;
+    cheatLogs?: Record<string, number>;
+    feedback?: Record<string, { score: string, feedback: string }>;
+    generalFeedback?: string;
+    tabSwitches?: number;
   };
   responses: Record<string, any>;
-  feedback?: Record<string, { score: string, feedback: string }>;
+  feedback?: Record<string, { score: string, feedback: string }> | string;
   generalFeedback?: string;
 }
 

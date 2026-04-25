@@ -28,6 +28,7 @@ import { eventMessages, facts, navItems } from './constants';
 
 // Data
 import { units } from './data';
+import { GOLDEN_STANDARD_WORKSHEET, GOLDEN_STANDARD_TEST } from './constants/goldenStandard';
 
 // Components
 import DashboardView from './components/views/DashboardView';
@@ -597,7 +598,20 @@ function AppContent() {
 
   const onCreateTask = async (taskData: Partial<Task>) => {
     try {
-      const id = Date.now().toString();
+      const id = taskData.id || Date.now().toString();
+      
+      // Clone worksheetQuestions to avoid mutating the source (like constants)
+      let finalQuestions = taskData.worksheetQuestions ? JSON.parse(JSON.stringify(taskData.worksheetQuestions)) : undefined;
+
+      // Fix Firebase nested array limitation: convert tableData arrays-of-arrays to array-of-objects
+      if (Array.isArray(finalQuestions)) {
+        finalQuestions.forEach((q: any) => {
+          if (q.tableData && Array.isArray(q.tableData) && Array.isArray(q.tableData[0])) {
+            q.tableData = q.tableData.map((row: any) => ({ row }));
+          }
+        });
+      }
+
       const task: Task = {
         id,
         title: taskData.title || "Untitled Task",
@@ -609,19 +623,35 @@ function AppContent() {
         ...(taskData.type && { type: taskData.type }),
         ...(taskData.pdfUrl && { pdfUrl: taskData.pdfUrl }),
         ...(taskData.markschemeContent && { markschemeContent: taskData.markschemeContent }),
-        ...(taskData.worksheetQuestions && { worksheetQuestions: taskData.worksheetQuestions })
+        worksheetQuestions: finalQuestions,
+        ...(taskData.passcode && { passcode: taskData.passcode }),
+        ...(taskData.timeLimit && { timeLimit: taskData.timeLimit })
       };
       await setDoc(doc(db, 'tasks', id), task);
       console.log("Task created successfully:", id);
     } catch (e) {
       console.error("Error creating task:", e);
-      alert("Failed to create task. Check console for details.");
+      // alert("Failed to create task. Check console for details.");
     }
   };
 
+
   const onUpdateTask = async (taskId: string, updates: Partial<Task>) => {
     try {
-      await setDoc(doc(db, 'tasks', taskId), updates, { merge: true });
+      const finalUpdates = { ...updates };
+
+      // Fix Firebase nested array limitation if worksheetQuestions are being updated
+      if (finalUpdates.worksheetQuestions && Array.isArray(finalUpdates.worksheetQuestions)) {
+        // Deep clone to avoid mutating the source
+        finalUpdates.worksheetQuestions = JSON.parse(JSON.stringify(finalUpdates.worksheetQuestions));
+        finalUpdates.worksheetQuestions.forEach((q: any) => {
+          if (q.tableData && Array.isArray(q.tableData) && Array.isArray(q.tableData[0])) {
+            q.tableData = q.tableData.map((row: any) => ({ row }));
+          }
+        });
+      }
+
+      await setDoc(doc(db, 'tasks', taskId), finalUpdates, { merge: true });
     } catch (e) {
       console.error("Error updating task:", e);
       alert("Failed to update task. Check console for details.");
@@ -856,6 +886,22 @@ function AppContent() {
               isAdmin={isAdminLoggedIn}
               showCalculator={showCalculator}
               setShowCalculator={setShowCalculator}
+              
+              onProgress={async (partialResults) => {
+                if (isAdminLoggedIn && viewedSubmission) {
+                  const updateData: any = {};
+                  if (partialResults?.feedback !== undefined) updateData.feedback = partialResults.feedback;
+                  if (partialResults?.generalFeedback !== undefined) updateData.generalFeedback = partialResults.generalFeedback;
+                  
+                  if (Object.keys(updateData).length > 0) {
+                     await updateDoc(doc(db, 'submissions', viewedSubmission.id), updateData);
+                     setViewedSubmission(prev => prev ? {
+                       ...prev,
+                       ...updateData
+                     } : prev);
+                  }
+                }
+              }}
               onComplete={async (responses, results) => {
                 if (!currentUser) return;
 
@@ -941,6 +987,22 @@ function AppContent() {
               isAdmin={isAdminLoggedIn}
               showCalculator={showCalculator}
               setShowCalculator={setShowCalculator}
+              
+              onProgress={async (partialResults) => {
+                if (isAdminLoggedIn && viewedSubmission) {
+                  const updateData: any = {};
+                  if (partialResults?.feedback !== undefined) updateData.feedback = partialResults.feedback;
+                  if (partialResults?.generalFeedback !== undefined) updateData.generalFeedback = partialResults.generalFeedback;
+                  
+                  if (Object.keys(updateData).length > 0) {
+                     await updateDoc(doc(db, 'submissions', viewedSubmission.id), updateData);
+                     setViewedSubmission(prev => prev ? {
+                       ...prev,
+                       ...updateData
+                     } : prev);
+                  }
+                }
+              }}
               onComplete={async (responses, results) => {
                 if (!currentUser) return;
 

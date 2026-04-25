@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   ChevronLeft, CheckCircle2, AlertCircle, FileText, Layout, ArrowRight, X, 
-  Calculator, Edit, Eye, Send, Trash2, Timer, RefreshCw 
+  Calculator, Edit, Eye, Send, Trash2, Timer, RefreshCw, ShieldCheck, Terminal
 } from 'lucide-react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
@@ -19,6 +19,7 @@ interface TaskWorksheetViewProps {
   task: Task;
   onBack: () => void;
   onComplete: (responses: Record<string, any>, results?: any) => void;
+  onProgress?: (partialResults: any) => Promise<void>;
   initialResponses?: Record<string, any>;
   initialFeedback?: Record<string, { score: string, feedback: string }>;
   initialGeneralFeedback?: string;
@@ -76,7 +77,7 @@ const QuestionTextWithCommandTerms = ({ text }: { text: string }) => {
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY as string });
 
 const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({ 
-  task, onBack, onComplete, initialResponses, initialFeedback, initialGeneralFeedback, readOnly, isAdmin, showCalculator, setShowCalculator 
+  task, onBack, onComplete, onProgress, initialResponses, initialFeedback, initialGeneralFeedback, readOnly, isAdmin, showCalculator, setShowCalculator 
 }) => {
   const [numPages, setNumPages] = useState<number | null>(null);
   const [activePage, setActivePage] = useState(1);
@@ -86,6 +87,20 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
   const [isValidating, setIsValidating] = useState(false);
   const [validationFeedback, setValidationFeedback] = useState<Record<string, { score: string, feedback: string }>>(initialFeedback || {});
   const [generalFeedback, setGeneralFeedback] = useState<string>(initialGeneralFeedback || "");
+
+  const [isGradingWorkflow, setIsGradingWorkflow] = useState(false);
+  const [gradingPhase, setGradingPhase] = useState('idle');
+  const [extractedRubrics, setExtractedRubrics] = useState<Record<string, string>>({});
+  const [rubricMeta, setRubricMeta] = useState<Record<string, { type: string, marks: string }>>({});
+  const [currentlyProcessingId, setCurrentlyProcessingId] = useState<string | null>(null);
+  const [currentlyProcessingIndex, setCurrentlyProcessingIndex] = useState<number | null>(null);
+  const [gradingLogs, setGradingLogs] = useState<string[]>([]);
+
+  const addLog = (msg: string) => {
+    console.log("[GradingLog]", msg);
+    setGradingLogs(prev => [...prev.slice(-19), msg]);
+  };
+  
   
   // Timer State
   const [timeLeft, setTimeLeft] = useState<number | null>(task.type === 'test' ? (task.timeLimit || 60) * 60 : null);
@@ -223,8 +238,7 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
   const pdfOptions = useMemo(() => ({
     cMapUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/cmaps/`,
     cMapPacked: true,
-    standardFontDataUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/standard_fonts/`,
-  }), []);
+    standardFontDataUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/standard_fonts/`}), []);
 
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
@@ -275,6 +289,257 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
     setResponses(prev => ({ ...prev, [questionId]: value }));
   };
 
+  
+  const startGradingWorkflow = async () => {
+    setIsGradingWorkflow(true);
+    setGradingPhase('extracting_rubrics');
+    
+    const cleanQuestions = (task.worksheetQuestions || []).map((q) => {
+      const newQ = { ...q };
+      if (newQ.type === 'table' && newQ.tableData) {
+        newQ.tableData = newQ.tableData.map((r) => Array.isArray(r) ? r : (r.row || r));
+      }
+      return newQ;
+    });
+
+    const newRubrics: Record<string, string> = {};
+    const extractedUiInfo: Record<string, { type: string, marks: string }> = {};
+
+    addLog("Starting extraction phase...");
+    if (!process.env.GEMINI_API_KEY) {
+      addLog("CRITICAL: GEMINI_API_KEY is undefined.");
+    }
+
+    try {
+      const extractionPrompt = `You are a specialist in parsing educational markschemes.
+      GOAL: Extract the specific grading rubric, correct answer, and marks for EACH question provided below.
+      
+      MARK SCHEME CONTENT:
+      ${markscheme}
+      
+      QUESTIONS TO MAP:
+      ${JSON.stringify(cleanQuestions.map(q => ({ id: q.id, type: q.type, text: q.prompt })), null, 2)}
+      
+      RETURN A JSON OBJECT where keys are the Question IDs and values are objects:
+      {
+        "q_id": {
+          "rubric": "string showing how to grade",
+          "correct_answer": "the actual correct answer",
+          "marks": 1,
+          "explanation": "brief reasoning"
+        }
+      }`;
+
+      addLog("Sending extraction request to Gemini...");
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: extractionPrompt,
+        config: { responseMimeType: "application/json" }
+      });
+
+      addLog("Extraction response received.");
+      const cleanText = response.text!.replace(/```json/gi, '').replace(/```/g, '').trim();
+      const parsedResults = JSON.parse(cleanText);
+
+      cleanQuestions.forEach(q => {
+        const result = parsedResults[q.id] || parsedResults[q.id.toLowerCase()] || null;
+        if (result) {
+          addLog(`Mapped question ${q.id} successfully.`);
+          newRubrics[q.id] = JSON.stringify(result);
+          extractedUiInfo[q.id] = { type: q.type, marks: String(result.marks || 1) };
+        } else {
+          addLog(`Warning: No specific mapping for ${q.id}.`);
+          newRubrics[q.id] = JSON.stringify({ rubric: "Grade based on general accuracy.", correct_answer: "Not explicitly found", marks: 1 });
+          extractedUiInfo[q.id] = { type: q.type, marks: "1" };
+        }
+      });
+    } catch (e: any) {
+       addLog(`Extraction FAILED: ${e.message}`);
+       console.error("Extraction failed, falling back to basic mapping", e);
+    }
+
+    addLog("Extraction phase complete. Ready to grade.");
+    setExtractedRubrics(newRubrics);
+    setRubricMeta(extractedUiInfo);
+    setCurrentlyProcessingId(null);
+    setCurrentlyProcessingIndex(null);
+    setGradingPhase('ready_to_grade');
+  };
+
+  const getStudentOriginalResponse = (q) => {
+      let req = responses[q.id];
+      let textReq = req;
+      if (typeof req === 'string' && req.trim() === '') textReq = "[NO RESPONSE PROVIDED]";
+      else if (req === undefined || req === null) textReq = "[NO RESPONSE PROVIDED]";
+      else if (Array.isArray(req) && req.length === 0) textReq = "[NO RESPONSE PROVIDED]";
+      else if (typeof req === 'object' && !Array.isArray(req) && Object.keys(req).length === 0) textReq = "[NO RESPONSE PROVIDED]";
+      else if (q.type === 'table' && q.tableData && typeof req === 'object') {
+        const tableMap = {};
+        for (const [key, val] of Object.entries(req)) {
+          const [rStr, cStr] = key.split('_');
+          const r = parseInt(rStr, 10);
+          const c = parseInt(cStr, 10);
+          if (!isNaN(r) && !isNaN(c) && q.tableData[r] && q.tableData[0]) {
+             tableMap[`${q.tableData[0][c]} of ${q.tableData[r][0]}`] = String(val);
+          } else {
+             tableMap[key] = String(val);
+          }
+        }
+        textReq = JSON.stringify(tableMap);
+      }
+      else if (typeof req === 'object') textReq = JSON.stringify(req);
+      return textReq;
+  };
+
+  const gradeAgainstRubric = async () => {
+    if (!isAdmin || !task.worksheetQuestions || task.worksheetQuestions.length === 0) return;
+    
+    setIsGradingWorkflow(true);
+    setGradingPhase('grading');
+    addLog("Starting individual question grading...");
+    let currentFeedback = { ...validationFeedback };
+    let gradingIdx = 0;
+    
+    let computedTotal = 0;
+    let computedEarned = 0;
+
+    for (const q of task.worksheetQuestions || []) {
+       setCurrentlyProcessingId(q.id);
+       setCurrentlyProcessingIndex(gradingIdx++);
+       addLog(`Grading question ${q.id} (${gradingIdx} of ${task.worksheetQuestions.length})...`);
+       
+       const textReq = getStudentOriginalResponse(q);
+       const rubricString = extractedRubrics[q.id] || JSON.stringify({ rubric: "Grade based on general correctness against subject matter.", correct_answer: "Unknown", marks: 1 });
+       let parsedRubricObj = null;
+       try { parsedRubricObj = JSON.parse(rubricString); } catch(e) {}
+       
+       let correct_answer = "Derived from rubric";
+       let specific_rubric = rubricString;
+       let explanation = "See rubric";
+       let total_marks = 1;
+
+       if (parsedRubricObj && typeof parsedRubricObj === 'object') {
+          correct_answer = parsedRubricObj.correct_answer || parsedRubricObj.answer || correct_answer;
+          specific_rubric = parsedRubricObj.rubric || parsedRubricObj.grading_instructions || specific_rubric;
+          explanation = parsedRubricObj.explanation || explanation;
+          total_marks = typeof parsedRubricObj.marks !== 'undefined' ? Number(parsedRubricObj.marks) : 1;
+       }
+
+       const strAns = typeof correct_answer === 'object' ? JSON.stringify(correct_answer) : correct_answer;
+       const strRubric = typeof specific_rubric === 'object' ? JSON.stringify(specific_rubric) : specific_rubric;
+
+       const prompt = `Grade this student response based on the provided correct answer, explanation, and rubric.
+
+CRITICAL INSTRUCTION: You MUST strictly limit your text feedback to under 150 words.
+
+QUESTION IDENTIFIER: ${q.id}
+QUESTION TYPE: ${q.type}
+
+STUDENT ANSWER:
+${textReq}
+
+CORRECT ANSWER (from markscheme):
+${strAns}
+
+EXPLANATION:
+${typeof explanation === 'object' ? JSON.stringify(explanation) : explanation}
+
+RUBRIC:
+${strRubric}
+
+GRADING LOGIC:
+Compare the student answer to the correct answer. 
+1. If the student answer is empty or "[NO RESPONSE PROVIDED]", start your feedback with "No response." and award 0 marks.
+2. If the student answer is incorrect, start your feedback with "Incorrect." Provide a brief explanation based on the rubric/explanation.
+3. If the student answer is correct or partially correct, start your feedback with "Correct." or "Partially correct." Provide a brief explanation based on the rubric/explanation.
+Note: For "reorder" questions, the correct answer might sometimes be the initial order itself.
+
+RETURN EXACTLY A JSON OBJECT in this format:
+{
+  "earned_marks": number,
+  "total_marks": number,
+  "feedback": "Your brief teacher's feedback here."
+}
+
+Return ONLY valid JSON.`;
+
+       console.log("GRADING PROMPT FOR QUESTION " + q.id + ":\n", prompt);
+
+       try {
+         addLog(`Requesting grade for ${q.id} from Gemini...`);
+         const response = await ai.models.generateContent({
+            model: "gemini-3-flash-preview",
+            contents: prompt,
+            config: {
+              responseMimeType: "application/json",
+            }
+         });
+         
+         const rawText = response.text || "";
+         addLog(`Received response for ${q.id}.`);
+         console.log("GRADING RESPONSE FOR QUESTION " + q.id + ":\n", rawText);
+         
+         let cleanText = rawText.replace(/\`\`\`json/gi, '').replace(/\`\`\`/g, '').trim();
+         const parsed = JSON.parse(cleanText);
+         
+         computedEarned += (parsed.earned_marks || 0);
+         computedTotal += (parsed.total_marks || total_marks);
+         
+         const formattedParsed = {
+           score: `${parsed.earned_marks || 0} of ${parsed.total_marks || total_marks}`,
+           feedback: (parsed.feedback || '').replace(/\*\*/g, '')
+         };
+         currentFeedback[q.id] = formattedParsed;
+         setValidationFeedback(prev => ({ ...prev, [q.id]: formattedParsed }));
+         
+         if (onProgress) {
+            try {
+              await onProgress({ feedback: currentFeedback });
+            } catch (err) {
+              console.error("onProgress failed:", err);
+            }
+         }
+       } catch (e: any) {
+          addLog(`Grading question ${q.id} FAILED: ${e.message}`);
+          console.error("Error from AI grading for question", q.id, ":", e);
+          computedTotal += total_marks;
+          currentFeedback[q.id] = { score: "0 of 1", feedback: "Error grading this question. " + e.message };
+          setValidationFeedback(prev => ({ ...prev, [q.id]: currentFeedback[q.id] }));
+          if (onProgress) {
+             try { await onProgress({ feedback: currentFeedback }); } catch (err) {}
+          }
+       }
+    }
+    
+    addLog("Generating overall feedback...");
+    setGradingPhase('generating_overall');
+    setCurrentlyProcessingId(null);
+    setCurrentlyProcessingIndex(null);
+    
+    // Generate overall feedback
+    try {
+      const overallPrompt = `Based on the following grading results for all questions, provide an overall comment on the student's performance, strengths, and weaknesses. Return ONLY a plain text paragraph.\n\nGrading Results:\n${JSON.stringify(currentFeedback, null, 2)}`;
+      const overallResponse = await ai.models.generateContent({
+         model: "gemini-3-flash-preview",
+         contents: overallPrompt
+      });
+      const overallComments = overallResponse.text || "Assessment graded successfully.";
+      addLog("Overall feedback generated.");
+      setGeneralFeedback(overallComments);
+      
+      if (onProgress) {
+         await onProgress({ feedback: currentFeedback, generalFeedback: overallComments, score: computedEarned, total: computedTotal });
+      }
+      setGradingPhase('done');
+      addLog("All grading completed.");
+      onComplete(responses, { feedback: currentFeedback, generalFeedback: overallComments, score: computedEarned, total: computedTotal });
+    } catch (e: any) {
+      addLog(`Overall feedback FAILED: ${e.message}`);
+      setGradingPhase('done');
+      onComplete(responses, { feedback: currentFeedback, generalFeedback: "Assessment graded generally.", score: computedEarned, total: computedTotal });
+    }
+  };
+  
   const handleFinalSubmit = async () => {
     if (isValidating) return;
     setShowConfirm(false);
@@ -282,154 +547,21 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
     
     try {
       if (isAdmin && readOnly) {
-        setValidationFeedback({});
-        
-        const formattedResponses = Object.entries(responses)
-          .map(([id, req]) => {
-            let textReq = req;
-            if (typeof req === 'string' && req.trim() === '') textReq = "[NO RESPONSE PROVIDED]";
-            else if (req === undefined || req === null) textReq = "[NO RESPONSE PROVIDED]";
-            else if (Array.isArray(req) && req.length === 0) textReq = "[NO RESPONSE PROVIDED]";
-            else if (typeof req === 'object' && !Array.isArray(req) && Object.keys(req).length === 0) textReq = "[NO RESPONSE PROVIDED]";
-            return `${id}: ${textReq}`;
-          }).join('\n');
-
-        const prompt = `Grade this student submission.
-
-        CRITICAL INSTRUCTION: You must provide specific, detailed feedback for EVERY SINGLE QUESTION. Do NOT generate generic fallback messages like "Detailed feedback provided in report."
-
-        GRADING LOGIC:
-        You MUST strictly grade the student's response against the MARKSCHEME/RUBRIC provided below. Evaluate each question 1-to-1 against this rubric.
-
-        - IF RESPONSE IS "[NO RESPONSE PROVIDED]" or Missing/Empty:
-          * Score: 0 of X (where X is total marks for that question)
-          * Feedback MUST start with exactly: "No response." followed by the correct answer from the rubric.
-        - IF RESPONSE IS INCORRECT:
-          * Score: 0 of X
-          * Feedback MUST start with exactly: "Incorrect." followed by the correct answer and a brief explanation why it is incorrect based on the rubric.
-        - IF RESPONSE IS CORRECT:
-          * Score: Full marks (e.g. X of X)
-          * Feedback MUST start with exactly: "Correct." followed by a brief explanation.
-
-        MARKSCHEME/RUBRIC:
-        ${markscheme}
-
-        STUDENT RESPONSES (Format: QuestionID: Response):
-        ${formattedResponses}
-
-        GRADING PROTOCOL:
-        1. FIRST, check each student response against the markscheme.
-        2. Provide TEACHER'S FEEDBACK for each question using the strict format above. DO NOT use HTML or markdown in the feedback strings.
-        3. LASTLY, generate the OVERALL COMMENTS (generalFeedback field). This MUST be done after grading all questions to accurately assess overall student performance, strengths, and weaknesses in this task based on the evaluated responses.
-        4. Assign a score in "earned of total" format (e.g. "2 of 2", "0.5 of 1", "0 of 3") for the "score" field of each question.
-        5. The JSON must have an array of "questions" and a string "generalFeedback" for the Overall comments. Return ONLY valid JSON.`;
-
-        const response = await ai.models.generateContent({
-          model: "gemini-3.1-flash-lite-preview",
-          contents: prompt,
-          config: {
-            responseMimeType: "application/json",
-            responseSchema: {
-              type: Type.OBJECT,
-              properties: {
-                questions: {
-                  type: Type.ARRAY,
-                  items: {
-                    type: Type.OBJECT,
-                    properties: {
-                      id: { type: Type.STRING },
-                      score: { type: Type.STRING },
-                      feedback: { type: Type.STRING }
-                    }
-                  }
-                },
-                generalFeedback: { type: Type.STRING }
-              }
-            }
-          }
-        });
-
-        if (!response.text) {
-          throw new Error("AI returned an empty response.");
-        }
-
-        let cleanText = response.text.replace(/```json/gi, '').replace(/```/g, '').trim();
-        const parsed = JSON.parse(cleanText);
-        const rawFeedbackArray = Array.isArray(parsed.questions) ? parsed.questions : [];
-        const generalResult = parsed.generalFeedback || "";
-        
-        const feedbackResult: Record<string, { score: string, feedback: string }> = {};
-        task.worksheetQuestions?.forEach(q => {
-          const targetId = q.id.trim();
-          const targetIdLower = targetId.toLowerCase();
-          
-          let aiMatch = rawFeedbackArray.find((f: any) => f.id === targetId) || 
-                        rawFeedbackArray.find((f: any) => f.id?.toLowerCase() === targetIdLower);
-          
-          if (!aiMatch) {
-            aiMatch = rawFeedbackArray.find((f: any) => {
-              const k = (f.id || "").toString().trim().toLowerCase();
-              return k.length > 2 && (k.includes(targetIdLower) || targetIdLower.includes(k));
-            });
-          }
-          
-          if (aiMatch) {
-            feedbackResult[targetId] = {
-              score: aiMatch.score || "0 of 0",
-              feedback: aiMatch.feedback || "Detailed feedback provided in report."
-            };
-          } else {
-            feedbackResult[targetId] = { 
-              score: "0 of 0", 
-              feedback: "Question not addressed. The correct answer should be derived from the provided markscheme." 
-            };
-          }
-        });
-        
-        setValidationFeedback(feedbackResult);
-        setGeneralFeedback(generalResult);
-        
-        let computedTotal = 0;
-        let computedEarned = 0;
-        Object.values(feedbackResult).forEach((f: any) => {
-          if (f && f.score) {
-            const parts = f.score.toString().split(/\s*(?:\/|of)\s*/i);
-            if (parts.length === 2) {
-              computedEarned += parseFloat(parts[0]);
-              computedTotal += parseFloat(parts[1]);
-            } else {
-              const num = parseFloat(f.score);
-              if (!isNaN(num)) {
-                computedEarned += num;
-                computedTotal += 1;
-              }
-            }
-          }
-        });
-
-        await onComplete(responses, {
-          score: computedEarned,
-          total: computedTotal || task.worksheetQuestions?.length || 0,
-          feedback: feedbackResult,
-          generalFeedback: generalResult
-        });
+        await gradeAgainstRubric();
+        setSubmitted(true);
       } else {
-        await onComplete(responses);
+        await onComplete(responses, {  });
         setSubmitted(true);
       }
     } catch (error: any) {
-      console.error("Operation failed:", error);
-      alert(isAdmin ? `Grading failed: ${error.message}` : `Submission failed: ${error.message}`);
+      console.error(error);
+      alert(isAdmin ? `Grading failed: ${error.message}` : `Submission failed. Please try again. ${error.message}`);
     } finally {
       setIsValidating(false);
     }
   };
 
-  const handleEdit = () => {
-    setSubmitted(false);
-  };
-
-
+    const handleEdit = () => { setSubmitted(false); setIsValidating(false); setValidationFeedback({}); };
   const questionsByPage = task.worksheetQuestions?.reduce((acc, q) => {
     const page = (q as any).page || 1;
     if (!acc[page]) acc[page] = [];
@@ -525,13 +657,19 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
             {(!readOnly || isAdmin) && (
               <button
                 disabled={isValidating}
-                onClick={() => setShowConfirm(true)}
+                onClick={() => {
+                  if (isAdmin && readOnly && !isGradingWorkflow) {
+                    startGradingWorkflow();
+                  } else if (!isGradingWorkflow) {
+                    setShowConfirm(true);
+                  }
+                }}
                 className={`${task.type === 'test' ? 'bg-red-600 shadow-[0_4px_0_0_#991b1b]' : 'bg-emerald-500 shadow-[0_4px_0_0_#059669]'} text-white px-5 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest active:shadow-none active:translate-y-1 transition-all disabled:opacity-50 disabled:translate-y-0 disabled:shadow-none flex items-center gap-2`}
               >
                 {isValidating ? (
                   <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 ) : <Send size={14} />}
-                {isValidating ? 'Grading...' : (isAdmin && readOnly ? 'Finish Review' : (task.type === 'test' ? 'Submit Assessment' : 'Submit Worksheet'))}
+                {isValidating ? 'Grading...' : (isAdmin && readOnly ? 'Finalize Grading' : (task.type === 'test' ? 'Submit Assessment' : 'Submit Worksheet'))}
               </button>
             )}
           </div>
@@ -682,7 +820,7 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
                   Go Back
                 </button>
                 <button
-                  onClick={handleFinalSubmit}
+                  onClick={isAdmin && readOnly && !isGradingWorkflow ? startGradingWorkflow : handleFinalSubmit}
                   className="flex-1 bg-emerald-500 text-white py-3 rounded-xl font-black uppercase text-xs shadow-[0_4px_0_0_#059669] active:shadow-none active:translate-y-1 transition-all tracking-widest"
                 >
                   {isAdmin && readOnly ? 'Start Grading' : 'Confirm'}
@@ -696,10 +834,7 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
       {/* Main Split View */}
       <main className="flex-1 flex overflow-hidden bg-gray-50">
         {/* Left Side: PDF Viewer */}
-        <div 
-          ref={pdfContainerRef}
-          className="flex-1 overflow-y-auto custom-scrollbar p-8 flex justify-center bg-gray-200/50"
-        >
+        <div ref={pdfContainerRef} className={`${isGradingWorkflow ? 'w-[30%]' : 'flex-1'}  overflow-y-auto custom-scrollbar p-8 flex justify-center bg-gray-200/50 transition-all duration-500`}>
           <div className="max-w-4xl w-full">
             <Document
               file={task.pdfUrl || ''}
@@ -741,10 +876,7 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
         </div>
 
         {/* Right Side: Interactive Worksheet */}
-        <div 
-          ref={rightPaneRef}
-          className="w-[45%] border-l border-gray-200 bg-white overflow-y-auto custom-scrollbar p-8"
-        >
+        <div ref={rightPaneRef} className={`${isGradingWorkflow ? 'w-[35%]' : 'w-[45%]'}  border-l border-gray-200 bg-white overflow-y-auto custom-scrollbar p-8 transition-all duration-500`}>
           <div className="max-w-xl mx-auto space-y-12 pb-20">
             <div className="space-y-4 border-b border-gray-100 pb-8">
               <div className="flex flex-col">
@@ -988,11 +1120,11 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
                                     {typedQ.tableData.slice(1).map((row: string[], rIdx: number) => (
                                       <tr key={rIdx} className="last:border-b-0 border-b border-emerald-50">
                                         {row.map((cell: string, cIdx: number) => {
-                                          const isReadOnly = cIdx < 3; // First 3 columns are headers/labels in worksheet 8.1
+                                          const isEditableCell = cell === "";
                                           const cellId = `${typedQ.id}_${rIdx}_${cIdx}`;
                                           return (
-                                            <td key={cIdx} className={`p-0 border-r border-emerald-50 last:border-r-0 ${isReadOnly ? 'bg-gray-50/50' : 'bg-white'}`}>
-                                              {isReadOnly ? (
+                                            <td key={cIdx} className={`p-0 border-r border-emerald-50 last:border-r-0 ${!isEditableCell ? 'bg-gray-50/50' : 'bg-white'}`}>
+                                              {!isEditableCell ? (
                                                 <div className="p-4 text-xs font-bold text-gray-600">{cell}</div>
                                               ) : (
                                                 <input
@@ -1089,6 +1221,93 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
 
           </div>
         </div>
+      
+        {isGradingWorkflow && (
+          <div className="w-[35%] border-l-4 border-emerald-500 bg-emerald-50 overflow-y-auto custom-scrollbar p-8 flex flex-col shadow-[-10px_0_20px_rgba(0,0,0,0.05)] z-10 transition-all duration-500">
+            <h3 className="text-2xl font-black text-emerald-800 uppercase tracking-tight mb-6">Markscheme & Grading</h3>
+            
+            <div className="flex-1 space-y-6">
+               {(task.worksheetQuestions || []).map((q, idx) => (
+                 <div key={q.id} className={`p-4 rounded-xl border-2 transition-all ${currentlyProcessingId === q.id ? 'bg-white border-emerald-500 ring-4 ring-emerald-500/20 shadow-xl scale-[1.02]' : 'bg-white/50 border-emerald-200'}`}>
+                    <div className="flex items-center justify-between mb-2">
+                       <div className="flex items-center gap-2">
+                         <span className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs"><ShieldCheck size={12} className="mr-1"/> Q{idx + 1}</span>
+                         <span className="text-xs font-black text-emerald-600 uppercase tracking-widest">Rubric</span>
+                       </div>
+                       {rubricMeta && rubricMeta[q.id] && (
+                         <div className="flex items-center gap-2 text-[9px] font-black uppercase text-emerald-500 tracking-wider">
+                            {rubricMeta[q.id].type && <span className="bg-emerald-50 px-2 py-1 rounded">TYPE: {String(rubricMeta[q.id].type)}</span>}
+                            {rubricMeta[q.id].marks && <span className="bg-emerald-50 px-2 py-1 rounded">PTS: {String(rubricMeta[q.id].marks)}</span>}
+                         </div>
+                       )}
+                    </div>
+                    <div className="text-sm font-medium text-emerald-900 bg-emerald-50 p-3 rounded-lg whitespace-pre-wrap">
+                       {gradingPhase === 'extracting_rubrics' && currentlyProcessingId === q.id ? (
+                         <div className="flex items-center text-emerald-600 gap-2"><RefreshCw size={14} className="animate-spin" /> Extracting rubric from markscheme...</div>
+                       ) : extractedRubrics[q.id] ? (
+                         extractedRubrics[q.id]
+                       ) : gradingPhase === 'extracting_rubrics' ? (
+                         <span className="text-emerald-400">Waiting...</span>
+                       ) : "Extracted rubric will appear here."}
+                    </div>
+                    
+                    {/* Removed Redundant AI Feedback in third panel */}
+                 </div>
+               ))}
+               
+               {generalFeedback && (
+                 <div className="p-4 rounded-xl bg-purple-50 border-2 border-purple-200 mt-6">
+                    <span className="text-xs font-black text-purple-600 uppercase tracking-widest mb-2 block">Overall Comments</span>
+                    <p className="text-sm text-purple-900 leading-relaxed">{generalFeedback}</p>
+                 </div>
+               )}
+            </div>
+
+            <div className="mt-8 pt-6 border-t-2 border-emerald-200 sticky bottom-0 bg-emerald-50 pb-4">
+              {gradingPhase === 'ready_to_grade' ? (
+                <button onClick={gradeAgainstRubric} className="w-full bg-emerald-600 text-white py-4 rounded-xl font-black uppercase text-sm tracking-widest shadow-[0_4px_0_0_#059669] active:shadow-none active:translate-y-1 transition-all">
+                  Grade Against Rubric
+                </button>
+              ) : gradingPhase === 'grading' ? (
+                <button disabled className="w-full bg-emerald-400 text-white py-4 rounded-xl font-black uppercase text-sm tracking-widest flex items-center justify-center gap-2">
+                  <RefreshCw size={18} className="animate-spin" /> {currentlyProcessingIndex !== null ? `Grading Question ${currentlyProcessingIndex}...` : 'Grading Responses...'}
+                </button>
+              ) : gradingPhase === 'generating_overall' ? (
+                <button disabled className="w-full bg-emerald-400 text-white py-4 rounded-xl font-black uppercase text-sm tracking-widest flex items-center justify-center gap-2">
+                  <RefreshCw size={18} className="animate-spin" /> Generating Report...
+                </button>
+              ) : gradingPhase === 'done' ? (
+                <button disabled className="w-full bg-slate-800 text-white py-4 rounded-xl font-black uppercase text-sm tracking-widest">
+                  Grading Completed
+                </button>
+              ) : gradingPhase === 'extracting_rubrics' ? (
+                <button disabled className="w-full bg-emerald-400 text-white py-4 rounded-xl font-black uppercase text-sm tracking-widest flex items-center justify-center gap-2">
+                  <RefreshCw size={18} className="animate-spin" /> Extracting Rubrics...
+                </button>
+              ) : null}
+
+              {/* Grading Console Logs */}
+              {gradingLogs.length > 0 && (
+                <div className="mt-6 bg-slate-900 rounded-2xl p-4 border border-slate-800 shadow-inner overflow-hidden flex flex-col max-h-48">
+                  <div className="flex items-center gap-2 mb-2 pb-2 border-b border-white/5">
+                    <Terminal size={14} className="text-emerald-400" />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Grading Console</span>
+                  </div>
+                  <div className="flex-1 overflow-y-auto custom-scrollbar font-mono text-[10px] leading-relaxed space-y-1.5 scroll-smooth">
+                    {gradingLogs.map((log, i) => (
+                      <div key={i} className="flex gap-2 group">
+                        <span className="text-slate-600 shrink-0 select-none">[{i+1}]</span>
+                        <span className={`${log.includes('FAILED') || log.includes('CRITICAL') ? 'text-red-400 font-bold' : log.includes('successfully') ? 'text-emerald-400' : 'text-slate-300'}`}>
+                          {log}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </main>
 
       <AnimatePresence>
