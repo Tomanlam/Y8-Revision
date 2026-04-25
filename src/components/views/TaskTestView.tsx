@@ -100,6 +100,12 @@ const TaskTestView: React.FC<TaskTestViewProps> = ({
   const [editingQuestions, setEditingQuestions] = useState<string>("");
   const [isSavingQuestions, setIsSavingQuestions] = useState(false);
 
+  const pdfOptions = useMemo(() => ({
+    cMapUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/cmaps/`,
+    cMapPacked: true,
+    standardFontDataUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/standard_fonts/`,
+  }), []);
+
   // Anti-Cheat State
   const [tabSwitchesCount, setTabSwitchesCount] = useState(0);
   const [cheatLogs, setCheatLogs] = useState<Record<string, number>>({
@@ -373,10 +379,9 @@ const TaskTestView: React.FC<TaskTestViewProps> = ({
       }
     );
 
-    // Dynamic selection of pages
-    Object.values(pageRefs.current).forEach((el) => {
-      if (el) observer.observe(el as Element);
-    });
+    // Observe all pages
+    const pageElements = document.querySelectorAll('.pdf-page-container');
+    pageElements.forEach(el => observer.observe(el));
 
     return () => observer.disconnect();
   }, [numPages, task.id]);
@@ -741,6 +746,7 @@ const TaskTestView: React.FC<TaskTestViewProps> = ({
             <Document
               file={task.pdfUrl || ''}
               onLoadSuccess={({ numPages }) => setNumPages(numPages)}
+              options={pdfOptions}
               loading={<div className="flex items-center justify-center py-20"><RefreshCw className="animate-spin text-red-500" size={32} /></div>}
             >
               {Array.from(new Array(numPages), (el, index) => (

@@ -497,61 +497,83 @@ const TasksView = ({
           </div>
         )}
       </AnimatePresence>
-      <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 bg-slate-900 px-10 py-12 rounded-[3.5rem] text-white shadow-[0_20px_50px_-12px_rgba(15,23,42,0.5)] relative overflow-hidden ring-1 ring-white/10">
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-[100px] -mr-64 -mt-64" />
-        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-blue-500/5 rounded-full blur-[100px] -ml-56 -mb-56" />
-        
-        <div className="relative z-10">
-          <div className="flex flex-col md:flex-row md:items-center gap-8 mb-4">
-            <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-white shadow-2xl shadow-emerald-500/30 scale-110 ring-4 ring-emerald-500/20">
-              <Layout size={40} className="drop-shadow-lg" />
-            </div>
-            <div>
-              <div className="flex items-center gap-4 mb-3">
-                <div className="flex items-center gap-2 px-3 py-1 bg-emerald-500/20 rounded-full border border-emerald-500/30 backdrop-blur-md">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest leading-none">v4.5 Stable</span>
-                </div>
-                <div className="h-4 w-px bg-slate-700" />
-                <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Deployment Active</span>
+      {isAdmin ? (
+        <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 bg-slate-900 px-10 py-12 rounded-[3.5rem] text-white shadow-[0_20px_50px_-12px_rgba(15,23,42,0.5)] relative overflow-hidden ring-1 ring-white/10">
+          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-[100px] -mr-64 -mt-64" />
+          <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-blue-500/5 rounded-full blur-[100px] -ml-56 -mb-56" />
+          
+          <div className="relative z-10">
+            <div className="flex flex-col md:flex-row md:items-center gap-8 mb-4">
+              <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-white shadow-2xl shadow-emerald-500/30 scale-110 ring-4 ring-emerald-500/20">
+                <Layout size={40} className="drop-shadow-lg" />
               </div>
-              <h1 className="text-5xl font-black tracking-tighter leading-none mb-3 bg-clip-text text-transparent bg-gradient-to-r from-white via-white to-slate-400">
-                Admin Command Center
-              </h1>
+              <div>
+                <div className="flex items-center gap-4 mb-3">
+                  <div className="flex items-center gap-2 px-3 py-1 bg-emerald-500/20 rounded-full border border-emerald-500/30 backdrop-blur-md">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest leading-none">v4.5 Stable</span>
+                  </div>
+                  <div className="h-4 w-px bg-slate-700" />
+                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Deployment Active</span>
+                </div>
+                <h1 className="text-5xl font-black tracking-tighter leading-none mb-3 bg-clip-text text-transparent bg-gradient-to-r from-white via-white to-slate-400">
+                  Admin Command Center
+                </h1>
+              </div>
+            </div>
+            <p className="text-slate-400 text-lg font-medium px-1 max-w-xl leading-relaxed tracking-tight">
+              Comprehensive system management interface. Monitor student progress metrics, deploy secure assessments, and organize pedagogical resources.
+            </p>
+          </div>
+          
+          <div className="flex items-center relative z-10 shrink-0">
+            <div className="bg-slate-800/80 backdrop-blur-xl p-2 rounded-[2rem] flex items-center border border-white/5 shadow-2xl">
+              <button 
+                onClick={() => setActiveTab('tasks')}
+                className={`px-10 py-4 rounded-[1.5rem] font-black uppercase tracking-wider transition-all flex items-center gap-3 text-[11px] ${
+                  activeTab === 'tasks' 
+                    ? 'bg-white text-slate-900 shadow-[0_10px_20px_-5px_rgba(255,255,255,0.2)] scale-105' 
+                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <ListChecks size={18} className={activeTab === 'tasks' ? 'text-emerald-500' : ''} />
+                Resources
+              </button>
+              <button 
+                onClick={() => setActiveTab('submissions')}
+                className={`px-10 py-4 rounded-[1.5rem] font-black uppercase tracking-wider transition-all flex items-center gap-3 text-[11px] ${
+                  activeTab === 'submissions' 
+                    ? 'bg-white text-slate-900 shadow-[0_10px_20px_-5px_rgba(255,255,255,0.2)] scale-105' 
+                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <Users size={18} className={activeTab === 'submissions' ? 'text-blue-500' : ''} />
+                Inbox
+              </button>
             </div>
           </div>
-          <p className="text-slate-400 text-lg font-medium px-1 max-w-xl leading-relaxed tracking-tight">
-            Comprehensive system management interface. Monitor student progress metrics, deploy secure assessments, and organize pedagogical resources.
-          </p>
-        </div>
-        
-        <div className="flex items-center relative z-10 shrink-0">
-          <div className="bg-slate-800/80 backdrop-blur-xl p-2 rounded-[2rem] flex items-center border border-white/5 shadow-2xl">
-            <button 
-              onClick={() => setActiveTab('tasks')}
-              className={`px-10 py-4 rounded-[1.5rem] font-black uppercase tracking-wider transition-all flex items-center gap-3 text-[11px] ${
-                activeTab === 'tasks' 
-                  ? 'bg-white text-slate-900 shadow-[0_10px_20px_-5px_rgba(255,255,255,0.2)] scale-105' 
-                  : 'text-slate-400 hover:text-white hover:bg-white/5'
-              }`}
-            >
-              <ListChecks size={18} className={activeTab === 'tasks' ? 'text-emerald-500' : ''} />
-              Resources
-            </button>
-            <button 
-              onClick={() => setActiveTab('submissions')}
-              className={`px-10 py-4 rounded-[1.5rem] font-black uppercase tracking-wider transition-all flex items-center gap-3 text-[11px] ${
-                activeTab === 'submissions' 
-                  ? 'bg-white text-slate-900 shadow-[0_10px_20px_-5px_rgba(255,255,255,0.2)] scale-105' 
-                  : 'text-slate-400 hover:text-white hover:bg-white/5'
-              }`}
-            >
-              <Users size={18} className={activeTab === 'submissions' ? 'text-blue-500' : ''} />
-              Inbox
-            </button>
+        </header>
+      ) : (
+        <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 bg-white px-10 py-12 rounded-[3.5rem] shadow-sm relative overflow-hidden border-2 border-slate-100">
+          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-[100px] -mr-64 -mt-64" />
+          
+          <div className="relative z-10">
+            <div className="flex flex-col md:flex-row md:items-center gap-8 mb-4">
+              <div className="w-20 h-20 rounded-3xl bg-blue-50 flex items-center justify-center text-blue-500 shadow-inner scale-110">
+                <Target size={40} className="drop-shadow-sm" />
+              </div>
+              <div>
+                <h1 className="text-5xl font-black tracking-tighter leading-none mb-3 text-slate-800">
+                  Task Overview
+                </h1>
+                <p className="text-slate-500 text-lg font-medium px-1 max-w-xl leading-relaxed tracking-tight">
+                  Your learning journey at a glance. Complete your assignments and secure tests.
+                </p>
+              </div>
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
+      )}
 
       {/* Admin Quick Stats Bar */}
       {isAdmin && (
