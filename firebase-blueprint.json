@@ -76,6 +76,18 @@
         "content": { "type": "string" }
       },
       "required": ["content"]
+    },
+    "ProcessedRubric": {
+      "title": "Processed Rubric",
+      "description": "Extracted and mapped rubrics for a specific task.",
+      "type": "object",
+      "properties": {
+        "taskId": { "type": "string" },
+        "rubrics": { "type": "object", "description": "Map of questionId to JSON rubric string" },
+        "meta": { "type": "object", "description": "Map of questionId to {type, marks}" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["taskId", "rubrics", "meta", "updatedAt"]
     }
   },
   "firestore": {
@@ -98,6 +110,10 @@
     "/markschemes/{taskId}": {
       "schema": "Markscheme",
       "description": "Editable markschemes by task ID."
+    },
+    "/processedRubrics/{taskId}": {
+      "schema": "ProcessedRubric",
+      "description": "Cached rubrics for automated grading."
     }
   }
 }

@@ -294,6 +294,24 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
     setIsGradingWorkflow(true);
     setGradingPhase('extracting_rubrics');
     
+    addLog("Checking for cached rubrics in Firestore...");
+    try {
+      const docRef = doc(db, 'processedRubrics', task.id);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        addLog("Found cached rubrics! Reusing pre-processed data.");
+        setExtractedRubrics(data.rubrics || {});
+        setRubricMeta(data.meta || {});
+        setCurrentlyProcessingId(null);
+        setCurrentlyProcessingIndex(null);
+        setGradingPhase('ready_to_grade');
+        return;
+      }
+    } catch (err: any) {
+      addLog(`Cache check failed: ${err.message}`);
+    }
+
     const cleanQuestions = (task.worksheetQuestions || []).map((q) => {
       const newQ = { ...q };
       if (newQ.type === 'table' && newQ.tableData) {
@@ -353,6 +371,21 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
           extractedUiInfo[q.id] = { type: q.type, marks: "1" };
         }
       });
+
+      if (isAdmin) {
+        addLog("Caching extracted rubrics to Firestore...");
+        try {
+          await setDoc(doc(db, 'processedRubrics', task.id), {
+            taskId: task.id,
+            rubrics: newRubrics,
+            meta: extractedUiInfo,
+            updatedAt: new Date().toISOString()
+          });
+          addLog("Cache saved successfully.");
+        } catch (cacheErr: any) {
+          addLog(`Caching failed: ${cacheErr.message}`);
+        }
+      }
     } catch (e: any) {
        addLog(`Extraction FAILED: ${e.message}`);
        console.error("Extraction failed, falling back to basic mapping", e);

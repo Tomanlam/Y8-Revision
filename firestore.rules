@@ -97,6 +97,11 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    match /processedRubrics/{taskId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
     match /interactiveNotes/{unitId} {
       allow read: if isSignedIn();
       allow write: if isAdmin();

@@ -5,7 +5,7 @@ import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInte
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { db } from '../../firebase';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 
 import { Task, TaskSubmission, Unit } from '../../types';
 import { GoogleGenAI, Type } from "@google/genai";
@@ -136,6 +136,26 @@ const TasksView = ({
   onWipeCleanSlate
 }: TasksViewProps) => {
   const [batchGradingTask, setBatchGradingTask] = React.useState<string | null>(null);
+  const [viewingRubricTask, setViewingRubricTask] = React.useState<Task | null>(null);
+  const [rubricData, setRubricData] = React.useState<any>(null);
+  const [isLoadingRubric, setIsLoadingRubric] = React.useState(false);
+
+  const openRubricViewer = async (task: Task) => {
+    setViewingRubricTask(task);
+    setIsLoadingRubric(true);
+    setRubricData(null);
+    try {
+      const docRef = doc(db, 'processedRubrics', task.id);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        setRubricData(docSnap.data());
+      }
+    } catch (e) {
+      console.error("Error fetching rubric:", e);
+    } finally {
+      setIsLoadingRubric(false);
+    }
+  };
 
   const doBatchGrade = async (task: Task, submissions: TaskSubmission[]) => {
     setBatchGradingTask(task.id);
@@ -144,7 +164,20 @@ const TasksView = ({
     for (let i = 0; i < ungraded.length; i++) {
       const sub = ungraded[i];
       try {
-        const markscheme = task.markschemeContent || "No markscheme provided.";
+        console.log("Checking for cached rubrics in Firestore...");
+        let cachedRubric = null;
+        try {
+          const docRef = doc(db, 'processedRubrics', task.id);
+          const docSnap = await getDoc(docRef);
+          if (docSnap.exists()) {
+            cachedRubric = docSnap.data().rubrics;
+            console.log("Using cached rubrics for batch grading.");
+          }
+        } catch (err) {
+          console.log("Cache check failed, using raw markscheme.");
+        }
+
+        const markscheme = cachedRubric ? JSON.stringify(cachedRubric) : (task.markschemeContent || "No markscheme provided.");
         const responses = sub.responses || {};
         
         const cleanQuestions = (task.worksheetQuestions || []).map((q: any) => {
@@ -2395,6 +2428,110 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
                 >
                   Start Quiz
                 </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {viewingRubricTask && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[700] flex items-center justify-center p-6">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-[3rem] p-10 max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl border-4 border-emerald-50"
+            >
+              <div className="flex justify-between items-center mb-8 shrink-0 pb-6 border-b-2 border-emerald-50">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-500 shadow-inner">
+                    <ShieldCheck size={24} />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-black text-gray-800 uppercase tracking-tight">Pre-processed Rubric</h2>
+                    <p className="text-gray-500 font-medium text-xs">Review the AI-extracted grading criteria for {viewingRubricTask.title}.</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setViewingRubricTask(null)}
+                  className="p-3 hover:bg-gray-50 rounded-2xl transition-all text-gray-400 hover:text-red-500 group"
+                >
+                  <X size={24} className="group-hover:rotate-90 transition-transform duration-300" />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto custom-scrollbar pr-4 -mr-4 space-y-6 pb-4">
+                {isLoadingRubric ? (
+                   <div className="flex flex-col items-center justify-center py-20 gap-4 opacity-50">
+                     <RefreshCw size={40} className="animate-spin text-emerald-500" />
+                     <p className="font-black uppercase tracking-[0.2em] text-[10px] text-emerald-600">Retrieving Rubric Data...</p>
+                   </div>
+                ) : rubricData ? (
+                   <div className="space-y-4">
+                      <div className="flex items-center gap-2 mb-6">
+                        <div className="bg-emerald-100/50 text-emerald-600 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest border border-emerald-200">
+                          Last Updated: {format(parseISO(rubricData.updatedAt), 'MMM d, yyyy HH:mm')}
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 gap-4">
+                        {Object.entries(rubricData.rubrics).map(([qId, rubricStr]: [string, any]) => {
+                          const parsed = typeof rubricStr === 'string' ? JSON.parse(rubricStr) : rubricStr;
+                          return (
+                            <div key={qId} className="bg-slate-50 p-6 rounded-3xl border-2 border-slate-100 hover:border-emerald-200 transition-all group">
+                              <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center gap-3">
+                                  <span className="bg-slate-200 text-slate-600 text-[10px] font-black px-3 py-1 rounded-lg uppercase tracking-tight">Q: {qId}</span>
+                                  <span className="text-emerald-600 text-[10px] font-black uppercase tracking-widest flex items-center gap-1">
+                                    <Star size={10} fill="currentColor" /> {parsed.marks || 1} Marks
+                                  </span>
+                                </div>
+                                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest italic group-hover:text-emerald-500 transition-colors">
+                                  {rubricData.meta?.[qId]?.type || 'Standard'}
+                                </div>
+                              </div>
+                              <div className="space-y-3">
+                                <div>
+                                  <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1.5 flex items-center gap-1.5">
+                                    <Target size={10} /> Correct Answer
+                                  </h4>
+                                  <div className="bg-white p-3 rounded-xl border border-slate-200 font-bold text-slate-700 text-xs shadow-sm">
+                                    {typeof parsed.correct_answer === 'object' ? JSON.stringify(parsed.correct_answer) : parsed.correct_answer}
+                                  </div>
+                                </div>
+                                <div>
+                                  <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1.5 flex items-center gap-1.5">
+                                    <ListChecks size={10} /> Grading Rubric
+                                  </h4>
+                                  <div className="bg-white p-3 rounded-xl border border-slate-200 font-medium text-slate-600 text-xs leading-relaxed shadow-sm">
+                                    {parsed.rubric}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                   </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
+                    <div className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center text-slate-300 mb-2">
+                       <Info size={40} />
+                    </div>
+                    <h3 className="font-black text-slate-700 uppercase tracking-tight">No Processed Rubric Found</h3>
+                    <p className="text-slate-400 text-sm font-medium max-w-xs">A rubric will be automatically generated and cached once you grade any submission for this task.</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-8 pt-6 border-t-2 border-emerald-50 flex justify-end shrink-0">
+                 <button 
+                  onClick={() => setViewingRubricTask(null)}
+                  className="bg-emerald-500 text-white px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-xs shadow-[0_4px_0_0_#059669] active:translate-y-1 active:shadow-none transition-all"
+                >
+                  Close Viewer
+                 </button>
               </div>
             </motion.div>
           </div>
