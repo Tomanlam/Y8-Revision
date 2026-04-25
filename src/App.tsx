@@ -167,10 +167,10 @@ const Sidebar = ({ currentMode, setMode, onQRClick, hasOutstandingTasks, user, i
                 exit={{ opacity: 0, x: -10 }}
                 className="flex flex-col items-start whitespace-nowrap overflow-hidden pr-2 py-1"
               >
-                <span className="text-[20px] font-medium font-sans tracking-tight leading-none group-hover:text-white transition-colors text-black">
+                <span className="text-[14px] font-bold tracking-tight leading-none text-slate-700 transition-colors group-hover:text-amber-500">
                   {user?.displayName || 'Member'}
                 </span>
-                <div className="mt-1.5 flex items-center">
+                <div className="mt-1 flex items-center">
                   {isAdmin ? (
                     <div className="flex items-center gap-1.5 bg-amber-500 px-2 py-0.5 rounded-full text-white shadow-sm border border-transparent transition-colors group-hover:bg-white group-hover:text-amber-500">
                       <ShieldCheck size={10} className="fill-current" />

@@ -1143,24 +1143,26 @@ Output ONLY the JSON object.`;
                       </button>
                     </div>
                   </div>
-                  <div className="col-span-1 md:col-span-2 space-y-4">
-                    <label className="block text-xs font-black text-gray-400 uppercase tracking-widest text-center">Questions JSON</label>
-                    <textarea 
-                      value={editingTaskQuestionsJson}
-                      onChange={e => setEditingTaskQuestionsJson(e.target.value)}
-                      className="w-full pl-6 p-4 rounded-2xl border-2 border-gray-100 font-mono text-xs focus:border-emerald-500 outline-none h-32 resize-y"
-                      placeholder="[ { id: 'q1', type: 'short-response', ... } ]"
-                    />
-                  </div>
-                  
-                  <div className="col-span-1 md:col-span-2 space-y-4">
-                    <label className="block text-xs font-black text-gray-400 uppercase tracking-widest text-center">Markscheme Text/JSON</label>
-                    <textarea 
-                      value={editingTaskMarkscheme}
-                      onChange={e => setEditingTaskMarkscheme(e.target.value)}
-                      className="w-full pl-6 p-4 rounded-2xl border-2 border-gray-100 font-mono text-xs focus:border-emerald-500 outline-none h-32 resize-y"
-                      placeholder="Content that AI will evaluate against"
-                    />
+                  <div className="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Questions JSON</label>
+                      <textarea 
+                        value={editingTaskQuestionsJson}
+                        onChange={e => setEditingTaskQuestionsJson(e.target.value)}
+                        className="w-full pl-4 p-4 rounded-2xl border-2 border-gray-100 font-mono text-[10px] focus:border-emerald-500 outline-none h-24 resize-y"
+                        placeholder="[ { id: 'q1', type: 'short-response', ... } ]"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Markscheme Text/JSON</label>
+                      <textarea 
+                        value={editingTaskMarkscheme}
+                        onChange={e => setEditingTaskMarkscheme(e.target.value)}
+                        className="w-full pl-4 p-4 rounded-2xl border-2 border-gray-100 font-mono text-[10px] focus:border-emerald-500 outline-none h-24 resize-y"
+                        placeholder="Content that AI will evaluate against"
+                      />
+                    </div>
                   </div>
                   
                   <div className="col-span-1 md:col-span-2">
@@ -1573,24 +1575,26 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
               />
             </div>
 
-            <div className="space-y-4">
-              <label className="block text-xs font-black text-gray-400 uppercase tracking-widest">Questions JSON</label>
-              <textarea 
-                value={editingTaskQuestionsJson}
-                onChange={e => setEditingTaskQuestionsJson(e.target.value)}
-                className="w-full p-4 rounded-2xl border-2 border-gray-100 font-mono text-xs focus:border-emerald-500 outline-none h-32 resize-y"
-                placeholder="[ { id: 'q1', type: 'short-response', ... } ]"
-              />
-            </div>
-            
-            <div className="space-y-4">
-              <label className="block text-xs font-black text-gray-400 uppercase tracking-widest">Markscheme Text/JSON</label>
-              <textarea 
-                value={editingTaskMarkscheme}
-                onChange={e => setEditingTaskMarkscheme(e.target.value)}
-                className="w-full p-4 rounded-2xl border-2 border-gray-100 font-mono text-xs focus:border-emerald-500 outline-none h-32 resize-y"
-                placeholder="Content that AI will evaluate against"
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Questions JSON</label>
+                <textarea 
+                  value={editingTaskQuestionsJson}
+                  onChange={e => setEditingTaskQuestionsJson(e.target.value)}
+                  className="w-full pl-4 p-4 rounded-2xl border-2 border-gray-100 font-mono text-[10px] focus:border-emerald-500 outline-none h-24 resize-y"
+                  placeholder="[ { id: 'q1', type: 'short-response', ... } ]"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Markscheme Text/JSON</label>
+                <textarea 
+                  value={editingTaskMarkscheme}
+                  onChange={e => setEditingTaskMarkscheme(e.target.value)}
+                  className="w-full pl-4 p-4 rounded-2xl border-2 border-gray-100 font-mono text-[10px] focus:border-emerald-500 outline-none h-24 resize-y"
+                  placeholder="Content that AI will evaluate against"
+                />
+              </div>
             </div>
 
             <div className="flex justify-end gap-4 mt-8">

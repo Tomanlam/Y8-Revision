@@ -513,7 +513,7 @@ const TaskTestView: React.FC<TaskTestViewProps> = ({
       }
     } catch (error: any) {
       console.error(error);
-      alert("Submission failed. Please try again.");
+      alert(isAdmin ? `Grading failed: ${error.message}` : `Submission failed. Please try again. ${error.message}`);
     } finally {
       setIsValidating(false);
     }
@@ -786,7 +786,7 @@ const TaskTestView: React.FC<TaskTestViewProps> = ({
             {generalFeedback && (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-red-50 border-2 border-red-100 rounded-3xl p-6 space-y-3">
                 <h4 className="text-xs font-black text-red-800 uppercase tracking-widest flex items-center gap-2">
-                  <Eye size={16} /> Examiner summary
+                  <Eye size={16} /> Teacher's general summary
                 </h4>
                 <p className="text-sm font-bold text-gray-700 italic">"{generalFeedback}"</p>
               </motion.div>
@@ -851,7 +851,7 @@ const TaskTestView: React.FC<TaskTestViewProps> = ({
                             <div className="flex justify-between items-center">
                               <div className="flex items-center gap-2">
                                 <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-                                <span className="text-[10px] font-black text-red-800 uppercase tracking-widest">Examiner feedback</span>
+                                <span className="text-[10px] font-black text-red-800 uppercase tracking-widest">Teacher's Feedback</span>
                               </div>
                               <div className="bg-white px-3 py-1 rounded-full border border-red-100 shadow-sm">
                                 <span className={`text-[10px] font-black uppercase tracking-tight ${validationFeedback[typedQ.id].score.startsWith('0 of') ? 'text-red-500' : 'text-emerald-500'}`}>
