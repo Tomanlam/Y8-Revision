@@ -406,7 +406,7 @@ const TaskTestView: React.FC<TaskTestViewProps> = ({
         
         GRADING LOGIC:
         - IF RESPONSE IS MISSING (empty string or whitespace): 
-          * Score: 0/Total
+          * Score: 0 of Total
           * Feedback: Must start with "Student did not attempt this question." then provide the correct answer and a full explanation of the scientific concept.
         - IF RESPONSE IS INCORRECT (scientific error or incomplete): 
           * Score: Partial or 0
@@ -419,7 +419,8 @@ const TaskTestView: React.FC<TaskTestViewProps> = ({
         1. Explicitly identify if it's an attempted answer or a skip.
         2. Reference the provided Markscheme/Rubric directly to justify the score.
         3. Never use generic phrases like "Response not fully addressed in rubric" or "Requirement met".
-        4. Use pedagogical, encouraging yet firm scientific language.
+        4. KEEP YOUR FEEDBACK CONCISE and aligned to the rubric/markscheme.
+        5. DO NOT INCLUDE <cite> tags or any HTML in the feedback. Use plain text.
 
         MARKSCHEME/RUBRIC:
         ${markscheme}
@@ -429,7 +430,7 @@ const TaskTestView: React.FC<TaskTestViewProps> = ({
         
         GRADING PROTOCOL:
         1. Evaluate response strictly against markscheme.
-        2. Score in "earned/total" format.
+        2. Score in "earned of total" format.
         3. Case-sensitive matching of QuestionID is mandatory.
         4. Return ONLY valid JSON.`;
 
@@ -460,7 +461,8 @@ const TaskTestView: React.FC<TaskTestViewProps> = ({
 
         if (!response.text) throw new Error("AI returned an empty response.");
 
-        const parsed = JSON.parse(response.text);
+        let cleanText = response.text.replace(/```json/gi, '').replace(/```/g, '').trim();
+        const parsed = JSON.parse(cleanText);
         const rawFeedbackArray = Array.isArray(parsed.questions) ? parsed.questions : [];
         const generalResult = parsed.generalFeedback || "";
         
@@ -474,12 +476,12 @@ const TaskTestView: React.FC<TaskTestViewProps> = ({
           
           if (aiMatch) {
             feedbackResult[targetId] = {
-              score: aiMatch.score || "0/0",
+              score: aiMatch.score || "0 of 0",
               feedback: aiMatch.feedback || "Detailed feedback provided in report."
             };
           } else {
             feedbackResult[targetId] = { 
-              score: "0/0", 
+              score: "0 of 0", 
               feedback: "Question not addressed. The correct answer should be derived from the provided markscheme." 
             };
           }
@@ -491,7 +493,7 @@ const TaskTestView: React.FC<TaskTestViewProps> = ({
         let computedTotal = 0;
         let computedEarned = 0;
         Object.values(feedbackResult).forEach((f: any) => {
-          const parts = f.score.toString().split('/');
+          const parts = f.score.toString().split(/\s*(?:\/|of)\s*/i);
           if (parts.length === 2) {
             computedEarned += parseFloat(parts[0]);
             computedTotal += parseFloat(parts[1]);
@@ -852,7 +854,7 @@ const TaskTestView: React.FC<TaskTestViewProps> = ({
                                 <span className="text-[10px] font-black text-red-800 uppercase tracking-widest">Examiner feedback</span>
                               </div>
                               <div className="bg-white px-3 py-1 rounded-full border border-red-100 shadow-sm">
-                                <span className={`text-[10px] font-black uppercase tracking-tight ${validationFeedback[typedQ.id].score.startsWith('0/') ? 'text-red-500' : 'text-emerald-500'}`}>
+                                <span className={`text-[10px] font-black uppercase tracking-tight ${validationFeedback[typedQ.id].score.startsWith('0 of') ? 'text-red-500' : 'text-emerald-500'}`}>
                                   Awarded: {validationFeedback[typedQ.id].score}
                                 </span>
                               </div>

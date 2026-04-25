@@ -138,23 +138,23 @@ const Sidebar = ({ currentMode, setMode, onQRClick, hasOutstandingTasks, user, i
         {/* Overhauled User Card to look like a Button */}
         <button 
           onClick={() => setMode('achievement')}
-          className={`w-full flex items-center gap-4 p-3 rounded-2xl transition-all relative group h-14
+          className={`w-full flex items-center rounded-2xl transition-all relative group overflow-hidden h-14
             ${currentMode === 'achievement' 
               ? 'bg-emerald-50 text-emerald-600 shadow-[0_4px_0_0_#10b98133]' 
-              : 'text-gray-400 hover:bg-gray-50 hover:text-emerald-400'
+              : `text-gray-400 hover:text-white ${isAdmin ? 'hover:bg-amber-500' : 'hover:bg-blue-500'}`
             }
           `}
         >
-          <div className="flex-shrink-0 relative">
+          <div className="w-[48px] h-full flex justify-center items-center flex-shrink-0">
             {user?.photoURL ? (
               <img 
                 src={user.photoURL} 
                 alt="Profile" 
-                className={`w-8 h-8 rounded-full border-2 shadow-sm transition-transform group-hover:scale-105 ${currentMode === 'achievement' ? 'border-emerald-500' : 'border-gray-200'}`}
+                className={`w-[44px] h-[44px] rounded-full border-2 shadow-sm transition-transform group-hover:scale-105 ${currentMode === 'achievement' ? 'border-emerald-500' : 'border-gray-200'} ${isHovered ? 'group-hover:border-white/50' : ''}`}
                 referrerPolicy="no-referrer"
               />
             ) : (
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shadow-sm transition-transform group-hover:scale-105 ${isAdmin ? 'bg-amber-100 text-amber-600' : 'bg-emerald-100 text-emerald-600'}`}>
+              <div className={`w-[44px] h-[44px] rounded-full flex items-center justify-center font-bold text-[15px] shadow-sm transition-transform group-hover:scale-105 ${isAdmin ? 'bg-amber-100 text-amber-600' : 'bg-emerald-100 text-emerald-600'}`}>
                 {user?.displayName?.charAt(0) || 'U'}
               </div>
             )}
@@ -165,21 +165,21 @@ const Sidebar = ({ currentMode, setMode, onQRClick, hasOutstandingTasks, user, i
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -10 }}
-                className="flex flex-col items-start whitespace-nowrap overflow-hidden"
+                className="flex flex-col items-start whitespace-nowrap overflow-hidden pr-2 py-1"
               >
-                <span className="font-black tracking-tight text-xs text-gray-800 leading-tight">
+                <span className="text-[20px] font-medium font-sans tracking-tight leading-none group-hover:text-white transition-colors text-black">
                   {user?.displayName || 'Member'}
                 </span>
-                <div className="mt-0.5">
+                <div className="mt-1.5 flex items-center">
                   {isAdmin ? (
-                    <div className="flex items-center gap-1 bg-amber-500 px-1.5 py-0.5 rounded-full text-white">
-                      <ShieldCheck size={8} className="fill-white" />
-                      <span className="text-[8px] font-black uppercase tracking-tight">God Mode</span>
+                    <div className="flex items-center gap-1.5 bg-amber-500 px-2 py-0.5 rounded-full text-white shadow-sm border border-transparent transition-colors group-hover:bg-white group-hover:text-amber-500">
+                      <ShieldCheck size={10} className="fill-current" />
+                      <span className="text-[10px] font-black uppercase tracking-widest leading-tight">God Mode</span>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-1 bg-emerald-500 px-1.5 py-0.5 rounded-full text-white">
-                      <GraduationCap size={8} className="fill-white" />
-                      <span className="text-[8px] font-black uppercase tracking-tight">Student Mode</span>
+                    <div className="flex items-center gap-1.5 bg-blue-500 px-2 py-0.5 rounded-full text-white shadow-sm border border-transparent transition-colors group-hover:bg-white group-hover:text-blue-500">
+                      <GraduationCap size={10} className="fill-current" />
+                      <span className="text-[10px] font-black uppercase tracking-widest leading-tight">Student Mode</span>
                     </div>
                   )}
                 </div>
@@ -207,17 +207,17 @@ const Sidebar = ({ currentMode, setMode, onQRClick, hasOutstandingTasks, user, i
             <button
               key={item.mode}
               onClick={() => setMode(item.mode)}
-              className={`w-full flex items-center gap-4 p-3 rounded-2xl transition-all relative group h-14
+              className={`w-full flex items-center rounded-2xl transition-all relative group h-14 overflow-hidden
                 ${isActive 
                   ? 'bg-emerald-50 text-emerald-600 shadow-[0_4px_0_0_#10b98133]' 
                   : 'text-gray-400 hover:bg-gray-50 hover:text-emerald-400'
                 }
               `}
             >
-              <div className="flex-shrink-0 relative">
+              <div className="w-[48px] h-full flex justify-center items-center flex-shrink-0 relative">
                 <Icon size={24} fill={isActive ? "currentColor" : "none"} />
                 {isTasks && hasOutstandingTasks && (
-                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-orange-500 rounded-full border-2 border-white ring-2 ring-orange-500/20 animate-pulse" />
+                  <span className="absolute top-[8px] right-[8px] w-3 h-3 bg-orange-500 rounded-full border-2 border-white ring-2 ring-orange-500/20 animate-pulse" />
                 )}
               </div>
               <AnimatePresence>
@@ -226,7 +226,7 @@ const Sidebar = ({ currentMode, setMode, onQRClick, hasOutstandingTasks, user, i
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -10 }}
-                    className="font-black uppercase tracking-widest text-xs whitespace-nowrap"
+                    className="font-black uppercase tracking-widest text-xs whitespace-nowrap pl-1 pr-2"
                   >
                     {item.label}
                   </motion.span>

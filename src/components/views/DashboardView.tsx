@@ -518,12 +518,6 @@ const DashboardView: React.FC<DashboardViewProps> = (props) => {
             </motion.div>
           ))}
         </div>
-
-        <footer className="max-w-2xl mx-auto p-8 text-center space-y-4">
-          <p className="text-gray-400 font-bold text-sm uppercase tracking-widest">
-            Made with <Heart className="inline text-red-400 mx-1" size={16} fill="currentColor" /> for Y8 Students
-          </p>
-        </footer>
       </main>
 
       {/* Challenge Quiz Overlay */}

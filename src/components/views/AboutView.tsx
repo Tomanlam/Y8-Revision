@@ -3,7 +3,14 @@ import { motion } from 'motion/react';
 import { GraduationCap, Github, ExternalLink, Zap, RefreshCw, Info } from 'lucide-react';
 
 const AboutView: React.FC = () => {
-  const revisionNumber = "3.0.0";
+  const revisionNumber = "4.5.0";
+  const [clickCount, setClickCount] = React.useState(0);
+  
+  const handleCreatorClick = () => {
+    setClickCount(prev => prev + 1);
+  };
+  
+  const showEasterEgg = clickCount >= 3;
   
   return (
     <div className="flex-1 flex flex-col items-center justify-start p-6 max-w-7xl mx-auto w-full pt-4 pb-24">
@@ -22,7 +29,8 @@ const AboutView: React.FC = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-r from-emerald-500 to-teal-600 rounded-[2rem] p-6 shadow-lg text-white flex flex-col justify-between"
+          onClick={handleCreatorClick}
+          className="bg-gradient-to-r from-emerald-500 to-teal-600 rounded-[2rem] p-6 shadow-lg text-white flex flex-col justify-between cursor-pointer"
         >
           <div className="flex items-center gap-4 mb-6">
             <div className="bg-white/20 p-3 rounded-2xl backdrop-blur-sm border border-white/20 text-teal-50">
@@ -117,31 +125,33 @@ const AboutView: React.FC = () => {
           </motion.div>
 
           {/* GitHub Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="bg-white border-2 border-gray-200 rounded-[2rem] p-6 shadow-[0_4px_0_0_rgba(0,0,0,0.05)]"
-          >
-            <div className="flex items-center gap-4 mb-4">
-              <div className="bg-gray-100 p-4 rounded-2xl text-gray-800">
-                <Github size={28} />
-              </div>
-              <div>
-                <h3 className="text-xl font-black text-gray-800 uppercase tracking-tight leading-none">Repository</h3>
-                <p className="text-gray-400 font-bold text-[10px] uppercase tracking-widest mt-1">Open Source</p>
-              </div>
-            </div>
-            <a 
-              href="https://github.com/Tomanlam/Y8-Revision" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="flex items-center justify-between bg-gray-900 border-2 border-black text-white p-4 rounded-2xl hover:bg-gray-800 hover:-translate-y-1 shadow-[0_4px_0_0_rgba(0,0,0,1)] active:shadow-none active:translate-y-1 transition-all group"
+          {showEasterEgg && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="bg-white border-2 border-gray-200 rounded-[2rem] p-6 shadow-[0_4px_0_0_rgba(0,0,0,0.05)]"
             >
-              <span className="font-bold text-xs truncate mr-2 tracking-wide">github.com/Tomanlam/Y8-Revision</span>
-              <ExternalLink size={18} className="flex-shrink-0 opacity-70 group-hover:opacity-100 transition-opacity" />
-            </a>
-          </motion.div>
+              <div className="flex items-center gap-4 mb-4">
+                <div className="bg-gray-100 p-4 rounded-2xl text-gray-800">
+                  <Github size={28} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black text-gray-800 uppercase tracking-tight leading-none">Repository</h3>
+                  <p className="text-gray-400 font-bold text-[10px] uppercase tracking-widest mt-1">Open Source</p>
+                </div>
+              </div>
+              <a 
+                href="https://github.com/Tomanlam/Y8-Revision" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center justify-between bg-gray-900 border-2 border-black text-white p-4 rounded-2xl hover:bg-gray-800 hover:-translate-y-1 shadow-[0_4px_0_0_rgba(0,0,0,1)] active:shadow-none active:translate-y-1 transition-all group"
+              >
+                <span className="font-bold text-xs truncate mr-2 tracking-wide">github.com/Tomanlam/Y8-Revision</span>
+                <ExternalLink size={18} className="flex-shrink-0 opacity-70 group-hover:opacity-100 transition-opacity" />
+              </a>
+            </motion.div>
+          )}
         </div>
       </div>
     </div>

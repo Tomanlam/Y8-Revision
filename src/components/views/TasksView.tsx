@@ -168,6 +168,12 @@ const TasksView = ({
 
   const [isEditingPasscode, setIsEditingPasscode] = React.useState(false);
   const [editedPasscodeValue, setEditedPasscodeValue] = React.useState('');
+  const [editedTestTitle, setEditedTestTitle] = React.useState('');
+  const [isEditingTestTitle, setIsEditingTestTitle] = React.useState(false);
+  const [editedTestDate, setEditedTestDate] = React.useState('');
+  const [isEditingTestDate, setIsEditingTestDate] = React.useState(false);
+  const [editingTaskQuestionsJson, setEditingTaskQuestionsJson] = React.useState('');
+  const [editingTaskMarkscheme, setEditingTaskMarkscheme] = React.useState('');
 
   const submissionsByTask = React.useMemo(() => {
     const grouped: Record<string, TaskSubmission[]> = {};
@@ -836,12 +842,15 @@ const TasksView = ({
                         onClick={() => {
                           const workId = (newTask.title || 'test').toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
                           const prompt = `Generate interactive test JSON for: ${newTask.title || '[Untitled Test]'}
+Instruction: Parse the questions from this PDF test.
+CRITICAL REQUIREMENT for "page" field: You MUST accurately identify and include the exact integer page number (1-indexed) where each question is located in the PDF. Do NOT just default to 1. The page number must correctly match the PDF's pages.
+
 Support Question Types:
-1. "mcq" (Multiple Choice)
-2. "short-response" (Open text)
-3. "table" (requires tableData: array of arrays, and columnHeaders/rowHeaders)
-4. "tick-cross" (Binary selection)
-5. "reorder" (requires items: array of strings)
+1. "mcq" (requires "options": array of strings)
+2. "short-response" (open text)
+3. "table" (requires "tableData": 2D array of strings. Use "" for cells where user input is required, and pre-fill other cells with headers or data.)
+4. "tick-cross" (binary selection of true/false or yes/no. Use ✓ or ✕)
+5. "reorder" (requires "items": array of strings in random initial order)
 
 JSON Schema Example:
 [
@@ -855,6 +864,25 @@ JSON Schema Example:
   },
   {
     "id": "${workId}_q2",
+    "section": "Data Analysis",
+    "question": "Complete the table:",
+    "type": "table",
+    "tableData": [
+      ["Trial", "Time (s)", "Distance (m)"],
+      ["1", "2.0", ""],
+      ["2", "4.0", ""]
+    ],
+    "page": 1
+  },
+  {
+    "id": "${workId}_q3",
+    "section": "Section B",
+    "question": "Mark whether the statement is true or false.",
+    "type": "tick-cross",
+    "page": 2
+  },
+  {
+    "id": "${workId}_q4",
     "section": "Section B",
     "question": "Reorder the steps of photosynthesis:",
     "type": "reorder",
@@ -936,58 +964,70 @@ Output ONLY the JSON object.`;
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="bg-white rounded-[2.5rem] p-10 max-w-md w-full shadow-2xl border-4 border-red-50"
+              className={`bg-white rounded-[2.5rem] p-10 ${isAdmin ? 'max-w-4xl' : 'max-w-md'} w-full shadow-2xl border-4 border-red-50`}
             >
-              <div className="bg-red-50 w-20 h-20 rounded-3xl flex items-center justify-center text-red-500 mx-auto mb-8 shadow-inner">
-                <Lock size={40} className="animate-bounce" />
+              <div className="flex flex-col items-center mb-8">
+                <div className="bg-red-50 w-20 h-20 rounded-3xl flex items-center justify-center text-red-500 shadow-inner mb-4">
+                  <Lock size={40} className="animate-bounce" />
+                </div>
+                <h2 className="text-3xl font-black text-center text-gray-800 uppercase tracking-tight">
+                  {isAdmin ? 'Assessment Controls' : 'Secure Assessment'}
+                </h2>
               </div>
               
-              <h2 className="text-2xl font-black text-center text-gray-800 uppercase tracking-tight mb-2">
-                {isAdmin ? 'Assessment Controls' : 'Secure Assessment'}
-              </h2>
-              
               {isAdmin ? (
-                <div className="space-y-4 mb-6">
-                  <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 flex flex-col items-center gap-2">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Time Limit</span>
-                    <div className="flex items-center gap-3">
-                      <button 
-                        onClick={() => {
-                          const newLimit = (selectedTaskForPasscode.timeLimit || 60) - 5;
-                          if (newLimit > 0 && onUpdateTask) {
-                            onUpdateTask(selectedTaskForPasscode.id, { timeLimit: newLimit });
-                            setSelectedTaskForPasscode({...selectedTaskForPasscode, timeLimit: newLimit});
-                          }
-                        }}
-                        className="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors"
-                      >
-                        -
-                      </button>
-                      <span className="text-xl font-black text-gray-800">{selectedTaskForPasscode.timeLimit}m</span>
-                      <button 
-                        onClick={() => {
-                          const newLimit = (selectedTaskForPasscode.timeLimit || 60) + 5;
-                          if (onUpdateTask) {
-                            onUpdateTask(selectedTaskForPasscode.id, { timeLimit: newLimit });
-                            setSelectedTaskForPasscode({...selectedTaskForPasscode, timeLimit: newLimit});
-                          }
-                        }}
-                        className="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors"
-                      >
-                        +
-                      </button>
-                    </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                  {/* Title Edit */}
+                  <div className="bg-gray-50 p-6 rounded-3xl border border-gray-100 flex flex-col items-center justify-center gap-3">
+                    <span className="text-[11px] font-black uppercase tracking-widest text-gray-400">Test Title</span>
+                    {isEditingTestTitle ? (
+                       <div className="flex gap-2 w-full">
+                         <input 
+                           type="text"
+                           value={editedTestTitle}
+                           onChange={(e) => setEditedTestTitle(e.target.value)}
+                           className="flex-1 text-center font-bold p-3 rounded-2xl border-2 border-emerald-200 outline-none"
+                           autoFocus
+                         />
+                         <button 
+                           onClick={async () => {
+                             if (onUpdateTask && selectedTaskForPasscode && editedTestTitle.trim()) {
+                               await onUpdateTask(selectedTaskForPasscode.id, { title: editedTestTitle.trim() });
+                               setSelectedTaskForPasscode({...selectedTaskForPasscode, title: editedTestTitle.trim()});
+                               setIsEditingTestTitle(false);
+                             }
+                           }}
+                           className="bg-emerald-500 text-white px-5 rounded-2xl font-bold text-sm shadow-md transition-transform active:scale-95"
+                         >
+                           Save
+                         </button>
+                       </div>
+                     ) : (
+                       <div className="flex items-center gap-4 w-full justify-between group">
+                         <span className="text-2xl font-black text-gray-800 text-center flex-1">{selectedTaskForPasscode.title}</span>
+                         <button 
+                           onClick={() => {
+                             setEditedTestTitle(selectedTaskForPasscode.title);
+                             setIsEditingTestTitle(true);
+                           }}
+                           className="p-3 hover:bg-gray-200 rounded-2xl text-gray-400 hover:text-emerald-500 transition-colors shrink-0 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100"
+                         >
+                           <Edit size={20} />
+                         </button>
+                       </div>
+                     )}
                   </div>
 
-                  <div className="bg-red-50 p-4 rounded-2xl border border-red-100 flex flex-col items-center gap-2">
-                     <span className="text-[10px] font-black uppercase tracking-widest text-red-500">Live Passcode</span>
+                  {/* Passcode Edit */}
+                  <div className="bg-red-50 p-6 rounded-3xl border border-red-100 flex flex-col items-center justify-center gap-3">
+                     <span className="text-[11px] font-black uppercase tracking-widest text-red-500">Live Passcode</span>
                      {isEditingPasscode ? (
                        <div className="flex gap-2 w-full">
                          <input 
                            type="text"
                            value={editedPasscodeValue}
                            onChange={(e) => setEditedPasscodeValue(e.target.value.toUpperCase())}
-                           className="flex-1 text-center font-black p-2 rounded-xl border-2 border-red-200 outline-none uppercase"
+                           className="flex-1 text-center font-black p-3 rounded-2xl border-2 border-red-200 outline-none uppercase"
                            autoFocus
                          />
                          <button 
@@ -998,30 +1038,157 @@ Output ONLY the JSON object.`;
                                setIsEditingPasscode(false);
                              }
                            }}
-                           className="bg-red-500 text-white px-4 rounded-xl font-bold text-xs"
+                           className="bg-red-500 text-white px-5 rounded-2xl font-bold text-sm shadow-md transition-transform active:scale-95"
                          >
                            Save
                          </button>
                        </div>
                      ) : (
-                       <div className="flex items-center gap-4">
-                         <span className="text-3xl font-black text-red-600 tracking-tighter">{showPasscode ? selectedTaskForPasscode.passcode : '••••••'}</span>
-                         <div className="flex items-center gap-1">
+                       <div className="flex items-center gap-4 group justify-between w-full">
+                         <span className={`text-4xl font-black text-red-600 tracking-tighter flex-1 text-center transition-all duration-300 ${!showPasscode ? 'blur-md opacity-70 select-none' : 'blur-none opacity-100'}`}>
+                           {selectedTaskForPasscode.passcode}
+                         </span>
+                         <div className="flex items-center gap-2 shrink-0 md:opacity-0 md:group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                             <button 
                               onClick={() => setShowPasscode(!showPasscode)}
-                              className="p-2 hover:bg-red-100 rounded-lg text-red-500 transition-colors"
+                              className="p-3 hover:bg-red-100 rounded-2xl text-red-500 transition-colors"
                             >
-                              {showPasscode ? <Eye size={18} /> : <Eye size={18} className="opacity-40" />}
+                              <Eye size={20} className={showPasscode ? '' : 'opacity-40'} />
                             </button>
                             <button 
-                              onClick={() => setIsEditingPasscode(true)}
-                              className="p-2 hover:bg-red-100 rounded-lg text-red-500 transition-colors"
+                              onClick={() => {
+                                setEditedPasscodeValue(selectedTaskForPasscode.passcode || '');
+                                setIsEditingPasscode(true);
+                              }}
+                              className="p-3 hover:bg-red-100 rounded-2xl text-red-500 transition-colors"
                             >
-                              <Edit size={18} />
+                              <Edit size={20} />
                             </button>
                          </div>
                        </div>
                      )}
+                  </div>
+
+                  {/* Due Date Edit */}
+                  <div className="bg-gray-50 p-6 rounded-3xl border border-gray-100 flex flex-col items-center justify-center gap-3">
+                    <span className="text-[11px] font-black uppercase tracking-widest text-gray-400">Due Date</span>
+                    {isEditingTestDate ? (
+                       <div className="flex gap-2 w-full">
+                         <input 
+                           type="date"
+                           value={editedTestDate}
+                           onChange={(e) => setEditedTestDate(e.target.value)}
+                           className="flex-1 text-center font-bold p-3 rounded-2xl border-2 border-emerald-200 outline-none"
+                           autoFocus
+                         />
+                         <button 
+                           onClick={async () => {
+                             if (onUpdateTask && selectedTaskForPasscode && editedTestDate) {
+                               await onUpdateTask(selectedTaskForPasscode.id, { dueDate: editedTestDate });
+                               setSelectedTaskForPasscode({...selectedTaskForPasscode, dueDate: editedTestDate});
+                               setIsEditingTestDate(false);
+                             }
+                           }}
+                           className="bg-emerald-500 text-white px-5 rounded-2xl font-bold text-sm shadow-md transition-transform active:scale-95"
+                         >
+                           Save
+                         </button>
+                       </div>
+                     ) : (
+                       <div className="flex items-center gap-4 justify-between w-full group">
+                         <span className="text-2xl font-black text-gray-800 text-center flex-1">
+                           {format(selectedTaskForPasscode.dueDate.includes('T') ? parseISO(selectedTaskForPasscode.dueDate) : new Date(selectedTaskForPasscode.dueDate + 'T00:00:00'), 'MMM d, yyyy')}
+                         </span>
+                         <button 
+                           onClick={() => {
+                             setEditedTestDate(selectedTaskForPasscode.dueDate.split('T')[0]);
+                             setIsEditingTestDate(true);
+                           }}
+                           className="p-3 hover:bg-gray-200 rounded-2xl text-gray-400 hover:text-emerald-500 transition-colors shrink-0 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100"
+                         >
+                           <Edit size={20} />
+                         </button>
+                       </div>
+                     )}
+                  </div>
+                  
+                  {/* Time Limit Edit */}
+                  <div className="bg-gray-50 p-6 rounded-3xl border border-gray-100 flex flex-col items-center justify-center gap-3">
+                    <span className="text-[11px] font-black uppercase tracking-widest text-gray-400">Time Limit</span>
+                    <div className="flex items-center justify-between w-full gap-4">
+                      <button 
+                        onClick={() => {
+                          const newLimit = (selectedTaskForPasscode.timeLimit || 60) - 5;
+                          if (newLimit > 0 && onUpdateTask) {
+                            onUpdateTask(selectedTaskForPasscode.id, { timeLimit: newLimit });
+                            setSelectedTaskForPasscode({...selectedTaskForPasscode, timeLimit: newLimit});
+                          }
+                        }}
+                        className="w-12 h-12 rounded-2xl bg-white border border-gray-200 flex items-center justify-center hover:bg-gray-100 transition-colors text-xl font-bold shrink-0"
+                      >
+                        -
+                      </button>
+                      <span className="text-3xl font-black text-gray-800 w-24 text-center">{selectedTaskForPasscode.timeLimit}m</span>
+                      <button 
+                        onClick={() => {
+                          const newLimit = (selectedTaskForPasscode.timeLimit || 60) + 5;
+                          if (onUpdateTask) {
+                            onUpdateTask(selectedTaskForPasscode.id, { timeLimit: newLimit });
+                            setSelectedTaskForPasscode({...selectedTaskForPasscode, timeLimit: newLimit});
+                          }
+                        }}
+                        className="w-12 h-12 rounded-2xl bg-white border border-gray-200 flex items-center justify-center hover:bg-gray-100 transition-colors text-xl font-bold shrink-0"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                  <div className="col-span-1 md:col-span-2 space-y-4">
+                    <label className="block text-xs font-black text-gray-400 uppercase tracking-widest text-center">Questions JSON</label>
+                    <textarea 
+                      value={editingTaskQuestionsJson}
+                      onChange={e => setEditingTaskQuestionsJson(e.target.value)}
+                      className="w-full pl-6 p-4 rounded-2xl border-2 border-gray-100 font-mono text-xs focus:border-emerald-500 outline-none h-32 resize-y"
+                      placeholder="[ { id: 'q1', type: 'short-response', ... } ]"
+                    />
+                  </div>
+                  
+                  <div className="col-span-1 md:col-span-2 space-y-4">
+                    <label className="block text-xs font-black text-gray-400 uppercase tracking-widest text-center">Markscheme Text/JSON</label>
+                    <textarea 
+                      value={editingTaskMarkscheme}
+                      onChange={e => setEditingTaskMarkscheme(e.target.value)}
+                      className="w-full pl-6 p-4 rounded-2xl border-2 border-gray-100 font-mono text-xs focus:border-emerald-500 outline-none h-32 resize-y"
+                      placeholder="Content that AI will evaluate against"
+                    />
+                  </div>
+                  
+                  <div className="col-span-1 md:col-span-2">
+                    <button 
+                      onClick={async () => {
+                        if (onUpdateTask && selectedTaskForPasscode) {
+                          let parsedQ = selectedTaskForPasscode.worksheetQuestions;
+                          try {
+                            if (editingTaskQuestionsJson.trim()) {
+                              parsedQ = JSON.parse(editingTaskQuestionsJson);
+                            } else {
+                              parsedQ = [];
+                            }
+                          } catch(e) { 
+                            alert("Invalid JSON for questions. Saving other changes only."); 
+                          }
+                          await onUpdateTask(selectedTaskForPasscode.id, { 
+                            worksheetQuestions: parsedQ,
+                            markschemeContent: editingTaskMarkscheme
+                          });
+                          setSelectedTaskForPasscode({...selectedTaskForPasscode, worksheetQuestions: parsedQ, markschemeContent: editingTaskMarkscheme});
+                          alert("Content Updated!");
+                        }
+                      }}
+                      className="w-full bg-emerald-500 text-white p-4 rounded-2xl font-black tracking-widest uppercase text-xs"
+                    >
+                      Save Questions & Markscheme
+                    </button>
                   </div>
                 </div>
               ) : (
@@ -1221,14 +1388,34 @@ Output a STRICT JSON array of question objects, adhering to this schema and exam
       ["2", "4.0", ""]
     ],
     "page": 2
+  },
+  {
+    "id": "${workId}_f4",
+    "section": "Practice",
+    "question": "4. Mark whether the statements are true (✓) or false (✕).",
+    "type": "tick-cross",
+    "page": 2
+  },
+  {
+    "id": "${workId}_f5",
+    "section": "Practice",
+    "question": "5. Reorder the following steps in the correct sequence.",
+    "type": "reorder",
+    "items": ["Absorb Light", "Split Water", "Fix Carbon"],
+    "page": 3
   }
 ]
 
 Field Definitions:
 - "id": "${workId}_f[number]" (Unique ID matching the internal ID)
 - "question": Full text of the question.
-- "type": "short-response", "mcq", or "table".
-- "page": The page number in the PDF (CRITICAL for auto-scrolling).
+- "type": 
+  * "short-response" (open text)
+  * "mcq" (requires "options": array of strings)
+  * "table" (requires "tableData": 2D array of strings. Use "" for cells where user input is required, and pre-fill other cells with headers or data.)
+  * "tick-cross" (binary selection of ✓ or ✕)
+  * "reorder" (requires "items": array of strings in random initial order)
+- "page": The exact integer page number (1-indexed) in the PDF where this question is located. CRITICAL: You MUST accurately identify the page number from the PDF for each question and NOT simply default to 1.
 
 Output ONLY the raw JSON array.`;
                           navigator.clipboard.writeText(prompt);
@@ -1386,6 +1573,26 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
               />
             </div>
 
+            <div className="space-y-4">
+              <label className="block text-xs font-black text-gray-400 uppercase tracking-widest">Questions JSON</label>
+              <textarea 
+                value={editingTaskQuestionsJson}
+                onChange={e => setEditingTaskQuestionsJson(e.target.value)}
+                className="w-full p-4 rounded-2xl border-2 border-gray-100 font-mono text-xs focus:border-emerald-500 outline-none h-32 resize-y"
+                placeholder="[ { id: 'q1', type: 'short-response', ... } ]"
+              />
+            </div>
+            
+            <div className="space-y-4">
+              <label className="block text-xs font-black text-gray-400 uppercase tracking-widest">Markscheme Text/JSON</label>
+              <textarea 
+                value={editingTaskMarkscheme}
+                onChange={e => setEditingTaskMarkscheme(e.target.value)}
+                className="w-full p-4 rounded-2xl border-2 border-gray-100 font-mono text-xs focus:border-emerald-500 outline-none h-32 resize-y"
+                placeholder="Content that AI will evaluate against"
+              />
+            </div>
+
             <div className="flex justify-end gap-4 mt-8">
               <button 
                 type="button"
@@ -1397,7 +1604,22 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
               <button 
                 onClick={async () => {
                   if (onUpdateTask) {
-                    await onUpdateTask(editingTask.id, { title: editingTask.title, dueDate: editingTask.dueDate });
+                    let parsedQ = editingTask.worksheetQuestions;
+                    try {
+                      if (editingTaskQuestionsJson.trim()) {
+                        parsedQ = JSON.parse(editingTaskQuestionsJson);
+                      } else {
+                        parsedQ = [];
+                      }
+                    } catch(e) { 
+                      alert("Invalid JSON for questions. Continuing without modifying questions block."); 
+                    }
+                    await onUpdateTask(editingTask.id, { 
+                      title: editingTask.title, 
+                      dueDate: editingTask.dueDate,
+                      worksheetQuestions: parsedQ,
+                      markschemeContent: editingTaskMarkscheme
+                    });
                   }
                   setEditingTask(null);
                 }}
@@ -1651,9 +1873,13 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
                       onClick={() => {
                         if (isAdmin && isTest) {
                           setSelectedTaskForPasscode(task);
+                          setEditingTaskQuestionsJson(task.worksheetQuestions && task.worksheetQuestions.length ? JSON.stringify(task.worksheetQuestions, null, 2) : '');
+                          setEditingTaskMarkscheme(task.markschemeContent || '');
                           setIsPasscodeModalOpen(true);
                         } else if (isAdmin && onUpdateTask) {
                           setEditingTask(task);
+                          setEditingTaskQuestionsJson(task.worksheetQuestions && task.worksheetQuestions.length ? JSON.stringify(task.worksheetQuestions, null, 2) : '');
+                          setEditingTaskMarkscheme(task.markschemeContent || '');
                         } else if (!isAdmin && isTest && !isCompleted) {
                           setSelectedTaskForPasscode(task);
                           setIsPasscodeModalOpen(true);

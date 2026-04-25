@@ -290,7 +290,7 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
         
         GRADING LOGIC:
         - IF RESPONSE IS MISSING (empty string or whitespace): 
-          * Score: 0/Total
+          * Score: 0 of Total
           * Feedback: Must start with "Student did not attempt this question." then provide the correct answer and a full explanation of the scientific concept.
         - IF RESPONSE IS INCORRECT (scientific error or incomplete): 
           * Score: Partial or 0
@@ -303,7 +303,8 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
         1. Explicitly identify if it's an attempted answer or a skip.
         2. Reference the provided Markscheme/Rubric directly to justify the score.
         3. Never use generic phrases like "Response not fully addressed in rubric" or "Requirement met".
-        4. Use pedagogical, encouraging yet firm scientific language.
+        4. KEEP YOUR FEEDBACK CONCISE and aligned to the rubric/markscheme.
+        5. DO NOT INCLUDE <cite> tags or any HTML in the feedback. Use plain text.
 
         MARKSCHEME/RUBRIC:
         ${markscheme}
@@ -313,7 +314,7 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
         
         GRADING PROTOCOL:
         1. Evaluate each response strictly.
-        2. Assign a score in "earned/total" format (e.g. "2/2", "0.5/1", "0/3").
+        2. Assign a score in "earned of total" format (e.g. "2 of 2", "0.5 of 1", "0 of 3").
         3. Case-sensitive matching of QuestionID is mandatory.
         4. Provide a 'generalFeedback' summary at the end.
         
@@ -348,7 +349,8 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
           throw new Error("AI returned an empty response.");
         }
 
-        const parsed = JSON.parse(response.text);
+        let cleanText = response.text.replace(/```json/gi, '').replace(/```/g, '').trim();
+        const parsed = JSON.parse(cleanText);
         const rawFeedbackArray = Array.isArray(parsed.questions) ? parsed.questions : [];
         const generalResult = parsed.generalFeedback || "";
         
@@ -369,12 +371,12 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
           
           if (aiMatch) {
             feedbackResult[targetId] = {
-              score: aiMatch.score || "0/0",
+              score: aiMatch.score || "0 of 0",
               feedback: aiMatch.feedback || "Detailed feedback provided in report."
             };
           } else {
             feedbackResult[targetId] = { 
-              score: "0/0", 
+              score: "0 of 0", 
               feedback: "Question not addressed. The correct answer should be derived from the provided markscheme." 
             };
           }
@@ -387,7 +389,7 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
         let computedEarned = 0;
         Object.values(feedbackResult).forEach((f: any) => {
           if (f && f.score) {
-            const parts = f.score.toString().split('/');
+            const parts = f.score.toString().split(/\s*(?:\/|of)\s*/i);
             if (parts.length === 2) {
               computedEarned += parseFloat(parts[0]);
               computedTotal += parseFloat(parts[1]);
@@ -768,11 +770,11 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Score</span>
                        <span className="text-lg font-black text-emerald-600">
                           {Math.round(Object.values(validationFeedback as any).reduce<number>((acc, f: any) => {
-                             const p = f.score?.toString().split('/');
+                             const p = f.score?.toString().split(/\s*(?:\/|of)\s*/i);
                              return acc + (p?.[0] ? parseFloat(p[0]) : 0);
                           }, 0))} / {
                             Object.values(validationFeedback as any).reduce<number>((acc, f: any) => {
-                              const p = f.score?.toString().split('/');
+                              const p = f.score?.toString().split(/\s*(?:\/|of)\s*/i);
                               return acc + (p?.[1] ? parseFloat(p[1]) : 1);
                            }, 0)
                           }
@@ -857,16 +859,16 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
                                   initial={{ opacity: 0, y: 10 }}
                                   animate={{ opacity: 1, y: 0 }}
                                   className={`p-4 rounded-2xl border mt-2 ${
-                                    validationFeedback[typedQ.id].score.includes('/0') || validationFeedback[typedQ.id].score.startsWith('0/') 
+                                    validationFeedback[typedQ.id].score.includes('of 0') || validationFeedback[typedQ.id].score.startsWith('0 of') 
                                       ? 'bg-red-50 border-red-100 text-red-800' 
                                       : 'bg-emerald-50 border-emerald-100 text-emerald-800'
                                   }`}
                                 >
                                   <div className="flex items-center justify-between mb-2">
-                                    <span className="text-[10px] font-black uppercase tracking-widest">Teacher Feedback</span>
+                                    <span className="text-[10px] font-black uppercase tracking-widest">Teacher's Feedback</span>
                                     <span className="text-xs font-black">{validationFeedback[typedQ.id].score}</span>
                                   </div>
-                                  <p className="text-xs font-medium italic">"{validationFeedback[typedQ.id].feedback}"</p>
+                                  <p className="text-xs font-medium whitespace-pre-wrap">{validationFeedback[typedQ.id].feedback}</p>
                                 </motion.div>
                               )}
                             </div>
@@ -893,16 +895,16 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
                                   initial={{ opacity: 0, y: 10 }}
                                   animate={{ opacity: 1, y: 0 }}
                                   className={`col-span-2 p-4 rounded-2xl border ${
-                                    validationFeedback[typedQ.id].score.includes('/0') || validationFeedback[typedQ.id].score.startsWith('0/') 
+                                    validationFeedback[typedQ.id].score.includes('of 0') || validationFeedback[typedQ.id].score.startsWith('0 of') 
                                       ? 'bg-red-50 border-red-100 text-red-800' 
                                       : 'bg-emerald-50 border-emerald-100 text-emerald-800'
                                   }`}
                                 >
                                   <div className="flex items-center justify-between mb-2">
-                                    <span className="text-[10px] font-black uppercase tracking-widest">Teacher Feedback</span>
+                                    <span className="text-[10px] font-black uppercase tracking-widest">Teacher's Feedback</span>
                                     <span className="text-xs font-black">{validationFeedback[typedQ.id].score}</span>
                                   </div>
-                                  <p className="text-xs font-medium italic">"{validationFeedback[typedQ.id].feedback}"</p>
+                                  <p className="text-xs font-medium whitespace-pre-wrap">{validationFeedback[typedQ.id].feedback}</p>
                                 </motion.div>
                               )}
                             </div>
@@ -955,16 +957,16 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
                                   initial={{ opacity: 0, y: 10 }}
                                   animate={{ opacity: 1, y: 0 }}
                                   className={`p-4 rounded-2xl border mt-2 ${
-                                    validationFeedback[typedQ.id].score.includes('/0') || validationFeedback[typedQ.id].score.startsWith('0/') 
+                                    validationFeedback[typedQ.id].score.includes('of 0') || validationFeedback[typedQ.id].score.startsWith('0 of') 
                                       ? 'bg-red-50 border-red-100 text-red-800' 
                                       : 'bg-emerald-50 border-emerald-100 text-emerald-800'
                                   }`}
                                 >
                                   <div className="flex items-center justify-between mb-2">
-                                    <span className="text-[10px] font-black uppercase tracking-widest">Teacher Feedback</span>
+                                    <span className="text-[10px] font-black uppercase tracking-widest">Teacher's Feedback</span>
                                     <span className="text-xs font-black">{validationFeedback[typedQ.id].score}</span>
                                   </div>
-                                  <p className="text-xs font-medium italic">"{validationFeedback[typedQ.id].feedback}"</p>
+                                  <p className="text-xs font-medium whitespace-pre-wrap">{validationFeedback[typedQ.id].feedback}</p>
                                 </motion.div>
                               )}
                             </div>
@@ -984,16 +986,16 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
                                   initial={{ opacity: 0, scale: 0.95 }}
                                   animate={{ opacity: 1, scale: 1 }}
                                   className={`p-4 rounded-2xl border ${
-                                    validationFeedback[typedQ.id].score.includes('/0') || validationFeedback[typedQ.id].score.startsWith('0/') 
+                                    validationFeedback[typedQ.id].score.includes('of 0') || validationFeedback[typedQ.id].score.startsWith('0 of') 
                                       ? 'bg-red-50 border-red-100 text-red-800' 
                                       : 'bg-emerald-50 border-emerald-100 text-emerald-800'
                                   }`}
                                 >
                                   <div className="flex items-center justify-between mb-2">
-                                    <span className="text-[10px] font-black uppercase tracking-widest">Teacher Feedback</span>
+                                    <span className="text-[10px] font-black uppercase tracking-widest">Teacher's Feedback</span>
                                     <span className="text-xs font-black">{validationFeedback[typedQ.id].score}</span>
                                   </div>
-                                  <p className="text-xs font-medium italic">"{validationFeedback[typedQ.id].feedback}"</p>
+                                  <p className="text-xs font-medium whitespace-pre-wrap">{validationFeedback[typedQ.id].feedback}</p>
                                 </motion.div>
                               )}
                             </div>
@@ -1049,16 +1051,16 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     className={`p-4 rounded-2xl border mt-3 ${
-                                      validationFeedback[typedQ.id].score.includes('/0') || validationFeedback[typedQ.id].score.startsWith('0/') 
+                                      validationFeedback[typedQ.id].score.includes('of 0') || validationFeedback[typedQ.id].score.startsWith('0 of') 
                                         ? 'bg-red-50 border-red-100 text-red-800' 
                                         : 'bg-emerald-50 border-emerald-100 text-emerald-800'
                                     }`}
                                   >
                                     <div className="flex items-center justify-between mb-2">
-                                      <span className="text-[10px] font-black uppercase tracking-widest">Teacher Feedback</span>
+                                      <span className="text-[10px] font-black uppercase tracking-widest">Teacher's Feedback</span>
                                       <span className="text-xs font-black">{validationFeedback[typedQ.id].score}</span>
                                     </div>
-                                    <p className="text-xs font-medium italic">"{validationFeedback[typedQ.id].feedback}"</p>
+                                    <p className="text-xs font-medium whitespace-pre-wrap">{validationFeedback[typedQ.id].feedback}</p>
                                   </motion.div>
                                 )}
                             </>
