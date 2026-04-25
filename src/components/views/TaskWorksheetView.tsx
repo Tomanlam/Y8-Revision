@@ -284,38 +284,44 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
       if (isAdmin && readOnly) {
         setValidationFeedback({});
         
-        const prompt = `Grade this student submission for the worksheet "${task.title}".
-        
-        CRITICAL INSTRUCTION: You must provide specific feedback for EVERY SINGLE QUESTION listed.
-        
+        const formattedResponses = Object.entries(responses)
+          .map(([id, req]) => {
+            let textReq = req;
+            if (typeof req === 'string' && req.trim() === '') textReq = "[NO RESPONSE PROVIDED]";
+            else if (req === undefined || req === null) textReq = "[NO RESPONSE PROVIDED]";
+            else if (Array.isArray(req) && req.length === 0) textReq = "[NO RESPONSE PROVIDED]";
+            else if (typeof req === 'object' && !Array.isArray(req) && Object.keys(req).length === 0) textReq = "[NO RESPONSE PROVIDED]";
+            return `${id}: ${textReq}`;
+          }).join('\n');
+
+        const prompt = `Grade this student submission.
+
+        CRITICAL INSTRUCTION: You must provide specific, detailed feedback for EVERY SINGLE QUESTION. Do NOT generate generic fallback messages like "Detailed feedback provided in report."
+
         GRADING LOGIC:
-        You MUST strictly grade the student's response against the MARKSCHEME/RUBRIC provided below. Do not output generic messages like "Detailed feedback provided in report."
-        
-        - IF RESPONSE IS MISSING (empty string or whitespace): 
-          * Score: 0 of Total
-          * Feedback: Must start with "No response. " then provide the correct answer according to the rubric.
-        - IF RESPONSE IS INCORRECT (error or incomplete): 
-          * Score: Partial or 0 of Total
-          * Feedback: Must start with "Incorrect. " then provide the correct answer and a brief explanation according to the rubric.
-        - IF RESPONSE IS CORRECT: 
-          * Score: Full marks (e.g., 1 of 1, 2 of 2)
-          * Feedback: Must start with "Correct. " then provide a brief explanation.
-        
-        For EACH question:
-        1. Evaluate response strictly against the markscheme.
-        2. DO NOT INCLUDE <cite> tags or HTML in the feedback. Use plain text.
+        You MUST strictly grade the student's response against the MARKSCHEME/RUBRIC provided below. Evaluate each question 1-to-1 against this rubric.
+
+        - IF RESPONSE IS "[NO RESPONSE PROVIDED]" or Missing/Empty:
+          * Score: 0 of X (where X is total marks for that question)
+          * Feedback MUST start with exactly: "No response." followed by the correct answer from the rubric.
+        - IF RESPONSE IS INCORRECT:
+          * Score: 0 of X
+          * Feedback MUST start with exactly: "Incorrect." followed by the correct answer and a brief explanation why it is incorrect based on the rubric.
+        - IF RESPONSE IS CORRECT:
+          * Score: Full marks (e.g. X of X)
+          * Feedback MUST start with exactly: "Correct." followed by a brief explanation.
 
         MARKSCHEME/RUBRIC:
         ${markscheme}
-        
+
         STUDENT RESPONSES (Format: QuestionID: Response):
-        ${Object.entries(responses).map(([id, req]) => `${id}: ${req}`).join('\n')}
-        
+        ${formattedResponses}
+
         GRADING PROTOCOL:
-        1. FIRST grade individual questions strictly against the provided markscheme.
-        2. THEN, based on the student's performance, generate an 'Overall comments' section (generalFeedback field) AT THE END detailing how the student did overall in the worksheet, including their strengths and what could be improved.
-        3. Assign a score in "earned of total" format (e.g. "2 of 2", "0.5 of 1", "0 of 3").
-        4. Case-sensitive matching of QuestionID is mandatory.
+        1. FIRST, check each student response against the markscheme.
+        2. Provide TEACHER'S FEEDBACK for each question using the strict format above. DO NOT use HTML or markdown in the feedback strings.
+        3. LASTLY, generate the OVERALL COMMENTS (generalFeedback field). This MUST be done after grading all questions to accurately assess overall student performance, strengths, and weaknesses in this task based on the evaluated responses.
+        4. Assign a score in "earned of total" format (e.g. "2 of 2", "0.5 of 1", "0 of 3") for the "score" field of each question.
         5. The JSON must have an array of "questions" and a string "generalFeedback" for the Overall comments. Return ONLY valid JSON.`;
 
         const response = await ai.models.generateContent({
@@ -750,41 +756,7 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
               </p>
             </div>
 
-            {generalFeedback && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-emerald-50 border-2 border-emerald-100 rounded-[2rem] p-8 space-y-4 shadow-sm"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="bg-emerald-500 text-white p-2 rounded-xl">
-                      <Send size={18} />
-                    </div>
-                    <h4 className="text-sm font-black text-emerald-800 uppercase tracking-widest">Overall comments</h4>
-                  </div>
-                  {readOnly && (
-                    <div className="bg-white px-4 py-2 rounded-2xl border border-emerald-100 flex items-center gap-2">
-                       <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Score</span>
-                       <span className="text-lg font-black text-emerald-600">
-                          {Math.round(Object.values(validationFeedback as any).reduce<number>((acc, f: any) => {
-                             const p = f.score?.toString().split(/\s*(?:\/|of)\s*/i);
-                             return acc + (p?.[0] ? parseFloat(p[0]) : 0);
-                          }, 0))} / {
-                            Object.values(validationFeedback as any).reduce<number>((acc, f: any) => {
-                              const p = f.score?.toString().split(/\s*(?:\/|of)\s*/i);
-                              return acc + (p?.[1] ? parseFloat(p[1]) : 1);
-                           }, 0)
-                          }
-                       </span>
-                    </div>
-                  )}
-                </div>
-                <p className="text-sm font-bold text-gray-700 leading-relaxed italic">
-                  "{generalFeedback}"
-                </p>
-              </motion.div>
-            )}
+
             {Object.keys(questionsByPage).sort((a, b) => parseInt(a) - parseInt(b)).map(pageStr => {
               const pageNum = parseInt(pageStr);
               return (
@@ -1079,6 +1051,42 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
                 <p className="text-gray-400 font-black text-xs uppercase tracking-widest">No interactive questions found for this task.</p>
               </div>
             )}
+            {generalFeedback && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-emerald-50 border-2 border-emerald-100 rounded-[2rem] p-8 space-y-4 shadow-sm"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-emerald-500 text-white p-2 rounded-xl">
+                      <Send size={18} />
+                    </div>
+                    <h4 className="text-sm font-black text-emerald-800 uppercase tracking-widest">Overall comments</h4>
+                  </div>
+                  {readOnly && (
+                    <div className="bg-white px-4 py-2 rounded-2xl border border-emerald-100 flex items-center gap-2">
+                       <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Score</span>
+                       <span className="text-lg font-black text-emerald-600">
+                          {Math.round(Object.values(validationFeedback as any).reduce<number>((acc, f: any) => {
+                             const p = f.score?.toString().split(/\s*(?:\/|of)\s*/i);
+                             return acc + (p?.[0] ? parseFloat(p[0]) : 0);
+                          }, 0))} / {
+                            Object.values(validationFeedback as any).reduce<number>((acc, f: any) => {
+                              const p = f.score?.toString().split(/\s*(?:\/|of)\s*/i);
+                              return acc + (p?.[1] ? parseFloat(p[1]) : 1);
+                           }, 0)
+                          }
+                       </span>
+                    </div>
+                  )}
+                </div>
+                <p className="text-sm font-bold text-gray-700 leading-relaxed italic">
+                  "{generalFeedback}"
+                </p>
+              </motion.div>
+            )}
+
           </div>
         </div>
       </main>

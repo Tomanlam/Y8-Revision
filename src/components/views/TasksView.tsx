@@ -8,7 +8,7 @@ import { db } from '../../firebase';
 import { doc, setDoc } from 'firebase/firestore';
 
 import { Task, TaskSubmission, Unit } from '../../types';
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY as string });
 
@@ -134,6 +134,146 @@ const TasksView = ({
   onDeleteSubmission,
   onWipeCleanSlate
 }: TasksViewProps) => {
+  const [batchGradingTask, setBatchGradingTask] = React.useState<string | null>(null);
+
+  const doBatchGrade = async (task: Task, submissions: TaskSubmission[]) => {
+    setBatchGradingTask(task.id);
+    const ungraded = submissions.filter(s => !s.feedback);
+    
+    for (let i = 0; i < ungraded.length; i++) {
+      const sub = ungraded[i];
+      try {
+        const markscheme = task.markschemeContent || "No markscheme provided.";
+        const responses = sub.responses || {};
+        
+        const formattedResponses = Object.entries(responses)
+          .map(([id, req]) => {
+            let textReq = req;
+            if (typeof req === 'string' && req.trim() === '') textReq = "[NO RESPONSE PROVIDED]";
+            else if (req === undefined || req === null) textReq = "[NO RESPONSE PROVIDED]";
+            else if (Array.isArray(req) && req.length === 0) textReq = "[NO RESPONSE PROVIDED]";
+            else if (typeof req === 'object' && !Array.isArray(req) && Object.keys(req).length === 0) textReq = "[NO RESPONSE PROVIDED]";
+            return `${id}: ${textReq}`;
+          }).join('\n');
+
+        const prompt = `Grade this student submission.\n
+        CRITICAL INSTRUCTION: You must provide specific, detailed feedback for EVERY SINGLE QUESTION. Do NOT generate generic fallback messages like "Detailed feedback provided in report."
+
+        GRADING LOGIC:
+        You MUST strictly grade the student's response against the MARKSCHEME/RUBRIC provided below. Evaluate each question 1-to-1 against this rubric.
+
+        - IF RESPONSE IS "[NO RESPONSE PROVIDED]" or Missing/Empty:
+          * Score: 0 of X (where X is total marks for that question)
+          * Feedback MUST start with exactly: "No response." followed by the correct answer from the rubric.
+        - IF RESPONSE IS INCORRECT:
+          * Score: 0 of X
+          * Feedback MUST start with exactly: "Incorrect." followed by the correct answer and a brief explanation why it is incorrect based on the rubric.
+        - IF RESPONSE IS CORRECT:
+          * Score: Full marks (e.g. X of X)
+          * Feedback MUST start with exactly: "Correct." followed by a brief explanation.
+
+        MARKSCHEME/RUBRIC:
+        ${markscheme}
+
+        STUDENT RESPONSES (Format: QuestionID: Response):
+        ${formattedResponses}
+
+        GRADING PROTOCOL:
+        1. FIRST, check each student response against the markscheme.
+        2. Provide TEACHER'S FEEDBACK for each question using the strict format above. DO NOT use HTML or markdown in the feedback strings.
+        3. LASTLY, generate the OVERALL COMMENTS (generalFeedback field). This MUST be done after grading all questions to accurately assess overall student performance, strengths, and weaknesses in this task based on the evaluated responses.
+        4. Assign a score in "earned of total" format (e.g. "2 of 2", "0.5 of 1", "0 of 3") for the "score" field of each question.
+        5. The JSON must have an array of "questions" and a string "generalFeedback" for the Overall comments. Return ONLY valid JSON.`;
+
+        const response = await ai.models.generateContent({
+          model: "gemini-3.1-flash-lite-preview",
+          contents: prompt,
+          config: {
+            responseMimeType: "application/json",
+            responseSchema: {
+              type: Type.OBJECT,
+              properties: {
+                questions: {
+                  type: Type.ARRAY,
+                  items: {
+                    type: Type.OBJECT,
+                    properties: {
+                      id: { type: Type.STRING },
+                      score: { type: Type.STRING },
+                      feedback: { type: Type.STRING }
+                    }
+                  }
+                },
+                generalFeedback: { type: Type.STRING }
+              }
+            }
+          }
+        });
+
+        if (!response.text) throw new Error("AI returned an empty response.");
+
+        let cleanText = response.text.replace(/\x60\x60\x60json/gi, '').replace(/\x60\x60\x60/g, '').trim();
+        const parsed = JSON.parse(cleanText);
+        const rawFeedbackArray = Array.isArray(parsed.questions) ? parsed.questions : [];
+        const generalResult = parsed.generalFeedback || "";
+        
+        const feedbackResult: Record<string, { score: string, feedback: string }> = {};
+        task.worksheetQuestions?.forEach(q => {
+          const targetId = q.id.trim();
+          const targetIdLower = targetId.toLowerCase();
+          
+          let aiFeedback = rawFeedbackArray.find(f => {
+            if (!f.id) return false;
+            const fIdOrig = String(f.id).trim();
+            const fIdLower = fIdOrig.toLowerCase();
+            return fIdLower === targetIdLower || fIdOrig === targetId || fIdOrig.includes(targetId) || targetId.includes(fIdOrig);
+          });
+          
+          if (!aiFeedback) aiFeedback = { score: "0 of 1", feedback: "Could not evaluate response against markscheme." };
+          feedbackResult[targetId] = { score: String(aiFeedback.score), feedback: String(aiFeedback.feedback) };
+        });
+
+        let earned = 0; let total = 0;
+        Object.values(feedbackResult).forEach(f => {
+          const match = String(f.score).match(/(\d+(?:\.\d+)?)\s*(?:\/|of)\s*(\d+(?:\.\d+)?)/);
+          if (match) { earned += parseFloat(match[1]); total += parseFloat(match[2]); }
+        });
+        
+        const results = {
+          score: earned,
+          total: total || task.worksheetQuestions?.length || 0,
+          feedback: feedbackResult,
+          generalFeedback: generalResult,
+          cheatLogs: sub.results?.cheatLogs,
+        };
+        
+        // update sub locally and in db:
+        const payload = { ...sub, feedback: "Graded", completedAt: sub.completedAt || new Date().toISOString(), results };
+        
+        if (typeof onUpdateTask === 'undefined') {
+          // fallback update db doc directly? Actually, wait, TaskWorksheet uses onComplete which bubbles up.
+        }
+        
+        // Let's just update the submission document.
+        try {
+           const subRef = doc(db, 'submissions', sub.id);
+           await setDoc(subRef, payload, { merge: true });
+        } catch(e) {
+           console.error("Firebase update failed", e);
+        }
+        // mutate state if possible
+        sub.feedback = "Graded";
+        sub.results = results;
+        
+      } catch (err) {
+        console.error("Batch grading failed for ", sub.id, err);
+      }
+    }
+    
+    setBatchGradingTask(null);
+    alert('Batch grading complete for: ' + task.title);
+  };
+
   const [selectedDate, setSelectedDate] = React.useState(new Date());
   const [isCreatorOpen, setIsCreatorOpen] = React.useState(false);
   const [isTestCreatorOpen, setIsTestCreatorOpen] = React.useState(false);
@@ -964,210 +1104,34 @@ Output ONLY the JSON object.`;
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className={`bg-white rounded-[2.5rem] p-10 ${isAdmin ? 'max-w-6xl flex flex-col max-h-[90vh]' : 'max-w-md'} w-full shadow-2xl border-4 border-red-50`}
+              className={`bg-white ${isAdmin ? 'rounded-[3rem] p-6 lg:p-10 shadow-xl border-4 border-red-50 max-w-6xl flex flex-col max-h-[95vh] w-full' : 'rounded-[2.5rem] p-10 max-w-md w-full shadow-2xl border-4 border-red-50'}`}
             >
-              <div className="flex flex-col items-center mb-8">
-                <div className="bg-red-50 w-20 h-20 rounded-3xl flex items-center justify-center text-red-500 shadow-inner mb-4">
-                  <Lock size={40} className="animate-bounce" />
-                </div>
-                <h2 className="text-3xl font-black text-center text-gray-800 uppercase tracking-tight">
-                  {isAdmin ? 'Assessment Controls' : 'Secure Assessment'}
-                </h2>
-              </div>
-              
               {isAdmin ? (
-                <div className="flex flex-col lg:flex-row gap-8 mb-8">
-                  <div className="w-full lg:w-1/3 flex flex-col gap-4 shrink-0">
-                  {/* Title Edit */}
-                  <div className="bg-gray-50 p-6 rounded-3xl border border-gray-100 flex flex-col items-center justify-center gap-3">
-                    <span className="text-[11px] font-black uppercase tracking-widest text-gray-400">Test Title</span>
-                    {isEditingTestTitle ? (
-                       <div className="flex gap-2 w-full">
-                         <input 
-                           type="text"
-                           value={editedTestTitle}
-                           onChange={(e) => setEditedTestTitle(e.target.value)}
-                           className="flex-1 text-center font-bold p-3 rounded-2xl border-2 border-emerald-200 outline-none"
-                           autoFocus
-                         />
-                         <button 
-                           onClick={async () => {
-                             if (onUpdateTask && selectedTaskForPasscode && editedTestTitle.trim()) {
-                               await onUpdateTask(selectedTaskForPasscode.id, { title: editedTestTitle.trim() });
-                               setSelectedTaskForPasscode({...selectedTaskForPasscode, title: editedTestTitle.trim()});
-                               setIsEditingTestTitle(false);
-                             }
-                           }}
-                           className="bg-emerald-500 text-white px-5 rounded-2xl font-bold text-sm shadow-md transition-transform active:scale-95"
-                         >
-                           Save
-                         </button>
-                       </div>
-                     ) : (
-                       <div className="flex items-center gap-4 w-full justify-between group">
-                         <span className="text-2xl font-black text-gray-800 text-center flex-1">{selectedTaskForPasscode.title}</span>
-                         <button 
-                           onClick={() => {
-                             setEditedTestTitle(selectedTaskForPasscode.title);
-                             setIsEditingTestTitle(true);
-                           }}
-                           className="p-3 hover:bg-gray-200 rounded-2xl text-gray-400 hover:text-emerald-500 transition-colors shrink-0 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100"
-                         >
-                           <Edit size={20} />
-                         </button>
-                       </div>
-                     )}
-                  </div>
-
-                  {/* Passcode Edit */}
-                  <div className="bg-red-50 p-6 rounded-3xl border border-red-100 flex flex-col items-center justify-center gap-3">
-                     <span className="text-[11px] font-black uppercase tracking-widest text-red-500">Live Passcode</span>
-                     {isEditingPasscode ? (
-                       <div className="flex gap-2 w-full">
-                         <input 
-                           type="text"
-                           value={editedPasscodeValue}
-                           onChange={(e) => setEditedPasscodeValue(e.target.value.toUpperCase())}
-                           className="flex-1 text-center font-black p-3 rounded-2xl border-2 border-red-200 outline-none uppercase"
-                           autoFocus
-                         />
-                         <button 
-                           onClick={async () => {
-                             if (onUpdateTask && selectedTaskForPasscode) {
-                               await onUpdateTask(selectedTaskForPasscode.id, { passcode: editedPasscodeValue });
-                               setSelectedTaskForPasscode({...selectedTaskForPasscode, passcode: editedPasscodeValue});
-                               setIsEditingPasscode(false);
-                             }
-                           }}
-                           className="bg-red-500 text-white px-5 rounded-2xl font-bold text-sm shadow-md transition-transform active:scale-95"
-                         >
-                           Save
-                         </button>
-                       </div>
-                     ) : (
-                       <div className="flex items-center gap-4 group justify-between w-full">
-                         <span className={`text-4xl font-black text-red-600 tracking-tighter flex-1 text-center transition-all duration-300 ${!showPasscode ? 'blur-md opacity-70 select-none' : 'blur-none opacity-100'}`}>
-                           {selectedTaskForPasscode.passcode}
-                         </span>
-                         <div className="flex items-center gap-2 shrink-0 md:opacity-0 md:group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
-                            <button 
-                              onClick={() => setShowPasscode(!showPasscode)}
-                              className="p-3 hover:bg-red-100 rounded-2xl text-red-500 transition-colors"
-                            >
-                              <Eye size={20} className={showPasscode ? '' : 'opacity-40'} />
-                            </button>
-                            <button 
-                              onClick={() => {
-                                setEditedPasscodeValue(selectedTaskForPasscode.passcode || '');
-                                setIsEditingPasscode(true);
-                              }}
-                              className="p-3 hover:bg-red-100 rounded-2xl text-red-500 transition-colors"
-                            >
-                              <Edit size={20} />
-                            </button>
-                         </div>
-                       </div>
-                     )}
-                  </div>
-
-                  {/* Due Date Edit */}
-                  <div className="bg-gray-50 p-6 rounded-3xl border border-gray-100 flex flex-col items-center justify-center gap-3">
-                    <span className="text-[11px] font-black uppercase tracking-widest text-gray-400">Due Date</span>
-                    {isEditingTestDate ? (
-                       <div className="flex gap-2 w-full">
-                         <input 
-                           type="date"
-                           value={editedTestDate}
-                           onChange={(e) => setEditedTestDate(e.target.value)}
-                           className="flex-1 text-center font-bold p-3 rounded-2xl border-2 border-emerald-200 outline-none"
-                           autoFocus
-                         />
-                         <button 
-                           onClick={async () => {
-                             if (onUpdateTask && selectedTaskForPasscode && editedTestDate) {
-                               await onUpdateTask(selectedTaskForPasscode.id, { dueDate: editedTestDate });
-                               setSelectedTaskForPasscode({...selectedTaskForPasscode, dueDate: editedTestDate});
-                               setIsEditingTestDate(false);
-                             }
-                           }}
-                           className="bg-emerald-500 text-white px-5 rounded-2xl font-bold text-sm shadow-md transition-transform active:scale-95"
-                         >
-                           Save
-                         </button>
-                       </div>
-                     ) : (
-                       <div className="flex items-center gap-4 justify-between w-full group">
-                         <span className="text-2xl font-black text-gray-800 text-center flex-1">
-                           {format(selectedTaskForPasscode.dueDate.includes('T') ? parseISO(selectedTaskForPasscode.dueDate) : new Date(selectedTaskForPasscode.dueDate + 'T00:00:00'), 'MMM d, yyyy')}
-                         </span>
-                         <button 
-                           onClick={() => {
-                             setEditedTestDate(selectedTaskForPasscode.dueDate.split('T')[0]);
-                             setIsEditingTestDate(true);
-                           }}
-                           className="p-3 hover:bg-gray-200 rounded-2xl text-gray-400 hover:text-emerald-500 transition-colors shrink-0 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100"
-                         >
-                           <Edit size={20} />
-                         </button>
-                       </div>
-                     )}
-                  </div>
-                  
-                  {/* Time Limit Edit */}
-                  <div className="bg-gray-50 p-6 rounded-3xl border border-gray-100 flex flex-col items-center justify-center gap-3">
-                    <span className="text-[11px] font-black uppercase tracking-widest text-gray-400">Time Limit</span>
-                    <div className="flex items-center justify-between w-full gap-4">
-                      <button 
-                        onClick={() => {
-                          const newLimit = (selectedTaskForPasscode.timeLimit || 60) - 5;
-                          if (newLimit > 0 && onUpdateTask) {
-                            onUpdateTask(selectedTaskForPasscode.id, { timeLimit: newLimit });
-                            setSelectedTaskForPasscode({...selectedTaskForPasscode, timeLimit: newLimit});
-                          }
-                        }}
-                        className="w-12 h-12 rounded-2xl bg-white border border-gray-200 flex items-center justify-center hover:bg-gray-100 transition-colors text-xl font-bold shrink-0"
-                      >
-                        -
-                      </button>
-                      <span className="text-3xl font-black text-gray-800 w-24 text-center">{selectedTaskForPasscode.timeLimit}m</span>
-                      <button 
-                        onClick={() => {
-                          const newLimit = (selectedTaskForPasscode.timeLimit || 60) + 5;
-                          if (onUpdateTask) {
-                            onUpdateTask(selectedTaskForPasscode.id, { timeLimit: newLimit });
-                            setSelectedTaskForPasscode({...selectedTaskForPasscode, timeLimit: newLimit});
-                          }
-                        }}
-                        className="w-12 h-12 rounded-2xl bg-white border border-gray-200 flex items-center justify-center hover:bg-gray-100 transition-colors text-xl font-bold shrink-0"
-                      >
-                        +
-                      </button>
+                <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-8 shrink-0 pb-6 border-b-2 border-gray-50">
+                  <div className="flex items-center gap-5">
+                    <div className="w-14 h-14 bg-red-50 rounded-[1.5rem] flex items-center justify-center text-red-500 shadow-inner">
+                      <Lock size={28} />
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-black text-gray-800 uppercase tracking-tight">Assessment Controls</h2>
+                      <p className="text-gray-500 font-medium text-sm">Update the test name, passcodes, questions, and markscheme.</p>
                     </div>
                   </div>
-                  </div>
-                  {/* Right Column: JSON Configs */}
-                  <div className="w-full lg:w-2/3 flex flex-col gap-6 min-h-0">
-                    <div className="flex-1 flex flex-col min-h-[300px]">
-                      <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Questions JSON</label>
-                      <textarea 
-                        value={editingTaskQuestionsJson}
-                        onChange={e => setEditingTaskQuestionsJson(e.target.value)}
-                        className="w-full flex-1 p-6 rounded-2xl border-2 border-gray-100 font-mono text-[10px] sm:text-xs leading-relaxed focus:border-red-500 outline-none resize-none custom-scrollbar bg-slate-50/50"
-                        placeholder="[ { id: 'q1', type: 'short-response', ... } ]"
-                      />
-                    </div>
-                    
-                    <div className="flex-1 flex flex-col min-h-[300px]">
-                      <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Markscheme Text/JSON</label>
-                      <textarea 
-                        value={editingTaskMarkscheme}
-                        onChange={e => setEditingTaskMarkscheme(e.target.value)}
-                        className="w-full flex-1 p-6 rounded-2xl border-2 border-gray-100 font-mono text-[10px] sm:text-xs leading-relaxed focus:border-red-500 outline-none resize-none custom-scrollbar bg-slate-50/50"
-                        placeholder="Content that AI will evaluate against"
-                      />
-                    </div>
-                  
-                  <div className="mt-auto">
+                  <div className="flex items-center gap-3 w-full md:w-auto">
+                    <button 
+                      type="button"
+                      onClick={() => {
+                        setIsPasscodeModalOpen(false);
+                        setSelectedTaskForPasscode(null);
+                        setPasscode('');
+                        setPasscodeError(false);
+                        setEditingTaskQuestionsJson('');
+                        setEditingTaskMarkscheme('');
+                      }}
+                      className="flex-1 md:flex-none px-6 py-3 rounded-2xl font-black uppercase tracking-widest text-[10px] text-gray-400 hover:bg-gray-50 border-2 border-transparent transition-colors shadow-sm active:scale-95"
+                    >
+                      Discard
+                    </button>
                     <button 
                       onClick={async () => {
                         if (onUpdateTask && selectedTaskForPasscode) {
@@ -1183,19 +1147,255 @@ Output ONLY the JSON object.`;
                           }
                           await onUpdateTask(selectedTaskForPasscode.id, { 
                             worksheetQuestions: parsedQ,
-                            markschemeContent: editingTaskMarkscheme
+                            markschemeContent: editingTaskMarkscheme || undefined
                           });
                           setSelectedTaskForPasscode({...selectedTaskForPasscode, worksheetQuestions: parsedQ, markschemeContent: editingTaskMarkscheme});
                           alert("Content Updated!");
+                          
+                          setIsPasscodeModalOpen(false);
+                          setSelectedTaskForPasscode(null);
+                          setEditingTaskQuestionsJson('');
+                          setEditingTaskMarkscheme('');
                         }
                       }}
-                      className="w-full bg-emerald-500 text-white p-4 rounded-2xl font-black tracking-widest uppercase text-xs"
+                      className="flex-1 md:flex-none bg-red-500 hover:bg-red-400 text-white px-8 py-3 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-[0_4px_0_0_#ef4444] active:translate-y-1 active:shadow-none transition-all"
                     >
                       Save Questions & Markscheme
                     </button>
                   </div>
                 </div>
-              </div>
+              ) : (
+                <div className="flex flex-col items-center mb-8">
+                  <div className="bg-red-50 w-20 h-20 rounded-3xl flex items-center justify-center text-red-500 shadow-inner mb-4">
+                    <Lock size={40} className="animate-bounce" />
+                  </div>
+                  <h2 className="text-3xl font-black text-center text-gray-800 uppercase tracking-tight">
+                    Secure Assessment
+                  </h2>
+                </div>
+              )}
+              
+              {isAdmin ? (
+                <>
+                <div className="flex flex-col lg:flex-row gap-6 flex-1 min-h-0 mb-8">
+                  {/* Left Column: Properties */}
+                  <div className="w-full lg:w-1/3 flex flex-col gap-4 shrink-0">
+                  {/* Title Edit */}
+                  <div className="bg-gray-50 p-4 rounded-3xl border border-gray-100 flex flex-col items-center justify-center gap-2">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Test Title</span>
+                    {isEditingTestTitle ? (
+                       <div className="flex gap-2 w-full">
+                         <input 
+                           type="text"
+                           value={editedTestTitle}
+                           onChange={(e) => setEditedTestTitle(e.target.value)}
+                           className="flex-1 text-center font-bold p-2 rounded-xl border-2 border-emerald-200 outline-none text-sm"
+                           autoFocus
+                         />
+                         <button 
+                           onClick={async () => {
+                             if (onUpdateTask && selectedTaskForPasscode && editedTestTitle.trim()) {
+                               await onUpdateTask(selectedTaskForPasscode.id, { title: editedTestTitle.trim() });
+                               setSelectedTaskForPasscode({...selectedTaskForPasscode, title: editedTestTitle.trim()});
+                               setIsEditingTestTitle(false);
+                             }
+                           }}
+                           className="bg-emerald-500 text-white px-4 rounded-xl font-bold text-xs shadow-sm transition-transform active:scale-95"
+                         >
+                           Save
+                         </button>
+                       </div>
+                     ) : (
+                       <div className="flex items-center gap-2 w-full justify-between group">
+                         <span className="text-lg font-black text-gray-800 text-center flex-1 truncate">{selectedTaskForPasscode.title}</span>
+                         <button 
+                           onClick={() => {
+                             setEditedTestTitle(selectedTaskForPasscode.title);
+                             setIsEditingTestTitle(true);
+                           }}
+                           className="p-2 hover:bg-gray-200 rounded-xl text-gray-400 hover:text-emerald-500 transition-colors shrink-0 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100"
+                         >
+                           <Edit size={16} />
+                         </button>
+                       </div>
+                     )}
+                  </div>
+
+                  {/* Passcode Edit */}
+                  <div className="bg-red-50 p-4 rounded-3xl border border-red-100 flex flex-col items-center justify-center gap-2">
+                     <span className="text-[10px] font-black uppercase tracking-widest text-red-500">Live Passcode</span>
+                     {isEditingPasscode ? (
+                       <div className="flex gap-2 w-full">
+                         <input 
+                           type="text"
+                           value={editedPasscodeValue}
+                           onChange={(e) => setEditedPasscodeValue(e.target.value.toUpperCase())}
+                           className="flex-1 text-center font-black p-2 rounded-xl border-2 border-red-200 outline-none uppercase text-sm"
+                           autoFocus
+                         />
+                         <button 
+                           onClick={async () => {
+                             if (onUpdateTask && selectedTaskForPasscode) {
+                               await onUpdateTask(selectedTaskForPasscode.id, { passcode: editedPasscodeValue });
+                               setSelectedTaskForPasscode({...selectedTaskForPasscode, passcode: editedPasscodeValue});
+                               setIsEditingPasscode(false);
+                             }
+                           }}
+                           className="bg-red-500 text-white px-4 rounded-xl font-bold text-xs shadow-sm transition-transform active:scale-95"
+                         >
+                           Save
+                         </button>
+                       </div>
+                     ) : (
+                       <div className="flex items-center gap-2 group justify-between w-full">
+                         <span className={`text-2xl font-black text-red-600 tracking-tighter flex-1 text-center transition-all duration-300 ${!showPasscode ? 'blur-md opacity-70 select-none' : 'blur-none opacity-100'}`}>
+                           {selectedTaskForPasscode.passcode}
+                         </span>
+                         <div className="flex items-center gap-1 shrink-0 md:opacity-0 md:group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                            <button 
+                              onClick={() => setShowPasscode(!showPasscode)}
+                              className="p-2 hover:bg-red-100 rounded-xl text-red-500 transition-colors"
+                            >
+                              <Eye size={16} className={showPasscode ? '' : 'opacity-40'} />
+                            </button>
+                            <button 
+                              onClick={() => {
+                                setEditedPasscodeValue(selectedTaskForPasscode.passcode || '');
+                                setIsEditingPasscode(true);
+                              }}
+                              className="p-2 hover:bg-red-100 rounded-xl text-red-500 transition-colors"
+                            >
+                              <Edit size={16} />
+                            </button>
+                         </div>
+                       </div>
+                     )}
+                  </div>
+
+                  {/* Due Date Edit */}
+                  <div className="bg-gray-50 p-4 rounded-3xl border border-gray-100 flex flex-col items-center justify-center gap-2">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Due Date</span>
+                    {isEditingTestDate ? (
+                       <div className="flex gap-2 w-full">
+                         <input 
+                           type="date"
+                           value={editedTestDate}
+                           onChange={(e) => setEditedTestDate(e.target.value)}
+                           className="flex-1 text-center font-bold p-2 rounded-xl border-2 border-emerald-200 outline-none text-sm"
+                           autoFocus
+                         />
+                         <button 
+                           onClick={async () => {
+                             if (onUpdateTask && selectedTaskForPasscode && editedTestDate) {
+                               await onUpdateTask(selectedTaskForPasscode.id, { dueDate: editedTestDate });
+                               setSelectedTaskForPasscode({...selectedTaskForPasscode, dueDate: editedTestDate});
+                               setIsEditingTestDate(false);
+                             }
+                           }}
+                           className="bg-emerald-500 text-white px-4 rounded-xl font-bold text-xs shadow-sm transition-transform active:scale-95"
+                         >
+                           Save
+                         </button>
+                       </div>
+                     ) : (
+                       <div className="flex items-center gap-2 justify-between w-full group">
+                         <span className="text-lg font-black text-gray-800 text-center flex-1">
+                           {format(selectedTaskForPasscode.dueDate.includes('T') ? parseISO(selectedTaskForPasscode.dueDate) : new Date(selectedTaskForPasscode.dueDate + 'T00:00:00'), 'MMM d, yyyy')}
+                         </span>
+                         <button 
+                           onClick={() => {
+                             setEditedTestDate(selectedTaskForPasscode.dueDate.split('T')[0]);
+                             setIsEditingTestDate(true);
+                           }}
+                           className="p-2 hover:bg-gray-200 rounded-xl text-gray-400 hover:text-emerald-500 transition-colors shrink-0 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100"
+                         >
+                           <Edit size={16} />
+                         </button>
+                       </div>
+                     )}
+                  </div>
+                  
+                  {/* Time Limit Edit */}
+                  <div className="bg-gray-50 p-4 rounded-3xl border border-gray-100 flex flex-col items-center justify-center gap-2 mb-auto">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Time Limit</span>
+                    <div className="flex items-center justify-center w-full gap-4">
+                      <button 
+                        onClick={() => {
+                          const newLimit = (selectedTaskForPasscode.timeLimit || 60) - 5;
+                          if (newLimit > 0 && onUpdateTask) {
+                            onUpdateTask(selectedTaskForPasscode.id, { timeLimit: newLimit });
+                            setSelectedTaskForPasscode({...selectedTaskForPasscode, timeLimit: newLimit});
+                          }
+                        }}
+                        className="w-10 h-10 rounded-xl bg-white border border-gray-200 flex items-center justify-center hover:bg-gray-100 transition-colors text-lg font-bold shrink-0 shadow-sm active:scale-95"
+                      >
+                        -
+                      </button>
+                      <span className="text-2xl font-black text-gray-800 w-16 text-center">{selectedTaskForPasscode.timeLimit}m</span>
+                      <button 
+                        onClick={() => {
+                          const newLimit = (selectedTaskForPasscode.timeLimit || 60) + 5;
+                          if (onUpdateTask) {
+                            onUpdateTask(selectedTaskForPasscode.id, { timeLimit: newLimit });
+                            setSelectedTaskForPasscode({...selectedTaskForPasscode, timeLimit: newLimit});
+                          }
+                        }}
+                        className="w-10 h-10 rounded-xl bg-white border border-gray-200 flex items-center justify-center hover:bg-gray-100 transition-colors text-lg font-bold shrink-0 shadow-sm active:scale-95"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                  
+                  </div>
+                  {/* Right Column: JSON Configs */}
+                  <div className="w-full lg:w-2/3 flex flex-col md:flex-row gap-6 min-h-0">
+                    <div className="flex-1 flex flex-col h-64 md:h-[400px]">
+                      <div className="flex justify-between items-center mb-2">
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Questions JSON</label>
+                        <button 
+                          onClick={() => {
+                             navigator.clipboard.writeText(`Generate a balanced set of 10 questions in JSON format. include MCQ, Short Response, and Table types. use IDs like "test_${Date.now()}_q1".\n1. "mcq" (requires "options": array of strings)\n2. "short-response"\n3. "table" (requires "tableData": 2D array of strings. Use "" for cells where user input is required, and pre-fill other cells with headers or data.)\n4. "tick-cross" (binary selection of ✓ or ✕)\n5. "reorder" (requires "items": array of strings in random initial order)\nOutput a STRICT JSON array.`);
+                             alert('Prompt Copied!');
+                          }}
+                          className="flex items-center gap-1 text-[9px] font-black uppercase text-emerald-500 hover:bg-emerald-50 px-2 py-1 rounded-md transition-colors"
+                        >
+                          <Copy size={12} /> Prompt
+                        </button>
+                      </div>
+                      <textarea 
+                        value={editingTaskQuestionsJson}
+                        onChange={e => setEditingTaskQuestionsJson(e.target.value)}
+                        className="w-full flex-1 p-4 rounded-2xl border-2 border-gray-100 font-mono text-[10px] leading-relaxed focus:border-red-500 outline-none resize-none custom-scrollbar bg-slate-50/50 shadow-inner"
+                        placeholder="[ { id: 'q1', type: 'short-response', ... } ]"
+                      />
+                    </div>
+                    
+                    <div className="flex-1 flex flex-col h-64 md:h-[400px]">
+                      <div className="flex justify-between items-center mb-2">
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Markscheme</label>
+                        <button 
+                          onClick={() => {
+                             navigator.clipboard.writeText(`Generate a markscheme for the provided questions. It should contain detailed criteria for each question to guide the grading process.`);
+                             alert('Prompt Copied!');
+                          }}
+                          className="flex items-center gap-1 text-[9px] font-black uppercase text-emerald-500 hover:bg-emerald-50 px-2 py-1 rounded-md transition-colors"
+                        >
+                          <Copy size={12} /> Prompt
+                        </button>
+                      </div>
+                      <textarea 
+                        value={editingTaskMarkscheme}
+                        onChange={e => setEditingTaskMarkscheme(e.target.value)}
+                        className="w-full flex-1 p-4 rounded-2xl border-2 border-gray-100 font-mono text-[10px] leading-relaxed focus:border-red-500 outline-none resize-none custom-scrollbar bg-slate-50/50 shadow-inner"
+                        placeholder="Content that AI will evaluate against"
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                
+              </>
               ) : (
                 <p className="text-gray-500 text-center text-sm font-bold mb-8 px-4">
                   This assessment is locked. Please enter the passcode provided by your instructor to begin.
@@ -1545,98 +1745,126 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
         <motion.div 
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          className="bg-white rounded-[3rem] p-6 md:p-12 shadow-xl border-2 border-emerald-100 max-w-6xl w-full mx-auto mb-12 fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 max-h-[90vh] overflow-y-auto flex flex-col"
+          className="bg-white rounded-[3rem] p-6 lg:p-10 shadow-xl border-4 border-emerald-50 max-w-6xl w-full mx-auto mb-12 fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 max-h-[95vh] overflow-y-auto flex flex-col"
         >
-          <div className="flex items-center gap-6 mb-8 shrink-0">
-            <div className="w-16 h-16 bg-emerald-50 rounded-[2rem] flex items-center justify-center text-emerald-500 shadow-inner">
-              <Plus size={32} />
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-8 shrink-0 pb-6 border-b-2 border-gray-50">
+            <div className="flex items-center gap-5">
+              <div className="w-14 h-14 bg-emerald-50 rounded-[1.5rem] flex items-center justify-center text-emerald-500 shadow-inner">
+                <Plus size={28} />
+              </div>
+              <div>
+                <h2 className="text-2xl font-black text-gray-800 uppercase tracking-tight">Edit Task Details</h2>
+                <p className="text-gray-500 font-medium text-sm">Update the task name, dates, questions, and markscheme.</p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-3xl font-black text-gray-800 uppercase tracking-tight">Edit Task Details</h2>
-              <p className="text-gray-500 font-medium">Update the task name, dates, questions, and markscheme.</p>
+            
+            <div className="flex items-center gap-3 w-full md:w-auto">
+              <button 
+                type="button"
+                onClick={() => {
+                  setEditingTask(null);
+                  setEditingTaskQuestionsJson('');
+                  setEditingTaskMarkscheme('');
+                }}
+                className="flex-1 md:flex-none px-6 py-3 rounded-2xl font-black uppercase tracking-widest text-[10px] text-gray-400 hover:bg-gray-50 border-2 border-transparent transition-colors shadow-sm active:scale-95"
+              >
+                Discard
+              </button>
+              <button 
+                onClick={async () => {
+                 if (onUpdateTask) {
+                   let parsedQ = editingTask.worksheetQuestions;
+                   try {
+                     if (editingTaskQuestionsJson.trim()) {
+                       parsedQ = JSON.parse(editingTaskQuestionsJson);
+                     } else {
+                       parsedQ = [];
+                     }
+                   } catch(e) { 
+                     alert("Invalid JSON for questions. Continuing without modifying questions block."); 
+                   }
+                   await onUpdateTask(editingTask.id, { 
+                     title: editingTask.title, 
+                     dueDate: editingTask.dueDate,
+                     worksheetQuestions: parsedQ,
+                     markschemeContent: editingTaskMarkscheme || undefined
+                   });
+                 }
+                 setEditingTask(null);
+                 setEditingTaskQuestionsJson('');
+                 setEditingTaskMarkscheme('');
+                }}
+                className="flex-1 md:flex-none bg-emerald-500 hover:bg-emerald-400 text-white px-8 py-3 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-[0_4px_0_0_#059669] active:translate-y-1 active:shadow-none transition-all"
+              >
+                Save
+              </button>
             </div>
           </div>
           
-          <div className="flex flex-col lg:flex-row gap-12 flex-1 min-h-0">
+          <div className="flex flex-col lg:flex-row gap-8 flex-1 min-h-0">
             {/* Left Column: Properties */}
-            <div className="w-full lg:w-1/3 space-y-6 flex flex-col justify-between shrink-0">
-              <div className="space-y-6">
-                <div className="space-y-4">
-                  <label className="block text-xs font-black text-gray-400 uppercase tracking-widest">Task Name</label>
-                  <input 
-                    type="text" 
-                    value={editingTask.title}
-                    onChange={e => setEditingTask({...editingTask, title: e.target.value})}
-                    className="w-full p-4 rounded-2xl border-2 border-gray-100 font-bold focus:border-emerald-500 outline-none text-xl"
-                  />
-                </div>
-                
-                <div className="space-y-4">
-                  <label className="block text-xs font-black text-gray-400 uppercase tracking-widest">Due Date</label>
-                  <input 
-                    type="date" 
-                    value={editingTask.dueDate.split('T')[0]}
-                    onChange={e => setEditingTask({...editingTask, dueDate: e.target.value})}
-                    className="w-full p-4 rounded-2xl border-2 border-gray-100 font-bold outline-none focus:border-emerald-500"
-                  />
-                </div>
+            <div className="w-full lg:w-1/3 flex flex-col gap-6 shrink-0">
+              <div className="bg-gray-50 p-6 rounded-3xl border border-gray-100 flex flex-col justify-center gap-3">
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest">Task Name</label>
+                <input 
+                  type="text" 
+                  value={editingTask.title}
+                  onChange={e => setEditingTask({...editingTask, title: e.target.value})}
+                  className="w-full p-4 rounded-2xl border-2 border-white font-bold bg-white focus:border-emerald-500 outline-none text-base shadow-sm"
+                />
               </div>
-
-              <div className="pt-8 flex flex-col sm:flex-row gap-4 mt-auto">
-                <button 
-                  type="button"
-                  onClick={() => setEditingTask(null)}
-                  className="flex-1 px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-xs text-gray-400 hover:bg-gray-50 border-2 border-transparent transition-colors"
-                >
-                  Discard
-                </button>
-                <button 
-                  onClick={async () => {
-                   if (onUpdateTask) {
-                     let parsedQ = editingTask.worksheetQuestions;
-                     try {
-                       if (editingTaskQuestionsJson.trim()) {
-                         parsedQ = JSON.parse(editingTaskQuestionsJson);
-                       } else {
-                         parsedQ = [];
-                       }
-                     } catch(e) { 
-                       alert("Invalid JSON for questions. Continuing without modifying questions block."); 
-                     }
-                     await onUpdateTask(editingTask.id, { 
-                       title: editingTask.title, 
-                       dueDate: editingTask.dueDate,
-                       worksheetQuestions: parsedQ,
-                       markschemeContent: editingTaskMarkscheme || undefined
-                     });
-                   }
-                   setEditingTask(null);
-                  }}
-                  className="flex-1 bg-emerald-500 text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest shadow-[0_6px_0_0_#059669] active:translate-y-1 active:shadow-none transition-all"
-                >
-                  Save Changes
-                </button>
+              
+              <div className="bg-gray-50 p-6 rounded-3xl border border-gray-100 flex flex-col justify-center gap-3">
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest">Due Date</label>
+                <input 
+                  type="date" 
+                  value={editingTask.dueDate.split('T')[0]}
+                  onChange={e => setEditingTask({...editingTask, dueDate: e.target.value})}
+                  className="w-full p-4 rounded-2xl border-2 border-white bg-white font-bold outline-none focus:border-emerald-500 shadow-sm"
+                />
               </div>
             </div>
 
             {/* Right Column: JSON Configs */}
-            <div className="w-full lg:w-2/3 flex flex-col gap-6 min-h-0">
-              <div className="flex-1 flex flex-col min-h-[300px]">
-                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Questions JSON</label>
+            <div className="w-full lg:w-2/3 flex flex-col md:flex-row gap-6 min-h-0">
+              <div className="flex-1 flex flex-col h-64 md:h-[400px]">
+                <div className="flex justify-between items-center mb-2">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Questions JSON</label>
+                  <button 
+                    onClick={() => {
+                       navigator.clipboard.writeText(`Generate a balanced set of 10 questions in JSON format. include MCQ, Short Response, and Table types. use IDs like "test_${Date.now()}_q1".\n1. "mcq" (requires "options": array of strings)\n2. "short-response"\n3. "table" (requires "tableData": 2D array of strings. Use "" for cells where user input is required, and pre-fill other cells with headers or data.)\n4. "tick-cross" (binary selection of ✓ or ✕)\n5. "reorder" (requires "items": array of strings in random initial order)\nOutput a STRICT JSON array.`);
+                       alert('Prompt Copied!');
+                    }}
+                    className="flex items-center gap-1 text-[9px] font-black uppercase text-emerald-500 hover:bg-emerald-50 px-2 py-1 rounded-md transition-colors"
+                  >
+                    <Copy size={12} /> Prompt
+                  </button>
+                </div>
                 <textarea 
                   value={editingTaskQuestionsJson}
                   onChange={e => setEditingTaskQuestionsJson(e.target.value)}
-                  className="w-full flex-1 p-6 rounded-2xl border-2 border-gray-100 font-mono text-[10px] sm:text-xs leading-relaxed focus:border-emerald-500 outline-none resize-none custom-scrollbar bg-slate-50/50"
+                  className="w-full flex-1 p-5 rounded-2xl border-2 border-gray-100 font-mono text-[10px] leading-relaxed focus:border-emerald-500 outline-none resize-none custom-scrollbar bg-slate-50/50 shadow-inner"
                   placeholder="[ { id: 'q1', type: 'short-response', ... } ]"
                 />
               </div>
               
-              <div className="flex-1 flex flex-col min-h-[300px]">
-                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Markscheme Text/JSON</label>
+              <div className="flex-1 flex flex-col h-64 md:h-[400px]">
+                <div className="flex justify-between items-center mb-2">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Markscheme Text/JSON</label>
+                  <button 
+                    onClick={() => {
+                       navigator.clipboard.writeText(`Generate a markscheme for the provided questions. It should contain detailed criteria for each question to guide the grading process.`);
+                       alert('Prompt Copied!');
+                    }}
+                    className="flex items-center gap-1 text-[9px] font-black uppercase text-emerald-500 hover:bg-emerald-50 px-2 py-1 rounded-md transition-colors"
+                  >
+                    <Copy size={12} /> Prompt
+                  </button>
+                </div>
                 <textarea 
                   value={editingTaskMarkscheme}
                   onChange={e => setEditingTaskMarkscheme(e.target.value)}
-                  className="w-full flex-1 p-6 rounded-2xl border-2 border-gray-100 font-mono text-[10px] sm:text-xs leading-relaxed focus:border-emerald-500 outline-none resize-none custom-scrollbar bg-slate-50/50"
+                  className="w-full flex-1 p-5 rounded-2xl border-2 border-gray-100 font-mono text-[10px] leading-relaxed focus:border-emerald-500 outline-none resize-none custom-scrollbar bg-slate-50/50 shadow-inner"
                   placeholder="Content that AI will evaluate against"
                 />
               </div>
@@ -1723,6 +1951,19 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
                          >
                            <Download size={10} /> Graded Reports
                          </button>
+                        {ungradedCount > 0 && typeof doBatchGrade === 'function' && (
+                          <button
+                            onClick={() => doBatchGrade(task, filteredSubs)}
+                            disabled={batchGradingTask !== null}
+                            className={`text-[9px] uppercase font-black tracking-widest ${batchGradingTask === task.id ? 'text-orange-600 bg-orange-50/50' : 'text-purple-600 bg-purple-50/50 border-purple-100 hover:bg-purple-100'} px-3 py-1.5 rounded-lg transition-all flex items-center gap-2 border`}
+                          >
+                            {batchGradingTask === task.id ? (
+                              <><div className="w-3 h-3 border-2 border-orange-500/30 border-t-orange-500 rounded-full animate-spin" /> Grading...</>
+                            ) : (
+                              <><Target size={10} /> Batch Grade</>
+                            )}
+                          </button>
+                        )}
                        </div>
                        <div className="bg-emerald-50 border-2 border-emerald-100 px-4 py-2 rounded-2xl text-center">
                          <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Total</p>
