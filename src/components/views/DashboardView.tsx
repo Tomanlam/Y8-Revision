@@ -846,7 +846,7 @@ const DashboardView: React.FC<DashboardViewProps> = (props) => {
                                   <div className="space-y-2">
                                     <div className="flex justify-between items-center">
                                       <span className="text-[10px] font-bold text-gray-400 uppercase">Quiz</span>
-                                      <span className="text-xs font-black text-emerald-600">{unitProgress.attemptedQuestions.length} / {unit.questions.length}</span>
+                                      <span className="text-xs font-black text-emerald-600">{unitProgress.attemptedQuestions.length} of {unit.questions.length}</span>
                                     </div>
                                     <div className="h-1.5 bg-white rounded-full overflow-hidden border">
                                       <div 
@@ -912,7 +912,7 @@ const DashboardView: React.FC<DashboardViewProps> = (props) => {
                                   (record.score / record.totalQuestions) >= 0.5 ? 'text-orange-500' :
                                   'text-red-500'
                                 }`}>
-                                  {record.score} / {record.totalQuestions}
+                                  {record.score} of {record.totalQuestions}
                                 </span>
                                 <div className="w-24 h-1.5 bg-gray-100 rounded-full mt-1 overflow-hidden">
                                   <div 

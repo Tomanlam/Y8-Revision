@@ -402,25 +402,24 @@ const TaskTestView: React.FC<TaskTestViewProps> = ({
         
         const prompt = `Grade this student submission for the assessment "${task.title}".
         
-        CRITICAL INSTRUCTION: You must provide a specific teacher's feedback for EVERY SINGLE QUESTION listed.
+        CRITICAL INSTRUCTION: You must provide specific feedback for EVERY SINGLE QUESTION listed.
         
         GRADING LOGIC:
+        You MUST strictly grade the student's response against the MARKSCHEME/RUBRIC provided below. Do not output generic messages like "Detailed feedback provided in report."
+        
         - IF RESPONSE IS MISSING (empty string or whitespace): 
           * Score: 0 of Total
-          * Feedback: Must start with "Student did not attempt this question." then provide the correct answer and a full explanation of the scientific concept.
-        - IF RESPONSE IS INCORRECT (scientific error or incomplete): 
-          * Score: Partial or 0
-          * Feedback: Must start with "Incorrect." or "Partially correct." then explain exactly why the student's reasoning was wrong and state the correct answer with justification.
+          * Feedback: Must start with "No response. " then provide the correct answer according to the rubric.
+        - IF RESPONSE IS INCORRECT (error or incomplete): 
+          * Score: Partial or 0 of Total
+          * Feedback: Must start with "Incorrect. " then provide the correct answer and a brief explanation according to the rubric.
         - IF RESPONSE IS CORRECT: 
-          * Score: Full marks
-          * Feedback: Confirm why the answer is fully correct according to the markscheme.
+          * Score: Full marks (e.g., 1 of 1, 2 of 2)
+          * Feedback: Must start with "Correct. " then provide a brief explanation.
         
         For EACH question:
-        1. Explicitly identify if it's an attempted answer or a skip.
-        2. Reference the provided Markscheme/Rubric directly to justify the score.
-        3. Never use generic phrases like "Response not fully addressed in rubric" or "Requirement met".
-        4. KEEP YOUR FEEDBACK CONCISE and aligned to the rubric/markscheme.
-        5. DO NOT INCLUDE <cite> tags or any HTML in the feedback. Use plain text.
+        1. Evaluate response strictly against the markscheme.
+        2. DO NOT INCLUDE <cite> tags or HTML in the feedback. Use plain text.
 
         MARKSCHEME/RUBRIC:
         ${markscheme}
@@ -429,10 +428,11 @@ const TaskTestView: React.FC<TaskTestViewProps> = ({
         ${Object.entries(responses).map(([id, req]) => `${id}: ${req}`).join('\n')}
         
         GRADING PROTOCOL:
-        1. Evaluate response strictly against markscheme.
-        2. Score in "earned of total" format.
-        3. Case-sensitive matching of QuestionID is mandatory.
-        4. Return ONLY valid JSON.`;
+        1. FIRST grade individual questions strictly against the provided markscheme.
+        2. THEN, based on the student's performance, generate an 'Overall comments' section (generalFeedback field) AT THE END detailing how the student did overall in the test, including their strengths and what could be improved.
+        3. Score in "earned of total" format.
+        4. Case-sensitive matching of QuestionID is mandatory.
+        5. The JSON must have an array of "questions" and a string "generalFeedback" for the Overall comments. Return ONLY valid JSON.`;
 
         const response = await ai.models.generateContent({
           model: "gemini-3.1-flash-lite-preview",
@@ -786,7 +786,7 @@ const TaskTestView: React.FC<TaskTestViewProps> = ({
             {generalFeedback && (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-red-50 border-2 border-red-100 rounded-3xl p-6 space-y-3">
                 <h4 className="text-xs font-black text-red-800 uppercase tracking-widest flex items-center gap-2">
-                  <Eye size={16} /> Teacher's general summary
+                  <Eye size={16} /> Overall comments
                 </h4>
                 <p className="text-sm font-bold text-gray-700 italic">"{generalFeedback}"</p>
               </motion.div>

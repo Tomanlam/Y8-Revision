@@ -70,7 +70,7 @@ const UserStatsView: React.FC<UserStatsViewProps> = ({ units, sessionStats }) =>
                       <GraduationCap size={16} />
                       <span className="text-[10px] font-black uppercase tracking-widest">Vocab Mastered</span>
                     </div>
-                    <p className="text-2xl font-black text-emerald-700">{masteredCount} / {totalVocab}</p>
+                    <p className="text-2xl font-black text-emerald-700">{masteredCount} of {totalVocab}</p>
                     <p className="text-[10px] text-emerald-400 font-bold uppercase">Items</p>
                   </div>
 

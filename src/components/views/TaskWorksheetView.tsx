@@ -286,25 +286,24 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
         
         const prompt = `Grade this student submission for the worksheet "${task.title}".
         
-        CRITICAL INSTRUCTION: You must provide a specific teacher's feedback for EVERY SINGLE QUESTION listed.
+        CRITICAL INSTRUCTION: You must provide specific feedback for EVERY SINGLE QUESTION listed.
         
         GRADING LOGIC:
+        You MUST strictly grade the student's response against the MARKSCHEME/RUBRIC provided below. Do not output generic messages like "Detailed feedback provided in report."
+        
         - IF RESPONSE IS MISSING (empty string or whitespace): 
           * Score: 0 of Total
-          * Feedback: Must start with "Student did not attempt this question." then provide the correct answer and a full explanation of the scientific concept.
-        - IF RESPONSE IS INCORRECT (scientific error or incomplete): 
-          * Score: Partial or 0
-          * Feedback: Must start with "Incorrect." or "Partially correct." then explain exactly why the student's reasoning was wrong and state the correct answer with justification.
+          * Feedback: Must start with "No response. " then provide the correct answer according to the rubric.
+        - IF RESPONSE IS INCORRECT (error or incomplete): 
+          * Score: Partial or 0 of Total
+          * Feedback: Must start with "Incorrect. " then provide the correct answer and a brief explanation according to the rubric.
         - IF RESPONSE IS CORRECT: 
-          * Score: Full marks
-          * Feedback: Confirm why the answer is fully correct according to the markscheme.
+          * Score: Full marks (e.g., 1 of 1, 2 of 2)
+          * Feedback: Must start with "Correct. " then provide a brief explanation.
         
         For EACH question:
-        1. Explicitly identify if it's an attempted answer or a skip.
-        2. Reference the provided Markscheme/Rubric directly to justify the score.
-        3. Never use generic phrases like "Response not fully addressed in rubric" or "Requirement met".
-        4. KEEP YOUR FEEDBACK CONCISE and aligned to the rubric/markscheme.
-        5. DO NOT INCLUDE <cite> tags or any HTML in the feedback. Use plain text.
+        1. Evaluate response strictly against the markscheme.
+        2. DO NOT INCLUDE <cite> tags or HTML in the feedback. Use plain text.
 
         MARKSCHEME/RUBRIC:
         ${markscheme}
@@ -313,12 +312,11 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
         ${Object.entries(responses).map(([id, req]) => `${id}: ${req}`).join('\n')}
         
         GRADING PROTOCOL:
-        1. Evaluate each response strictly.
-        2. Assign a score in "earned of total" format (e.g. "2 of 2", "0.5 of 1", "0 of 3").
-        3. Case-sensitive matching of QuestionID is mandatory.
-        4. Provide a 'generalFeedback' summary at the end.
-        
-        Return ONLY valid JSON.`;
+        1. FIRST grade individual questions strictly against the provided markscheme.
+        2. THEN, based on the student's performance, generate an 'Overall comments' section (generalFeedback field) AT THE END detailing how the student did overall in the worksheet, including their strengths and what could be improved.
+        3. Assign a score in "earned of total" format (e.g. "2 of 2", "0.5 of 1", "0 of 3").
+        4. Case-sensitive matching of QuestionID is mandatory.
+        5. The JSON must have an array of "questions" and a string "generalFeedback" for the Overall comments. Return ONLY valid JSON.`;
 
         const response = await ai.models.generateContent({
           model: "gemini-3.1-flash-lite-preview",
@@ -490,7 +488,7 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
           <div className="hidden md:flex items-center gap-2 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100">
             <CheckCircle2 size={14} className="text-emerald-500" />
             <span className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">
-              {Object.keys(responses).length} / {task.worksheetQuestions?.length || 0} Answered
+              {Object.keys(responses).length} of {task.worksheetQuestions?.length || 0} Answered
             </span>
           </div>
           
@@ -763,7 +761,7 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
                     <div className="bg-emerald-500 text-white p-2 rounded-xl">
                       <Send size={18} />
                     </div>
-                    <h4 className="text-sm font-black text-emerald-800 uppercase tracking-widest">Teacher's Summary</h4>
+                    <h4 className="text-sm font-black text-emerald-800 uppercase tracking-widest">Overall comments</h4>
                   </div>
                   {readOnly && (
                     <div className="bg-white px-4 py-2 rounded-2xl border border-emerald-100 flex items-center gap-2">

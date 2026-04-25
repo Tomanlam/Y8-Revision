@@ -184,7 +184,7 @@ const VocabView: React.FC<VocabViewProps> = ({ unit: selectedUnit, onBack, sessi
             <div className="text-right mr-2">
               <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Progress</p>
               <p className="text-sm font-black text-emerald-500">
-                {masteredIndices.length} / {selectedUnit?.vocab.length}
+                {masteredIndices.length} of {selectedUnit?.vocab.length}
               </p>
             </div>
             <motion.button

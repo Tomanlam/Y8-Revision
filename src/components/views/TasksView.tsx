@@ -358,7 +358,7 @@ const TasksView = ({
         ['Completion Time:', format(new Date(submission.completedAt), 'PPP p')],
         ['Punctuality:', punctuality],
         ['Security Violations:', securityValue],
-        ['Performance Metric:', submission.results ? `${submission.results.score} / ${submission.results.total} (${Math.round((submission.results.score/submission.results.total)*100)}%)` : 'Awaiting Grading']
+        ['Performance Metric:', submission.results ? `${submission.results.score} of ${submission.results.total} (${Math.round((submission.results.score/submission.results.total)*100)}%)` : 'Awaiting Grading']
       ],
       theme: 'grid',
       didParseCell: (data) => {
@@ -964,7 +964,7 @@ Output ONLY the JSON object.`;
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className={`bg-white rounded-[2.5rem] p-10 ${isAdmin ? 'max-w-4xl' : 'max-w-md'} w-full shadow-2xl border-4 border-red-50`}
+              className={`bg-white rounded-[2.5rem] p-10 ${isAdmin ? 'max-w-6xl flex flex-col max-h-[90vh]' : 'max-w-md'} w-full shadow-2xl border-4 border-red-50`}
             >
               <div className="flex flex-col items-center mb-8">
                 <div className="bg-red-50 w-20 h-20 rounded-3xl flex items-center justify-center text-red-500 shadow-inner mb-4">
@@ -976,7 +976,8 @@ Output ONLY the JSON object.`;
               </div>
               
               {isAdmin ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div className="flex flex-col lg:flex-row gap-8 mb-8">
+                  <div className="w-full lg:w-1/3 flex flex-col gap-4 shrink-0">
                   {/* Title Edit */}
                   <div className="bg-gray-50 p-6 rounded-3xl border border-gray-100 flex flex-col items-center justify-center gap-3">
                     <span className="text-[11px] font-black uppercase tracking-widest text-gray-400">Test Title</span>
@@ -1143,29 +1144,30 @@ Output ONLY the JSON object.`;
                       </button>
                     </div>
                   </div>
-                  <div className="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Questions JSON</label>
+                  </div>
+                  {/* Right Column: JSON Configs */}
+                  <div className="w-full lg:w-2/3 flex flex-col gap-6 min-h-0">
+                    <div className="flex-1 flex flex-col min-h-[300px]">
+                      <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Questions JSON</label>
                       <textarea 
                         value={editingTaskQuestionsJson}
                         onChange={e => setEditingTaskQuestionsJson(e.target.value)}
-                        className="w-full pl-4 p-4 rounded-2xl border-2 border-gray-100 font-mono text-[10px] focus:border-emerald-500 outline-none h-24 resize-y"
+                        className="w-full flex-1 p-6 rounded-2xl border-2 border-gray-100 font-mono text-[10px] sm:text-xs leading-relaxed focus:border-red-500 outline-none resize-none custom-scrollbar bg-slate-50/50"
                         placeholder="[ { id: 'q1', type: 'short-response', ... } ]"
                       />
                     </div>
                     
-                    <div className="space-y-2">
-                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Markscheme Text/JSON</label>
+                    <div className="flex-1 flex flex-col min-h-[300px]">
+                      <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Markscheme Text/JSON</label>
                       <textarea 
                         value={editingTaskMarkscheme}
                         onChange={e => setEditingTaskMarkscheme(e.target.value)}
-                        className="w-full pl-4 p-4 rounded-2xl border-2 border-gray-100 font-mono text-[10px] focus:border-emerald-500 outline-none h-24 resize-y"
+                        className="w-full flex-1 p-6 rounded-2xl border-2 border-gray-100 font-mono text-[10px] sm:text-xs leading-relaxed focus:border-red-500 outline-none resize-none custom-scrollbar bg-slate-50/50"
                         placeholder="Content that AI will evaluate against"
                       />
                     </div>
-                  </div>
                   
-                  <div className="col-span-1 md:col-span-2">
+                  <div className="mt-auto">
                     <button 
                       onClick={async () => {
                         if (onUpdateTask && selectedTaskForPasscode) {
@@ -1193,6 +1195,7 @@ Output ONLY the JSON object.`;
                     </button>
                   </div>
                 </div>
+              </div>
               ) : (
                 <p className="text-gray-500 text-center text-sm font-bold mb-8 px-4">
                   This assessment is locked. Please enter the passcode provided by your instructor to begin.
@@ -1542,95 +1545,101 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
         <motion.div 
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          className="bg-white rounded-[3rem] p-6 md:p-12 shadow-xl border-2 border-emerald-100 max-w-2xl w-full mx-auto mb-12 fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 max-h-[90vh] overflow-y-auto"
+          className="bg-white rounded-[3rem] p-6 md:p-12 shadow-xl border-2 border-emerald-100 max-w-6xl w-full mx-auto mb-12 fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 max-h-[90vh] overflow-y-auto flex flex-col"
         >
-          <div className="flex items-center gap-6 mb-8">
+          <div className="flex items-center gap-6 mb-8 shrink-0">
             <div className="w-16 h-16 bg-emerald-50 rounded-[2rem] flex items-center justify-center text-emerald-500 shadow-inner">
               <Plus size={32} />
             </div>
             <div>
               <h2 className="text-3xl font-black text-gray-800 uppercase tracking-tight">Edit Task Details</h2>
-              <p className="text-gray-500 font-medium">Update the task name or due date instantly.</p>
+              <p className="text-gray-500 font-medium">Update the task name, dates, questions, and markscheme.</p>
             </div>
           </div>
           
-          <div className="space-y-6">
-            <div className="space-y-4">
-              <label className="block text-xs font-black text-gray-400 uppercase tracking-widest">Task Name</label>
-              <input 
-                type="text" 
-                value={editingTask.title}
-                onChange={e => setEditingTask({...editingTask, title: e.target.value})}
-                className="w-full p-4 rounded-2xl border-2 border-gray-100 font-bold focus:border-emerald-500 outline-none text-xl"
-              />
-            </div>
-            
-            <div className="space-y-4">
-              <label className="block text-xs font-black text-gray-400 uppercase tracking-widest">Due Date</label>
-              <input 
-                type="date" 
-                value={editingTask.dueDate.split('T')[0]}
-                onChange={e => setEditingTask({...editingTask, dueDate: e.target.value})}
-                className="w-full p-4 rounded-2xl border-2 border-gray-100 font-bold outline-none focus:border-emerald-500"
-              />
+          <div className="flex flex-col lg:flex-row gap-12 flex-1 min-h-0">
+            {/* Left Column: Properties */}
+            <div className="w-full lg:w-1/3 space-y-6 flex flex-col justify-between shrink-0">
+              <div className="space-y-6">
+                <div className="space-y-4">
+                  <label className="block text-xs font-black text-gray-400 uppercase tracking-widest">Task Name</label>
+                  <input 
+                    type="text" 
+                    value={editingTask.title}
+                    onChange={e => setEditingTask({...editingTask, title: e.target.value})}
+                    className="w-full p-4 rounded-2xl border-2 border-gray-100 font-bold focus:border-emerald-500 outline-none text-xl"
+                  />
+                </div>
+                
+                <div className="space-y-4">
+                  <label className="block text-xs font-black text-gray-400 uppercase tracking-widest">Due Date</label>
+                  <input 
+                    type="date" 
+                    value={editingTask.dueDate.split('T')[0]}
+                    onChange={e => setEditingTask({...editingTask, dueDate: e.target.value})}
+                    className="w-full p-4 rounded-2xl border-2 border-gray-100 font-bold outline-none focus:border-emerald-500"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-8 flex flex-col sm:flex-row gap-4 mt-auto">
+                <button 
+                  type="button"
+                  onClick={() => setEditingTask(null)}
+                  className="flex-1 px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-xs text-gray-400 hover:bg-gray-50 border-2 border-transparent transition-colors"
+                >
+                  Discard
+                </button>
+                <button 
+                  onClick={async () => {
+                   if (onUpdateTask) {
+                     let parsedQ = editingTask.worksheetQuestions;
+                     try {
+                       if (editingTaskQuestionsJson.trim()) {
+                         parsedQ = JSON.parse(editingTaskQuestionsJson);
+                       } else {
+                         parsedQ = [];
+                       }
+                     } catch(e) { 
+                       alert("Invalid JSON for questions. Continuing without modifying questions block."); 
+                     }
+                     await onUpdateTask(editingTask.id, { 
+                       title: editingTask.title, 
+                       dueDate: editingTask.dueDate,
+                       worksheetQuestions: parsedQ,
+                       markschemeContent: editingTaskMarkscheme || undefined
+                     });
+                   }
+                   setEditingTask(null);
+                  }}
+                  className="flex-1 bg-emerald-500 text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest shadow-[0_6px_0_0_#059669] active:translate-y-1 active:shadow-none transition-all"
+                >
+                  Save Changes
+                </button>
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Questions JSON</label>
+            {/* Right Column: JSON Configs */}
+            <div className="w-full lg:w-2/3 flex flex-col gap-6 min-h-0">
+              <div className="flex-1 flex flex-col min-h-[300px]">
+                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Questions JSON</label>
                 <textarea 
                   value={editingTaskQuestionsJson}
                   onChange={e => setEditingTaskQuestionsJson(e.target.value)}
-                  className="w-full pl-4 p-4 rounded-2xl border-2 border-gray-100 font-mono text-[10px] focus:border-emerald-500 outline-none h-24 resize-y"
+                  className="w-full flex-1 p-6 rounded-2xl border-2 border-gray-100 font-mono text-[10px] sm:text-xs leading-relaxed focus:border-emerald-500 outline-none resize-none custom-scrollbar bg-slate-50/50"
                   placeholder="[ { id: 'q1', type: 'short-response', ... } ]"
                 />
               </div>
               
-              <div className="space-y-2">
-                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Markscheme Text/JSON</label>
+              <div className="flex-1 flex flex-col min-h-[300px]">
+                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Markscheme Text/JSON</label>
                 <textarea 
                   value={editingTaskMarkscheme}
                   onChange={e => setEditingTaskMarkscheme(e.target.value)}
-                  className="w-full pl-4 p-4 rounded-2xl border-2 border-gray-100 font-mono text-[10px] focus:border-emerald-500 outline-none h-24 resize-y"
+                  className="w-full flex-1 p-6 rounded-2xl border-2 border-gray-100 font-mono text-[10px] sm:text-xs leading-relaxed focus:border-emerald-500 outline-none resize-none custom-scrollbar bg-slate-50/50"
                   placeholder="Content that AI will evaluate against"
                 />
               </div>
-            </div>
-
-            <div className="flex justify-end gap-4 mt-8">
-              <button 
-                type="button"
-                onClick={() => setEditingTask(null)}
-                className="px-8 py-3 rounded-2xl font-black uppercase tracking-widest text-xs text-gray-400 hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={async () => {
-                  if (onUpdateTask) {
-                    let parsedQ = editingTask.worksheetQuestions;
-                    try {
-                      if (editingTaskQuestionsJson.trim()) {
-                        parsedQ = JSON.parse(editingTaskQuestionsJson);
-                      } else {
-                        parsedQ = [];
-                      }
-                    } catch(e) { 
-                      alert("Invalid JSON for questions. Continuing without modifying questions block."); 
-                    }
-                    await onUpdateTask(editingTask.id, { 
-                      title: editingTask.title, 
-                      dueDate: editingTask.dueDate,
-                      worksheetQuestions: parsedQ,
-                      markschemeContent: editingTaskMarkscheme
-                    });
-                  }
-                  setEditingTask(null);
-                }}
-                className="bg-emerald-500 text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest shadow-[0_6px_0_0_#059669] active:translate-y-1 active:shadow-none transition-all"
-              >
-                Save
-              </button>
             </div>
           </div>
         </motion.div>
@@ -1782,7 +1791,7 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
                                  <div className="bg-gray-50/50 rounded-2xl p-2.5 border border-gray-100">
                                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5 text-center">Score</p>
                                    <p className={`text-base font-black text-center ${isGraded ? 'text-emerald-500' : 'text-gray-400 italic text-xs'}`}>
-                                     {isGraded ? `${sub.results?.score} / ${sub.results?.total}` : 'Pending'}
+                                     {isGraded ? `${sub.results?.score} of ${sub.results?.total}` : 'Pending'}
                                    </p>
                                  </div>
                                  <div className="bg-gray-50/50 rounded-2xl p-2.5 border border-gray-100">
