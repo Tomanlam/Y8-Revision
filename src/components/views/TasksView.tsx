@@ -215,41 +215,19 @@ const TasksView = ({
 
         const questionsJsonString = JSON.stringify(cleanQuestions, null, 2);
 
-        const prompt = `Grade this student submission.\n
-        CRITICAL INSTRUCTION: You must provide specific, detailed feedback for EVERY SINGLE QUESTION. Do NOT generate generic fallback messages like "Detailed feedback provided in report."
-
-        GRADING LOGIC:
-        You MUST strictly grade the student's response against the MARKSCHEME/RUBRIC provided below. Evaluate each question 1-to-1 against this rubric.
-
-        - IF RESPONSE IS "[NO RESPONSE PROVIDED]" or Missing/Empty:
-          * Score: 0 of X (where X is total marks for that question)
-          * Feedback MUST start with exactly: "No response." followed by the correct answer from the rubric.
-        - IF RESPONSE IS INCORRECT:
-          * Score: 0 of X
-          * Feedback MUST start with exactly: "Incorrect." followed by the correct answer and a brief explanation why it is incorrect based on the rubric.
-        - IF RESPONSE IS CORRECT:
-          * Score: Full marks (e.g. X of X)
-          * Feedback MUST start with exactly: "Correct." followed by a brief explanation.
-
-        QUESTIONS JSON:
-        ${questionsJsonString}
-
-        MARKSCHEME/RUBRIC:
-        ${markscheme}
-
-        STUDENT RESPONSES:
-        ${formattedResponses}
-
-        GRADING PROTOCOL:
-        1. FIRST, check each student response against the markscheme for ALL questions. Ignore all page reference in the question JSON and grade student's response from EACH question against the corresponding markscheme rubric.
-        2. Provide TEACHER'S FEEDBACK for each question using the strict format above. DO NOT use HTML or markdown in the feedback strings.
-        3. LASTLY, generate the OVERALL COMMENTS (generalFeedback field). This MUST be done after grading all questions to accurately assess overall student performance, strengths, and weaknesses in this task based on the evaluated responses.
-        4. Assign a score in "earned of total" format (e.g. "2 of 2", "0.5 of 1", "0 of 3") for the "score" field of each question.
-        5. For the "id" field in your JSON output, you MUST return the EXACT identical Question ID as given in the Student Responses (e.g., "gs_q1"). DO NOT modify the Question ID.
-        6. The JSON must have an array of "questions" and a string "generalFeedback" for the Overall comments. Return ONLY valid JSON.`;
+        const prompt = `Perform 1-to-1 check of student response against rubric for ALL questions.
+shorthand logic:
+- [NO RESPONSE PROVIDED]/empty -> "No response." + ref answer | 0 marks
+- Incorrect -> "Incorrect." + ref answer + reason
+- Correct -> "Correct." + reason
+---
+RUBRIC: ${markscheme}
+RESPONSES: ${formattedResponses}
+---
+JSON OUTPUT: { "questions": [{ "id": "string", "score": "X of X", "feedback": "string" }], "generalFeedback": "string" }`;
 
         const response = await ai.models.generateContent({
-          model: "gemini-3-flash-preview",
+          model: "gemini-3.1-flash-lite-preview",
           contents: prompt,
           config: {
             responseMimeType: "application/json",
@@ -293,7 +271,13 @@ const TasksView = ({
           });
           
           if (!aiFeedback) aiFeedback = { score: "0 of 1", feedback: "Could not evaluate response against markscheme." };
-          feedbackResult[targetId] = { score: String(aiFeedback.score), feedback: String(aiFeedback.feedback).replace(/\*\*/g, '') };
+          feedbackResult[targetId] = { 
+            score: String(aiFeedback.score), 
+            feedback: String(aiFeedback.feedback)
+              .replace(/\*\*/g, '')
+              .replace(/Student Response: /gi, '')
+              .replace(/Correct Response: /gi, '')
+          };
         });
 
         let earned = 0; let total = 0;
@@ -847,7 +831,7 @@ const TasksView = ({
                 <Sparkles size={16} className="text-emerald-400" />
                 <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">AI Engine</span>
               </div>
-              <p className="text-2xl font-black text-white tracking-tight">Gemini 3 Flash</p>
+              <p className="text-2xl font-black text-white tracking-tight">Gemini 3.1 Flash Lite</p>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Autonomous Grading v2</p>
             </div>
           </div>

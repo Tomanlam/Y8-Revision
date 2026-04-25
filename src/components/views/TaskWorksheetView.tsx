@@ -90,11 +90,14 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
 
   const [isGradingWorkflow, setIsGradingWorkflow] = useState(false);
   const [gradingPhase, setGradingPhase] = useState('idle');
+  const [gradingProgress, setGradingProgress] = useState(0);
+  const [gradingComplete, setGradingComplete] = useState(false);
   const [extractedRubrics, setExtractedRubrics] = useState<Record<string, string>>({});
   const [rubricMeta, setRubricMeta] = useState<Record<string, { type: string, marks: string }>>({});
   const [currentlyProcessingId, setCurrentlyProcessingId] = useState<string | null>(null);
   const [currentlyProcessingIndex, setCurrentlyProcessingIndex] = useState<number | null>(null);
   const [gradingLogs, setGradingLogs] = useState<string[]>([]);
+  const currentModel = "Gemini 3.1 Flash Lite";
 
   const addLog = (msg: string) => {
     console.log("[GradingLog]", msg);
@@ -135,6 +138,7 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
   };
 
   const rightPaneRef = useRef<HTMLDivElement>(null);
+  const gradingConsoleContentRef = useRef<HTMLDivElement>(null);
   const pdfContainerRef = useRef<HTMLDivElement>(null);
   const pageRefs = useRef<Record<number, HTMLDivElement | null>>({});
 
@@ -329,28 +333,19 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
     }
 
     try {
-      const extractionPrompt = `You are a specialist in parsing educational markschemes.
-      GOAL: Extract the specific grading rubric, correct answer, and marks for EACH question provided below.
-      
-      MARK SCHEME CONTENT:
-      ${markscheme}
-      
-      QUESTIONS TO MAP:
-      ${JSON.stringify(cleanQuestions.map(q => ({ id: q.id, type: q.type, text: q.prompt })), null, 2)}
-      
-      RETURN A JSON OBJECT where keys are the Question IDs and values are objects:
-      {
-        "q_id": {
-          "rubric": "string showing how to grade",
-          "correct_answer": "the actual correct answer",
-          "marks": 1,
-          "explanation": "brief reasoning"
-        }
-      }`;
+      const extractionPrompt = `Extract rubric, correct answer, and marks for each question.
+---
+MARK SCHEME:
+${markscheme}
+---
+QUESTIONS:
+${JSON.stringify(cleanQuestions.map(q => ({ id: q.id, type: q.type, text: q.prompt })))}
+---
+JSON OUTPUT: { "q_id": { "rubric": "...", "correct_answer": "...", "marks": number, "explanation": "..." } }`;
 
       addLog("Sending extraction request to Gemini...");
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "gemini-3.1-flash-lite-preview",
         contents: extractionPrompt,
         config: { responseMimeType: "application/json" }
       });
@@ -436,10 +431,28 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
     let computedTotal = 0;
     let computedEarned = 0;
 
+    const totalQuestions = task.worksheetQuestions?.length || 0;
+    
     for (const q of task.worksheetQuestions || []) {
        setCurrentlyProcessingId(q.id);
        setCurrentlyProcessingIndex(gradingIdx++);
-       addLog(`Grading question ${q.id} (${gradingIdx} of ${task.worksheetQuestions.length})...`);
+       setGradingProgress((gradingIdx / totalQuestions) * 100);
+       
+       // Auto-scroll sync
+       setTimeout(() => {
+         const worksheetEl = document.getElementById(`q-container-${q.id}`);
+         const rubricEl = document.getElementById(`rubric-container-${q.id}`);
+         
+         if (worksheetEl && rightPaneRef.current) {
+           worksheetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+         }
+         
+         if (rubricEl && gradingConsoleContentRef.current) {
+           rubricEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+         }
+       }, 100);
+
+       addLog(`Grading question ${q.id} (${gradingIdx} of ${totalQuestions})...`);
        
        const textReq = getStudentOriginalResponse(q);
        const rubricString = extractedRubrics[q.id] || JSON.stringify({ rubric: "Grade based on general correctness against subject matter.", correct_answer: "Unknown", marks: 1 });
@@ -461,47 +474,25 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
        const strAns = typeof correct_answer === 'object' ? JSON.stringify(correct_answer) : correct_answer;
        const strRubric = typeof specific_rubric === 'object' ? JSON.stringify(specific_rubric) : specific_rubric;
 
-       const prompt = `Grade this student response based on the provided correct answer, explanation, and rubric.
-
-CRITICAL INSTRUCTION: You MUST strictly limit your text feedback to under 150 words.
-
-QUESTION IDENTIFIER: ${q.id}
-QUESTION TYPE: ${q.type}
-
-STUDENT ANSWER:
-${textReq}
-
-CORRECT ANSWER (from markscheme):
-${strAns}
-
-EXPLANATION:
-${typeof explanation === 'object' ? JSON.stringify(explanation) : explanation}
-
-RUBRIC:
-${strRubric}
-
-GRADING LOGIC:
-Compare the student answer to the correct answer. 
-1. If the student answer is empty or "[NO RESPONSE PROVIDED]", start your feedback with "No response." and award 0 marks.
-2. If the student answer is incorrect, start your feedback with "Incorrect." Provide a brief explanation based on the rubric/explanation.
-3. If the student answer is correct or partially correct, start your feedback with "Correct." or "Partially correct." Provide a brief explanation based on the rubric/explanation.
-Note: For "reorder" questions, the correct answer might sometimes be the initial order itself.
-
-RETURN EXACTLY A JSON OBJECT in this format:
-{
-  "earned_marks": number,
-  "total_marks": number,
-  "feedback": "Your brief teacher's feedback here."
-}
-
-Return ONLY valid JSON.`;
+       const prompt = `Grade student response against rubric. Max 100 words feedback.
+logic:
+- empty/[NO RESPONSE PROVIDED] -> "No response." + ref answer | 0 marks
+- incorrect -> "Incorrect." + ref answer + reason
+- correct/partial -> "Correct."/"Partially correct." + reason
+---
+ID: ${q.id} | TYPE: ${q.type}
+REF ANSWER: ${strAns}
+RUBRIC: ${strRubric}
+STUDENT ANSWER: ${textReq}
+---
+JSON OUTPUT: { "earned_marks": float, "total_marks": float, "feedback": "string" }`;
 
        console.log("GRADING PROMPT FOR QUESTION " + q.id + ":\n", prompt);
 
        try {
          addLog(`Requesting grade for ${q.id} from Gemini...`);
          const response = await ai.models.generateContent({
-            model: "gemini-3-flash-preview",
+            model: "gemini-3.1-flash-lite-preview",
             contents: prompt,
             config: {
               responseMimeType: "application/json",
@@ -520,7 +511,10 @@ Return ONLY valid JSON.`;
          
          const formattedParsed = {
            score: `${parsed.earned_marks || 0} of ${parsed.total_marks || total_marks}`,
-           feedback: (parsed.feedback || '').replace(/\*\*/g, '')
+           feedback: (parsed.feedback || '')
+              .replace(/\*\*/g, '')
+              .replace(/Student Response: /gi, '')
+              .replace(/Correct Response: /gi, '')
          };
          currentFeedback[q.id] = formattedParsed;
          setValidationFeedback(prev => ({ ...prev, [q.id]: formattedParsed }));
@@ -551,9 +545,13 @@ Return ONLY valid JSON.`;
     
     // Generate overall feedback
     try {
-      const overallPrompt = `Based on the following grading results for all questions, provide an overall comment on the student's performance, strengths, and weaknesses. Return ONLY a plain text paragraph.\n\nGrading Results:\n${JSON.stringify(currentFeedback, null, 2)}`;
+      const overallPrompt = `Analyze results. Brief overall comment on performance, strengths, weaknesses.
+---
+DATA: ${JSON.stringify(currentFeedback)}
+---
+OUTPUT: Plain text paragraph.`;
       const overallResponse = await ai.models.generateContent({
-         model: "gemini-3-flash-preview",
+         model: "gemini-3.1-flash-lite-preview",
          contents: overallPrompt
       });
       const overallComments = overallResponse.text || "Assessment graded successfully.";
@@ -564,11 +562,15 @@ Return ONLY valid JSON.`;
          await onProgress({ feedback: currentFeedback, generalFeedback: overallComments, score: computedEarned, total: computedTotal });
       }
       setGradingPhase('done');
+      setGradingProgress(100);
+      setGradingComplete(true);
       addLog("All grading completed.");
       onComplete(responses, { feedback: currentFeedback, generalFeedback: overallComments, score: computedEarned, total: computedTotal });
     } catch (e: any) {
       addLog(`Overall feedback FAILED: ${e.message}`);
       setGradingPhase('done');
+      setGradingProgress(100);
+      setGradingComplete(true);
       onComplete(responses, { feedback: currentFeedback, generalFeedback: "Assessment graded generally.", score: computedEarned, total: computedTotal });
     }
   };
@@ -603,90 +605,93 @@ Return ONLY valid JSON.`;
   }, {} as Record<number, Question[]>) || {};
 
   return (
-    <div className="fixed inset-0 bg-white z-[200] flex flex-col overflow-hidden font-sans">
+    <div className="fixed inset-0 bg-gray-50 z-[200] flex flex-col overflow-hidden font-sans">
       {/* Dynamic Header */}
-      <header className="h-16 border-b border-gray-100 px-6 flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-10">
-        <div className="flex items-center gap-4">
+      <header className="h-20 border-b-2 border-gray-100 px-8 flex items-center justify-between bg-white/90 backdrop-blur-xl sticky top-0 z-50">
+        <div className="flex items-center gap-5">
           <button 
             onClick={onBack}
-            className="p-2 hover:bg-gray-50 rounded-xl transition-all text-gray-500"
+            className="p-2.5 hover:bg-gray-100 rounded-2xl transition-all text-gray-400 hover:text-gray-900 active:scale-90"
           >
-            <ChevronLeft size={24} />
+            <ChevronLeft size={28} />
           </button>
-          <div className="h-8 w-px bg-gray-100 mx-2" />
+          <div className="h-10 w-px bg-gray-100 mx-1" />
           <div className="flex flex-col">
-            <h2 className="text-sm font-black text-gray-800 uppercase tracking-tighter truncate max-w-[300px]">
-              {task.title}
-            </h2>
-            <div className="flex items-center gap-2">
-              <span className={`text-[10px] font-black uppercase tracking-widest ${task.type === 'test' ? 'text-red-500' : 'text-emerald-500'}`}>
+            <div className="flex items-center gap-2 mb-0.5">
+              <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest ${task.type === 'test' ? 'bg-red-500 text-white' : 'bg-emerald-500 text-white'}`}>
                 {task.type === 'test' ? 'Secure Assessment' : 'Interactive Worksheet'}
               </span>
-              <span className="text-[10px] text-gray-300">•</span>
-              <span className="text-[10px] font-bold text-gray-400">
-                Page {activePage} of {numPages || '?'}
+              <span className="text-[10px] text-gray-300 font-bold">•</span>
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                Unit {task.unitId || 'General'}
               </span>
-              {timeLeft !== null && (
-                <>
-                  <span className="text-[10px] text-gray-300">•</span>
-                  <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md font-black text-[10px] uppercase tracking-widest border transition-all ${
-                    timeLeft < 300 ? 'bg-red-50 text-red-600 border-red-200 animate-pulse' : 'bg-orange-50 text-orange-600 border-orange-200'
-                  }`}>
-                    <Timer size={12} />
-                    {formatTime(timeLeft)}
-                  </div>
-                </>
-              )}
             </div>
+            <h2 className="text-xl font-black text-gray-900 uppercase tracking-tighter truncate max-w-[400px]">
+              {task.title}
+            </h2>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <button 
-            onClick={() => setShowCalculator(!showCalculator)}
-            className={`p-2 rounded-xl transition-all ${showCalculator ? 'bg-emerald-500 text-white shadow-lg' : 'bg-emerald-50 text-emerald-500 hover:bg-emerald-100'}`}
-            title="Virtual Calculator"
-          >
-            <Calculator size={20} />
-          </button>
-          {readOnly && (
-            <div className="hidden md:flex items-center gap-2 bg-blue-50 px-3 py-1.5 rounded-full border border-blue-100">
-              <span className="text-[10px] font-black text-blue-700 uppercase tracking-widest">
-                Reviewing Submission
-              </span>
-            </div>
-          )}
-          <div className="hidden md:flex items-center gap-2 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100">
-            <CheckCircle2 size={14} className="text-emerald-500" />
-            <span className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">
-              {Object.keys(responses).length} of {task.worksheetQuestions?.length || 0} Answered
-            </span>
+        <div className="flex items-center gap-4">
+          <div className="hidden md:flex items-center gap-6 mr-4 bg-gray-50 px-6 py-2.5 rounded-2xl border border-gray-100">
+             <div className="flex flex-col items-center">
+                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Progress</span>
+                <span className="text-sm font-black text-gray-900 leading-none">
+                  {Object.keys(responses).length}<span className="text-gray-300 mx-0.5">/</span>{task.worksheetQuestions?.length || 0}
+                </span>
+             </div>
+             <div className="w-px h-6 bg-gray-200" />
+             <div className="flex flex-col items-center">
+                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Page</span>
+                <span className="text-sm font-black text-gray-900 leading-none">
+                  {activePage}<span className="text-gray-300 mx-0.5">/</span>{numPages || '?'}
+                </span>
+             </div>
+             {timeLeft !== null && (
+               <>
+                 <div className="w-px h-6 bg-gray-200" />
+                 <div className="flex flex-col items-center">
+                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Time</span>
+                    <span className={`text-sm font-black leading-none ${timeLeft < 300 ? 'text-red-500 animate-pulse' : 'text-orange-500'}`}>
+                      {formatTime(timeLeft)}
+                    </span>
+                 </div>
+               </>
+             )}
           </div>
-          
-        {(isAdmin || (!readOnly && !submitted)) && (
+
           <div className="flex items-center gap-2">
+            <button 
+              onClick={() => setShowCalculator(!showCalculator)}
+              className={`p-3 rounded-2xl transition-all active:scale-95 ${showCalculator ? 'bg-gray-900 text-white shadow-xl rotate-12' : 'bg-white text-gray-400 hover:bg-gray-50 border border-gray-100'}`}
+              title="Virtual Calculator"
+            >
+              <Calculator size={22} />
+            </button>
+            
             {isAdmin && (
-              <>
+              <div className="flex items-center gap-2">
                 <button
                   onClick={() => {
                     setEditingQuestions(JSON.stringify(task.worksheetQuestions || [], null, 2));
                     setShowQuestionsEditor(true);
                   }}
-                  className={`${task.type === 'test' ? 'bg-red-50 text-red-600 border-red-200' : 'bg-purple-50 text-purple-600 border-purple-200'} px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest hover:brightness-95 transition-all shadow-sm active:translate-y-1 block`}
+                  className="bg-white border border-gray-200 text-gray-600 px-4 py-2.5 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:border-emerald-400 hover:text-emerald-500 transition-all shadow-sm active:translate-y-0.5"
                 >
-                  Edit Questions
+                  Questions
                 </button>
                 <button
                   onClick={() => {
                     setEditingMarkscheme(markscheme);
                     setShowMarkschemeEditor(true);
                   }}
-                  className={`${task.type === 'test' ? 'bg-red-50 text-red-600 border-red-200' : 'bg-blue-50 text-blue-600 border-blue-200'} px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest hover:brightness-95 transition-all shadow-sm active:translate-y-1 block`}
+                  className="bg-white border border-gray-200 text-gray-600 px-4 py-2.5 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:border-blue-400 hover:text-blue-500 transition-all shadow-sm active:translate-y-0.5"
                 >
-                  Edit Markscheme
+                  Markscheme
                 </button>
-              </>
+              </div>
             )}
+
             {(!readOnly || isAdmin) && (
               <button
                 disabled={isValidating}
@@ -697,24 +702,24 @@ Return ONLY valid JSON.`;
                     setShowConfirm(true);
                   }
                 }}
-                className={`${task.type === 'test' ? 'bg-red-600 shadow-[0_4px_0_0_#991b1b]' : 'bg-emerald-500 shadow-[0_4px_0_0_#059669]'} text-white px-5 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest active:shadow-none active:translate-y-1 transition-all disabled:opacity-50 disabled:translate-y-0 disabled:shadow-none flex items-center gap-2`}
+                className={`${task.type === 'test' ? 'bg-red-600 shadow-[0_6px_0_0_#991b1b]' : 'bg-emerald-500 shadow-[0_6px_0_0_#059669]'} text-white px-8 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest active:shadow-none active:translate-y-1.5 transition-all disabled:opacity-50 disabled:translate-y-0 disabled:shadow-none flex items-center gap-3`}
               >
                 {isValidating ? (
-                  <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                ) : <Send size={14} />}
-                {isValidating ? 'Grading...' : (isAdmin && readOnly ? 'Finalize Grading' : (task.type === 'test' ? 'Submit Assessment' : 'Submit Worksheet'))}
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : <Send size={16} />}
+                <span>{isValidating ? 'Grading...' : (isAdmin && readOnly ? 'Finalize Grading' : (task.type === 'test' ? 'Submit assessment' : 'Submit worksheet'))}</span>
               </button>
             )}
+
+            {submitted && isAdmin && !readOnly && (
+               <button
+                 onClick={handleEdit}
+                 className="bg-orange-500 text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-[0_6px_0_0_#c2410c] active:shadow-none active:translate-y-1.5 transition-all flex items-center gap-2"
+               >
+                 <Edit size={16} /> Edit
+               </button>
+            )}
           </div>
-        )}
-          {submitted && isAdmin && !readOnly && (
-            <button
-              onClick={handleEdit}
-              className="bg-amber-500 text-white px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-[0_4px_0_0_#d97706] active:shadow-none active:translate-y-1 transition-all flex items-center gap-2"
-            >
-              <Edit size={14} /> Edit as Admin
-            </button>
-          )}
         </div>
       </header>
 
@@ -867,7 +872,7 @@ Return ONLY valid JSON.`;
       {/* Main Split View */}
       <main className="flex-1 flex overflow-hidden bg-gray-50">
         {/* Left Side: PDF Viewer */}
-        <div ref={pdfContainerRef} className={`${isGradingWorkflow ? 'w-[30%]' : 'flex-1'}  overflow-y-auto custom-scrollbar p-8 flex justify-center bg-gray-200/50 transition-all duration-500`}>
+        <div ref={pdfContainerRef} className={`${isGradingWorkflow ? 'w-[30%]' : 'flex-1'}  overflow-y-auto custom-scrollbar p-10 flex justify-center bg-gray-200/40 transition-all duration-700 ease-in-out`}>
           <div className="max-w-4xl w-full">
             <Document
               file={task.pdfUrl || ''}
@@ -876,25 +881,33 @@ Return ONLY valid JSON.`;
               onSourceError={(error) => console.error("PDF Source Error:", error)}
               options={pdfOptions}
               loading={
-                <div className="flex flex-col items-center justify-center py-20 gap-4">
-                  <div className="animate-spin rounded-full h-12 w-12 border-4 border-emerald-500 border-t-transparent shadow-lg"></div>
-                  <p className="font-black text-xs text-emerald-600 uppercase tracking-widest animate-pulse">Loading Source Material...</p>
+                <div className="flex flex-col items-center justify-center py-20 gap-6 bg-white/50 backdrop-blur-sm rounded-[3rem] border-2 border-dashed border-gray-200">
+                  <div className="relative">
+                    <div className="animate-spin rounded-full h-16 w-16 border-4 border-emerald-500 border-t-transparent shadow-xl"></div>
+                    <div className="absolute inset-0 animate-ping rounded-full border-2 border-emerald-500/20"></div>
+                  </div>
+                  <p className="font-black text-xs text-emerald-600 uppercase tracking-[0.3em] animate-pulse">Initializing Assets...</p>
                 </div>
               }
               error={
-                <div className="bg-white p-8 rounded-3xl border-2 border-red-100 text-center">
-                  <AlertCircle className="text-red-500 mx-auto mb-4" size={48} />
-                  <h3 className="font-black text-gray-800 uppercase mb-2">Error Loading PDF</h3>
-                  <p className="text-gray-500 text-sm">Please check your connection or try again later.</p>
+                <div className="bg-white p-12 rounded-[3rem] border-2 border-red-100 text-center shadow-xl">
+                  <div className="bg-red-50 w-20 h-20 rounded-3xl flex items-center justify-center text-red-500 mx-auto mb-6">
+                    <AlertCircle size={40} />
+                  </div>
+                  <h3 className="text-2xl font-black text-gray-900 uppercase mb-2 tracking-tight">Source Error</h3>
+                  <p className="text-gray-500 font-bold max-w-xs mx-auto">The PDF document could not be rendered. Please refresh the page.</p>
                 </div>
               }
             >
               {Array.from(new Array(numPages), (el, index) => (
-                <div 
+                <motion.div 
                   key={`page_${index + 1}`} 
                   data-page-index={index + 1}
                   ref={el => pageRefs.current[index + 1] = el}
-                  className="mb-8 shadow-2xl rounded-sm overflow-hidden bg-white pdf-page-container"
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  className="mb-12 shadow-[0_20px_50px_rgba(0,0,0,0.1)] rounded-xl overflow-hidden bg-white pdf-page-container border border-gray-100"
                 >
                   <Page 
                     pageNumber={index + 1} 
@@ -902,55 +915,68 @@ Return ONLY valid JSON.`;
                     renderTextLayer={false}
                     renderAnnotationLayer={false}
                   />
-                </div>
+                </motion.div>
               ))}
             </Document>
           </div>
         </div>
 
         {/* Right Side: Interactive Worksheet */}
-        <div ref={rightPaneRef} className={`${isGradingWorkflow ? 'w-[35%]' : 'w-[45%]'}  border-l border-gray-200 bg-white overflow-y-auto custom-scrollbar p-8 transition-all duration-500`}>
-          <div className="max-w-xl mx-auto space-y-12 pb-20">
-            <div className="space-y-4 border-b border-gray-100 pb-8">
+        <div ref={rightPaneRef} className={`${isGradingWorkflow ? 'w-[35%]' : 'w-[45%]'}  border-l border-gray-100 bg-white overflow-y-auto custom-scrollbar p-10 transition-all duration-700 ease-in-out`}>
+          <div className="max-w-xl mx-auto space-y-16 pb-32">
+            <header className="space-y-6">
               <div className="flex flex-col">
-                <h3 className="text-3xl font-black text-gray-800 tracking-tight uppercase leading-none">Interactive Worksheet</h3>
-                <span className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em] mt-2">Powered by Gemini 3.1 Flash Lite Preview</span>
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-1 bg-emerald-500 rounded-full" />
+                  <span className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.3em]">Module Entry</span>
+                </div>
+                <h3 className="text-4xl font-black text-gray-900 tracking-tighter uppercase leading-[0.9]">Worksheet Response</h3>
+                <div className="flex items-center gap-2 mt-4">
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Powered By</span>
+                  <span className="px-3 py-1 bg-gray-900 text-white rounded-lg text-[9px] font-black uppercase tracking-widest">{currentModel}</span>
+                </div>
               </div>
-              <p className="text-sm text-gray-500 font-medium leading-relaxed bg-gray-50 p-4 rounded-2xl border-2 border-gray-100/50 italic">
-                Refer to the document on the left and provide your answers below. Your progress is saved automatically.
-              </p>
-            </div>
-
+              <div className="bg-gray-50 p-6 rounded-[2.5rem] border-2 border-gray-100/80 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-3xl -mr-12 -mt-12 transition-transform group-hover:scale-150 duration-700" />
+                <p className="text-sm text-gray-600 font-bold leading-relaxed italic relative z-10">
+                  "Examine the source document provided on the left. Synthesize the information and formulate your responses in the designated interactive zones below."
+                </p>
+              </div>
+            </header>
 
             {Object.keys(questionsByPage).sort((a, b) => parseInt(a) - parseInt(b)).map(pageStr => {
               const pageNum = parseInt(pageStr);
               return (
-                <div key={pageNum} id={`questions-page-${pageNum}`} className="space-y-4 scroll-mt-24">
-                  <div className="flex items-center gap-3">
-                    <div className="h-px flex-1 bg-emerald-100/50" />
-                    <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest px-4 py-1 bg-emerald-50 rounded-lg border border-emerald-100/50">Page {pageNum} Content</span>
-                    <div className="h-px flex-1 bg-emerald-100/50" />
+                <div key={pageNum} id={`questions-page-${pageNum}`} className="space-y-6 scroll-mt-24">
+                  <div className="flex items-center gap-4">
+                    <span className="text-[10px] font-black text-gray-300 uppercase tracking-[0.4em] whitespace-nowrap">Pagination 0{pageNum}</span>
+                    <div className="h-px w-full bg-gray-100" />
                   </div>
 
                   {questionsByPage[pageNum].map((q, idx) => {
                     const typedQ = q as any;
+                    const response = responses[typedQ.id];
+                    const feedback = validationFeedback[typedQ.id];
+                    const isCorrect = feedback && (feedback.score.includes('of 0') === false && !feedback.score.startsWith('0 of'));
+                    const isProcessing = currentlyProcessingId === typedQ.id;
+
                     return (
                       <React.Fragment key={typedQ.id}>
                         {typedQ.section && (idx === 0 || (idx > 0 && questionsByPage[pageNum][idx-1].section !== typedQ.section)) && (
-                          <div className="pt-6 pb-2 space-y-4">
-                            <div className="flex items-center gap-3">
-                              <span className="bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-xl shadow-lg shadow-emerald-100">
+                          <div className="pt-10 pb-4 space-y-4">
+                            <div className="flex items-center gap-4">
+                              <span className="bg-gray-900 text-white text-[10px] font-black uppercase tracking-[0.2em] px-5 py-2.5 rounded-2xl shadow-xl shadow-gray-200">
                                 {typedQ.section}
                               </span>
-                              <div className="h-1 flex-1 bg-emerald-50 rounded-full" />
+                              <div className="h-px flex-1 bg-gray-100" />
                             </div>
                             {typedQ.instruction && (
                               <motion.div 
                                 initial={{ opacity: 0, x: -10 }}
                                 animate={{ opacity: 1, x: 0 }}
-                                className="bg-emerald-50/50 p-6 rounded-[2rem] border-2 border-emerald-100/50"
+                                className="bg-emerald-50/30 p-6 rounded-[2rem] border-2 border-emerald-100/30 border-dashed"
                               >
-                                <p className="text-sm text-emerald-800 leading-relaxed">
+                                <p className="text-xs font-bold text-emerald-800/80 leading-relaxed uppercase tracking-wider">
                                   {typedQ.instruction}
                                 </p>
                               </motion.div>
@@ -958,192 +984,137 @@ Return ONLY valid JSON.`;
                           </div>
                         )}
                         <motion.div 
-                          initial={{ opacity: 0, y: 20 }}
-                          whileInView={{ opacity: 1, y: 0 }}
+                          id={`q-container-${typedQ.id}`}
+                          initial={{ opacity: 0, scale: 0.95 }}
+                          whileInView={{ opacity: 1, scale: 1 }}
                           viewport={{ once: true }}
-                          className={`p-8 rounded-[2.5rem] border-2 transition-all duration-500 ${
-                            responses[typedQ.id] ? 'bg-emerald-50/20 border-emerald-200 shadow-sm' : 'bg-white border-gray-100 hover:border-emerald-100'
+                          className={`p-10 rounded-[3rem] border-2 transition-all duration-500 relative group overflow-hidden ${
+                            isProcessing ? 'bg-emerald-50 border-emerald-400 ring-8 ring-emerald-500/10' :
+                            feedback ? (isCorrect ? 'bg-emerald-50/50 border-emerald-200' : 'bg-red-50/50 border-red-100') :
+                            response ? 'bg-white border-emerald-200 shadow-xl shadow-emerald-50/50' : 
+                            'bg-white border-gray-100 hover:border-emerald-100'
                           }`}
                         >
-                          <div className="flex items-start gap-4 mb-6">
-                            <span className="flex-shrink-0 w-10 h-10 rounded-2xl bg-gray-900 text-white flex items-center justify-center font-black text-sm shadow-xl shadow-gray-200">
-                              {idx + 1}
-                            </span>
+                          <div className="flex items-start gap-6 mb-8">
+                            <div className="relative">
+                               <span className="flex-shrink-0 w-12 h-12 rounded-2xl bg-gray-900 text-white flex items-center justify-center font-black text-lg shadow-2xl shadow-gray-200 group-hover:rotate-12 transition-transform duration-500">
+                                {idx + 1}
+                              </span>
+                              {response && !feedback && <div className="absolute -top-2 -right-2 w-5 h-5 bg-emerald-500 rounded-full border-4 border-white animate-pulse" />}
+                            </div>
                             <QuestionTextWithCommandTerms text={typedQ.question} />
                           </div>
 
-                          {typedQ.type === 'mcq' && (
-                            <div className="grid gap-3">
-                              {typedQ.options?.map((opt: string, oIdx: number) => (
-                                <button
-                                  key={oIdx}
-                                  onClick={() => !(readOnly || submitted) && handleResponse(typedQ.id, opt)}
-                                  disabled={readOnly || submitted}
-                                  className={`w-full text-left p-5 rounded-2xl border-2 font-black text-sm transition-all flex items-center justify-between group ${
-                                    responses[typedQ.id] === opt
-                                      ? 'bg-emerald-500 border-emerald-500 text-white shadow-xl shadow-emerald-100'
-                                      : 'bg-white border-gray-50 text-gray-600 hover:border-emerald-200 hover:bg-emerald-50/30'
-                                  } ${(readOnly || submitted) && responses[typedQ.id] !== opt ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                >
-                                  <span>{opt}</span>
-                                  {responses[typedQ.id] === opt && <CheckCircle2 size={20} />}
-                                </button>
-                              ))}
-                              {(submitted || readOnly) && validationFeedback[typedQ.id] && (
-                                <motion.div 
-                                  initial={{ opacity: 0, y: 10 }}
-                                  animate={{ opacity: 1, y: 0 }}
-                                  className={`p-4 rounded-2xl border mt-2 ${
-                                    validationFeedback[typedQ.id].score.includes('of 0') || validationFeedback[typedQ.id].score.startsWith('0 of') 
-                                      ? 'bg-red-50 border-red-100 text-red-800' 
-                                      : 'bg-emerald-50 border-emerald-100 text-emerald-800'
-                                  }`}
-                                >
-                                  <div className="flex items-center justify-between mb-2">
-                                    <span className="text-[10px] font-black uppercase tracking-widest">Teacher's Feedback</span>
-                                    <span className="text-xs font-black">{validationFeedback[typedQ.id].score}</span>
-                                  </div>
-                                  <p className="text-xs font-medium whitespace-pre-wrap">{validationFeedback[typedQ.id].feedback}</p>
-                                </motion.div>
-                              )}
-                            </div>
-                          )}
-
-                          {typedQ.type === 'tick-cross' && (
-                            <div className="grid grid-cols-2 gap-4">
-                              {['✓', '✕'].map((opt) => (
-                                <button
-                                  key={opt}
-                                  onClick={() => !(readOnly || submitted) && handleResponse(typedQ.id, opt)}
-                                  disabled={readOnly || submitted}
-                                  className={`p-8 rounded-3xl border-4 font-black text-3xl transition-all shadow-sm ${
-                                    responses[typedQ.id] === opt
-                                      ? opt === '✓' ? 'bg-emerald-500 border-emerald-600 text-white shadow-emerald-100' : 'bg-red-500 border-red-600 text-white shadow-red-100'
-                                      : 'bg-white border-gray-100 text-gray-300 hover:border-gray-200'
-                                  }`}
-                                >
-                                  {opt}
-                                </button>
-                              ))}
-                              {(submitted || readOnly) && validationFeedback[typedQ.id] && (
-                                <motion.div 
-                                  initial={{ opacity: 0, y: 10 }}
-                                  animate={{ opacity: 1, y: 0 }}
-                                  className={`col-span-2 p-4 rounded-2xl border ${
-                                    validationFeedback[typedQ.id].score.includes('of 0') || validationFeedback[typedQ.id].score.startsWith('0 of') 
-                                      ? 'bg-red-50 border-red-100 text-red-800' 
-                                      : 'bg-emerald-50 border-emerald-100 text-emerald-800'
-                                  }`}
-                                >
-                                  <div className="flex items-center justify-between mb-2">
-                                    <span className="text-[10px] font-black uppercase tracking-widest">Teacher's Feedback</span>
-                                    <span className="text-xs font-black">{validationFeedback[typedQ.id].score}</span>
-                                  </div>
-                                  <p className="text-xs font-medium whitespace-pre-wrap">{validationFeedback[typedQ.id].feedback}</p>
-                                </motion.div>
-                              )}
-                            </div>
-                          )}
-
-                          {typedQ.type === 'reorder' && typedQ.items && (
-                            <div className="space-y-3">
-                              {(responses[typedQ.id] || typedQ.items).map((item: string, iIdx: number) => (
-                                <motion.div
-                                  key={`${typedQ.id}_item_${iIdx}`}
-                                  layout
-                                  className="flex items-center gap-4 bg-white p-4 rounded-2xl border-2 border-gray-100 shadow-sm"
-                                >
-                                  <span className="bg-gray-100 text-gray-500 w-8 h-8 rounded-lg flex items-center justify-center font-black text-xs shrink-0">
-                                    {iIdx + 1}
-                                  </span>
-                                  <span className="flex-1 font-bold text-gray-700">{item}</span>
-                                  {!(readOnly || submitted) && (
-                                    <div className="flex gap-1">
-                                      <button
-                                        onClick={() => {
-                                          const currentArr = [...(responses[typedQ.id] || typedQ.items)];
-                                          if (iIdx > 0) {
-                                            [currentArr[iIdx], currentArr[iIdx-1]] = [currentArr[iIdx-1], currentArr[iIdx]];
-                                            handleResponse(typedQ.id, currentArr);
-                                          }
-                                        }}
-                                        className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-emerald-500 transition-colors"
-                                      >
-                                        <ChevronLeft size={16} className="rotate-90" />
-                                      </button>
-                                      <button
-                                        onClick={() => {
-                                          const currentArr = [...(responses[typedQ.id] || typedQ.items)];
-                                          if (iIdx < currentArr.length - 1) {
-                                            [currentArr[iIdx], currentArr[iIdx+1]] = [currentArr[iIdx+1], currentArr[iIdx]];
-                                            handleResponse(typedQ.id, currentArr);
-                                          }
-                                        }}
-                                        className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-emerald-500 transition-colors"
-                                      >
-                                        <ChevronLeft size={16} className="-rotate-90" />
-                                      </button>
+                          <div className="relative z-10">
+                            {typedQ.type === 'mcq' && (
+                              <div className="grid gap-4">
+                                {typedQ.options?.map((opt: string, oIdx: number) => (
+                                  <button
+                                    key={oIdx}
+                                    onClick={() => !(readOnly || submitted) && handleResponse(typedQ.id, opt)}
+                                    disabled={readOnly || submitted}
+                                    className={`w-full text-left p-6 rounded-2xl border-2 font-black text-sm transition-all flex items-center justify-between group/btn ${
+                                      responses[typedQ.id] === opt
+                                        ? 'bg-emerald-500 border-emerald-500 text-white shadow-2xl shadow-emerald-200'
+                                        : 'bg-white border-gray-100 text-gray-600 hover:border-emerald-300 hover:bg-emerald-50/50'
+                                    } ${(readOnly || submitted) && responses[typedQ.id] !== opt ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                  >
+                                    <span>{opt}</span>
+                                    <div className={`p-1 rounded-full transition-all ${responses[typedQ.id] === opt ? 'bg-white text-emerald-500' : 'bg-gray-100 text-gray-300 opacity-0 group-hover/btn:opacity-100'}`}>
+                                       <CheckCircle2 size={16} />
                                     </div>
-                                  )}
-                                </motion.div>
-                              ))}
-                              {(submitted || readOnly) && validationFeedback[typedQ.id] && (
-                                <motion.div 
-                                  initial={{ opacity: 0, y: 10 }}
-                                  animate={{ opacity: 1, y: 0 }}
-                                  className={`p-4 rounded-2xl border mt-2 ${
-                                    validationFeedback[typedQ.id].score.includes('of 0') || validationFeedback[typedQ.id].score.startsWith('0 of') 
-                                      ? 'bg-red-50 border-red-100 text-red-800' 
-                                      : 'bg-emerald-50 border-emerald-100 text-emerald-800'
-                                  }`}
-                                >
-                                  <div className="flex items-center justify-between mb-2">
-                                    <span className="text-[10px] font-black uppercase tracking-widest">Teacher's Feedback</span>
-                                    <span className="text-xs font-black">{validationFeedback[typedQ.id].score}</span>
-                                  </div>
-                                  <p className="text-xs font-medium whitespace-pre-wrap">{validationFeedback[typedQ.id].feedback}</p>
-                                </motion.div>
-                              )}
-                            </div>
-                          )}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
 
-                          {typedQ.type === 'short-response' && (
-                            <div className="space-y-4">
-                              <textarea
-                                placeholder="Type your detailed response here..."
-                                value={responses[typedQ.id] || ''}
-                                readOnly={readOnly || submitted}
-                                onChange={(e) => handleResponse(typedQ.id, e.target.value)}
-                                className={`w-full p-6 rounded-3xl border-2 border-slate-100 font-bold text-sm text-gray-800 focus:border-emerald-500 focus:bg-white outline-none transition-all resize-none min-h-[140px] ${readOnly || submitted ? 'bg-gray-100' : 'bg-slate-50/50'} placeholder:text-gray-300`}
-                              />
-                              {(submitted || readOnly) && validationFeedback[typedQ.id] && (
-                                <motion.div 
-                                  initial={{ opacity: 0, scale: 0.95 }}
-                                  animate={{ opacity: 1, scale: 1 }}
-                                  className={`p-4 rounded-2xl border ${
-                                    validationFeedback[typedQ.id].score.includes('of 0') || validationFeedback[typedQ.id].score.startsWith('0 of') 
-                                      ? 'bg-red-50 border-red-100 text-red-800' 
-                                      : 'bg-emerald-50 border-emerald-100 text-emerald-800'
-                                  }`}
-                                >
-                                  <div className="flex items-center justify-between mb-2">
-                                    <span className="text-[10px] font-black uppercase tracking-widest">Teacher's Feedback</span>
-                                    <span className="text-xs font-black">{validationFeedback[typedQ.id].score}</span>
-                                  </div>
-                                  <p className="text-xs font-medium whitespace-pre-wrap">{validationFeedback[typedQ.id].feedback}</p>
-                                </motion.div>
-                              )}
-                            </div>
-                          )}
+                            {typedQ.type === 'tick-cross' && (
+                              <div className="grid grid-cols-2 gap-6">
+                                {['✓', '✕'].map((opt) => (
+                                  <button
+                                    key={opt}
+                                    onClick={() => !(readOnly || submitted) && handleResponse(typedQ.id, opt)}
+                                    disabled={readOnly || submitted}
+                                    className={`p-10 rounded-[2.5rem] border-4 font-black text-4xl transition-all shadow-xl group/btn overflow-hidden relative ${
+                                      responses[typedQ.id] === opt
+                                        ? opt === '✓' ? 'bg-emerald-500 border-emerald-600 text-white shadow-emerald-200' : 'bg-red-500 border-red-600 text-white shadow-red-200'
+                                        : 'bg-white border-gray-100 text-gray-200 hover:border-emerald-300 hover:text-emerald-500'
+                                    }`}
+                                  >
+                                    <span className="relative z-10">{opt}</span>
+                                    <div className="absolute inset-0 bg-white/10 opacity-0 group-hover/btn:opacity-100 transition-opacity" />
+                                  </button>
+                                ))}
+                              </div>
+                            )}
 
-                          {typedQ.type === 'table' && typedQ.tableData && (
-                            <>
-                              <div className="overflow-hidden rounded-3xl border-2 border-emerald-100 bg-white">
+                            {typedQ.type === 'reorder' && typedQ.items && (
+                              <div className="space-y-4">
+                                {(responses[typedQ.id] || typedQ.items).map((item: string, iIdx: number) => (
+                                  <motion.div
+                                    key={`${typedQ.id}_item_${iIdx}`}
+                                    layout
+                                    className="flex items-center gap-5 bg-white p-5 rounded-2xl border-2 border-gray-100 shadow-sm group/item hover:border-emerald-200 transition-colors"
+                                  >
+                                    <span className="bg-gray-900 text-white w-8 h-8 rounded-xl flex items-center justify-center font-black text-[10px] shrink-0 group-hover/item:scale-110 transition-transform">
+                                      {iIdx + 1}
+                                    </span>
+                                    <span className="flex-1 font-bold text-gray-700 text-sm tracking-tight">{item}</span>
+                                    {!(readOnly || submitted) && (
+                                      <div className="flex gap-1.5">
+                                        <button
+                                          onClick={() => {
+                                            const currentArr = [...(responses[typedQ.id] || typedQ.items)];
+                                            if (iIdx > 0) {
+                                              [currentArr[iIdx], currentArr[iIdx-1]] = [currentArr[iIdx-1], currentArr[iIdx]];
+                                              handleResponse(typedQ.id, currentArr);
+                                            }
+                                          }}
+                                          className="p-2 hover:bg-emerald-500 hover:text-white rounded-xl text-gray-300 transition-all active:scale-95"
+                                        >
+                                          <ChevronLeft size={18} className="rotate-90" />
+                                        </button>
+                                        <button
+                                          onClick={() => {
+                                            const currentArr = [...(responses[typedQ.id] || typedQ.items)];
+                                            if (iIdx < currentArr.length - 1) {
+                                              [currentArr[iIdx], currentArr[iIdx+1]] = [currentArr[iIdx+1], currentArr[iIdx]];
+                                              handleResponse(typedQ.id, currentArr);
+                                            }
+                                          }}
+                                          className="p-2 hover:bg-emerald-500 hover:text-white rounded-xl text-gray-300 transition-all active:scale-95"
+                                        >
+                                          <ChevronLeft size={18} className="-rotate-90" />
+                                        </button>
+                                      </div>
+                                    )}
+                                  </motion.div>
+                                ))}
+                              </div>
+                            )}
+
+                            {typedQ.type === 'short-response' && (
+                              <div className="relative">
+                                <textarea
+                                  placeholder="Formulate your response here..."
+                                  value={responses[typedQ.id] || ''}
+                                  readOnly={readOnly || submitted}
+                                  onChange={(e) => handleResponse(typedQ.id, e.target.value)}
+                                  className={`w-full p-8 rounded-[2rem] border-2 font-bold text-sm text-gray-800 focus:border-emerald-500 focus:bg-white outline-none transition-all resize-none min-h-[180px] shadow-sm tracking-tight leading-relaxed ${readOnly || submitted ? 'bg-gray-50 border-gray-100 shadow-none' : 'bg-gray-50/50 border-gray-100'} placeholder:text-gray-300`}
+                                />
+                                <div className="absolute bottom-6 right-6 px-3 py-1 bg-gray-900/5 rounded-lg">
+                                   <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{responses[typedQ.id]?.length || 0} chars</span>
+                                </div>
+                              </div>
+                            )}
+
+                            {typedQ.type === 'table' && typedQ.tableData && (
+                              <div className="overflow-hidden rounded-[2rem] border-2 border-emerald-100 bg-white shadow-xl shadow-emerald-50/30">
                                 <table className="w-full border-collapse">
                                   <thead>
-                                    <tr className="bg-emerald-50">
+                                    <tr className="bg-gray-900">
                                       {typedQ.tableData[0].map((header: string, hIdx: number) => (
-                                        <th key={hIdx} className="p-4 text-[10px] font-black text-emerald-800 uppercase tracking-widest border-b-2 border-emerald-100 border-r border-emerald-100 last:border-r-0">
+                                        <th key={hIdx} className="p-5 text-[10px] font-black text-white uppercase tracking-[0.2em] border-b-2 border-white/10 border-r border-white/5 last:border-r-0">
                                           {header}
                                         </th>
                                       ))}
@@ -1151,26 +1122,25 @@ Return ONLY valid JSON.`;
                                   </thead>
                                   <tbody>
                                     {typedQ.tableData.slice(1).map((row: string[], rIdx: number) => (
-                                      <tr key={rIdx} className="last:border-b-0 border-b border-emerald-50">
+                                      <tr key={rIdx} className="last:border-b-0 border-b border-gray-50 group/tr">
                                         {row.map((cell: string, cIdx: number) => {
                                           const isEditableCell = cell === "";
-                                          const cellId = `${typedQ.id}_${rIdx}_${cIdx}`;
                                           return (
-                                            <td key={cIdx} className={`p-0 border-r border-emerald-50 last:border-r-0 ${!isEditableCell ? 'bg-gray-50/50' : 'bg-white'}`}>
+                                            <td key={cIdx} className={`p-0 border-r border-gray-50 last:border-r-0 ${!isEditableCell ? 'bg-gray-50/30' : 'bg-white'}`}>
                                               {!isEditableCell ? (
-                                                <div className="p-4 text-xs font-bold text-gray-600">{cell}</div>
+                                                <div className="p-5 text-xs font-black text-gray-900 opacity-60 uppercase tracking-tight">{cell}</div>
                                               ) : (
                                                 <input
                                                   type="text"
                                                   placeholder="..."
-                                                  readOnly={readOnly}
+                                                  readOnly={readOnly || submitted}
                                                   value={responses[typedQ.id]?.[`${rIdx}_${cIdx}`] || ''}
                                                   onChange={(e) => {
                                                     const newTableResponse = { ...(responses[typedQ.id] || {}) };
                                                     newTableResponse[`${rIdx}_${cIdx}`] = e.target.value;
                                                     handleResponse(typedQ.id, newTableResponse);
                                                   }}
-                                                  className={`w-full h-full p-4 text-xs font-black text-emerald-600 outline-none focus:bg-emerald-50/30 transition-colors placeholder:text-gray-200 ${readOnly ? 'bg-gray-50' : ''}`}
+                                                  className={`w-full h-full p-5 text-sm font-black text-emerald-600 outline-none focus:bg-emerald-50 group-hover/tr:bg-gray-50/20 transition-colors placeholder:text-gray-200 ${readOnly || submitted ? 'bg-gray-50' : ''}`}
                                                 />
                                               )}
                                             </td>
@@ -1181,25 +1151,37 @@ Return ONLY valid JSON.`;
                                   </tbody>
                                 </table>
                               </div>
-                              {(submitted || readOnly) && validationFeedback[typedQ.id] && (
-                                  <motion.div 
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className={`p-4 rounded-2xl border mt-3 ${
-                                      validationFeedback[typedQ.id].score.includes('of 0') || validationFeedback[typedQ.id].score.startsWith('0 of') 
-                                        ? 'bg-red-50 border-red-100 text-red-800' 
-                                        : 'bg-emerald-50 border-emerald-100 text-emerald-800'
-                                    }`}
-                                  >
-                                    <div className="flex items-center justify-between mb-2">
-                                      <span className="text-[10px] font-black uppercase tracking-widest">Teacher's Feedback</span>
-                                      <span className="text-xs font-black">{validationFeedback[typedQ.id].score}</span>
+                            )}
+
+                            {/* Question Feedback Overlay (Bento Style) */}
+                            {(submitted || readOnly) && validationFeedback[typedQ.id] && (
+                              <motion.div 
+                                initial={{ opacity: 0, y: 15 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className={`mt-8 p-8 rounded-[2rem] border-2 relative overflow-hidden ${
+                                  isCorrect ? 'bg-emerald-50 border-emerald-200 text-emerald-900' : 'bg-red-50 border-red-100 text-red-900'
+                                }`}
+                              >
+                                <div className="absolute top-0 right-0 p-4">
+                                   {isCorrect ? <CheckCircle2 className="text-emerald-500/20" size={80} /> : <AlertCircle className="text-red-500/20" size={80} />}
+                                </div>
+                                <div className="flex items-center justify-between mb-6 relative z-10">
+                                  <div className="flex items-center gap-3">
+                                    <div className={`p-2 rounded-xl bg-white shadow-sm ${isCorrect ? 'text-emerald-600' : 'text-red-600'}`}>
+                                      <ShieldCheck size={20} />
                                     </div>
-                                    <p className="text-xs font-medium whitespace-pre-wrap">{validationFeedback[typedQ.id].feedback}</p>
-                                  </motion.div>
-                                )}
-                            </>
-                          )}
+                                    <span className="text-[10px] font-black uppercase tracking-[0.2em]">Teacher's Feedback</span>
+                                  </div>
+                                  <span className={`px-4 py-1.5 rounded-full text-xs font-black shadow-lg ${isCorrect ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'} relative z-20`}>
+                                    {validationFeedback[typedQ.id].score}
+                                  </span>
+                                </div>
+                                <p className="text-sm font-black leading-relaxed whitespace-pre-wrap relative z-10">
+                                  {validationFeedback[typedQ.id].feedback}
+                                </p>
+                              </motion.div>
+                            )}
+                          </div>
                         </motion.div>
                       </React.Fragment>
                     );
@@ -1209,34 +1191,41 @@ Return ONLY valid JSON.`;
             })}
 
             {task.worksheetQuestions && task.worksheetQuestions.length === 0 && (
-              <div className="py-20 text-center space-y-4">
-                <div className="w-16 h-16 bg-gray-50 rounded-3xl flex items-center justify-center text-gray-300 mx-auto">
-                  <Layout size={32} />
+              <div className="py-32 text-center space-y-8 bg-gray-50 rounded-[3rem] border-2 border-dotted border-gray-200">
+                <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center text-gray-200 mx-auto shadow-sm">
+                  <Layout size={40} />
                 </div>
-                <p className="text-gray-400 font-black text-xs uppercase tracking-widest">No interactive questions found for this task.</p>
+                <div className="space-y-2">
+                  <p className="text-gray-900 font-black text-lg uppercase tracking-tight">Structured View Disabled</p>
+                  <p className="text-gray-400 font-bold text-sm">No interactive worksheet questions are defined for this asset.</p>
+                </div>
               </div>
             )}
+
             {generalFeedback && (
               <motion.div
-                initial={{ opacity: 0, y: 10 }}
+                initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-emerald-50 border-2 border-emerald-100 rounded-[2rem] p-8 space-y-4 shadow-sm"
+                className="bg-gray-900 border-2 border-gray-800 rounded-[3rem] p-12 space-y-8 shadow-2xl relative overflow-hidden"
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="bg-emerald-500 text-white p-2 rounded-xl">
-                      <Send size={18} />
+                <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-[100px] -mr-32 -mt-32" />
+                <div className="flex items-center justify-between relative z-10">
+                  <div className="flex items-center gap-4">
+                    <div className="bg-emerald-500 text-white p-3 rounded-2xl shadow-xl shadow-emerald-500/20">
+                      <Send size={24} />
                     </div>
-                    <h4 className="text-sm font-black text-emerald-800 uppercase tracking-widest">Overall comments</h4>
+                    <div>
+                      <h4 className="text-xl font-black text-white uppercase tracking-tight">Overall Comments</h4>
+                    </div>
                   </div>
                   {readOnly && (
-                    <div className="bg-white px-4 py-2 rounded-2xl border border-emerald-100 flex items-center gap-2">
-                       <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Score</span>
-                       <span className="text-lg font-black text-emerald-600">
+                    <div className="bg-white/5 px-6 py-3 rounded-2xl border border-white/10 flex items-center gap-4 backdrop-blur-md">
+                       <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Aggregate</span>
+                       <span className="text-2xl font-black text-emerald-400 tracking-tighter">
                           {Math.round(Object.values(validationFeedback as any).reduce<number>((acc, f: any) => {
                              const p = f.score?.toString().split(/\s*(?:\/|of)\s*/i);
                              return acc + (p?.[0] ? parseFloat(p[0]) : 0);
-                          }, 0))} / {
+                          }, 0))} <span className="text-gray-600 text-lg">/</span> {
                             Object.values(validationFeedback as any).reduce<number>((acc, f: any) => {
                               const p = f.score?.toString().split(/\s*(?:\/|of)\s*/i);
                               return acc + (p?.[1] ? parseFloat(p[1]) : 1);
@@ -1246,9 +1235,11 @@ Return ONLY valid JSON.`;
                     </div>
                   )}
                 </div>
-                <p className="text-sm font-bold text-gray-700 leading-relaxed italic">
-                  "{generalFeedback}"
-                </p>
+                <div className="bg-white/5 p-8 rounded-[2rem] border border-white/10 relative z-10">
+                  <p className="text-lg font-bold text-gray-300 leading-relaxed italic tracking-tight">
+                    "{generalFeedback}"
+                  </p>
+                </div>
               </motion.div>
             )}
 
@@ -1256,81 +1247,101 @@ Return ONLY valid JSON.`;
         </div>
       
         {isGradingWorkflow && (
-          <div className="w-[35%] border-l-4 border-emerald-500 bg-emerald-50 overflow-y-auto custom-scrollbar p-8 flex flex-col shadow-[-10px_0_20px_rgba(0,0,0,0.05)] z-10 transition-all duration-500">
-            <h3 className="text-2xl font-black text-emerald-800 uppercase tracking-tight mb-6">Markscheme & Grading</h3>
-            
-            <div className="flex-1 space-y-6">
-               {(task.worksheetQuestions || []).map((q, idx) => (
-                 <div key={q.id} className={`p-4 rounded-xl border-2 transition-all ${currentlyProcessingId === q.id ? 'bg-white border-emerald-500 ring-4 ring-emerald-500/20 shadow-xl scale-[1.02]' : 'bg-white/50 border-emerald-200'}`}>
-                    <div className="flex items-center justify-between mb-2">
-                       <div className="flex items-center gap-2">
-                         <span className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs"><ShieldCheck size={12} className="mr-1"/> Q{idx + 1}</span>
-                         <span className="text-xs font-black text-emerald-600 uppercase tracking-widest">Rubric</span>
-                       </div>
-                       {rubricMeta && rubricMeta[q.id] && (
-                         <div className="flex items-center gap-2 text-[9px] font-black uppercase text-emerald-500 tracking-wider">
-                            {rubricMeta[q.id].type && <span className="bg-emerald-50 px-2 py-1 rounded">TYPE: {String(rubricMeta[q.id].type)}</span>}
-                            {rubricMeta[q.id].marks && <span className="bg-emerald-50 px-2 py-1 rounded">PTS: {String(rubricMeta[q.id].marks)}</span>}
-                         </div>
-                       )}
-                    </div>
-                    <div className="text-sm font-medium text-emerald-900 bg-emerald-50 p-3 rounded-lg whitespace-pre-wrap">
-                       {gradingPhase === 'extracting_rubrics' && currentlyProcessingId === q.id ? (
-                         <div className="flex items-center text-emerald-600 gap-2"><RefreshCw size={14} className="animate-spin" /> Extracting rubric from markscheme...</div>
-                       ) : extractedRubrics[q.id] ? (
-                         extractedRubrics[q.id]
-                       ) : gradingPhase === 'extracting_rubrics' ? (
-                         <span className="text-emerald-400">Waiting...</span>
-                       ) : "Extracted rubric will appear here."}
-                    </div>
-                    
-                    {/* Removed Redundant AI Feedback in third panel */}
-                 </div>
-               ))}
-               
-               {generalFeedback && (
-                 <div className="p-4 rounded-xl bg-purple-50 border-2 border-purple-200 mt-6">
-                    <span className="text-xs font-black text-purple-600 uppercase tracking-widest mb-2 block">Overall Comments</span>
-                    <p className="text-sm text-purple-900 leading-relaxed">{generalFeedback}</p>
-                 </div>
-               )}
+          <div className="w-[35%] bg-gray-50 overflow-hidden flex flex-col z-10 transition-all duration-500 border-l border-gray-100">
+            <div className="p-8 space-y-8 flex-1 overflow-y-auto custom-scrollbar scroll-smooth">
+              <div className="space-y-2">
+                <div className="flex items-center gap-3 mb-1">
+                  <div className="w-8 h-1 bg-emerald-500 rounded-full" />
+                  <span className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.3em]">Protocol Alpha</span>
+                </div>
+                <h3 className="text-3xl font-black text-gray-900 uppercase tracking-tighter leading-none">Grading Engine</h3>
+                <div className="flex items-center gap-2 pt-2">
+                  <span className="bg-gray-900 text-white px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest">Gemini 3.1 Flash Lite</span>
+                </div>
+              </div>
+
+              {/* Bento-style Progress Card */}
+              <div className="bg-white p-8 rounded-[2.5rem] shadow-xl shadow-gray-200/50 border border-gray-100 space-y-6">
+                <div className="flex justify-between items-end">
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Operational Status</span>
+                    <span className="text-sm font-black text-emerald-600 uppercase">
+                      {gradingPhase === 'extracting_rubrics' ? 'Pre-processing Rubrics' : 
+                       gradingPhase === 'grading' ? `Live Analysis` :
+                       gradingPhase === 'generating_overall' ? 'Compiling Data' : 'Engine Ready'}
+                    </span>
+                  </div>
+                  <span className="text-3xl font-black text-gray-900 tracking-tighter">{Math.round(gradingProgress)}%</span>
+                </div>
+                <div className="h-4 bg-gray-100 rounded-2xl overflow-hidden p-1 border border-gray-200">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${gradingProgress}%` }}
+                    className="h-full bg-emerald-500 rounded-xl shadow-[0_0_20px_rgba(16,185,129,0.4)]"
+                  />
+                </div>
+              </div>
+              
+              <div ref={gradingConsoleContentRef} className="space-y-4">
+                 {(task.worksheetQuestions || []).map((q, idx) => (
+                   <motion.div 
+                     key={q.id} 
+                     id={`rubric-container-${q.id}`}
+                     className={`p-6 rounded-[2rem] border-2 transition-all duration-500 scroll-mt-24 ${
+                       currentlyProcessingId === q.id 
+                         ? 'bg-white border-emerald-500 shadow-2xl scale-[1.02] ring-8 ring-emerald-500/5' 
+                         : 'bg-white border-gray-100 shadow-sm opacity-60'
+                     }`}
+                   >
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <span className="w-10 h-10 rounded-xl bg-gray-900 text-white flex items-center justify-center font-black text-xs">
+                            Q{idx + 1}
+                          </span>
+                          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Marking Criteria</span>
+                        </div>
+                        {currentlyProcessingId === q.id && (
+                           <div className="px-3 py-1 bg-emerald-500 text-white rounded-full text-[8px] font-black uppercase tracking-widest animate-pulse">
+                              Processing
+                           </div>
+                        )}
+                      </div>
+                      
+                      <div className="bg-gray-50 rounded-2xl p-5 border border-gray-100">
+                         <p className="text-xs font-bold text-gray-700 leading-relaxed italic">
+                            {extractedRubrics[q.id] ? (extractedRubrics[q.id]) : "Initializing criteria..."}
+                         </p>
+                      </div>
+                   </motion.div>
+                 ))}
+                 
+                 {generalFeedback && (
+                   <div className="p-8 rounded-[2rem] bg-gray-900 border border-gray-800 shadow-2xl space-y-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-emerald-500 rounded-lg text-white">
+                           <Send size={16} />
+                        </div>
+                        <span className="text-[10px] font-black text-white uppercase tracking-widest">Overall Analysis</span>
+                      </div>
+                      <p className="text-sm font-bold text-gray-400 leading-relaxed italic">"{generalFeedback}"</p>
+                   </div>
+                 )}
+              </div>
             </div>
 
-            <div className="mt-8 pt-6 border-t-2 border-emerald-200 sticky bottom-0 bg-emerald-50 pb-4">
-              {gradingPhase === 'ready_to_grade' ? (
-                <button onClick={gradeAgainstRubric} className="w-full bg-emerald-600 text-white py-4 rounded-xl font-black uppercase text-sm tracking-widest shadow-[0_4px_0_0_#059669] active:shadow-none active:translate-y-1 transition-all">
-                  Grade Against Rubric
-                </button>
-              ) : gradingPhase === 'grading' ? (
-                <button disabled className="w-full bg-emerald-400 text-white py-4 rounded-xl font-black uppercase text-sm tracking-widest flex items-center justify-center gap-2">
-                  <RefreshCw size={18} className="animate-spin" /> {currentlyProcessingIndex !== null ? `Grading Question ${currentlyProcessingIndex}...` : 'Grading Responses...'}
-                </button>
-              ) : gradingPhase === 'generating_overall' ? (
-                <button disabled className="w-full bg-emerald-400 text-white py-4 rounded-xl font-black uppercase text-sm tracking-widest flex items-center justify-center gap-2">
-                  <RefreshCw size={18} className="animate-spin" /> Generating Report...
-                </button>
-              ) : gradingPhase === 'done' ? (
-                <button disabled className="w-full bg-slate-800 text-white py-4 rounded-xl font-black uppercase text-sm tracking-widest">
-                  Grading Completed
-                </button>
-              ) : gradingPhase === 'extracting_rubrics' ? (
-                <button disabled className="w-full bg-emerald-400 text-white py-4 rounded-xl font-black uppercase text-sm tracking-widest flex items-center justify-center gap-2">
-                  <RefreshCw size={18} className="animate-spin" /> Extracting Rubrics...
-                </button>
-              ) : null}
-
+            <div className="p-8 pt-0 border-t border-gray-100 bg-gray-50/80 backdrop-blur-md">
               {/* Grading Console Logs */}
               {gradingLogs.length > 0 && (
-                <div className="mt-6 bg-slate-900 rounded-2xl p-4 border border-slate-800 shadow-inner overflow-hidden flex flex-col max-h-48">
-                  <div className="flex items-center gap-2 mb-2 pb-2 border-b border-white/5">
-                    <Terminal size={14} className="text-emerald-400" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Grading Console</span>
+                <div className="my-6 bg-slate-900 rounded-[2rem] p-6 shadow-2xl border border-slate-800 flex flex-col max-h-32">
+                  <div className="flex items-center gap-3 mb-3 pb-3 border-b border-white/5">
+                    <Terminal size={12} className="text-emerald-400" />
+                    <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">Output Stream</span>
                   </div>
-                  <div className="flex-1 overflow-y-auto custom-scrollbar font-mono text-[10px] leading-relaxed space-y-1.5 scroll-smooth">
+                  <div className="flex-1 overflow-y-auto custom-scrollbar font-mono text-[9px] leading-relaxed space-y-2 scroll-smooth">
                     {gradingLogs.map((log, i) => (
-                      <div key={i} className="flex gap-2 group">
-                        <span className="text-slate-600 shrink-0 select-none">[{i+1}]</span>
-                        <span className={`${log.includes('FAILED') || log.includes('CRITICAL') ? 'text-red-400 font-bold' : log.includes('successfully') ? 'text-emerald-400' : 'text-slate-300'}`}>
+                      <div key={i} className="flex gap-3 text-slate-400">
+                        <span className="text-slate-700 shrink-0">[{i+1}]</span>
+                        <span className={`${log.includes('FAILED') || log.includes('CRITICAL') ? 'text-red-400' : log.includes('successfully') ? 'text-emerald-400' : ''}`}>
                           {log}
                         </span>
                       </div>
@@ -1338,13 +1349,109 @@ Return ONLY valid JSON.`;
                   </div>
                 </div>
               )}
+
+              {gradingPhase === 'ready_to_grade' ? (
+                <button onClick={gradeAgainstRubric} className="w-full bg-emerald-500 text-white py-5 rounded-2xl font-black uppercase text-xs tracking-widest shadow-[0_6px_0_0_#059669] active:shadow-none active:translate-y-1.5 transition-all">
+                  Initialize Grading Workflow
+                </button>
+              ) : gradingPhase === 'grading' ? (
+                <button disabled className="w-full bg-emerald-400 text-white py-5 rounded-2xl font-black uppercase text-xs tracking-widest flex items-center justify-center gap-3">
+                  <RefreshCw size={18} className="animate-spin" /> 
+                  {currentlyProcessingIndex !== null ? `Processing Question ${currentlyProcessingIndex}` : 'Validating Output'}
+                </button>
+              ) : gradingPhase === 'generating_overall' ? (
+                <button disabled className="w-full bg-emerald-400 text-white py-5 rounded-2xl font-black uppercase text-xs tracking-widest flex items-center justify-center gap-3">
+                  <RefreshCw size={18} className="animate-spin" /> final_synthesis.sh
+                </button>
+              ) : gradingPhase === 'done' ? (
+                <button disabled className="w-full bg-gray-800 text-white py-5 rounded-2xl font-black uppercase text-xs tracking-widest flex items-center justify-center gap-3">
+                  <CheckCircle2 size={18} className="text-emerald-400" /> Data Compilation Complete
+                </button>
+              ) : gradingPhase === 'extracting_rubrics' ? (
+                <button disabled className="w-full bg-emerald-400 text-white py-5 rounded-2xl font-black uppercase text-xs tracking-widest flex items-center justify-center gap-3">
+                  <RefreshCw size={18} className="animate-spin" /> rubric_extraction.py
+                </button>
+              ) : null}
             </div>
           </div>
         )}
       </main>
 
       <AnimatePresence>
-        {submitted && (
+        {gradingComplete && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="fixed inset-0 bg-emerald-600/98 backdrop-blur-2xl z-[400] flex items-center justify-center p-6"
+          >
+            <motion.div 
+              initial={{ scale: 0.8, y: 50, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              transition={{ type: "spring", damping: 15 }}
+              className="bg-white rounded-[4rem] p-16 max-w-xl w-full shadow-[0_32px_64px_-12px_rgba(0,0,0,0.3)] text-center space-y-10 relative overflow-hidden"
+            >
+              <button 
+                onClick={() => setGradingComplete(false)}
+                className="absolute top-8 right-8 p-3 hover:bg-gray-50 rounded-2xl transition-colors text-gray-400 hover:text-gray-600"
+              >
+                <X size={24} />
+              </button>
+
+              <div className="relative">
+                <motion.div 
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1.2 }}
+                  transition={{ delay: 0.2, type: "spring" }}
+                  className="w-32 h-32 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-500 mx-auto"
+                >
+                  <CheckCircle2 size={64} />
+                </motion.div>
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-48 bg-emerald-400/20 rounded-full blur-3xl -z-10 animate-pulse" />
+              </div>
+              
+              <div className="space-y-4">
+                <motion.h3 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                  className="text-5xl font-black text-gray-900 tracking-tighter uppercase leading-none"
+                >
+                  Grading <br/> Completed
+                </motion.h3>
+                <motion.p 
+                   initial={{ opacity: 0 }}
+                   animate={{ opacity: 1 }}
+                   transition={{ delay: 0.6 }}
+                   className="text-gray-500 font-bold text-lg"
+                >
+                  The AI Engine has successfully evaluated all responses and generated a comprehensive feedback report.
+                </motion.p>
+              </div>
+
+              <motion.div 
+                 initial={{ opacity: 0, y: 20 }}
+                 animate={{ opacity: 1, y: 0 }}
+                 transition={{ delay: 0.8 }}
+                 className="pt-4"
+              >
+                <button
+                  onClick={onBack}
+                  className="group relative w-full overflow-hidden rounded-3xl bg-gray-900 p-6 flex items-center justify-center gap-4 transition-all hover:bg-black active:scale-95 shadow-xl shadow-gray-200"
+                >
+                  <div className="relative z-10 flex items-center gap-3">
+                    <span className="text-xl font-black text-white uppercase tracking-widest">Proceed to Report Generation</span>
+                    <ArrowRight className="text-emerald-400 group-hover:translate-x-2 transition-transform" />
+                  </div>
+                  <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/0 via-emerald-500/10 to-emerald-500/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                </button>
+              </motion.div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {submitted && !gradingComplete && (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

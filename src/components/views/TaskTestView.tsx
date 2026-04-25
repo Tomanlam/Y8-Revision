@@ -90,11 +90,14 @@ const TaskTestView: React.FC<TaskTestViewProps> = ({
 
   const [isGradingWorkflow, setIsGradingWorkflow] = useState(false);
   const [gradingPhase, setGradingPhase] = useState('idle');
+  const [gradingProgress, setGradingProgress] = useState(0);
+  const [gradingComplete, setGradingComplete] = useState(false);
   const [extractedRubrics, setExtractedRubrics] = useState<Record<string, string>>({});
   const [rubricMeta, setRubricMeta] = useState<Record<string, { type: string, marks: string }>>({});
   const [currentlyProcessingId, setCurrentlyProcessingId] = useState<string | null>(null);
   const [currentlyProcessingIndex, setCurrentlyProcessingIndex] = useState<number | null>(null);
   const [gradingLogs, setGradingLogs] = useState<string[]>([]);
+  const currentModel = "Gemini 3.1 Flash Lite";
 
   const addLog = (msg: string) => {
     console.log("[GradingLog]", msg);
@@ -277,6 +280,7 @@ const TaskTestView: React.FC<TaskTestViewProps> = ({
   };
 
   const rightPaneRef = useRef<HTMLDivElement>(null);
+  const gradingConsoleContentRef = useRef<HTMLDivElement>(null);
   const pdfContainerRef = useRef<HTMLDivElement>(null);
   const pageRefs = useRef<Record<number, HTMLDivElement | null>>({});
 
@@ -446,28 +450,19 @@ const TaskTestView: React.FC<TaskTestViewProps> = ({
     }
 
     try {
-      const extractionPrompt = `You are a specialist in parsing educational markschemes.
-      GOAL: Extract the specific grading rubric, correct answer, and marks for EACH question provided below.
-      
-      MARK SCHEME CONTENT:
-      ${markscheme}
-      
-      QUESTIONS TO MAP:
-      ${JSON.stringify(cleanQuestions.map(q => ({ id: q.id, type: q.type, text: q.prompt })), null, 2)}
-      
-      RETURN A JSON OBJECT where keys are the Question IDs and values are objects:
-      {
-        "q_id": {
-          "rubric": "string showing how to grade",
-          "correct_answer": "the actual correct answer",
-          "marks": 1,
-          "explanation": "brief reasoning"
-        }
-      }`;
+      const extractionPrompt = `Extract rubric, correct answer, and marks for each question.
+---
+MARK SCHEME:
+${markscheme}
+---
+QUESTIONS:
+${JSON.stringify(cleanQuestions.map(q => ({ id: q.id, type: q.type, text: q.prompt })))}
+---
+JSON OUTPUT: { "q_id": { "rubric": "...", "correct_answer": "...", "marks": number, "explanation": "..." } }`;
 
       addLog("Sending extraction request to Gemini...");
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "gemini-3.1-flash-lite-preview",
         contents: extractionPrompt,
         config: { responseMimeType: "application/json" }
       });
@@ -553,10 +548,28 @@ const TaskTestView: React.FC<TaskTestViewProps> = ({
     let computedTotal = 0;
     let computedEarned = 0;
     
+    const totalQuestions = task.worksheetQuestions?.length || 0;
+    
     for (const q of task.worksheetQuestions || []) {
        setCurrentlyProcessingId(q.id);
        setCurrentlyProcessingIndex(gradingIdx++);
-       addLog(`Grading question ${q.id} (${gradingIdx} of ${task.worksheetQuestions.length})...`);
+       setGradingProgress((gradingIdx / totalQuestions) * 100);
+       
+       // Auto-scroll sync
+       setTimeout(() => {
+         const worksheetEl = document.getElementById(`test-q-container-${q.id}`);
+         const rubricEl = document.getElementById(`test-rubric-container-${q.id}`);
+         
+         if (worksheetEl && rightPaneRef.current) {
+           worksheetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+         }
+         
+         if (rubricEl && gradingConsoleContentRef.current) {
+           rubricEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+         }
+       }, 100);
+
+       addLog(`Grading question ${q.id} (${gradingIdx} of ${totalQuestions})...`);
        
        const textReq = getStudentOriginalResponse(q);
        const rubricString = extractedRubrics[q.id] || JSON.stringify({ rubric: "Grade based on general correctness against subject matter.", correct_answer: "Unknown", marks: 1 });
@@ -578,47 +591,25 @@ const TaskTestView: React.FC<TaskTestViewProps> = ({
        const strAns = typeof correct_answer === 'object' ? JSON.stringify(correct_answer) : correct_answer;
        const strRubric = typeof specific_rubric === 'object' ? JSON.stringify(specific_rubric) : specific_rubric;
 
-       const prompt = `Grade this student response based on the provided correct answer, explanation, and rubric.
-
-CRITICAL INSTRUCTION: You MUST strictly limit your text feedback to under 150 words.
-
-QUESTION IDENTIFIER: ${q.id}
-QUESTION TYPE: ${q.type}
-
-STUDENT ANSWER:
-${textReq}
-
-CORRECT ANSWER (from markscheme):
-${strAns}
-
-EXPLANATION:
-${typeof explanation === 'object' ? JSON.stringify(explanation) : explanation}
-
-RUBRIC:
-${strRubric}
-
-GRADING LOGIC:
-Compare the student answer to the correct answer. 
-1. If the student answer is empty or "[NO RESPONSE PROVIDED]", start your feedback with "No response." and award 0 marks.
-2. If the student answer is incorrect, start your feedback with "Incorrect." Provide a brief explanation based on the rubric/explanation.
-3. If the student answer is correct or partially correct, start your feedback with "Correct." or "Partially correct." Provide a brief explanation based on the rubric/explanation.
-Note: For "reorder" questions, the correct answer might sometimes be the initial order itself.
-
-RETURN EXACTLY A JSON OBJECT in this format:
-{
-  "earned_marks": number,
-  "total_marks": number,
-  "feedback": "Your brief teacher's feedback here."
-}
-
-Return ONLY valid JSON.`;
+       const prompt = `Grade student response against rubric. Max 100 words feedback.
+logic:
+- empty/[NO RESPONSE PROVIDED] -> "No response." + ref answer | 0 marks
+- incorrect -> "Incorrect." + ref answer + reason
+- correct/partial -> "Correct."/"Partially correct." + reason
+---
+ID: ${q.id} | TYPE: ${q.type}
+REF ANSWER: ${strAns}
+RUBRIC: ${strRubric}
+STUDENT ANSWER: ${textReq}
+---
+JSON OUTPUT: { "earned_marks": float, "total_marks": float, "feedback": "string" }`;
 
        console.log("GRADING PROMPT FOR QUESTION " + q.id + ":\n", prompt);
 
        try {
          addLog(`Requesting grade for ${q.id} from Gemini...`);
          const response = await ai.models.generateContent({
-            model: "gemini-3-flash-preview",
+            model: "gemini-3.1-flash-lite-preview",
             contents: prompt,
             config: {
               responseMimeType: "application/json",
@@ -637,7 +628,10 @@ Return ONLY valid JSON.`;
          
          const formattedParsed = {
            score: `${parsed.earned_marks || 0} of ${parsed.total_marks || total_marks}`,
-           feedback: (parsed.feedback || '').replace(/\*\*/g, '')
+           feedback: (parsed.feedback || '')
+              .replace(/\*\*/g, '')
+              .replace(/Student Response: /gi, '')
+              .replace(/Correct Response: /gi, '')
          };
          currentFeedback[q.id] = formattedParsed;
          setValidationFeedback(prev => ({ ...prev, [q.id]: formattedParsed }));
@@ -668,9 +662,13 @@ Return ONLY valid JSON.`;
     
     // Generate overall feedback
     try {
-      const overallPrompt = `Based on the following grading results for all questions, provide an overall comment on the student's performance, strengths, and weaknesses. Return ONLY a plain text paragraph.\n\nGrading Results:\n${JSON.stringify(currentFeedback, null, 2)}`;
+      const overallPrompt = `Analyze results. Brief overall comment on performance, strengths, weaknesses.
+---
+DATA: ${JSON.stringify(currentFeedback)}
+---
+OUTPUT: Plain text paragraph.`;
       const overallResponse = await ai.models.generateContent({
-         model: "gemini-3-flash-preview",
+         model: "gemini-3.1-flash-lite-preview",
          contents: overallPrompt
       });
       
@@ -682,11 +680,15 @@ Return ONLY valid JSON.`;
          await onProgress({ feedback: currentFeedback, generalFeedback: overallComments, score: computedEarned, total: computedTotal, cheatLogs: (typeof cheatLogs !== 'undefined' ? cheatLogs : undefined) });
       }
       setGradingPhase('done');
+      setGradingProgress(100);
+      setGradingComplete(true);
       addLog("All grading completed.");
       onComplete(responses, { feedback: currentFeedback, generalFeedback: overallComments, score: computedEarned, total: computedTotal, cheatLogs: (typeof cheatLogs !== 'undefined' ? cheatLogs : undefined) });
     } catch (e: any) {
       addLog(`Overall feedback FAILED: ${e.message}`);
       setGradingPhase('done');
+      setGradingProgress(100);
+      setGradingComplete(true);
       onComplete(responses, { feedback: currentFeedback, generalFeedback: "Assessment graded generally.", score: computedEarned, total: computedTotal, cheatLogs: (typeof cheatLogs !== 'undefined' ? cheatLogs : undefined) });
     }
   };
@@ -727,94 +729,112 @@ Return ONLY valid JSON.`;
             initial={{ opacity: 0 }} 
             animate={{ opacity: 1 }} 
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-red-600/90 backdrop-blur-md z-[1000] flex flex-col items-center justify-center p-12 text-center"
+            className="fixed inset-0 bg-red-600/95 backdrop-blur-2xl z-[1000] flex flex-col items-center justify-center p-12 text-center"
           >
-            <div className="bg-white p-8 rounded-full mb-8 animate-pulse">
-              <AlertCircle size={80} className="text-red-600" />
-            </div>
-            <h1 className="text-5xl font-black text-white mb-4 uppercase tracking-tighter text-shadow-lg">Security Protocol Warning</h1>
-            <p className="text-white/80 text-xl font-bold max-w-lg mb-12">
-              Suspicious behavior (focus loss, copy-paste, or shortcut usage) has been detected and logged.
-            </p>
-            <button 
-              onClick={() => {
-                setCheatDetected(false);
-                stopSiren();
-              }}
-              className="bg-white text-red-600 px-12 py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-gray-100 transition-colors shadow-2xl active:scale-95"
+            <motion.div 
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              className="bg-white rounded-[3rem] p-12 max-w-lg w-full shadow-[0_32px_64px_-12px_rgba(220,38,38,0.4)] space-y-8"
             >
-              Resume Test
-            </button>
+              <div className="bg-red-100 w-24 h-24 rounded-[2rem] flex items-center justify-center text-red-600 mx-auto animate-bounce">
+                <AlertCircle size={64} />
+              </div>
+              <div className="space-y-4">
+                <h1 className="text-4xl font-black text-gray-900 uppercase tracking-tighter leading-none">Security Alert</h1>
+                <p className="text-gray-500 font-bold text-lg leading-relaxed">
+                  Focus loss, shortcut usage, or copy-paste attempts have been detected. This event has been logged for teacher review.
+                </p>
+              </div>
+              <button 
+                onClick={() => {
+                  setCheatDetected(false);
+                  stopSiren();
+                }}
+                className="w-full bg-red-600 text-white py-6 rounded-2xl font-black uppercase tracking-widest hover:bg-red-700 transition-all shadow-xl shadow-red-100 active:scale-95"
+              >
+                Resume Assessment
+              </button>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      <header className="h-16 border-b border-red-100 px-6 flex items-center justify-between bg-white sticky top-0 z-10">
-        <div className="flex items-center gap-4">
-          <button onClick={onBack} className="p-2 hover:bg-red-50 rounded-xl transition-all text-gray-500">
-            <ChevronLeft size={24} />
+      <header className="h-20 border-b border-red-50 px-8 flex items-center justify-between bg-white/80 backdrop-blur-xl sticky top-0 z-[100]">
+        <div className="flex items-center gap-6">
+          <button onClick={onBack} className="p-3 hover:bg-red-50 rounded-2xl transition-all text-gray-400 hover:text-red-600 group">
+            <ChevronLeft size={28} className="group-hover:-translate-x-1 transition-transform" />
           </button>
-          <div className="h-8 w-px bg-red-100 mx-2" />
+          <div className="h-10 w-px bg-red-100" />
           <div className="flex flex-col">
-            <h2 className="text-sm font-black text-gray-800 uppercase tracking-tighter truncate max-w-[300px]">
+            <div className="flex items-center gap-2 mb-1">
+               <span className="px-2 py-0.5 bg-red-600 text-white rounded text-[9px] font-black uppercase tracking-widest">Secure Assessment</span>
+               {task.subject && <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">{task.subject}</span>}
+            </div>
+            <h2 className="text-xl font-black text-gray-900 uppercase tracking-tighter truncate max-w-[400px]">
               {task.title}
             </h2>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-black uppercase tracking-widest text-red-600">Secure Assessment Mode</span>
-              <span className="text-[10px] text-gray-300">•</span>
-              <span className="text-[10px] items-center gap-1.5 px-2 py-0.5 rounded-md font-black uppercase tracking-widest bg-red-50 text-red-600 border border-red-100 flex">
-                <Timer size={10} /> {formatTime(timeLeft || 0)}
-              </span>
-            </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 bg-gray-50 p-2 rounded-2xl border border-gray-100">
+          <div className="flex items-center gap-4 px-4 border-r border-gray-200">
+             <div className="flex flex-col items-end">
+                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Time Remaining</span>
+                <span className={`text-sm font-black tracking-widest flex items-center gap-2 ${timeLeft && timeLeft < 300 ? 'text-red-500 animate-pulse' : 'text-gray-900'}`}>
+                  <Timer size={14} /> {formatTime(timeLeft || 0)}
+                </span>
+             </div>
+          </div>
+
           <button 
             onClick={() => setShowCalculator(!showCalculator)}
-            className={`p-2 rounded-xl transition-all ${showCalculator ? 'bg-red-600 text-white' : 'bg-red-50 text-red-600'}`}
+            className={`p-3 rounded-xl transition-all shadow-sm ${showCalculator ? 'bg-gray-900 text-white rotate-12 scale-110' : 'bg-white text-gray-400 hover:text-gray-900'}`}
           >
             <Calculator size={20} />
           </button>
 
           {isAdmin && (
-            <>
+            <div className="flex items-center gap-2 border-l border-gray-200 pl-4 ml-2">
               <button
                 onClick={() => {
                   setEditingQuestions(JSON.stringify(task.worksheetQuestions || [], null, 2));
                   setShowQuestionsEditor(true);
                 }}
-                className="bg-purple-50 text-purple-600 border border-purple-200 px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest hover:brightness-95 transition-all shadow-sm active:translate-y-1"
+                className="p-3 bg-purple-50 text-purple-600 rounded-xl hover:bg-purple-100 transition-colors"
+                title="Edit Questions"
               >
-                Edit Questions
+                <Edit size={18} />
               </button>
               <button
                 onClick={() => {
                   setEditingMarkscheme(markscheme);
                   setShowMarkschemeEditor(true);
                 }}
-                className="bg-blue-50 text-blue-600 border border-blue-200 px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest hover:brightness-95 transition-all shadow-sm active:translate-y-1"
+                className="p-3 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-colors"
+                title="Edit Markscheme"
               >
-                Edit Markscheme
+                <FileText size={18} />
               </button>
-            </>
+            </div>
           )}
           
           {(!readOnly || isAdmin) && (
-            <button
-              disabled={isValidating}
-              onClick={() => {
-                if (isAdmin && readOnly && !isGradingWorkflow) {
-                  startGradingWorkflow();
-                } else if (!isGradingWorkflow) {
-                  setShowConfirm(true);
-                }
-              }}
-              className="bg-red-600 text-white px-6 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-[0_4px_0_0_#991b1b] active:shadow-none active:translate-y-1 transition-all disabled:opacity-50 flex items-center gap-2"
-            >
-              {isValidating ? <RefreshCw className="animate-spin" size={14} /> : <Send size={14} />}
-              {isValidating ? 'Grading...' : (isAdmin && readOnly ? 'Finalize Grading' : 'Submit Assessment')}
-            </button>
+            <div className="pl-4 ml-2 border-l border-gray-200">
+              <button
+                disabled={isValidating}
+                onClick={() => {
+                  if (isAdmin && readOnly && !isGradingWorkflow) {
+                    startGradingWorkflow();
+                  } else if (!isGradingWorkflow) {
+                    setShowConfirm(true);
+                  }
+                }}
+                className="bg-red-600 text-white px-8 py-3 rounded-xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-red-100 hover:bg-red-700 active:translate-y-1 active:shadow-none transition-all disabled:opacity-50 flex items-center gap-3"
+              >
+                {isValidating ? <RefreshCw className="animate-spin" size={16} /> : <Send size={16} />}
+                {isValidating ? 'Validating...' : (isAdmin && readOnly ? 'Evaluate Performance' : 'Final Submit')}
+              </button>
+            </div>
           )}
         </div>
       </header>
@@ -822,15 +842,17 @@ Return ONLY valid JSON.`;
       <AnimatePresence>
         {showConfirm && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-6">
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl text-center">
-              <div className="bg-red-100 w-16 h-16 rounded-2xl flex items-center justify-center text-red-500 mx-auto mb-6">
-                <AlertCircle size={32} />
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white rounded-[3rem] p-12 max-w-md w-full shadow-2xl text-center space-y-8">
+              <div className="bg-red-50 w-24 h-24 rounded-[2rem] flex items-center justify-center text-red-600 mx-auto">
+                <AlertCircle size={48} />
               </div>
-              <h3 className="text-xl font-black text-gray-800 mb-2 uppercase">Ready to Submit?</h3>
-              <p className="text-gray-500 font-bold mb-8">Your work will be finalized and sent for analysis. You cannot change your answers once submitted.</p>
+              <div className="space-y-2">
+                <h3 className="text-3xl font-black text-gray-900 mb-2 uppercase tracking-tighter">Ready to Submit?</h3>
+                <p className="text-gray-500 font-bold px-4">Your responses will be locked and sent for assessment. Double check your work before finalizing.</p>
+              </div>
               <div className="flex gap-4">
-                <button onClick={() => setShowConfirm(false)} className="flex-1 py-3 rounded-xl font-black uppercase text-xs text-gray-400 hover:bg-gray-50">Back</button>
-                <button onClick={isAdmin && readOnly && !isGradingWorkflow ? startGradingWorkflow : handleFinalSubmit} className="flex-1 bg-red-600 text-white py-3 rounded-xl font-black uppercase text-xs shadow-[0_4px_0_0_#991b1b] active:shadow-none active:translate-y-1 transition-all">{isAdmin && readOnly && !isGradingWorkflow ? "Finalize Grading" : "Submit Now"}</button>
+                <button onClick={() => setShowConfirm(false)} className="flex-1 py-4 rounded-2xl font-black uppercase text-[10px] text-gray-400 hover:bg-gray-50 tracking-widest transition-colors">Back to Test</button>
+                <button onClick={isAdmin && readOnly && !isGradingWorkflow ? startGradingWorkflow : handleFinalSubmit} className="flex-1 bg-red-600 text-white py-4 rounded-2xl font-black uppercase text-[10px] shadow-xl shadow-red-100 hover:bg-red-700 active:translate-y-1 active:shadow-none transition-all tracking-widest">{isAdmin && readOnly && !isGradingWorkflow ? "Start Grading" : "Confirm Submit"}</button>
               </div>
             </motion.div>
           </div>
@@ -964,20 +986,22 @@ Return ONLY valid JSON.`;
           </div>
         </div>
 
-        <div ref={rightPaneRef} className={`${isGradingWorkflow ? 'w-[35%]' : 'w-[45%]'}  border-l border-red-100 bg-white overflow-y-auto custom-scrollbar p-8"`}>
-          <div className="max-w-xl mx-auto space-y-12 pb-20">
-            <div className="space-y-4 border-b border-red-50 pb-8">
-              <div className="space-y-1">
-                <h3 className="text-3xl font-black text-gray-800 tracking-tight uppercase">Formal Assessment</h3>
-                <p className="text-sm font-bold text-gray-400 uppercase tracking-widest italic flex items-center gap-2">
-                  <ShieldCheck size={14} className="text-red-500" /> Secure Protocol v3.1 Enabled
+        <div ref={rightPaneRef} className={`${isGradingWorkflow ? 'w-[35%]' : 'w-[45%]'} border-l border-red-50 bg-gray-50/50 overflow-y-auto custom-scrollbar p-10`}>
+          <div className="max-w-2xl mx-auto space-y-12 pb-32">
+            <div className="space-y-6 border-b border-red-100 pb-12">
+              <div className="space-y-2">
+                <h3 className="text-4xl font-black text-gray-900 tracking-tighter uppercase leading-none">Formal Assessment</h3>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest italic flex items-center gap-2">
+                  <ShieldCheck size={16} className="text-red-600" /> Secure Protocol v3.1 Active
                 </p>
               </div>
-              <div className="bg-red-50 border border-red-100 p-4 rounded-2xl">
-                <p className="text-[10px] font-black text-red-700 uppercase tracking-widest leading-relaxed">
-                  <AlertCircle size={10} className="inline mr-1 -mt-0.5" /> 
-                  You are now under exam conditions. Any suspicious behavior will be logged and subject to review. 
-                  If you attempt to cheat, your results may be disqualified.
+              <div className="bg-red-600 rounded-[2rem] p-6 shadow-lg shadow-red-100 overflow-hidden relative group">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
+                <p className="text-[11px] font-black text-white uppercase tracking-widest leading-relaxed relative z-10 flex items-start gap-3">
+                  <AlertCircle size={18} className="shrink-0" /> 
+                  <span>
+                    Exam conditions enforced. All interactions are monitored. Focus loss or unauthorized input will be flagged immediately.
+                  </span>
                 </p>
               </div>
             </div>
@@ -985,29 +1009,45 @@ Return ONLY valid JSON.`;
             {Object.keys(questionsByPage).sort((a, b) => parseInt(a) - parseInt(b)).map(pageStr => {
               const pageNum = parseInt(pageStr);
               return (
-                <div key={pageNum} id={`test-questions-page-${pageNum}`} className="space-y-6 scroll-mt-20">
-                  <div className="flex items-center gap-3">
-                    <span className="text-[10px] font-black text-red-400 uppercase tracking-widest px-4 py-1 bg-red-50 rounded-lg border border-red-100/50">Questions for Page {pageNum}</span>
-                    <div className="h-px flex-1 bg-red-50" />
+                <div key={pageNum} id={`test-questions-page-${pageNum}`} className="space-y-10 scroll-mt-24">
+                  <div className="flex items-center gap-4">
+                    <span className="text-[10px] font-black text-red-600 uppercase tracking-widest px-5 py-2 bg-white rounded-full border border-red-100 shadow-sm">Page {pageNum} Questions</span>
+                    <div className="h-px flex-1 bg-red-100/50" />
                   </div>
 
                   {questionsByPage[pageNum].map((q, idx) => {
                     const typedQ = q as any;
+                    const isAnswered = responses[typedQ.id];
                     return (
                       <motion.div 
                         key={typedQ.id}
-                        initial={{ opacity: 0, y: 10 }}
+                        id={`test-q-container-${typedQ.id}`}
+                        initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
-                        className={`p-8 rounded-[2rem] border-2 transition-all ${
-                          responses[typedQ.id] ? 'bg-red-50/10 border-red-200' : 'bg-white border-gray-100'
+                        className={`p-10 rounded-[3rem] border-2 transition-all duration-300 relative group overflow-hidden ${
+                          isAnswered 
+                            ? 'bg-white border-red-200 shadow-xl shadow-red-50' 
+                            : 'bg-white border-white shadow-lg shadow-gray-100 hover:border-red-100'
                         }`}
                       >
-                        <div className="flex items-start gap-4 mb-6">
-                          <span className="flex-shrink-0 w-8 h-8 rounded-xl bg-red-600 text-white flex items-center justify-center font-black text-xs">
+                        {isAnswered && (
+                          <div className="absolute top-0 right-0 p-6">
+                            <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="bg-red-50 p-2 rounded-full text-red-600">
+                              <CheckCircle2 size={16} />
+                            </motion.div>
+                          </div>
+                        )}
+
+                        <div className="flex items-start gap-6 mb-10">
+                          <span className={`flex-shrink-0 w-10 h-10 rounded-2xl flex items-center justify-center font-black text-sm transition-colors duration-300 ${
+                            isAnswered ? 'bg-red-600 text-white shadow-lg shadow-red-200' : 'bg-gray-100 text-gray-400'
+                          }`}>
                             {idx + 1}
                           </span>
-                          <QuestionTextWithCommandTerms text={typedQ.question} />
+                          <div className="pt-1">
+                            <QuestionTextWithCommandTerms text={typedQ.question} />
+                          </div>
                         </div>
 
                         {typedQ.type === 'mcq' && (
@@ -1174,7 +1214,7 @@ Return ONLY valid JSON.`;
             {generalFeedback && (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-red-50 border-2 border-red-100 rounded-3xl p-6 space-y-3">
                 <h4 className="text-xs font-black text-red-800 uppercase tracking-widest flex items-center gap-2">
-                  <Eye size={16} /> Overall comments
+                  <Eye size={16} /> Overall Comments
                 </h4>
                 <p className="text-sm font-bold text-gray-700 italic">"{generalFeedback}"</p>
               </motion.div>
@@ -1185,99 +1225,207 @@ Return ONLY valid JSON.`;
           </div>
         </div>
       
-        {isGradingWorkflow && (
-          <div className="w-[35%] border-l-4 border-emerald-500 bg-emerald-50 overflow-y-auto custom-scrollbar p-8 flex flex-col shadow-[-10px_0_20px_rgba(0,0,0,0.05)] z-10 transition-all duration-500">
-            <h3 className="text-2xl font-black text-emerald-800 uppercase tracking-tight mb-6">Markscheme & Grading</h3>
+      {isGradingWorkflow && (
+        <div className="w-[35%] bg-gray-50 overflow-hidden flex flex-col z-10 transition-all duration-500 border-l border-gray-100">
+          <div className="p-8 space-y-8 flex-1 overflow-y-auto custom-scrollbar scroll-smooth">
+            <div className="space-y-2">
+              <div className="flex items-center gap-3 mb-1">
+                <div className="w-8 h-1 bg-red-600 rounded-full" />
+                <span className="text-[10px] font-black text-red-600 uppercase tracking-[0.3em]">Evaluation Protocol</span>
+              </div>
+              <h3 className="text-3xl font-black text-gray-900 uppercase tracking-tighter leading-none">Grading Engine</h3>
+              <div className="flex items-center gap-2 pt-2">
+                <span className="bg-gray-900 text-white px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest">Gemini 3.1 Flash Lite</span>
+              </div>
+            </div>
+
+            {/* Bento Progress Card */}
+            <div className="bg-white p-8 rounded-[2.5rem] shadow-xl shadow-gray-200/50 border border-gray-100 space-y-6">
+              <div className="flex justify-between items-end">
+                <div className="space-y-1">
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Operational Status</span>
+                  <span className="text-sm font-black text-red-600 uppercase">
+                    {gradingPhase === 'extracting_rubrics' ? 'Pre-processing Rubrics' : 
+                     gradingPhase === 'grading' ? `Live Analysis` :
+                     gradingPhase === 'generating_overall' ? 'Compiling Scores' : 'Engine Ready'}
+                  </span>
+                </div>
+                <span className="text-3xl font-black text-gray-900 tracking-tighter">{Math.round(gradingProgress)}%</span>
+              </div>
+              <div className="h-4 bg-gray-100 rounded-2xl overflow-hidden p-1 border border-gray-200">
+                <motion.div 
+                  initial={{ width: 0 }}
+                  animate={{ width: `${gradingProgress}%` }}
+                  className="h-full bg-red-600 rounded-xl shadow-[0_0_20px_rgba(220,38,38,0.4)]"
+                />
+              </div>
+            </div>
             
-            <div className="flex-1 space-y-6">
+            <div ref={gradingConsoleContentRef} className="space-y-4">
                {(task.worksheetQuestions || []).map((q, idx) => (
-                 <div key={q.id} className={`p-4 rounded-xl border-2 transition-all ${currentlyProcessingId === q.id ? 'bg-white border-emerald-500 ring-4 ring-emerald-500/20 shadow-xl scale-[1.02]' : 'bg-white/50 border-emerald-200'}`}>
-                    <div className="flex items-center justify-between mb-2">
-                       <div className="flex items-center gap-2">
-                         <span className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs"><ShieldCheck size={12} className="mr-1"/> Q{idx + 1}</span>
-                         <span className="text-xs font-black text-emerald-600 uppercase tracking-widest">Rubric</span>
-                       </div>
-                       {rubricMeta && rubricMeta[q.id] && (
-                         <div className="flex items-center gap-2 text-[9px] font-black uppercase text-emerald-500 tracking-wider">
-                            {rubricMeta[q.id].type && <span className="bg-emerald-50 px-2 py-1 rounded">TYPE: {String(rubricMeta[q.id].type)}</span>}
-                            {rubricMeta[q.id].marks && <span className="bg-emerald-50 px-2 py-1 rounded">PTS: {String(rubricMeta[q.id].marks)}</span>}
+                 <motion.div 
+                   key={q.id} 
+                   id={`test-rubric-container-${q.id}`}
+                   className={`p-6 rounded-[2rem] border-2 transition-all duration-500 scroll-mt-24 ${
+                     currentlyProcessingId === q.id 
+                       ? 'bg-white border-red-500 shadow-2xl scale-[1.02] ring-8 ring-red-500/5' 
+                       : 'bg-white border-gray-100 shadow-sm opacity-60'
+                   }`}
+                 >
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <span className="w-10 h-10 rounded-xl bg-gray-900 text-white flex items-center justify-center font-black text-xs">
+                          Q{idx + 1}
+                        </span>
+                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Marking Criteria</span>
+                      </div>
+                      {currentlyProcessingId === q.id && (
+                         <div className="px-3 py-1 bg-red-600 text-white rounded-full text-[8px] font-black uppercase tracking-widest animate-pulse">
+                            Analyzing
                          </div>
-                       )}
-                    </div>
-                    <div className="text-sm font-medium text-emerald-900 bg-emerald-50 p-3 rounded-lg whitespace-pre-wrap">
-                       {gradingPhase === 'extracting_rubrics' && currentlyProcessingId === q.id ? (
-                         <div className="flex items-center text-emerald-600 gap-2"><RefreshCw size={14} className="animate-spin" /> Extracting rubric from markscheme...</div>
-                       ) : extractedRubrics[q.id] ? (
-                         extractedRubrics[q.id]
-                       ) : gradingPhase === 'extracting_rubrics' ? (
-                         <span className="text-emerald-400">Waiting...</span>
-                       ) : "Extracted rubric will appear here."}
+                      )}
                     </div>
                     
-                    {/* Removed Redundant AI Feedback in third panel */}
-                 </div>
+                    <div className="bg-gray-50 rounded-2xl p-5 border border-gray-100">
+                       <p className="text-xs font-bold text-gray-700 leading-relaxed italic">
+                          {extractedRubrics[q.id] ? (extractedRubrics[q.id]) : "Initializing criteria..."}
+                       </p>
+                    </div>
+                 </motion.div>
                ))}
                
                {generalFeedback && (
-                 <div className="p-4 rounded-xl bg-purple-50 border-2 border-purple-200 mt-6">
-                    <span className="text-xs font-black text-purple-600 uppercase tracking-widest mb-2 block">Overall Comments</span>
-                    <p className="text-sm text-purple-900 leading-relaxed">{generalFeedback}</p>
+                 <div className="p-8 rounded-[2rem] bg-gray-900 border border-gray-800 shadow-2xl space-y-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-red-600 rounded-lg text-white">
+                         <Eye size={16} />
+                      </div>
+                      <span className="text-[10px] font-black text-white uppercase tracking-widest">Overall Commentary</span>
+                    </div>
+                    <p className="text-sm font-bold text-gray-400 leading-relaxed italic">"{generalFeedback}"</p>
                  </div>
                )}
             </div>
-
-            <div className="mt-8 pt-6 border-t-2 border-emerald-200 sticky bottom-0 bg-emerald-50 pb-4">
-              {/* Grading Console Logs */}
-              {gradingLogs.length > 0 && (
-                <div className="mb-6 bg-slate-900 rounded-2xl p-4 border border-slate-800 shadow-inner overflow-hidden flex flex-col max-h-48">
-                  <div className="flex items-center gap-2 mb-2 pb-2 border-b border-white/5">
-                    <Terminal size={14} className="text-emerald-400" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Grading Console</span>
-                  </div>
-                  <div className="flex-1 overflow-y-auto custom-scrollbar font-mono text-[10px] leading-relaxed space-y-1.5 scroll-smooth">
-                    {gradingLogs.map((log, i) => (
-                      <div key={i} className="flex gap-2 group">
-                        <span className="text-slate-600 shrink-0 select-none">[{i+1}]</span>
-                        <span className={`${log.includes('FAILED') || log.includes('CRITICAL') ? 'text-red-400 font-bold' : log.includes('successfully') ? 'text-emerald-400' : 'text-slate-300'}`}>
-                          {log}
-                        </span>
-                      </div>
-                    ))}
-                    {gradingPhase !== 'done' && (
-                       <div className="animate-pulse flex items-center gap-1 mt-1">
-                         <span className="w-1 h-1 bg-emerald-400 rounded-full"></span>
-                         <span className="text-emerald-400 opacity-70">Processing...</span>
-                       </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {gradingPhase === 'ready_to_grade' ? (
-                <button onClick={gradeAgainstRubric} className="w-full bg-emerald-600 text-white py-4 rounded-xl font-black uppercase text-sm tracking-widest shadow-[0_4px_0_0_#059669] active:shadow-none active:translate-y-1 transition-all">
-                  Grade Against Rubric
-                </button>
-              ) : gradingPhase === 'grading' ? (
-                <button disabled className="w-full bg-emerald-400 text-white py-4 rounded-xl font-black uppercase text-sm tracking-widest flex items-center justify-center gap-2">
-                  <RefreshCw size={18} className="animate-spin" /> {currentlyProcessingIndex !== null ? `Grading Question ${currentlyProcessingIndex}...` : 'Grading Responses...'}
-                </button>
-              ) : gradingPhase === 'generating_overall' ? (
-                <button disabled className="w-full bg-emerald-400 text-white py-4 rounded-xl font-black uppercase text-sm tracking-widest flex items-center justify-center gap-2">
-                  <RefreshCw size={18} className="animate-spin" /> Generating Report...
-                </button>
-              ) : gradingPhase === 'done' ? (
-                <button disabled className="w-full bg-slate-800 text-white py-4 rounded-xl font-black uppercase text-sm tracking-widest">
-                  Grading Completed
-                </button>
-              ) : gradingPhase === 'extracting_rubrics' ? (
-                <button disabled className="w-full bg-emerald-400 text-white py-4 rounded-xl font-black uppercase text-sm tracking-widest flex items-center justify-center gap-2">
-                  <RefreshCw size={18} className="animate-spin" /> Extracting Rubrics...
-                </button>
-              ) : null}
-            </div>
           </div>
-        )}
+
+          <div className="p-8 pt-0 border-t border-gray-100 bg-gray-50/80 backdrop-blur-md">
+            {/* Console Log for Tests */}
+            {gradingLogs.length > 0 && (
+              <div className="my-6 bg-gray-900 rounded-[2rem] p-6 shadow-2xl border border-gray-800 flex flex-col max-h-32">
+                <div className="flex items-center gap-3 mb-3 pb-3 border-b border-white/5">
+                  <Terminal size={12} className="text-red-400" />
+                  <span className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-500">Secure Logs</span>
+                </div>
+                <div className="flex-1 overflow-y-auto custom-scrollbar font-mono text-[9px] leading-relaxed space-y-2 scroll-smooth">
+                  {gradingLogs.map((log, i) => (
+                    <div key={i} className="flex gap-3 text-gray-400">
+                      <span className="text-gray-700 shrink-0">[{i+1}]</span>
+                      <span className={`${log.includes('FAILED') || log.includes('CRITICAL') ? 'text-red-400' : log.includes('successfully') ? 'text-emerald-400' : ''}`}>
+                        {log}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {gradingPhase === 'ready_to_grade' ? (
+              <button onClick={gradeAgainstRubric} className="w-full bg-red-600 text-white py-5 rounded-2xl font-black uppercase text-xs tracking-widest shadow-[0_6px_0_0_#991b1b] active:shadow-none active:translate-y-1.5 transition-all">
+                Begin Automated Grading
+              </button>
+            ) : gradingPhase === 'grading' ? (
+              <button disabled className="w-full bg-red-400 text-white py-5 rounded-2xl font-black uppercase text-xs tracking-widest flex items-center justify-center gap-3">
+                <RefreshCw size={18} className="animate-spin" /> 
+                {currentlyProcessingIndex !== null ? `Evaluating Question ${currentlyProcessingIndex}` : 'Finalizing Output'}
+              </button>
+            ) : gradingPhase === 'generating_overall' ? (
+              <button disabled className="w-full bg-red-400 text-white py-5 rounded-2xl font-black uppercase text-xs tracking-widest flex items-center justify-center gap-3">
+                <RefreshCw size={18} className="animate-spin" /> data_compilation.sh
+              </button>
+            ) : gradingPhase === 'done' ? (
+              <button disabled className="w-full bg-gray-800 text-white py-5 rounded-2xl font-black uppercase text-xs tracking-widest flex items-center justify-center gap-3">
+                <CheckCircle2 size={18} className="text-emerald-400" /> All Criteria Evaluated
+              </button>
+            ) : gradingPhase === 'extracting_rubrics' ? (
+              <button disabled className="w-full bg-red-400 text-white py-5 rounded-2xl font-black uppercase text-xs tracking-widest flex items-center justify-center gap-3">
+                <RefreshCw size={18} className="animate-spin" /> criterion_extraction.py
+              </button>
+            ) : null}
+          </div>
+        </div>
+      )}
       </main>
+      <AnimatePresence>
+        {gradingComplete && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="fixed inset-0 bg-emerald-600/98 backdrop-blur-2xl z-[400] flex items-center justify-center p-6"
+          >
+            <motion.div 
+              initial={{ scale: 0.8, y: 50, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              transition={{ type: "spring", damping: 15 }}
+              className="bg-white rounded-[4rem] p-16 max-w-xl w-full shadow-[0_32px_64px_-12px_rgba(0,0,0,0.3)] text-center space-y-10"
+            >
+              <div className="relative">
+                <motion.div 
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1.2 }}
+                  transition={{ delay: 0.2, type: "spring" }}
+                  className="w-32 h-32 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-500 mx-auto"
+                >
+                  <CheckCircle2 size={64} />
+                </motion.div>
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-48 bg-emerald-400/20 rounded-full blur-3xl -z-10 animate-pulse" />
+              </div>
+              
+              <div className="space-y-4">
+                <motion.h3 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                  className="text-5xl font-black text-gray-900 tracking-tighter uppercase leading-none"
+                >
+                  Assessment <br/> Graded
+                </motion.h3>
+                <motion.p 
+                   initial={{ opacity: 0 }}
+                   animate={{ opacity: 1 }}
+                   transition={{ delay: 0.6 }}
+                   className="text-gray-500 font-bold text-lg"
+                >
+                  The AI Engine has successfully evaluated all test responses. Performance metrics and cheat logs have been compiled into the final report.
+                </motion.p>
+              </div>
+
+              <motion.div 
+                 initial={{ opacity: 0, y: 20 }}
+                 animate={{ opacity: 1, y: 0 }}
+                 transition={{ delay: 0.8 }}
+                 className="pt-4 space-y-4"
+              >
+                <button
+                  onClick={onBack}
+                  className="group relative w-full overflow-hidden rounded-3xl bg-gray-900 p-6 flex items-center justify-center gap-4 transition-all hover:bg-black active:scale-95"
+                >
+                  <div className="relative z-10 flex items-center gap-3">
+                    <span className="text-xl font-black text-white uppercase tracking-widest">Proceed to report generation</span>
+                    <ArrowRight className="text-emerald-400 group-hover:translate-x-2 transition-transform" />
+                  </div>
+                  <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/0 via-emerald-500/10 to-emerald-500/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                </button>
+                <button
+                  onClick={() => setGradingComplete(false)}
+                  className="w-full py-4 rounded-2xl font-black uppercase text-xs text-gray-400 hover:bg-gray-50 tracking-widest transition-colors flex items-center justify-center gap-2"
+                >
+                  <X size={16} /> Close Preview
+                </button>
+              </motion.div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
