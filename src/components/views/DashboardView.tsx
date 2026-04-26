@@ -6,7 +6,7 @@ import {
   CheckCircle2, XCircle, Trophy, Trash2, Lock, FileText, 
   Download, Star, Zap, Chrome, LayoutGrid, Info, ArrowRight, RefreshCw,
   QrCode, Edit, Database, LogOut, User, Calendar as CalendarIcon, ChevronRight as ChevronRightIcon, Target,
-  Crown, Calculator, Clock, Flame
+  Crown, Calculator, Clock, Flame, Sparkles, ShieldCheck
 } from 'lucide-react';
 import { Unit, ChallengeRecord, ChallengeResponse, Question, UserProfile, Task, TaskSubmission } from '../../types';
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, parseISO, startOfDay } from 'date-fns';
@@ -79,10 +79,18 @@ interface DashboardViewProps {
   showCalculator: boolean;
   setShowCalculator: (v: boolean) => void;
   mySubmissions: TaskSubmission[];
+  allSubmissions: TaskSubmission[];
 }
 
 const Y8Splash = ({ onClose }: { onClose: () => void }) => {
   const [activeEmojis, setActiveEmojis] = React.useState<{ id: number; emoji: string; x: number; y: number; size: number }[]>([]);
+  
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      onClose();
+    }, 6000); // 6 seconds wait time
+    return () => clearTimeout(timer);
+  }, [onClose]);
   
   const spawnEmoji = () => {
     const facialEmojis = ["😀", "😃", "😄", "😁", "😆", "😅", "😂", "🤣", "😊", "😇", "🙂", "🙃", "😉", "😌", "😍", "🥰", "😘", "😗", "😙", "😚", "😋", "😛", "😝", "😜", "🤪", "🤨", "🧐", "🤓", "😎", "🤩", "🥳", "😏", "😒", "😞", "😔", "😟", "😕", "🙁", "☹️", "😣", "😖", "😫", "😩", "🥺", "😢", "😭", "😤", "😠", "😡", "🤬", "🤯", "😳", "🥵", "🥶", "😱", "😨", "😰", "😥", "😓", "🤗", "🤔", "🤭", "🤫", "🤥", "😶", "😐", "😑", "😬", "🙄", "😯", "😦", "😧", "😮", "😲", "🥱", "😴", "🤤", "😪", "😵", "🤐", "🥴", "🤢", "🤮", "🤧", "😷", "🤒", "🤕", "🤑", "🤠", "😈", "👿", "👹", "👺", "🤡", "💩", "👻", "💀", "☠️", "👽", "👾", "🤖", "🎃", "😺", "😸", "😻", "😼", "😽", "🙀", "😿", "😾"];
@@ -175,6 +183,123 @@ const Y8Splash = ({ onClose }: { onClose: () => void }) => {
   );
 };
 
+const CalendarWidget = ({ tasks, mySubmissions }: { tasks: Task[], mySubmissions: TaskSubmission[] }) => {
+  const unfinished = tasks.filter(t => t.status === 'active' && !mySubmissions.some(s => s.taskId === t.id));
+  const today = startOfDay(new Date());
+  const monthStart = startOfMonth(today);
+  const monthEnd = endOfMonth(today);
+  const monthDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
+  
+  const weekStart = startOfWeek(today, { weekStartsOn: 1 });
+  const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
+  const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
+
+  const getDayStatus = (day: Date) => {
+    const dayTasks = unfinished.filter(t => {
+      const taskDate = startOfDay(t.dueDate.includes('T') ? parseISO(t.dueDate) : new Date(t.dueDate + 'T00:00:00'));
+      return isSameDay(taskDate, day);
+    });
+    const hasTest = dayTasks.some(t => t.type === 'test');
+    const hasWorksheet = dayTasks.some(t => t.type === 'worksheet');
+    if (hasTest) return 'bg-red-500';
+    if (hasWorksheet) return 'bg-orange-500';
+    return '';
+  };
+
+  const weekTasks = unfinished.filter(t => {
+    const taskDate = startOfDay(t.dueDate.includes('T') ? parseISO(t.dueDate) : new Date(t.dueDate + 'T00:00:00'));
+    return taskDate >= weekStart && taskDate <= weekEnd;
+  });
+  const weekTests = weekTasks.filter(t => t.type === 'test').length;
+  const weekWorksheets = weekTasks.filter(t => t.type === 'worksheet').length;
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-white border-2 border-slate-100 rounded-[2.5rem] p-5 sm:p-6 shadow-xl flex flex-col gap-6 h-full"
+    >
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 h-full">
+        {/* Month View */}
+        <div className="flex flex-col">
+          <div className="flex items-center justify-between mb-4 px-1">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{format(today, 'MMMM yyyy')}</p>
+          </div>
+          <div className="grid grid-cols-7 gap-1 flex-1">
+            {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
+              <div key={i} className="text-[8px] font-black text-slate-300 text-center py-1">{d}</div>
+            ))}
+            {Array.from({ length: (monthStart.getDay() + 6) % 7 }).map((_, i) => (
+              <div key={`pad-${i}`} className="aspect-square" />
+            ))}
+            {monthDays.map((day, i) => {
+              const status = getDayStatus(day);
+              return (
+                <div 
+                  key={i} 
+                  className={`aspect-square rounded-lg flex items-center justify-center text-[9px] font-bold transition-all relative ${
+                    isSameDay(day, today) ? 'bg-slate-900 text-white z-10' : 'text-slate-400 hover:bg-slate-50'
+                  }`}
+                >
+                  {status && (
+                    <div className={`absolute inset-0 rounded-lg ${status} opacity-20`} />
+                  )}
+                  {status && (
+                    <div className={`absolute bottom-1 w-1 h-1 rounded-full ${status}`} />
+                  )}
+                  {format(day, 'd')}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Week Summary View - Bento Box Style */}
+        <div className="flex flex-col border-t sm:border-t-0 sm:border-l border-slate-100 pt-6 sm:pt-0 sm:pl-6">
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 px-1">This Week's Load</p>
+          <div className="grid grid-cols-1 gap-3 flex-1">
+            <div className="bg-gradient-to-br from-orange-400 to-orange-500 rounded-2xl p-4 flex items-center justify-between shadow-lg shadow-orange-100">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-black text-orange-50 uppercase tracking-widest opacity-80">Worksheets</span>
+                <span className="text-2xl font-black text-white leading-none mt-1">{weekWorksheets}</span>
+              </div>
+              <div className="bg-white/20 p-2 rounded-xl backdrop-blur-sm border border-white/20">
+                <FileText size={20} className="text-white" />
+              </div>
+            </div>
+            
+            <div className="bg-gradient-to-br from-red-400 to-red-500 rounded-2xl p-4 flex items-center justify-between shadow-lg shadow-red-100">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-black text-red-50 text-white uppercase tracking-widest opacity-80">Assessments</span>
+                <span className="text-2xl font-black text-white leading-none mt-1">{weekTests}</span>
+              </div>
+              <div className="bg-white/20 p-2 rounded-xl backdrop-blur-sm border border-white/20">
+                <Target size={20} className="text-white" />
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-6">
+            <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-2 px-1">Weekly Pulse</p>
+            <div className="h-3 bg-slate-50 rounded-full overflow-hidden flex p-0.5 border border-slate-100">
+              {weekDays.map((day, i) => {
+                const status = getDayStatus(day);
+                return (
+                  <div 
+                    key={i} 
+                    className={`flex-1 h-full rounded-sm transition-all ${status || 'bg-transparent'} ${i !== 6 ? 'mr-0.5' : ''}`}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+
+  );
+};
+
 const DashboardView: React.FC<DashboardViewProps> = (props) => {
   const [isMobile, setIsMobile] = React.useState(false);
 
@@ -202,7 +327,7 @@ const DashboardView: React.FC<DashboardViewProps> = (props) => {
     startQuiz, startRevision, startVocab,
     currentUser, loginWithGoogle, logout, allUsers, selectedStudent, setSelectedStudent,
     tasks, onCreateTask, onDeleteTask, onStartTask, setMode,
-    showCalculator, setShowCalculator, mySubmissions
+    showCalculator, setShowCalculator, mySubmissions, allSubmissions
   } = props;
 
   const outstandingTasks = tasks.filter(t => t.status === 'active' && !mySubmissions.some(s => s.taskId === t.id));
@@ -224,79 +349,90 @@ const DashboardView: React.FC<DashboardViewProps> = (props) => {
         {isY8Open && <Y8Splash onClose={() => setIsY8Open(false)} />}
       </AnimatePresence>
 
-      <header className="bg-white border-b-2 border-gray-200 p-4 sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto flex justify-between items-center px-4">
+      <header className="bg-white/10 backdrop-blur-3xl border-b border-white/20 p-4 sticky top-0 z-[100] shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07)]">
+        <div className="max-w-7xl mx-auto flex justify-between items-center px-4">
           <div className="flex flex-col">
-            <h1 className="text-xl font-black text-emerald-500 tracking-tight leading-none">Y8 Cambridge LS Science</h1>
-            <div className="flex items-center gap-2 mt-1 px-1">
-              <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none">An app by Toman</span>
-              <span className="text-[9px] text-gray-300 font-bold">•</span>
-              <div className="flex items-center gap-1.5 transition-all">
-                <span className="text-[9px] font-black text-orange-500 uppercase tracking-widest leading-none">secured by</span>
-                <Flame size={12} className="text-orange-500 fill-orange-500" />
-                <span className="text-[9px] font-black text-orange-500 uppercase tracking-widest leading-none">Firebase</span>
+            <h1 className="font-black tracking-tighter leading-none flex items-baseline gap-2">
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-emerald-500 to-teal-600 text-[21px]">Science Pro</span>
+              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest translate-y-0.5">By Toman</span>
+            </h1>
+            <div className="flex items-center gap-2 mt-1.5">
+              <span className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none">Powered by Google DeepMind</span>
+              <div className="w-1 h-1 rounded-full bg-slate-200" />
+              <div className="flex items-center gap-1">
+                <Flame size={10} className="text-orange-500 fill-orange-500" />
+                <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest leading-none">Firebase Secure</span>
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            
+          <div className="flex items-center gap-4">
             {currentUser ? (
-              <div className="flex items-center gap-2 mr-2">
+              <div className="flex items-center gap-3">
                 <div className="hidden sm:flex flex-col items-end">
-                  <div className="flex items-center gap-1">
-                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">Logged in as</span>
+                  <div className="flex items-center gap-1.5">
                     {isAdminLoggedIn ? (
-                      <div className="flex items-center gap-1 bg-amber-500 px-2 py-0.5 rounded-full text-white shadow-sm">
-                        <Crown size={10} className="fill-white" />
-                        <span className="text-[9px] font-black uppercase tracking-tight">God Mode</span>
+                      <div className="bg-amber-500/10 text-amber-600 px-2 py-0.5 rounded-full flex items-center gap-1 ring-1 ring-amber-500/20">
+                        <ShieldCheck size={10} />
+                        <span className="text-[8px] font-black uppercase tracking-widest">Admin</span>
                       </div>
                     ) : (
-                      <div className="flex items-center gap-1 bg-emerald-500 px-2 py-0.5 rounded-full text-white shadow-sm">
-                        <GraduationCap size={10} className="fill-white" />
-                        <span className="text-[9px] font-black uppercase tracking-tight">Student Mode</span>
+                      <div className="bg-emerald-500/10 text-emerald-600 px-2 py-0.5 rounded-full flex items-center gap-1 ring-1 ring-emerald-500/20">
+                        <GraduationCap size={10} />
+                        <span className="text-[8px] font-black uppercase tracking-widest">Student</span>
                       </div>
                     )}
                   </div>
-                  <span className="text-xs font-bold text-gray-700 truncate max-w-[120px]">{currentUser.displayName || currentUser.email}</span>
+                  <span className="text-[11px] font-bold text-slate-800 mt-1">{currentUser.displayName || currentUser.email}</span>
                 </div>
-                {currentUser.photoURL ? (
-                  <img 
-                    src={currentUser.photoURL} 
-                    alt="User" 
-                    className="w-8 h-8 rounded-full border-2 border-emerald-100 cursor-pointer hover:scale-110 active:scale-95 transition-all shadow-sm" 
-                    referrerPolicy="no-referrer" 
-                    onClick={() => setShowStats(!showStats)}
-                  />
-                ) : (
-                  <div 
-                    onClick={() => setShowStats(!showStats)}
-                    className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold text-xs cursor-pointer hover:bg-emerald-200"
-                  >
-                    {currentUser.displayName?.charAt(0) || 'U'}
+                
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setShowStats(!showStats)}
+                  className="relative cursor-pointer"
+                >
+                  {currentUser.photoURL ? (
+                    <img 
+                      src={currentUser.photoURL} 
+                      alt="User" 
+                      className="w-10 h-10 rounded-2xl border-2 border-white shadow-md ring-1 ring-slate-100" 
+                      referrerPolicy="no-referrer" 
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-2xl bg-emerald-500 text-white flex items-center justify-center font-black text-sm shadow-md border-2 border-white">
+                      {currentUser.displayName?.charAt(0) || 'U'}
+                    </div>
+                  )}
+                  <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-white rounded-lg flex items-center justify-center shadow-sm border border-slate-100">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   </div>
-                )}
+                </motion.div>
+
                 <button 
                   onClick={logout}
-                  className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                  className="w-10 h-10 rounded-2xl bg-slate-50 text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all flex items-center justify-center border border-slate-100"
                   title="Logout"
                 >
                   <LogOut size={18} />
                 </button>
               </div>
             ) : (
-              <button 
+              <motion.button 
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={loginWithGoogle}
-                className="group flex items-center gap-2 bg-white border-2 border-gray-100 hover:border-blue-400 px-3 py-1.5 rounded-xl font-black text-[10px] uppercase tracking-widest text-gray-700 shadow-[0_3px_0_0_#f3f4f6] hover:shadow-[0_3px_0_0_#dbeafe] active:shadow-none active:translate-y-0.5 transition-all mr-2"
+                className="bg-slate-900 text-white px-5 py-2.5 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center gap-3 shadow-xl shadow-slate-900/20 border border-slate-800"
               >
-                <div className="flex items-center justify-center w-6 h-6 bg-white rounded-lg shadow-sm group-hover:scale-110 transition-transform font-black text-blue-500 text-sm">
-                  G
+                <div className="bg-white/10 p-1.5 rounded-lg backdrop-blur-md">
+                  <Chrome size={14} />
                 </div>
-                <span>Login</span>
-              </button>
+                Login with Google
+              </motion.button>
             )}
           </div>
         </div>
       </header>
+
 
       <AnimatePresence>
         {isChallengeModeOpen && (
@@ -410,118 +546,177 @@ const DashboardView: React.FC<DashboardViewProps> = (props) => {
               exit={{ height: 0, opacity: 0 }}
               className="overflow-hidden"
             >
-              <motion.div 
-                onClick={() => setMode('tasks')}
-                whileHover={{ scale: 1.005, cursor: 'pointer' }}
-                whileTap={{ scale: 0.995 }}
-                animate={outstandingTasks.length > 0 ? {
-                  boxShadow: ["0 0 0 0px rgba(16, 185, 129, 0)", "0 0 0 10px rgba(16, 185, 129, 0.1)", "0 0 0 0px rgba(16, 185, 129, 0)"]
-                } : {}}
-                transition={outstandingTasks.length > 0 ? {
-                  duration: 3,
-                  repeat: Infinity,
-                  ease: "easeInOut"
-                } : {}}
-                className="bg-gradient-to-r from-emerald-500 to-teal-600 rounded-2xl p-5 shadow-xl text-white relative overflow-hidden group mb-2"
-              >
-                <div className="absolute top-0 right-0 p-6 opacity-10 pointer-events-none group-hover:scale-110 transition-transform duration-500">
-                  <Target size={80} />
-                </div>
-
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 relative z-10">
-                  <div>
-                    <h2 className="text-xl font-black tracking-tight mb-0.5">
-                      {currentUser ? `Welcome Back, ${currentUser.displayName?.split(' ')[0]}` : 'Welcome Back'}
-                    </h2>
-                    <p className="text-emerald-100 font-bold text-[9px] uppercase tracking-widest opacity-80">{format(new Date(), 'EEEE, MMMM do yyyy')}</p>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+                {/* At-a-glance Dashboard (Shared/Student View) */}
+                <motion.div 
+                  onClick={() => setMode('tasks')}
+                  whileHover={{ scale: 1.005, cursor: 'pointer' }}
+                  whileTap={{ scale: 0.995 }}
+                  animate={outstandingTasks.length > 0 ? {
+                    boxShadow: ["0 0 0 0px rgba(16, 185, 129, 0)", "0 0 0 10px rgba(16, 185, 129, 0.1)", "0 0 0 0px rgba(16, 185, 129, 0)"]
+                  } : {}}
+                  transition={outstandingTasks.length > 0 ? {
+                    duration: 3,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  } : {}}
+                  className="bg-gradient-to-r from-emerald-500 to-teal-600 rounded-[2.5rem] p-6 shadow-xl text-white relative overflow-hidden group lg:col-span-1"
+                >
+                  <div className="absolute top-0 right-0 p-6 opacity-10 pointer-events-none group-hover:scale-110 transition-transform duration-500">
+                    <Target size={80} />
                   </div>
-                  
-                  <div className="grid grid-cols-3 gap-2 flex-1 lg:max-w-xl">
-                    <div className="bg-white/10 hover:bg-white/15 transition-colors p-2.5 rounded-xl backdrop-blur-md border border-white/10 flex flex-col justify-center">
-                      <div className="flex items-center gap-2 mb-0.5 opacity-70">
-                        <Target size={10} className="text-white" />
-                        <span className="text-[8px] font-black uppercase tracking-widest">Tasks</span>
-                      </div>
-                      <div className="text-lg font-black">{outstandingTasks.length}</div>
-                    </div>
 
-                    <div className="bg-white/10 hover:bg-white/15 transition-colors p-2.5 rounded-xl backdrop-blur-md border border-white/10 flex flex-col justify-center">
-                      <div className="flex items-center gap-2 mb-0.5 opacity-70">
-                        <CalendarIcon size={10} className="text-white" />
-                        <span className="text-[8px] font-black uppercase tracking-widest">Next</span>
-                      </div>
-                      <div className="text-lg font-black truncate">{nextDeadline}</div>
+                  <div className="flex flex-col justify-between h-full relative z-10">
+                    <div className="mb-6">
+                      <h2 className="text-xl font-black tracking-tight mb-0.5">
+                        {currentUser ? `Welcome Back, ${currentUser.displayName?.split(' ')[0]}` : 'Welcome Back'}
+                      </h2>
+                      <p className="text-emerald-100 font-bold text-[9px] uppercase tracking-widest opacity-80">{format(new Date(), 'EEEE, MMMM do yyyy')}</p>
                     </div>
-
-                    <div className="bg-white/10 hover:bg-white/15 transition-colors p-2.5 rounded-xl backdrop-blur-md border border-white/10 flex flex-col justify-center relative overflow-hidden group">
-                      <div className="flex items-center gap-2 mb-0.5 opacity-70">
-                        <FileText size={10} className="text-white" />
-                        <span className="text-[8px] font-black uppercase tracking-widest">Graded</span>
+                    
+                    <div className="grid grid-cols-3 gap-2 w-full">
+                      <div className="bg-white/10 p-2.5 rounded-xl backdrop-blur-md border border-white/10 flex flex-col justify-center">
+                        <div className="flex items-center gap-1 mb-0.5 opacity-70">
+                          <Target size={10} className="text-white" />
+                          <span className="text-[7px] font-black uppercase tracking-widest">Tasks</span>
+                        </div>
+                        <div className="text-lg font-black">{outstandingTasks.length}</div>
                       </div>
-                      <div className="text-lg font-black flex items-center gap-2">
-                        {gradedReports.length}
-                        {gradedReports.length > 0 && (
-                          <span className="flex h-1 w-1 rounded-full bg-orange-400 animate-ping" />
-                        )}
+
+                      <div className="bg-white/10 p-2.5 rounded-xl backdrop-blur-md border border-white/10 flex flex-col justify-center">
+                        <div className="flex items-center gap-1 mb-0.5 opacity-70">
+                          <CalendarIcon size={10} className="text-white" />
+                          <span className="text-[7px] font-black uppercase tracking-widest">Next</span>
+                        </div>
+                        <div className="text-lg font-black">{nextDeadline}</div>
+                      </div>
+
+                      <div className="bg-white/10 p-2.5 rounded-xl backdrop-blur-md border border-white/10 flex flex-col justify-center">
+                        <div className="flex items-center gap-1 mb-0.5 opacity-70">
+                          <FileText size={10} className="text-white" />
+                          <span className="text-[7px] font-black uppercase tracking-widest">Graded</span>
+                        </div>
+                        <div className="text-lg font-black">{gradedReports.length}</div>
                       </div>
                     </div>
                   </div>
+                </motion.div>
+
+                {/* Right Side: Admin Dashboard OR Calendar Widget */}
+                <div className="lg:col-span-2">
+                  {isAdminLoggedIn ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 h-full">
+                      <motion.div 
+                        whileHover={{ scale: 1.02 }}
+                        className="bg-white border-2 border-slate-100 rounded-[2.5rem] p-5 shadow-sm flex flex-col justify-between"
+                      >
+                        <div className="bg-indigo-50 w-10 h-10 rounded-xl flex items-center justify-center text-indigo-500 mb-3">
+                          <FileText size={20} />
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Assignments</p>
+                          <p className="text-2xl font-black text-slate-800">{tasks.length}</p>
+                        </div>
+                      </motion.div>
+
+                      <motion.div 
+                        whileHover={{ scale: 1.02 }}
+                        className="bg-white border-2 border-slate-100 rounded-[2.5rem] p-5 shadow-sm flex flex-col justify-between"
+                      >
+                        <div className="bg-orange-50 w-10 h-10 rounded-xl flex items-center justify-center text-orange-500 mb-3">
+                          <Edit size={20} />
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Pending Grading</p>
+                          <p className="text-2xl font-black text-slate-800">
+                            {allSubmissions.filter(s => !s.gradedAt && !s.feedback && !s.generalFeedback).length}
+                          </p>
+                        </div>
+                      </motion.div>
+
+                      <motion.div 
+                        whileHover={{ scale: 1.02 }}
+                        className="sm:col-span-2 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-[2.5rem] p-5 shadow-lg text-white flex items-center justify-between"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="bg-white/20 p-3 rounded-2xl backdrop-blur-sm border border-white/10">
+                            <Sparkles size={24} />
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-bold text-purple-100 uppercase tracking-widest opacity-80 leading-none mb-1">AI Engine</p>
+                            <h3 className="text-lg font-black uppercase tracking-tight leading-none">Gemini 3.1 Flash Lite</h3>
+                          </div>
+                        </div>
+                        <div className="bg-white/10 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border border-white/10">
+                          Active
+                        </div>
+                      </motion.div>
+                    </div>
+                  ) : (
+                    <CalendarWidget tasks={tasks} mySubmissions={mySubmissions} />
+                  )}
                 </div>
-              </motion.div>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {units.map((unit) => (
             <motion.div 
               key={unit.id}
-              whileHover={{ y: -5 }}
-              className="group bg-white border-2 border-gray-100 rounded-[2.5rem] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_50px_rgba(16,185,129,0.1)] transition-all duration-300"
+              whileHover={{ y: -4 }}
+              className={`group ${unit.color} rounded-[2.5rem] p-5 shadow-xl text-white flex flex-col h-[260px] sm:h-[280px] relative overflow-hidden`}
             >
-              <div className="flex items-start justify-between mb-8">
-                <div className="flex items-center gap-4">
-                  <div className={`w-14 h-14 ${unit.color} rounded-[1.25rem] flex items-center justify-center text-white font-black text-2xl shadow-lg ring-4 ring-white`}>
-                    {unit.id}
+              <div className="absolute -right-4 -top-4 w-32 h-32 bg-white/10 rounded-full blur-2xl group-hover:bg-white/20 transition-all duration-500" />
+              
+              <div className="relative z-10">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="bg-white/20 p-3 rounded-2xl backdrop-blur-md border border-white/20 shadow-lg group-hover:scale-110 transition-transform duration-500">
+                    <span className="text-xl font-black leading-none">{unit.id}</span>
                   </div>
-                  <div>
-                    <h3 className="font-black text-gray-800 text-xl tracking-tight leading-none mb-1 group-hover:text-emerald-600 transition-colors">{unit.title}</h3>
+                  <div className="min-w-0">
+                    <h3 className="font-black text-sm sm:text-base tracking-tight leading-tight mb-0.5 uppercase truncate">{unit.title}</h3>
                     <div className="flex items-center gap-2">
-                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                       <p className="text-gray-400 font-bold text-[9px] uppercase tracking-widest leading-none">Topic Active</p>
+                       <div className="w-1 h-1 rounded-full bg-white animate-pulse"></div>
+                       <p className="text-white/60 font-bold text-[8px] uppercase tracking-widest leading-none">Topic Ready</p>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <p className="text-gray-600 text-xs font-medium leading-relaxed mb-6 px-1">
-                {unit.description}
-              </p>
+              <div className="relative z-10 mb-4 flex-grow">
+                <div className="bg-white/10 rounded-2xl border border-white/10 p-3 backdrop-blur-sm group-hover:bg-white/15 transition-all">
+                  <p className="text-white/90 text-[10px] sm:text-xs font-semibold leading-relaxed line-clamp-2">
+                    {unit.description}
+                  </p>
+                </div>
+              </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 gap-2 relative z-10 mt-auto">
                 <button 
                   onClick={() => startQuiz(unit)}
-                  className="flex flex-col items-center justify-center gap-2 p-4 rounded-2xl bg-white border border-gray-100 text-emerald-600 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 hover:scale-105 active:scale-95 transition-all duration-300 shadow-sm"
+                  className="flex flex-col items-center justify-center gap-1.5 py-3 rounded-2xl bg-white/10 border border-white/20 text-white hover:bg-white hover:text-emerald-600 hover:border-white transition-all duration-300 shadow-sm group/btn"
                   title="Practice Quiz"
                 >
-                  <CheckCircle2 size={20} />
-                  <span className="text-[9px] font-black uppercase tracking-tight">Quiz</span>
+                  <CheckCircle2 size={18} className="group-hover/btn:scale-110 transition-transform" />
+                  <span className="text-[7px] font-black uppercase tracking-tight">Quiz</span>
                 </button>
                 <button 
                   onClick={() => startRevision(unit)}
-                  className="flex flex-col items-center justify-center gap-2 p-4 rounded-2xl bg-white border border-gray-100 text-blue-600 hover:bg-blue-500 hover:text-white hover:border-blue-500 hover:scale-105 active:scale-95 transition-all duration-300 shadow-sm"
+                  className="flex flex-col items-center justify-center gap-1.5 py-3 rounded-2xl bg-white/10 border border-white/20 text-white hover:bg-white hover:text-blue-600 hover:border-white transition-all duration-300 shadow-sm group/btn"
                   title="Revision Notes"
                 >
-                  <BookOpen size={20} />
-                  <span className="text-[9px] font-black uppercase tracking-tight">Notes</span>
+                  <BookOpen size={18} className="group-hover/btn:scale-110 transition-transform" />
+                  <span className="text-[7px] font-black uppercase tracking-tight">Notes</span>
                 </button>
                 <button 
                   onClick={() => startVocab(unit)}
-                  className="flex flex-col items-center justify-center gap-2 p-4 rounded-2xl bg-white border border-gray-100 text-purple-600 hover:bg-purple-500 hover:text-white hover:border-purple-500 hover:scale-105 active:scale-95 transition-all duration-300 shadow-sm"
+                  className="flex flex-col items-center justify-center gap-1.5 py-3 rounded-2xl bg-white/10 border border-white/20 text-white hover:bg-white hover:text-purple-600 hover:border-white transition-all duration-300 shadow-sm group/btn"
                   title="Vocabulary List"
                 >
-                  <Languages size={20} />
-                  <span className="text-[9px] font-black uppercase tracking-tight">Vocab</span>
+                  <Languages size={18} className="group-hover/btn:scale-110 transition-transform" />
+                  <span className="text-[7px] font-black uppercase tracking-tight">Vocab</span>
                 </button>
               </div>
             </motion.div>
@@ -640,25 +835,34 @@ const DashboardView: React.FC<DashboardViewProps> = (props) => {
       )}
 
       {isQRModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-md z-[500] flex items-center justify-center p-6">
           <motion.div 
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
-            className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl text-center relative"
+            className="bg-white/90 backdrop-blur-3xl rounded-[3rem] p-10 max-w-sm w-full shadow-[0_30px_60px_-15px_rgba(0,0,0,0.3)] text-center relative border border-white/20"
           >
             <button 
               onClick={() => setIsQRModalOpen(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+              className="absolute top-6 right-6 text-slate-400 hover:text-slate-900 transition-colors"
             >
-              <XCircle size={24} />
+              <XCircle size={28} />
             </button>
-            <h3 className="text-2xl font-black text-gray-800 uppercase tracking-tight mb-2">App QR Code</h3>
-            <p className="text-gray-500 font-medium mb-6">Scan to open the revision app on your mobile device!</p>
-            <div className="bg-gray-50 p-6 rounded-2xl border-2 border-gray-100 flex justify-center mb-6">
-              <QRCodeSVG value="https://y8rev.vercel.app" size={200} level="H" includeMargin={true} />
+            
+            <div className="bg-emerald-500/10 w-20 h-20 rounded-3xl flex items-center justify-center text-emerald-600 mx-auto mb-6 shadow-inner">
+              <QrCode size={40} />
             </div>
-            <p className="text-emerald-500 font-black text-sm uppercase tracking-widest">y8rev.vercel.app</p>
+
+            <h3 className="text-3xl font-black text-slate-900 uppercase tracking-tighter mb-2">QR Portal</h3>
+            <p className="text-slate-500 font-bold text-xs uppercase tracking-widest mb-8 opacity-60 italic">Mobile Synchronisation</p>
+            
+            <div className="bg-white p-6 rounded-[2rem] border border-slate-100 flex justify-center mb-8 shadow-sm group hover:scale-[1.02] transition-transform duration-500">
+              <QRCodeSVG value="https://y8rev.vercel.app" size={200} level="H" includeMargin={false} />
+            </div>
+            
+            <div className="bg-slate-900 text-white py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] shadow-xl shadow-slate-900/20">
+              y8rev.vercel.app
+            </div>
           </motion.div>
         </div>
       )}

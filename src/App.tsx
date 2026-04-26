@@ -132,30 +132,29 @@ const Sidebar = ({ currentMode, setMode, onQRClick, hasOutstandingTasks, user, i
       initial={false}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      animate={{ width: isHovered ? 300 : 80 }}
-      className="fixed left-0 top-0 bottom-0 bg-white border-r-2 border-gray-100 z-50 hidden md:flex flex-col py-8 transition-all duration-300 ease-in-out shadow-xl"
+      animate={{ width: isHovered ? 280 : 88 }}
+      className="fixed left-0 top-0 bottom-0 bg-white/10 backdrop-blur-3xl border-r border-white/20 z-[150] hidden md:flex flex-col py-8 transition-all duration-500 ease-in-out shadow-[0_0_50px_-12px_rgba(0,0,0,0.08)]"
     >
-      <div className="px-4 mb-2 flex flex-col gap-2">
-        {/* Overhauled User Card to look like a Button */}
+      <div className="px-4 mb-4 flex flex-col gap-3">
         <button 
           onClick={() => setMode('achievement')}
-          className={`w-full flex items-center rounded-2xl transition-all relative group overflow-hidden h-14
+          className={`w-full flex items-center rounded-[1.5rem] transition-all relative group overflow-hidden h-14 border border-transparent
             ${currentMode === 'achievement' 
-              ? 'bg-emerald-50 text-emerald-600 shadow-[0_4px_0_0_#10b98133]' 
-              : `text-gray-400 hover:text-white ${isAdmin ? 'hover:bg-amber-500' : 'hover:bg-blue-500'}`
+              ? 'bg-emerald-500 text-white shadow-xl shadow-emerald-500/20' 
+              : `text-slate-400 hover:bg-slate-100 hover:text-slate-900 border-slate-50`
             }
           `}
         >
-          <div className="w-[48px] h-full flex justify-center items-center flex-shrink-0">
+          <div className="w-[56px] h-full flex justify-center items-center flex-shrink-0">
             {user?.photoURL ? (
               <img 
                 src={user.photoURL} 
                 alt="Profile" 
-                className={`w-[44px] h-[44px] rounded-full border-2 shadow-sm transition-transform group-hover:scale-105 ${currentMode === 'achievement' ? 'border-emerald-500' : 'border-gray-200'} ${isHovered ? 'group-hover:border-white/50' : ''}`}
+                className={`w-10 h-10 rounded-xl border-2 shadow-sm transition-all duration-500 ${currentMode === 'achievement' ? 'border-white/40 scale-110' : 'border-slate-200'}`}
                 referrerPolicy="no-referrer"
               />
             ) : (
-              <div className={`w-[44px] h-[44px] rounded-full flex items-center justify-center font-bold text-[15px] shadow-sm transition-transform group-hover:scale-105 ${isAdmin ? 'bg-amber-100 text-amber-600' : 'bg-emerald-100 text-emerald-600'}`}>
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm shadow-sm transition-all duration-500 ${currentMode === 'achievement' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}`}>
                 {user?.displayName?.charAt(0) || 'U'}
               </div>
             )}
@@ -166,39 +165,23 @@ const Sidebar = ({ currentMode, setMode, onQRClick, hasOutstandingTasks, user, i
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -10 }}
-                className="flex flex-col items-start whitespace-nowrap overflow-hidden pr-2 py-1"
+                className="flex flex-col items-start whitespace-nowrap overflow-hidden pr-4"
               >
-                <span className="text-[14px] font-bold tracking-tight leading-none text-slate-700 transition-colors group-hover:text-amber-500">
-                  {user?.displayName || 'Member'}
+                <span className={`text-xs font-black tracking-tight leading-none transition-colors ${currentMode === 'achievement' ? 'text-white' : 'text-slate-900'}`}>
+                  {user?.displayName || 'Student'}
                 </span>
-                <div className="mt-1 flex items-center">
-                  {isAdmin ? (
-                    <div className="flex items-center gap-1.5 bg-amber-500 px-2 py-0.5 rounded-full text-white shadow-sm border border-transparent transition-colors group-hover:bg-white group-hover:text-amber-500">
-                      <ShieldCheck size={10} className="fill-current" />
-                      <span className="text-[10px] font-black uppercase tracking-widest leading-tight">God Mode</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-1.5 bg-blue-500 px-2 py-0.5 rounded-full text-white shadow-sm border border-transparent transition-colors group-hover:bg-white group-hover:text-blue-500">
-                      <GraduationCap size={10} className="fill-current" />
-                      <span className="text-[10px] font-black uppercase tracking-widest leading-tight">Student Mode</span>
-                    </div>
-                  )}
-                </div>
+                <span className={`text-[8px] font-black uppercase tracking-[0.2em] mt-1.5 opacity-70 ${currentMode === 'achievement' ? 'text-emerald-50' : 'text-slate-400'}`}>
+                  {isAdmin ? 'System Administrator' : 'GUEST ACCOUNT'}
+                </span>
               </motion.div>
             )}
           </AnimatePresence>
-          {!isHovered && currentMode === 'achievement' && (
-            <motion.div 
-              layoutId="active-indicator-user"
-              className="absolute left-0 w-1 h-8 bg-emerald-500 rounded-r-full"
-            />
-          )}
         </button>
 
-        <div className="h-px bg-gray-100 mx-2 mb-2" />
+        <div className="h-px bg-slate-100 mx-3 opacity-50" />
       </div>
 
-      <div className="flex-1 px-4 space-y-2">
+      <div className="flex-1 px-4 space-y-3">
         {APP_NAV_ITEMS.map((item) => {
           const Icon = item.icon;
           const isActive = currentMode === item.mode;
@@ -208,17 +191,17 @@ const Sidebar = ({ currentMode, setMode, onQRClick, hasOutstandingTasks, user, i
             <button
               key={item.mode}
               onClick={() => setMode(item.mode)}
-              className={`w-full flex items-center rounded-2xl transition-all relative group h-14 overflow-hidden
+              className={`w-full flex items-center rounded-2xl transition-all duration-300 relative group h-14 overflow-hidden
                 ${isActive 
-                  ? 'bg-emerald-50 text-emerald-600 shadow-[0_4px_0_0_#10b98133]' 
-                  : 'text-gray-400 hover:bg-gray-50 hover:text-emerald-400'
+                  ? 'bg-slate-900 text-white shadow-2xl shadow-slate-900/10' 
+                  : 'text-slate-400 hover:bg-slate-100 hover:text-slate-900'
                 }
               `}
             >
-              <div className="w-[48px] h-full flex justify-center items-center flex-shrink-0 relative">
-                <Icon size={24} fill={isActive ? "currentColor" : "none"} />
+              <div className="w-[56px] h-full flex justify-center items-center flex-shrink-0 relative">
+                <Icon size={22} className={`transition-all duration-500 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`} fill={isActive ? "currentColor" : "none"} />
                 {isTasks && hasOutstandingTasks && (
-                  <span className="absolute top-[8px] right-[8px] w-3 h-3 bg-orange-500 rounded-full border-2 border-white ring-2 ring-orange-500/20 animate-pulse" />
+                  <span className="absolute top-[14px] right-[14px] w-2.5 h-2.5 bg-orange-500 rounded-full border-2 border-white ring-2 ring-orange-500/20" />
                 )}
               </div>
               <AnimatePresence>
@@ -227,42 +210,61 @@ const Sidebar = ({ currentMode, setMode, onQRClick, hasOutstandingTasks, user, i
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -10 }}
-                    className="font-black uppercase tracking-widest text-xs whitespace-nowrap pl-1 pr-2"
+                    className="font-black uppercase tracking-[0.2em] text-[10px] whitespace-nowrap pl-1"
                   >
                     {item.label}
                   </motion.span>
                 )}
               </AnimatePresence>
-              {!isHovered && isActive && (
-                <motion.div 
-                  layoutId="active-indicator"
-                  className="absolute left-0 w-1 h-8 bg-emerald-500 rounded-r-full"
-                />
-              )}
             </button>
           );
         })}
       </div>
 
-      <div className="px-4 mt-auto space-y-3">
+
+      <div className="px-4 mt-auto space-y-2">
         <button
           onClick={() => (window as any).toggleY8?.()}
-          className="w-full p-4 rounded-2xl bg-orange-500 text-white flex items-center justify-center gap-4 transition-all hover:bg-orange-600 shadow-[0_4px_0_0_#c2410c] active:shadow-none active:translate-y-1 group"
+          className="w-full flex items-center h-12 rounded-2xl bg-slate-900/5 hover:bg-slate-900/10 text-slate-600 transition-all group overflow-hidden border border-slate-200/50"
           title="Class of 2025-26"
         >
-          <div className="flex-shrink-0">
-            <GraduationCap size={24} />
+          <div className="w-[56px] h-full flex justify-center items-center flex-shrink-0">
+            <GraduationCap size={18} className="group-hover:scale-110 transition-transform" />
           </div>
+          <AnimatePresence>
+            {isHovered && (
+              <motion.span 
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                className="text-[10px] font-black uppercase tracking-widest whitespace-nowrap"
+              >
+                Class 25-26
+              </motion.span>
+            )}
+          </AnimatePresence>
         </button>
 
         <button
           onClick={onQRClick}
-          className="w-full p-4 rounded-2xl bg-gray-50 border-2 border-gray-100 flex items-center justify-center gap-4 transition-all hover:bg-emerald-50 hover:border-emerald-100 group"
+          className="w-full flex items-center h-12 rounded-2xl bg-emerald-500/5 hover:bg-emerald-500/10 text-emerald-600 transition-all group overflow-hidden border border-emerald-500/20"
           title="App QR Code"
         >
-          <div className="flex-shrink-0 text-gray-400 group-hover:text-emerald-500">
-            <QrCode size={24} />
+          <div className="w-[56px] h-full flex justify-center items-center flex-shrink-0">
+            <QrCode size={18} className="group-hover:scale-110 transition-transform" />
           </div>
+          <AnimatePresence>
+            {isHovered && (
+              <motion.span 
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                className="text-[10px] font-black uppercase tracking-widest whitespace-nowrap"
+              >
+                QR Portal
+              </motion.span>
+            )}
+          </AnimatePresence>
         </button>
       </div>
     </motion.div>
@@ -801,6 +803,7 @@ function AppContent() {
               setMode={setMode}
               showCalculator={showCalculator} setShowCalculator={setShowCalculator}
               mySubmissions={mySubmissions}
+              allSubmissions={allSubmissions}
             />
           )}
 
@@ -1105,6 +1108,7 @@ function AppContent() {
               tasks={tasks}
               submissions={isAdminLoggedIn ? allSubmissions : mySubmissions}
               isAdmin={isAdminLoggedIn}
+              allUsers={allUsers}
             />
           )}
 
@@ -1156,8 +1160,8 @@ function AppContent() {
 
       {/* Mobile Nav */}
       {['dashboard', 'user-stats', 'about', 'quick-facts', 'tasks', 'achievement'].includes(mode) && (
-        <nav className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-gray-100 px-2 py-1 z-40 md:hidden h-20">
-          <div className="max-w-md mx-auto flex justify-between items-stretch h-full">
+        <nav className="fixed bottom-6 left-6 right-6 bg-white/10 backdrop-blur-3xl border border-white/20 px-4 py-3 z-[150] md:hidden rounded-3xl shadow-[0_20px_50px_-15px_rgba(0,0,0,0.15)]">
+          <div className="flex justify-between items-center max-w-md mx-auto">
             {APP_NAV_ITEMS.map((item) => {
               const Icon = item.icon;
               const isActive = mode === item.mode;
@@ -1165,19 +1169,34 @@ function AppContent() {
               <button 
                 key={item.mode}
                 onClick={() => setMode(item.mode)}
-                className={`flex-1 flex flex-col items-center justify-center transition-all ${isActive ? 'text-emerald-500' : 'text-gray-400'}`}
+                className={`relative p-3 rounded-2xl transition-all duration-300 ${isActive ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400 hover:text-slate-900'}`}
               >
-                <div className={`w-12 h-12 rounded-2xl flex flex-col items-center justify-center transition-all ${isActive ? 'bg-emerald-50' : ''}`}>
-                  <Icon size={24} fill={isActive ? "currentColor" : "none"} />
-                </div>
-                <span className={`text-[8px] font-bold uppercase tracking-widest leading-none mt-1 ${isActive ? 'text-emerald-700' : 'text-gray-400'}`}>
-                  {item.label}
-                </span>
+                <Icon size={20} fill={isActive ? "currentColor" : "none"} />
+                {isActive && (
+                  <motion.div 
+                    layoutId="mobile-nav-pill"
+                    className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-slate-900 rounded-full"
+                  />
+                )}
               </button>
             )})}
+            <div className="w-px h-6 bg-slate-200/50 mx-2" />
+            <button 
+              onClick={() => setMode('achievement')}
+              className={`p-1 rounded-2xl border-2 transition-all ${mode === 'achievement' ? 'border-emerald-500' : 'border-transparent'}`}
+            >
+              {userProfile?.photoURL ? (
+                <img src={userProfile.photoURL} alt="User" className="w-8 h-8 rounded-xl object-cover shadow-sm" />
+              ) : (
+                <div className="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center font-black text-xs">
+                  {userProfile?.displayName?.charAt(0) || 'U'}
+                </div>
+              )}
+            </button>
           </div>
         </nav>
       )}
+
     </div>
   );
 }

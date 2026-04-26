@@ -712,52 +712,52 @@ JSON OUTPUT: { "questions": [{ "id": "string", "score": "X of X", "feedback": "s
         )}
       </AnimatePresence>
       {isAdmin ? (
-        <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 bg-slate-900 px-10 py-12 rounded-[3.5rem] text-white shadow-[0_20px_50px_-12px_rgba(15,23,42,0.5)] relative overflow-hidden ring-1 ring-white/10">
-          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-[100px] -mr-64 -mt-64" />
-          <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-blue-500/5 rounded-full blur-[100px] -ml-56 -mb-56" />
+        <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 bg-slate-900 px-10 py-12 rounded-[3.5rem] text-white shadow-[0_30px_60px_-15px_rgba(0,0,0,0.4)] relative overflow-hidden ring-1 ring-white/10">
+          <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-emerald-500/10 rounded-full blur-[120px] -mr-80 -mt-80" />
+          <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-[100px] -ml-64 -mb-64" />
           
-          <div className="relative z-10">
-            <div className="flex flex-col md:flex-row md:items-center gap-8 mb-4">
-              <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-white shadow-2xl shadow-emerald-500/30 scale-110 ring-4 ring-emerald-500/20">
-                <Layout size={40} className="drop-shadow-lg" />
-              </div>
-              <div>
-                <div className="flex items-center gap-4 mb-3">
-                  <div className="flex items-center gap-2 px-3 py-1 bg-emerald-500/20 rounded-full border border-emerald-500/30 backdrop-blur-md">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest leading-none">v4.5 Stable</span>
-                  </div>
-                  <div className="h-4 w-px bg-slate-700" />
-                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Deployment Active</span>
-                </div>
-                <h1 className="text-5xl font-black tracking-tighter leading-none mb-3 bg-clip-text text-transparent bg-gradient-to-r from-white via-white to-slate-400">
-                  Admin Command Center
-                </h1>
+          <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center gap-8">
+            <div className="relative group">
+              <div className="absolute -inset-1 bg-gradient-to-tr from-emerald-600 to-cyan-400 rounded-[2rem] blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
+              <div className="relative w-24 h-24 rounded-[2rem] bg-slate-800 flex items-center justify-center text-emerald-400 shadow-2xl border border-white/10 group-hover:scale-105 transition-transform duration-500">
+                <Layout size={44} className="drop-shadow-[0_0_15px_rgba(52,211,153,0.5)]" />
               </div>
             </div>
-            <p className="text-slate-400 text-lg font-medium px-1 max-w-xl leading-relaxed tracking-tight">
-              Comprehensive system management interface. Monitor student progress metrics, deploy secure assessments, and organize pedagogical resources.
-            </p>
+            
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-3">
+                <div className="px-3 py-1 bg-emerald-500/10 text-emerald-400 text-[9px] font-black uppercase tracking-[0.2em] rounded-full border border-emerald-500/20 backdrop-blur-md">
+                   Control Terminal 02
+                </div>
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse" />
+              </div>
+              <h1 className="text-5xl lg:text-6xl font-black tracking-tighter leading-none text-white">
+                Command <span className="text-emerald-400">Center</span>
+              </h1>
+              <p className="text-slate-400 text-lg font-medium leading-relaxed tracking-tight max-w-lg mt-2">
+                 High-fidelity management interface for curriculum deployment & intelligence metrics.
+              </p>
+            </div>
           </div>
           
           <div className="flex items-center relative z-10 shrink-0">
-            <div className="bg-slate-800/80 backdrop-blur-xl p-2 rounded-[2rem] flex items-center border border-white/5 shadow-2xl">
+            <div className="bg-white/5 backdrop-blur-3xl p-2 rounded-[2.5rem] flex items-center border border-white/10 shadow-2xl shadow-black/20">
               <button 
                 onClick={() => setActiveTab('tasks')}
-                className={`px-10 py-4 rounded-[1.5rem] font-black uppercase tracking-wider transition-all flex items-center gap-3 text-[11px] ${
+                className={`px-10 py-5 rounded-[2rem] font-black uppercase tracking-widest transition-all duration-500 flex items-center gap-3 text-[10px] ${
                   activeTab === 'tasks' 
-                    ? 'bg-white text-slate-900 shadow-[0_10px_20px_-5px_rgba(255,255,255,0.2)] scale-105' 
+                    ? 'bg-white text-slate-900 shadow-xl scale-105' 
                     : 'text-slate-400 hover:text-white hover:bg-white/5'
                 }`}
               >
                 <ListChecks size={18} className={activeTab === 'tasks' ? 'text-emerald-500' : ''} />
-                Resources
+                Deploy
               </button>
               <button 
                 onClick={() => setActiveTab('submissions')}
-                className={`px-10 py-4 rounded-[1.5rem] font-black uppercase tracking-wider transition-all flex items-center gap-3 text-[11px] ${
+                className={`px-10 py-5 rounded-[2rem] font-black uppercase tracking-widest transition-all duration-500 flex items-center gap-3 text-[10px] ${
                   activeTab === 'submissions' 
-                    ? 'bg-white text-slate-900 shadow-[0_10px_20px_-5px_rgba(255,255,255,0.2)] scale-105' 
+                    ? 'bg-white text-slate-900 shadow-xl scale-105' 
                     : 'text-slate-400 hover:text-white hover:bg-white/5'
                 }`}
               >
@@ -768,26 +768,42 @@ JSON OUTPUT: { "questions": [{ "id": "string", "score": "X of X", "feedback": "s
           </div>
         </header>
       ) : (
-        <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 bg-white px-10 py-12 rounded-[3.5rem] shadow-sm relative overflow-hidden border-2 border-slate-100">
-          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-[100px] -mr-64 -mt-64" />
+        <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-10 bg-gradient-to-br from-slate-900 to-slate-800 px-10 py-14 rounded-[4rem] text-white shadow-[0_40px_80px_-20px_rgba(15,23,42,0.3)] relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-blue-500/10 rounded-full blur-[120px] -mr-80 -mt-80" />
+          <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-emerald-500/5 rounded-full blur-[100px] -ml-64 -mb-64" />
           
-          <div className="relative z-10">
-            <div className="flex flex-col md:flex-row md:items-center gap-8 mb-4">
-              <div className="w-20 h-20 rounded-3xl bg-blue-50 flex items-center justify-center text-blue-500 shadow-inner scale-110">
-                <Target size={40} className="drop-shadow-sm" />
+          <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center gap-8">
+            <div className="w-24 h-24 rounded-[2rem] bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center text-blue-400 shadow-inner">
+              <Target size={44} className="drop-shadow-[0_0_15px_rgba(96,165,250,0.5)]" />
+            </div>
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-3">
+                <span className="text-[10px] font-black text-blue-400 uppercase tracking-[0.3em]">Core Mission</span>
+                <div className="w-1 h-1 rounded-full bg-blue-400/50" />
+                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none">Learning Path Alpha</span>
               </div>
-              <div>
-                <h1 className="text-5xl font-black tracking-tighter leading-none mb-3 text-slate-800">
-                  Task Overview
-                </h1>
-                <p className="text-slate-500 text-lg font-medium px-1 max-w-xl leading-relaxed tracking-tight">
-                  Your learning journey at a glance. Complete your assignments and secure tests.
-                </p>
-              </div>
+              <h1 className="text-5xl lg:text-7xl font-black tracking-tighter leading-none text-white">
+                Task <span className="text-blue-400">Hub</span>
+              </h1>
+              <p className="text-slate-400 text-lg font-medium leading-relaxed tracking-tight max-w-lg mt-2">
+                Analyze your active objectives, deploy secure solutions, and monitor your scientific progression.
+              </p>
+            </div>
+          </div>
+
+          <div className="relative z-10 grid grid-cols-2 gap-4">
+            <div className="bg-white/5 backdrop-blur-md rounded-3xl p-5 border border-white/10 flex flex-col items-center justify-center min-w-[140px]">
+              <span className="text-3xl font-black text-white">{tasks.length}</span>
+              <span className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] mt-1">Total Goals</span>
+            </div>
+            <div className="bg-blue-500/10 backdrop-blur-md rounded-3xl p-5 border border-blue-500/20 flex flex-col items-center justify-center min-w-[140px]">
+              <span className="text-3xl font-black text-blue-400">{tasks.filter(t => !mySubmissions.some(s => s.taskId === t.id)).length}</span>
+              <span className="text-[8px] font-black text-blue-400/70 uppercase tracking-[0.2em] mt-1">Pending</span>
             </div>
           </div>
         </header>
       )}
+
 
       {/* Admin Quick Stats Bar */}
       {isAdmin && (

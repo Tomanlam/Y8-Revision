@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Trophy, Target, Clock, TrendingUp, Award, Calendar, CheckCircle2, AlertCircle, PieChart as PieChartIcon, BarChart3, Sparkles, Star } from 'lucide-react';
+import { Trophy, Target, Clock, TrendingUp, Award, Calendar, CheckCircle2, AlertCircle, PieChart as PieChartIcon, BarChart3, Sparkles, Star, Users, LayoutGrid, Activity, Database } from 'lucide-react';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { Task, TaskSubmission, UserProfile } from '../../types';
 
@@ -9,9 +9,10 @@ interface AchievementViewProps {
   tasks: Task[];
   submissions: TaskSubmission[]; // This will be mySubmissions for students
   isAdmin: boolean;
+  allUsers?: UserProfile[];
 }
 
-const AchievementView: React.FC<AchievementViewProps> = ({ user, tasks, submissions = [], isAdmin }) => {
+const AchievementView: React.FC<AchievementViewProps> = ({ user, tasks, submissions = [], isAdmin, allUsers = [] }) => {
   const [filterType, setFilterType] = React.useState<'all' | 'task' | 'test'>('all');
   const [filterTime, setFilterTime] = React.useState<'day' | 'month'>('day');
 
@@ -70,6 +71,55 @@ const AchievementView: React.FC<AchievementViewProps> = ({ user, tasks, submissi
       onTimeCount: onTime
     };
   }, [mySubmissions, tasks]);
+
+  // Admin Specific Calculations
+  const adminStats = React.useMemo(() => {
+    if (!isAdmin) return null;
+    
+    const activeStudentIds = new Set(submissions.map(s => s.userId));
+    const activeTasks = tasks.filter(t => t.status === 'active').length;
+    
+    // Attainment by student
+    const studentPerformanceMap: Record<string, { total: number, count: number, name: string }> = {};
+    submissions.forEach(s => {
+      if (!s.results) return;
+      if (!studentPerformanceMap[s.userId]) {
+        studentPerformanceMap[s.userId] = { total: 0, count: 0, name: s.studentName || 'Unknown' };
+      }
+      studentPerformanceMap[s.userId].total += (s.results.score / s.results.total) * 100;
+      studentPerformanceMap[s.userId].count++;
+    });
+    
+    const studentsPerfData = Object.entries(studentPerformanceMap).map(([id, data]) => ({
+      name: data.name,
+      avg: Math.round(data.total / data.count)
+    })).sort((a, b) => b.avg - a.avg);
+
+    // Attainment by task
+    const taskPerformanceMap: Record<string, { total: number, count: number, title: string }> = {};
+    submissions.forEach(s => {
+      if (!s.results) return;
+      if (!taskPerformanceMap[s.taskId]) {
+        const task = tasks.find(t => t.id === s.taskId);
+        taskPerformanceMap[s.taskId] = { total: 0, count: 0, title: task?.title || 'Unknown' };
+      }
+      taskPerformanceMap[s.taskId].total += (s.results.score / s.results.total) * 100;
+      taskPerformanceMap[s.taskId].count++;
+    });
+    
+    const tasksPerfData = Object.entries(taskPerformanceMap).map(([id, data]) => ({
+      name: data.title,
+      avg: Math.round(data.total / data.count)
+    })).sort((a, b) => b.avg - a.avg);
+
+    return {
+      activeStudentsCount: activeStudentIds.size,
+      activeTasksCount: activeTasks,
+      totalUsers: allUsers.length,
+      studentsPerfData,
+      tasksPerfData
+    };
+  }, [isAdmin, submissions, tasks, allUsers]);
 
   // Filtered Grade Trajectory Data
   const timelinessData = React.useMemo(() => {
@@ -151,6 +201,128 @@ const AchievementView: React.FC<AchievementViewProps> = ({ user, tasks, submissi
            </div>
         </div>
       </div>
+
+      {/* Admin Specific Dashboard */}
+      {isAdmin && adminStats && (
+        <div className="space-y-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <motion.div 
+               initial={{ opacity: 0, scale: 0.95 }}
+               animate={{ opacity: 1, scale: 1 }}
+               className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-[2.5rem] p-8 text-white shadow-xl flex flex-col justify-between"
+            >
+              <Users size={32} className="mb-4 opacity-70" />
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest opacity-70 mb-1">Active Students</p>
+                <div className="flex items-baseline gap-2">
+                  <p className="text-4xl font-black">{adminStats.activeStudentsCount}</p>
+                  <p className="text-sm opacity-50">of {adminStats.totalUsers} registered</p>
+                </div>
+              </div>
+            </motion.div>
+
+            <motion.div 
+               initial={{ opacity: 0, scale: 0.95 }}
+               animate={{ opacity: 1, scale: 1 }}
+               transition={{ delay: 0.1 }}
+               className="bg-gradient-to-br from-rose-500 to-orange-500 rounded-[2.5rem] p-8 text-white shadow-xl flex flex-col justify-between"
+            >
+              <LayoutGrid size={32} className="mb-4 opacity-70" />
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest opacity-70 mb-1">Live Assignments</p>
+                <p className="text-4xl font-black">{adminStats.activeTasksCount}</p>
+              </div>
+            </motion.div>
+
+            <motion.div 
+               initial={{ opacity: 0, scale: 0.95 }}
+               animate={{ opacity: 1, scale: 1 }}
+               transition={{ delay: 0.2 }}
+               className="bg-gradient-to-br from-emerald-500 to-teal-500 rounded-[2.5rem] p-8 text-white shadow-xl flex flex-col justify-between"
+            >
+              <Activity size={32} className="mb-4 opacity-70" />
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest opacity-70 mb-1">Global Attainment</p>
+                <p className="text-4xl font-black">
+                  {submissions.length > 0 ? Math.round(submissions.reduce((acc, s) => acc + (s.results ? (s.results.score / s.results.total) * 100 : 0), 0) / submissions.length) : 0}%
+                </p>
+              </div>
+            </motion.div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Student Performance Bar Chart */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-white p-8 rounded-[3rem] border-4 border-slate-50 shadow-lg"
+            >
+              <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-2 mb-8">
+                <BarChart3 size={18} className="text-indigo-500" /> Student Attainment Analysis
+              </h3>
+              <div className="h-[400px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={adminStats.studentsPerfData} layout="vertical" margin={{ left: 40 }}>
+                    <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f1f5f9" />
+                    <XAxis type="number" domain={[0, 100]} hide />
+                    <YAxis 
+                      dataKey="name" 
+                      type="category" 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{ fontSize: 10, fontWeight: 'bold', fill: '#64748b' }}
+                      width={100}
+                    />
+                    <Tooltip 
+                      cursor={{ fill: '#f8fafc' }}
+                      contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', fontWeight: 'bold' }}
+                    />
+                    <Bar dataKey="avg" fill="#6366f1" radius={[0, 6, 6, 0]} barSize={20} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </motion.div>
+
+            {/* Task Performance Bar Chart */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="bg-white p-8 rounded-[3rem] border-4 border-slate-50 shadow-lg"
+            >
+              <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-2 mb-8">
+                <Database size={18} className="text-rose-500" /> Task Difficulty Index
+              </h3>
+              <div className="h-[400px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={adminStats.tasksPerfData}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <XAxis 
+                      dataKey="name" 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{ fontSize: 9, fontWeight: 'bold', fill: '#64748b' }}
+                    />
+                    <YAxis 
+                      domain={[0, 100]} 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{ fontSize: 10, fontWeight: 'bold', fill: '#64748b' }}
+                    />
+                    <Tooltip 
+                      cursor={{ fill: '#f8fafc' }}
+                      contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', fontWeight: 'bold' }}
+                    />
+                    <Bar dataKey="avg" fill="#f43f5e" radius={[6, 6, 0, 0]} barSize={24} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </motion.div>
+          </div>
+          
+          <div className="h-px bg-slate-100 my-4" />
+        </div>
+      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
