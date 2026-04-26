@@ -1104,7 +1104,6 @@ function AppContent() {
               user={userProfile}
               tasks={tasks}
               submissions={isAdminLoggedIn ? allSubmissions : mySubmissions}
-              allSubmissions={allSubmissions}
               isAdmin={isAdminLoggedIn}
             />
           )}

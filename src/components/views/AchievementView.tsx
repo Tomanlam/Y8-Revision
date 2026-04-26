@@ -8,93 +8,89 @@ interface AchievementViewProps {
   user: UserProfile | null;
   tasks: Task[];
   submissions: TaskSubmission[]; // This will be mySubmissions for students
-  allSubmissions: TaskSubmission[]; // All submissions for class rank
   isAdmin: boolean;
 }
 
-const AchievementView: React.FC<AchievementViewProps> = ({ user, tasks, submissions, allSubmissions, isAdmin }) => {
+const AchievementView: React.FC<AchievementViewProps> = ({ user, tasks, submissions = [], isAdmin }) => {
   const [filterType, setFilterType] = React.useState<'all' | 'task' | 'test'>('all');
   const [filterTime, setFilterTime] = React.useState<'day' | 'month'>('day');
 
-  const mySubmissions = submissions.filter(s => s.userId === user?.userId);
+  // Use a more robust filtering for my own submissions
+  const mySubmissions = React.useMemo(() => {
+    if (!user) return [];
+    // If it's already filtered in App.tsx (for students), this is mostly identity mapping
+    // But for Admin, submissions is allSubmissions, so we MUST filter by user.userId
+    return (submissions || []).filter(s => s.userId === user.userId);
+  }, [submissions, user]);
   
   // Calculate XP and Stats
-  let totalXP = 0;
-  let completedCount = mySubmissions.length;
-  let excellenceCount = 0; // Excellence = attainment > 80% (as requested for "Outstanding")
-  let totalAttainment = 0;
-  let onTimeCount = 0;
-  
-  mySubmissions.forEach(sub => {
-    const task = tasks.find(t => t.id === sub.taskId);
-    if (!task) return;
-    
-    const isTest = task.type === 'test' || (task as any).isTest;
-    const attainment = sub.results ? (sub.results.score / sub.results.total) * 100 : 0;
-    totalAttainment += attainment;
-    
-    // XP Calculation
-    let xp = isTest ? 100 : 50;
-    if (attainment >= 90) xp += 50; // extra 20 + 30
-    else if (attainment >= 80) xp += 20;
-    totalXP += xp;
+  const stats = React.useMemo(() => {
+    let xp = 0;
+    let excellence = 0;
+    let totalAttainment = 0;
+    let onTime = 0;
+    let completed = 0;
 
-    // Excellence Count (Outstanding)
-    if (attainment > 80) excellenceCount++;
-
-    // Timeliness
-    const due = new Date(task.dueDate).getTime();
-    const submitted = new Date(sub.completedAt).getTime();
-    if (submitted <= due) onTimeCount++;
-  });
-
-  const avgAttainment = completedCount > 0 ? Math.round(totalAttainment / completedCount) : 0;
-  const reliabilityRate = completedCount > 0 ? Math.round((onTimeCount / completedCount) * 100) : 0;
-
-  // Class Rank (Based on Tests specifically if available, otherwise all)
-  const studentStats = React.useMemo(() => {
-    const statsMap: Record<string, { total: number, count: number }> = {};
-    allSubmissions.forEach(s => {
-      if (!s.results) return;
-      const task = tasks.find(t => t.id === s.taskId);
-      const isTest = task?.type === 'test' || (task as any)?.isTest;
+    mySubmissions.forEach(sub => {
+      if (!sub.results) return;
       
-      // If we are looking for "test school" we prioritize tests
-      if (!statsMap[s.userId]) statsMap[s.userId] = { total: 0, count: 0 };
+      const task = tasks.find(t => t.id === sub.taskId);
+      if (!task) return;
       
-      // Weight tests more or just use tests? 
-      // The user said "overall test school". Let's use all but maybe the user meant only tests.
-      // I'll calculate rank based on all submissions for "overall" feel but focus on attainment.
-      statsMap[s.userId].total += (s.results.score / s.results.total) * 100;
-      statsMap[s.userId].count += 1;
+      completed++;
+      const isTest = task.type === 'test' || (task as any).isTest;
+      const score = Number(sub.results.score || 0);
+      const total = Number(sub.results.total || 1);
+      const attainment = (score / total) * 100;
+      totalAttainment += attainment;
+      
+      // XP Calculation
+      let subXp = isTest ? 100 : 50;
+      if (attainment >= 90) subXp += 50;
+      else if (attainment >= 80) subXp += 20;
+      xp += subXp;
+
+      // Excellence Count (Outstanding)
+      if (attainment >= 80) excellence++;
+
+      // Timeliness
+      if (task.dueDate && sub.completedAt) {
+        const due = new Date(task.dueDate).getTime();
+        const submitted = new Date(sub.completedAt).getTime();
+        if (submitted <= due) onTime++;
+      }
     });
 
-    return Object.entries(statsMap)
-      .map(([userId, val]) => ({ userId, avg: val.total / val.count }))
-      .sort((a, b) => b.avg - a.avg);
-  }, [allSubmissions, tasks]);
+    return {
+      totalXP: xp,
+      completedCount: completed,
+      excellenceCount: excellence,
+      avgAttainment: completed > 0 ? Math.round(totalAttainment / completed) : 0,
+      reliabilityRate: completed > 0 ? Math.round((onTime / completed) * 100) : 0,
+      onTimeCount: onTime
+    };
+  }, [mySubmissions, tasks]);
 
-  const classRank = user ? studentStats.findIndex(s => s.userId === user.userId) + 1 : 0;
-  const totalClassSize = studentStats.length;
+  // Filtered Grade Trajectory Data
+  const timelinessData = React.useMemo(() => {
+    let early = 0, onTime = 0, late = 0;
+    mySubmissions.forEach(sub => {
+      const task = tasks.find(t => t.id === sub.taskId);
+      if (!task || !task.dueDate || !sub.completedAt) return;
+      const due = new Date(task.dueDate).getTime();
+      const submitted = new Date(sub.completedAt).getTime();
+      const diff = (due - submitted) / (1000 * 60 * 60 * 24);
+      if (diff > 1) early++;
+      else if (diff < 0) late++;
+      else onTime++;
+    });
 
-  // Timeliness Distribution for Chart
-  let earlyChars = 0, onTimeChars = 0, lateChars = 0;
-  mySubmissions.forEach(sub => {
-    const task = tasks.find(t => t.id === sub.taskId);
-    if (!task) return;
-    const due = new Date(task.dueDate).getTime();
-    const submitted = new Date(sub.completedAt).getTime();
-    const diff = (due - submitted) / (1000 * 60 * 60 * 24);
-    if (diff > 1) earlyChars++;
-    else if (diff < 0) lateChars++;
-    else onTimeChars++;
-  });
-
-  const timelinessData = [
-    { name: 'Early', value: earlyChars, color: '#10b981' },
-    { name: 'On Time', value: onTimeChars, color: '#3b82f6' },
-    { name: 'Late', value: lateChars, color: '#ef4444' }
-  ].filter(d => d.value > 0);
+    return [
+      { name: 'Early', value: early, color: '#10b981' },
+      { name: 'On Time', value: onTime, color: '#3b82f6' },
+      { name: 'Late', value: late, color: '#ef4444' }
+    ].filter(d => d.value > 0);
+  }, [mySubmissions, tasks]);
 
   // Filtered Grade Trajectory Data
   const trajectoryData = React.useMemo(() => {
@@ -147,17 +143,9 @@ const AchievementView: React.FC<AchievementViewProps> = ({ user, tasks, submissi
 
         <div className="bg-white px-6 py-4 rounded-[2rem] border-2 border-slate-100 shadow-sm flex items-center gap-8">
            <div className="text-right">
-             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Class Rank</p>
-             <p className="text-xl font-black text-slate-800">
-               {classRank > 0 ? `#${classRank}` : 'N/A'} 
-               {classRank > 0 && <span className="text-[10px] text-slate-400 font-bold ml-1">of {totalClassSize}</span>}
-             </p>
-           </div>
-           <div className="h-10 w-px bg-slate-100" />
-           <div className="text-right">
              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Score</p>
              <p className="text-xl font-black text-slate-800 flex items-center gap-2 justify-end">
-               {totalXP}
+               {stats.totalXP}
                <Sparkles size={16} className="text-amber-400" />
              </p>
            </div>
@@ -167,10 +155,10 @@ const AchievementView: React.FC<AchievementViewProps> = ({ user, tasks, submissi
       {/* Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: 'Completed', value: completedCount, icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-          { label: 'Excellence', value: excellenceCount, icon: Star, color: 'text-amber-600', bg: 'bg-amber-50' },
-          { label: 'Avg Grade', value: avgAttainment + '%', icon: Target, color: 'text-blue-600', bg: 'bg-blue-50' },
-          { label: 'Consistency', value: reliabilityRate + '%', icon: TrendingUp, color: 'text-purple-600', bg: 'bg-purple-50' }
+          { label: 'Completed', value: stats.completedCount, icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+          { label: 'Excellence', value: stats.excellenceCount, icon: Star, color: 'text-amber-600', bg: 'bg-amber-50' },
+          { label: 'Avg Grade', value: stats.avgAttainment + '%', icon: Target, color: 'text-blue-600', bg: 'bg-blue-50' },
+          { label: 'Consistency', value: stats.reliabilityRate + '%', icon: TrendingUp, color: 'text-purple-600', bg: 'bg-purple-50' }
         ].map((stat, idx) => (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
