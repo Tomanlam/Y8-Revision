@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   ChevronLeft, CheckCircle2, AlertCircle, FileText, Layout, ArrowRight, X, 
   Calculator, Edit, Eye, Send, Trash2, Timer, RefreshCw, ShieldCheck, Terminal,
-  Maximize2, Minimize2, Pen
+  Maximize2, Minimize2, Pen, Plus, Minus, RotateCcw
 } from 'lucide-react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
@@ -61,11 +61,21 @@ const QuestionTextWithCommandTerms = ({ text }: { text: string }) => {
         const lowerPart = part.toLowerCase();
         if (COMMAND_TERMS[lowerPart]) {
           return (
-            <span key={i} className="relative inline-block group">
-              <span className="text-red-500 underline decoration-red-200 decoration-2 underline-offset-4 cursor-help">{part}</span>
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-3 bg-red-600 text-white text-xs font-bold rounded-xl shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 leading-relaxed text-center">
-                <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-red-600"></div>
-                {COMMAND_TERMS[lowerPart]}
+            <span 
+              key={i} 
+              className="relative inline-block group px-1 mx-0.5"
+            >
+              <span className="text-orange-500 underline decoration-orange-200 decoration-2 underline-offset-4 cursor-help transition-all duration-300 group-hover:text-orange-600 group-hover:decoration-orange-400">{part}</span>
+              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-4 w-64 pointer-events-none z-[100]">
+                <motion.div 
+                  initial={{ opacity: 0, y: -10 }}
+                  whileHover={{ opacity: 1, y: 0 }}
+                  className="bg-orange-600 text-white p-4 rounded-2xl shadow-2xl border border-orange-400/30 text-center flex flex-col items-center opacity-0 group-hover:opacity-100 transition-all duration-300"
+                >
+                  <div className="bg-white/20 px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-[0.2em] mb-2">Definition</div>
+                  <p className="text-xs font-bold leading-relaxed">{COMMAND_TERMS[lowerPart]}</p>
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 w-3 h-3 bg-orange-600 rotate-45 -mb-1.5 border-l border-t border-orange-400/30" />
+                </motion.div>
               </div>
             </span>
           );
@@ -85,7 +95,8 @@ const TaskTestView: React.FC<TaskTestViewProps> = ({
   const [activePage, setActivePage] = useState(1);
   const [responses, setResponses] = useState<Record<string, any>>(initialResponses || {});
   const [submitted, setSubmitted] = useState(false);
-  const [viewerWidth, setViewerWidth] = useState(window.innerWidth * 0.45);
+  const [viewerWidth, setViewerWidth] = useState(window.innerWidth * 0.48);
+  const [pdfScale, setPdfScale] = useState(1.0);
   const [isValidating, setIsValidating] = useState(false);
   const [validationFeedback, setValidationFeedback] = useState<Record<string, { score: string, feedback: string }>>(initialFeedback || {});
   const [generalFeedback, setGeneralFeedback] = useState<string>(initialGeneralFeedback || "");
@@ -121,6 +132,13 @@ const TaskTestView: React.FC<TaskTestViewProps> = ({
   const [showQuestionsEditor, setShowQuestionsEditor] = useState(false);
   const [editingQuestions, setEditingQuestions] = useState<string>("");
   const [isSavingQuestions, setIsSavingQuestions] = useState(false);
+
+  // Handle resize debounced
+  useEffect(() => {
+    const handleResize = () => setViewerWidth(window.innerWidth * 0.48);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const pdfOptions = useMemo(() => ({
     cMapUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/cmaps/`,
@@ -1005,8 +1023,35 @@ OUTPUT: Plain text paragraph.`;
       </AnimatePresence>
 
       <main className="flex-1 flex overflow-hidden bg-gray-50">
-        <div ref={pdfContainerRef} className={`${isGradingWorkflow ? (isGradingConsoleExpanded ? 'w-0 opacity-0 pointer-events-none p-0 overflow-hidden' : 'w-[20%]') : 'flex-1'} overflow-y-auto custom-scrollbar p-8 flex justify-center bg-gray-100 transition-all duration-500`}>
-          <div className="max-w-4xl w-full">
+        <div ref={pdfContainerRef} className={`${isGradingWorkflow ? (isGradingConsoleExpanded ? 'w-0 opacity-0 pointer-events-none p-0 overflow-hidden' : 'w-[20%]') : 'w-[50%]'} overflow-y-auto custom-scrollbar p-8 flex flex-col items-center bg-gray-100 transition-all duration-500 relative`}>
+          <div className="sticky top-0 z-30 mb-6 flex gap-2 bg-white/80 backdrop-blur-md p-2 rounded-2xl border border-gray-200 shadow-sm">
+            <button 
+              onClick={() => setPdfScale(prev => Math.max(0.5, prev - 0.1))}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600"
+              title="Zoom Out"
+            >
+              <Minus size={18} />
+            </button>
+            <span className="flex items-center px-2 text-[10px] font-black text-gray-400 uppercase tracking-widest min-w-[60px] justify-center">
+              {Math.round(pdfScale * 100)}%
+            </span>
+            <button 
+              onClick={() => setPdfScale(prev => Math.min(3, prev + 0.1))}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600"
+              title="Zoom In"
+            >
+              <Plus size={18} />
+            </button>
+            <button 
+              onClick={() => setPdfScale(1.0)}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600"
+              title="Reset Zoom"
+            >
+              <RotateCcw size={18} />
+            </button>
+          </div>
+
+          <div className="max-w-4xl w-full flex justify-center">
             <Document
               file={task.pdfUrl || ''}
               onLoadSuccess={({ numPages }) => setNumPages(numPages)}
@@ -1020,14 +1065,14 @@ OUTPUT: Plain text paragraph.`;
                   ref={el => pageRefs.current[index + 1] = el}
                   className="mb-8 shadow-2xl rounded-sm overflow-hidden bg-white pdf-page-container"
                 >
-                  <Page pageNumber={index + 1} width={Math.min(viewerWidth, 800)} renderTextLayer={false} renderAnnotationLayer={false} />
+                  <Page pageNumber={index + 1} width={viewerWidth * pdfScale} renderTextLayer={false} renderAnnotationLayer={false} />
                 </div>
               ))}
             </Document>
           </div>
         </div>
 
-        <div ref={rightPaneRef} className={`${isGradingWorkflow ? (isGradingConsoleExpanded ? 'w-[40%]' : 'w-[50%]') : 'w-[60%]'} border-l border-red-50 bg-gray-50/50 overflow-y-auto custom-scrollbar p-10 transition-all duration-500`}>
+        <div ref={rightPaneRef} className={`${isGradingWorkflow ? (isGradingConsoleExpanded ? 'w-[40%]' : 'w-[50%]') : 'w-[50%]'} border-l border-red-50 bg-gray-50/50 overflow-y-auto custom-scrollbar p-10 transition-all duration-500`}>
           <div className="max-w-6xl mx-auto space-y-12 pb-32">
             <div className="space-y-6 border-b border-red-100 pb-12">
               <div className="space-y-2">
@@ -1435,7 +1480,7 @@ OUTPUT: Plain text paragraph.`;
             {gradingLogs.length > 0 && (
               <div 
                 onDoubleClick={() => setIsGradingConsoleExpanded(!isGradingConsoleExpanded)}
-                className="my-6 bg-gray-900 rounded-[2rem] p-6 shadow-2xl border border-gray-800 flex flex-col max-h-48 cursor-zoom-in"
+              className="my-6 bg-gray-900 rounded-[2rem] p-6 shadow-2xl border border-gray-800 flex flex-col max-h-80 cursor-zoom-in"
                 title="Double click to expand console"
               >
                 <div className="flex items-center gap-3 mb-3 pb-3 border-b border-white/5">
