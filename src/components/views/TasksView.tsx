@@ -808,70 +808,77 @@ JSON OUTPUT: { "questions": [{ "id": "string", "score": "X of X", "feedback": "s
       {/* Admin Quick Stats Bar */}
       {isAdmin && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="bg-white p-8 rounded-[2.5rem] border-2 border-slate-50 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex justify-between items-start mb-4">
-              <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl">
+          <div className="bg-white/40 backdrop-blur-3xl p-8 rounded-[2.5rem] border border-white/20 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-xl transition-all duration-500 group">
+            <div className="flex justify-between items-start mb-6">
+              <div className="p-4 bg-blue-500/10 text-blue-500 rounded-2xl group-hover:scale-110 transition-transform duration-500 shadow-inner">
                 <ListChecks size={24} />
               </div>
-              <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-1 rounded-lg">ACTIVE</span>
+              <span className="text-[9px] font-black text-blue-500 bg-blue-500/5 px-2.5 py-1 rounded-full border border-blue-500/10 uppercase tracking-widest">Active</span>
             </div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Assignments</p>
-            <p className="text-3xl font-black text-slate-900 tracking-tight">{tasks.filter(t => t.type !== 'test').length}</p>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Total Assignments</p>
+            <p className="text-4xl font-black text-slate-900 tracking-tighter">{tasks.filter(t => t.type !== 'test').length}</p>
           </div>
 
-          <div className="bg-white p-8 rounded-[2.5rem] border-2 border-slate-50 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex justify-between items-start mb-4">
-              <div className="p-3 bg-red-50 text-red-600 rounded-2xl">
+          <div className="bg-white/40 backdrop-blur-3xl p-8 rounded-[2.5rem] border border-white/20 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-xl transition-all duration-500 group">
+            <div className="flex justify-between items-start mb-6">
+              <div className="p-4 bg-rose-500/10 text-rose-500 rounded-2xl group-hover:scale-110 transition-transform duration-500 shadow-inner">
                 <ShieldCheck size={24} />
               </div>
-              <span className="text-[10px] font-black text-red-600 bg-red-50 px-2 py-1 rounded-lg">SECURE</span>
+              <span className="text-[9px] font-black text-rose-500 bg-rose-500/5 px-2.5 py-1 rounded-full border border-rose-500/10 uppercase tracking-widest">Secure</span>
             </div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Secure Assessments</p>
-            <p className="text-3xl font-black text-slate-900 tracking-tight">{tasks.filter(t => t.type === 'test').length}</p>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Secure Assessments</p>
+            <p className="text-4xl font-black text-slate-900 tracking-tighter">{tasks.filter(t => t.type === 'test').length}</p>
           </div>
 
-          <div className="bg-white p-8 rounded-[2.5rem] border-2 border-slate-50 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex justify-between items-start mb-4">
-              <div className="p-3 bg-amber-50 text-amber-600 rounded-2xl">
+          <div className="bg-white/40 backdrop-blur-3xl p-8 rounded-[2.5rem] border border-white/20 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-xl transition-all duration-500 group">
+            <div className="flex justify-between items-start mb-6">
+              <div className="p-4 bg-amber-500/10 text-amber-500 rounded-2xl group-hover:scale-110 transition-transform duration-500 shadow-inner">
                 <Clock size={24} />
               </div>
               {allSubmissions.filter(s => !s.feedback).length > 0 && (
-                <span className="text-[10px] font-black text-white bg-amber-500 px-2 py-1 rounded-lg animate-pulse">ACTION NEEDED</span>
+                <span className="text-[9px] font-black text-white bg-amber-500 px-2.5 py-1 rounded-full shadow-lg shadow-amber-500/20 animate-pulse uppercase tracking-widest">Action</span>
               )}
             </div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Pending Grading</p>
-            <p className="text-3xl font-black text-slate-900 tracking-tight">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Pending Grading</p>
+            <p className="text-4xl font-black text-slate-900 tracking-tighter">
               {allSubmissions.filter(s => !s.feedback).length}
             </p>
           </div>
 
-          <div className="bg-slate-900 p-8 rounded-[2.5rem] shadow-xl relative overflow-hidden">
-            <Sparkles className="absolute right-[-10px] bottom-[-10px] text-emerald-500/20" size={100} />
-            <div className="relative z-10">
-              <div className="flex items-center gap-2 mb-4">
-                <Sparkles size={16} className="text-emerald-400" />
-                <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">AI Engine</span>
+          <div className="bg-slate-900/90 backdrop-blur-3xl p-8 rounded-[2.5rem] shadow-2xl relative overflow-hidden group border border-white/10">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-emerald-500/20 transition-all duration-700" />
+            <div className="relative z-10 h-full flex flex-col justify-between">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-3 bg-emerald-500/20 rounded-xl text-emerald-400 border border-emerald-500/20">
+                  <Sparkles size={18} className="animate-pulse" />
+                </div>
+                <span className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em]">AI Engine</span>
               </div>
-              <p className="text-2xl font-black text-white tracking-tight">Gemini 3.1 Flash Lite</p>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Autonomous Grading v2</p>
+              <div>
+                <p className="text-2xl font-black text-white tracking-tighter leading-none mb-1">Gemini 3.1 Flash</p>
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest opacity-60">Autonomous Intelligence v2</p>
+              </div>
             </div>
           </div>
         </div>
       )}
 
       {isAdmin && (
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-4">
           <button 
             onClick={() => {
               setNewTask(prev => ({ ...prev, type: 'standard' }));
               setIsCreatorOpen(true);
             }}
-            className="group bg-white border-2 border-emerald-100 p-4 rounded-2xl flex items-center gap-3 hover:bg-emerald-500 hover:border-emerald-500 transition-all shadow-sm"
+            className="group bg-white/40 backdrop-blur-2xl border border-white/20 p-5 rounded-[2rem] flex items-center gap-4 hover:bg-emerald-500 transition-all duration-500 shadow-sm hover:shadow-xl hover:shadow-emerald-500/20"
           >
-            <div className="w-10 h-10 bg-emerald-50 group-hover:bg-white/20 rounded-xl flex items-center justify-center text-emerald-600 group-hover:text-white transition-all">
-              <Plus size={20} />
+            <div className="w-12 h-12 bg-emerald-500/10 group-hover:bg-white/20 rounded-2xl flex items-center justify-center text-emerald-600 group-hover:text-white transition-all duration-500 shadow-inner">
+              <Plus size={24} />
             </div>
-            <span className="text-[10px] font-black text-emerald-700 group-hover:text-white uppercase tracking-widest">New Assignment</span>
+            <div className="text-left">
+              <span className="block text-[10px] font-black text-emerald-600/60 group-hover:text-white/60 uppercase tracking-widest leading-none mb-1">Deployment</span>
+              <span className="block text-xs font-black text-slate-900 group-hover:text-white uppercase tracking-[0.1em]">New Assignment</span>
+            </div>
           </button>
 
           <button 
@@ -879,33 +886,39 @@ JSON OUTPUT: { "questions": [{ "id": "string", "score": "X of X", "feedback": "s
               setNewTask(prev => ({ ...prev, type: 'test' }));
               setIsTestCreatorOpen(true);
             }}
-            className="group bg-white border-2 border-red-100 p-4 rounded-2xl flex items-center gap-3 hover:bg-red-500 hover:border-red-500 transition-all shadow-sm"
+            className="group bg-white/40 backdrop-blur-2xl border border-white/20 p-5 rounded-[2rem] flex items-center gap-4 hover:bg-rose-500 transition-all duration-500 shadow-sm hover:shadow-xl hover:shadow-rose-500/20"
           >
-            <div className="w-10 h-10 bg-red-50 group-hover:bg-white/20 rounded-xl flex items-center justify-center text-red-600 group-hover:text-white transition-all">
-              <ShieldCheck size={20} />
+            <div className="w-12 h-12 bg-rose-500/10 group-hover:bg-white/20 rounded-2xl flex items-center justify-center text-rose-600 group-hover:text-white transition-all duration-500 shadow-inner">
+              <ShieldCheck size={24} />
             </div>
-            <span className="text-[10px] font-black text-red-700 group-hover:text-white uppercase tracking-widest">New Secure Test</span>
+            <div className="text-left">
+              <span className="block text-[10px] font-black text-rose-600/60 group-hover:text-white/60 uppercase tracking-widest leading-none mb-1">Security</span>
+              <span className="block text-xs font-black text-slate-900 group-hover:text-white uppercase tracking-[0.1em]">New Secure Test</span>
+            </div>
           </button>
 
           <button 
             onClick={seedGoldenStandardTasks}
             disabled={seedingStatus !== 'idle'}
-            className={`group border-2 p-4 rounded-2xl flex items-center gap-3 transition-all shadow-sm ${
+            className={`group bg-white/40 backdrop-blur-2xl border p-5 rounded-[2rem] flex items-center gap-4 transition-all duration-500 shadow-sm hover:shadow-xl ${
               seedingStatus === 'success' 
-                ? 'bg-emerald-500 border-emerald-500 text-white' 
+                ? 'bg-amber-500 border-amber-500 text-white shadow-amber-500/20' 
                 : seedingStatus === 'seeding'
                 ? 'bg-amber-100 border-amber-200 text-amber-500 opacity-50 cursor-wait'
-                : 'bg-white border-amber-100 text-amber-700 hover:bg-amber-500 hover:border-amber-500 hover:text-white'
+                : 'border-white/20 text-amber-600 hover:bg-amber-500 hover:border-amber-500'
             }`}
           >
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
-              seedingStatus === 'success' ? 'bg-white/20' : 'bg-amber-50 group-hover:bg-white/20 text-amber-600 group-hover:text-white'
+            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-inner ${
+              seedingStatus === 'success' ? 'bg-white/20' : 'bg-amber-500/10 group-hover:bg-white/20 text-amber-600 group-hover:text-white'
             }`}>
-              {seedingStatus === 'success' ? <CheckCircle2 size={20} /> : seedingStatus === 'seeding' ? <RefreshCw size={20} className="animate-spin" /> : <Star size={20} />}
+              {seedingStatus === 'success' ? <CheckCircle2 size={24} /> : seedingStatus === 'seeding' ? <RefreshCw size={24} className="animate-spin" /> : <Star size={24} />}
             </div>
-            <span className="text-[10px] font-black uppercase tracking-widest">
-              {seedingStatus === 'success' ? 'Injected!' : seedingStatus === 'seeding' ? 'Seeding...' : 'Golden Standards'}
-            </span>
+            <div className="text-left">
+              <span className={`block text-[10px] font-black uppercase tracking-widest leading-none mb-1 ${seedingStatus === 'success' ? 'text-white/60' : 'text-amber-600/60 group-hover:text-white/60'}`}>Reference</span>
+              <span className={`block text-xs font-black uppercase tracking-[0.1em] ${seedingStatus === 'success' ? 'text-white' : 'text-slate-900 group-hover:text-white'}`}>
+                {seedingStatus === 'success' ? 'Injected!' : seedingStatus === 'seeding' ? 'Seeding...' : 'Golden Standards'}
+              </span>
+            </div>
           </button>
 
           {onWipeCleanSlate && (
@@ -921,16 +934,23 @@ JSON OUTPUT: { "questions": [{ "id": "string", "score": "X of X", "feedback": "s
               onMouseLeave={() => {
                 if (nukeLevel > 0) setNukeLevel(0);
               }}
-              className={`ml-auto p-4 rounded-2xl flex items-center gap-3 transition-all border-2 border-dashed ${
+              className={`ml-auto group bg-white/40 backdrop-blur-2xl border-2 border-dashed p-5 rounded-[2rem] flex items-center gap-4 transition-all duration-500 shadow-sm ${
                 nukeLevel > 0 
-                  ? 'bg-red-600 border-red-600 text-white shadow-lg' 
-                  : 'bg-white border-red-100 text-red-500 hover:bg-red-50'
+                  ? 'bg-red-600 border-red-600 text-white shadow-xl shadow-red-600/20' 
+                  : 'border-red-100 text-red-500 hover:bg-red-600 hover:border-red-600'
               }`}
             >
-              <Trash2 size={20} />
-              <span className="text-[10px] font-black uppercase tracking-widest">
-                {nukeLevel === 0 ? "Purge System" : nukeLevel === 1 ? "Are you sure?" : "TERMINATE DATA"}
-              </span>
+              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-inner ${
+                nukeLevel > 0 ? 'bg-white/20' : 'bg-red-500/10 group-hover:bg-white/20 text-red-500 group-hover:text-white'
+              }`}>
+                <Trash2 size={24} />
+              </div>
+              <div className="text-left">
+                <span className={`block text-[10px] font-black uppercase tracking-widest leading-none mb-1 ${nukeLevel > 0 ? 'text-white/60' : 'text-red-500/60 group-hover:text-white/60'}`}>Dangerous</span>
+                <span className={`block text-xs font-black uppercase tracking-[0.1em] ${nukeLevel > 0 ? 'text-white' : 'text-slate-900 group-hover:text-white'}`}>
+                  {nukeLevel === 0 ? "Purge System" : nukeLevel === 1 ? "Confirm?" : "TERMINATE"}
+                </span>
+              </div>
             </button>
           )}
         </div>
@@ -2044,38 +2064,50 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
       {editingTask && <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 transition-opacity" onClick={() => setEditingTask(null)} />}
 
       {activeTab === 'submissions' && isAdmin ? (
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-           <div className="flex flex-col md:flex-row items-center gap-6 bg-white p-8 rounded-[2.5rem] border-2 border-slate-50 shadow-sm">
-             <div className="flex items-center gap-5 flex-1">
-               <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 shadow-inner shrink-0 scale-110">
-                 <Users size={32} />
-               </div>
-               <div>
-                 <h3 className="text-2xl font-black text-slate-800 uppercase tracking-tighter">Grading Inbox</h3>
-                 <p className="text-slate-500 text-sm font-medium">Review, analyze, and grade student submissions across all active units.</p>
-               </div>
-             </div>
- 
-             <div className="w-full md:w-96 relative group">
-               <input 
-                 type="text"
-                 placeholder="Search students or records..."
-                 value={submissionFilter}
-                 onChange={(e) => setSubmissionFilter(e.target.value)}
-                 className="w-full pl-14 pr-6 py-5 rounded-2xl border-2 border-slate-100 font-bold focus:border-emerald-500 outline-none transition-all bg-slate-50/50 group-hover:bg-white shadow-inner focus:shadow-emerald-100/20"
-               />
-               <List className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 group-hover:text-emerald-400 transition-colors" size={24} />
-             </div>
-           </div>
+        <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className="flex flex-col md:flex-row items-center gap-10 bg-slate-950 p-12 rounded-[3.5rem] border border-white/10 shadow-2xl relative overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/10 via-transparent to-emerald-500/10 opacity-50 group-hover:opacity-80 transition-opacity duration-1000" />
+              <div className="flex items-center gap-10 flex-1 relative z-10">
+                <div className="w-24 h-24 bg-white/5 backdrop-blur-2xl rounded-[2rem] flex items-center justify-center text-emerald-400 shadow-[0_0_50px_rgba(16,185,129,0.2)] border border-white/10 shrink-0 group">
+                  <motion.div
+                    animate={{ rotate: [0, 10, 0, -10, 0] }}
+                    transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+                  >
+                    <Users size={44} />
+                  </motion.div>
+                </div>
+                <div>
+                  <div className="flex items-center gap-4 mb-3">
+                    <span className="px-3 py-1 bg-emerald-500/10 text-emerald-400 text-[10px] font-black uppercase tracking-[0.3em] rounded-lg border border-emerald-500/20">Administrative Intelligence</span>
+                    <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,1)]" />
+                  </div>
+                  <h3 className="text-[3.5rem] font-black text-white tracking-tighter leading-none mb-3">Grading Inbox</h3>
+                  <p className="text-slate-400 text-base font-medium tracking-tight max-w-md opacity-80 leading-relaxed">Centralized telemetry for student response analysis and evaluation protocols.</p>
+                </div>
+              </div>
+  
+              <div className="w-full md:w-[450px] relative group z-10">
+                <div className="absolute inset-y-0 left-8 flex items-center pointer-events-none">
+                  <List className="text-slate-500 group-focus-within:text-emerald-400 transition-colors" size={24} />
+                </div>
+                <input 
+                  type="text"
+                  placeholder="Filter by student or assessment..."
+                  value={submissionFilter}
+                  onChange={(e) => setSubmissionFilter(e.target.value)}
+                  className="w-full pl-16 pr-10 py-6 rounded-[2.5rem] border border-white/10 font-black text-xs uppercase tracking-[0.25em] focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500/50 outline-none transition-all bg-white/5 backdrop-blur-xl text-white placeholder:text-slate-600 shadow-2xl"
+                />
+              </div>
+            </div>
            
-           <div className="space-y-8">
+           <div className="space-y-16">
              {Object.keys(submissionsByTask).length === 0 ? (
-               <div className="col-span-full py-24 flex flex-col items-center justify-center text-center bg-white rounded-[3rem] border-2 border-dashed border-slate-100 shadow-inner">
-                 <div className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center text-slate-200 mb-6">
-                   <Inbox size={40} />
+               <div className="col-span-full py-40 flex flex-col items-center justify-center text-center bg-slate-900/50 backdrop-blur-3xl rounded-[4rem] border border-white/5 shadow-2xl">
+                 <div className="w-32 h-32 bg-slate-950 rounded-[2.5rem] flex items-center justify-center text-slate-700 mb-10 border border-white/5 shadow-inner group transition-transform hover:scale-110 duration-700">
+                   <Inbox size={64} className="group-hover:text-emerald-500 transition-colors" />
                  </div>
-                 <h3 className="font-black text-slate-400 uppercase tracking-[0.2em] text-sm mb-2">No Submissions Recorded</h3>
-                 <p className="text-slate-300 font-medium max-w-xs">Student work will automatically appear here once assignments are completed.</p>
+                 <h3 className="font-black text-white uppercase tracking-[0.3em] text-lg mb-4 leading-none">Vortex Status: Empty</h3>
+                 <p className="text-slate-500 font-medium max-w-md leading-relaxed text-sm">Waiting for incoming student intelligence streams. Data will synchronize here automatically.</p>
                </div>
              ) : (Object.entries(submissionsByTask) as [string, TaskSubmission[]][]).map(([taskId, subs]) => {
                const task = tasks.find(t => t.id === taskId) || { id: taskId, title: `Unlinked Task (${taskId})`, dueDate: new Date().toISOString(), type: "worksheet" } as Task;
@@ -2086,63 +2118,86 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
                );
 
                if (filteredSubs.length === 0) return null;
-
                const ungradedCount = filteredSubs.filter(s => !s.feedback).length;
-
+ 
                return (
-                 <section key={taskId} className="space-y-8">
-                   <div className="flex items-center justify-between border-b-4 border-emerald-50 pb-4">
-                     <div className="flex items-center gap-4">
-                       <div className="bg-emerald-500 p-3 rounded-2xl text-white shadow-lg shadow-emerald-100">
-                         <Layout size={24} />
+                 <section key={taskId} className="space-y-16">
+                   <div className="flex flex-col xl:flex-row xl:items-center justify-between border-b border-slate-200/80 pb-12 mb-4 gap-10">
+                     <div className="flex items-center gap-10">
+                       <div className="relative group/task">
+                         <div className="absolute -inset-3 bg-emerald-500/20 rounded-[2.5rem] blur opacity-0 group-hover/task:opacity-100 transition duration-700"></div>
+                         <div className="relative bg-slate-950 p-8 rounded-[2.5rem] text-emerald-400 shadow-2xl border border-white/10 group-hover/task:scale-110 transition-transform duration-700">
+                           <Layout size={44} />
+                         </div>
                        </div>
                        <div>
-                         <h4 className="font-black text-gray-800 text-2xl uppercase tracking-tighter">
+                         <div className="flex items-center gap-4 mb-3">
+                            <div className="px-3 py-1 bg-emerald-500/10 text-emerald-500 text-[10px] font-black uppercase tracking-[0.25em] rounded-lg border border-emerald-500/20">Protocol Active</div>
+                            <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,1)] animate-pulse" />
+                         </div>
+                         <h4 className="font-black text-slate-950 text-[3.5rem] uppercase tracking-tighter leading-none mb-4">
                            {task.title}
                          </h4>
-                         <p className="text-gray-400 text-xs font-black uppercase tracking-widest flex items-center gap-2">
-                           <Clock size={12} /> Due: {format(new Date(task.dueDate), 'PPP')}
-                         </p>
+                         <div className="flex items-center gap-6">
+                           <div className="flex items-center gap-3 text-slate-400">
+                              <Clock size={18} className="text-blue-500" />
+                              <span className="text-[11px] font-black uppercase tracking-[0.15em] opacity-60">Cutoff: {format(new Date(task.dueDate), 'PPP')}</span>
+                           </div>
+                         </div>
                        </div>
                      </div>
-                     <div className="hidden md:flex gap-3">
-                       <div className="flex flex-col gap-2 mr-2 justify-center">
+
+                     <div className="flex flex-wrap items-center gap-10">
+                       <div className="flex flex-col gap-3">
                          <button 
                            onClick={() => filteredSubs.forEach(s => generateResponsePDF(s, task, false))}
-                           className="text-[9px] uppercase font-black tracking-widest text-blue-600 bg-blue-50/50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-all flex items-center gap-2 border border-blue-100"
+                           className="text-[11px] uppercase font-black tracking-widest text-slate-500 bg-white hover:bg-slate-950 hover:text-white px-8 py-4 rounded-[1.5rem] transition-all duration-500 border border-slate-200 flex items-center justify-center gap-4 shadow-xl hover:shadow-slate-200"
                          >
-                           <Download size={10} /> Raw PDFs
+                           <Download size={20} /> Data Extraction
                          </button>
                          <button 
                            onClick={() => filteredSubs.filter(s => s.feedback).forEach(s => generateResponsePDF(s, task, true))}
-                           className="text-[9px] uppercase font-black tracking-widest text-emerald-600 bg-emerald-50/50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg transition-all flex items-center gap-2 border border-emerald-100"
+                           className="text-[11px] uppercase font-black tracking-widest text-emerald-600 bg-emerald-50 hover:bg-emerald-600 hover:text-white px-8 py-4 rounded-[1.5rem] transition-all duration-500 border border-emerald-200 flex items-center justify-center gap-4 shadow-xl shadow-emerald-500/10 hover:shadow-emerald-500/30"
                          >
-                           <Download size={10} /> Graded Reports
+                           <Download size={20} /> Intelligence Report
                          </button>
-                        {ungradedCount > 0 && typeof doBatchGrade === 'function' && (
-                          <button
-                            onClick={() => doBatchGrade(task, filteredSubs)}
-                            disabled={batchGradingTask !== null}
-                            className={`text-[9px] uppercase font-black tracking-widest ${batchGradingTask === task.id ? 'text-orange-600 bg-orange-50/50' : 'text-purple-600 bg-purple-50/50 border-purple-100 hover:bg-purple-100'} px-3 py-1.5 rounded-lg transition-all flex items-center gap-2 border`}
-                          >
-                            {batchGradingTask === task.id ? (
-                              <><div className="w-3 h-3 border-2 border-orange-500/30 border-t-orange-500 rounded-full animate-spin" /> Grading...</>
-                            ) : (
-                              <><Target size={10} /> Batch Grade</>
-                            )}
-                          </button>
-                        )}
                        </div>
-                       <div className="bg-emerald-50 border-2 border-emerald-100 px-4 py-2 rounded-2xl text-center">
-                         <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Total</p>
-                         <p className="text-xl font-black text-emerald-700">{filteredSubs.length}</p>
-                       </div>
-                       {ungradedCount > 0 && (
-                         <div className="bg-orange-50 border-2 border-orange-100 px-4 py-2 rounded-2xl text-center">
-                           <p className="text-[10px] font-black text-orange-600 uppercase tracking-widest">Ungraded</p>
-                           <p className="text-xl font-black text-orange-700">{ungradedCount}</p>
+
+                       <div className="hidden xl:block h-24 w-px bg-slate-200/80" />
+
+                       {ungradedCount > 0 && typeof doBatchGrade === 'function' && (
+                         <div className="relative group">
+                           <div className="absolute -inset-1 bg-gradient-to-r from-emerald-400 via-blue-500 to-purple-600 rounded-[2rem] blur opacity-30 group-hover:opacity-100 transition duration-1000"></div>
+                           <button
+                             onClick={() => doBatchGrade(task, filteredSubs)}
+                             disabled={batchGradingTask !== null}
+                             className={`relative h-24 px-12 rounded-[2rem] flex items-center gap-6 font-black uppercase tracking-[0.25em] text-[12px] shadow-2xl transition-all duration-700 ${
+                               batchGradingTask === task.id 
+                                 ? 'bg-slate-50 text-slate-400 cursor-wait' 
+                                 : 'bg-slate-950 text-white hover:scale-105 active:scale-95'
+                             }`}
+                           >
+                             {batchGradingTask === task.id ? (
+                               <><RefreshCw size={24} className="animate-spin text-emerald-400" /> Synthesizing Data Stream...</>
+                             ) : (
+                               <><Sparkles size={24} className="text-emerald-400 drop-shadow-[0_0_12px_rgba(52,211,153,1)]" /> Launch Batch Logic</>
+                             )}
+                           </button>
                          </div>
                        )}
+
+                       <div className="flex gap-6">
+                         <div className="bg-white px-12 py-6 rounded-[3rem] border border-slate-100 shadow-[0_20px_40px_-20px_rgba(0,0,0,0.1)] text-center min-w-[160px] flex flex-col justify-center transition-transform hover:scale-105 duration-500">
+                           <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.25em] mb-2 opacity-50">Total Intake</p>
+                           <p className="text-5xl font-black text-slate-950 tracking-tighter leading-none">{filteredSubs.length}</p>
+                         </div>
+                         {ungradedCount > 0 && (
+                           <div className="bg-rose-50 px-12 py-6 rounded-[3rem] border border-rose-100 shadow-[0_20px_40px_-20px_rgba(244,63,94,0.2)] text-center min-w-[160px] flex flex-col justify-center transition-transform hover:scale-105 duration-500">
+                             <p className="text-[11px] font-black text-rose-500 uppercase tracking-[0.25em] mb-2 opacity-60">Pending</p>
+                             <p className="text-5xl font-black text-rose-600 tracking-tighter leading-none">{ungradedCount}</p>
+                           </div>
+                         )}
+                       </div>
                      </div>
                    </div>
 
@@ -2150,19 +2205,19 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
                      <AnimatePresence mode="popLayout">
                        {filteredSubs.map((sub) => {
                          const isGraded = !!sub.feedback;
-                         let statusColor = 'bg-emerald-50 text-emerald-600 border-emerald-100';
-                         let statusText = 'On-time';
+                         let statusColor = 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20';
+                         let statusText = 'Optimal';
                          
                          if (task.dueDate) {
                            const dueEnd = new Date(task.dueDate);
                            dueEnd.setHours(23, 59, 59, 999);
                            const subDate = new Date(sub.completedAt);
                            if (subDate.getTime() > dueEnd.getTime()) {
-                             statusColor = 'bg-red-50 text-red-600 border-red-100';
-                             statusText = 'Late';
+                             statusColor = 'bg-rose-500/10 text-rose-500 border-rose-500/20';
+                             statusText = 'Delayed';
                            } else if (dueEnd.getTime() - subDate.getTime() > 24 * 60 * 60 * 1000) {
-                             statusColor = 'bg-blue-50 text-blue-600 border-blue-100';
-                             statusText = 'Early';
+                             statusColor = 'bg-blue-500/10 text-blue-500 border-blue-500/20';
+                             statusText = 'Accelerated';
                            }
                          }
                          
@@ -2173,99 +2228,98 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
                              initial={{ opacity: 0, scale: 0.95 }}
                              animate={{ opacity: 1, scale: 1 }}
                              exit={{ opacity: 0, scale: 0.95 }}
-                             whileHover={{ y: -4 }}
-                             className={`group bg-white p-5 rounded-3xl border-2 transition-all relative flex flex-col justify-between shadow-sm overflow-hidden ${
-                               isGraded ? 'border-emerald-100 hover:border-emerald-300' : 'border-gray-100 shadow-sm hover:border-orange-200'
-                             }`}
+                             whileHover={{ y: -8, scale: 1.02 }}
+                             className={`group relative p-8 rounded-[2.5rem] transition-all duration-500 flex flex-col justify-between overflow-hidden shadow-xl ${
+                               isGraded ? 'bg-white hover:border-emerald-200 hover:shadow-emerald-500/20' : 'bg-slate-50 hover:border-slate-300 hover:shadow-slate-300/50'
+                             } border border-slate-200`}
                            >
-                             {/* Sub-header info */}
+                             <div className={`absolute top-0 right-0 w-32 h-32 rounded-bl-[100px] transition-opacity duration-700 ${isGraded ? 'bg-emerald-500/10 opacity-100 group-hover:bg-emerald-500/20' : 'bg-slate-200/50 opacity-0 group-hover:opacity-100'}`} />
 
-                             <div>
-                               <div className="flex justify-between items-start mb-4">
-                                 <div className="flex items-center gap-2">
-                                   <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors border-2 border-gray-100 shrink-0">
-                                     <User size={20} />
+                             <div className="relative z-10">
+                               <div className="flex justify-between items-start mb-6">
+                                 <div className="flex items-center gap-4">
+                                   <div className={`w-14 h-14 rounded-[1.5rem] flex items-center justify-center transition-colors duration-500 shrink-0 ${isGraded ? 'bg-emerald-50 text-emerald-600' : 'bg-white text-slate-400 group-hover:bg-slate-900 group-hover:text-white border border-slate-200 shadow-sm'}`}>
+                                     <User size={24} />
                                    </div>
                                    <div>
-                                     <h4 className="font-black text-gray-800 text-sm uppercase truncate max-w-[120px] tracking-tight">{sub.studentName}</h4>
-                                     <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Student</p>
+                                     <h4 className="font-black text-slate-950 text-lg uppercase truncate max-w-[150px] tracking-tight">{sub.studentName}</h4>
+                                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Subject</p>
                                    </div>
                                  </div>
-                                 <div className={`px-3 py-1 rounded-full text-[9px] font-black uppercase border-2 ${statusColor}`}>
+                                 <div className={`px-4 py-1.5 rounded-xl border text-[9px] font-black uppercase tracking-[0.2em] shadow-sm ${statusColor}`}>
                                    {statusText}
                                  </div>
                                </div>
 
-                               <div className="grid grid-cols-2 gap-3 mb-4">
-                                 <div className="bg-gray-50/50 rounded-2xl p-2.5 border border-gray-100">
-                                   <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5 text-center">Score</p>
-                                   <p className={`text-base font-black text-center ${isGraded ? 'text-emerald-500' : 'text-gray-400 italic text-xs'}`}>
-                                     {isGraded ? `${sub.results?.score} of ${sub.results?.total}` : 'Pending'}
-                                   </p>
-                                 </div>
-                                 <div className="bg-gray-50/50 rounded-2xl p-2.5 border border-gray-100">
-                                   <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5 text-center">Date</p>
-                                   <p className="text-center font-black text-gray-700 text-xs">{format(new Date(sub.completedAt), 'MMM d')}</p>
-                                 </div>
-                               </div>
-                             </div>
+                                <div className="flex gap-4 mb-6">
+                                  <div className="flex-1 bg-slate-50 rounded-[1.5rem] p-4 border border-slate-100 flex flex-col justify-center transition-colors group-hover:bg-slate-100/50">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1.5 text-center">Score</p>
+                                    <p className={`text-xl font-black text-center ${isGraded ? 'text-emerald-500' : 'text-slate-400 italic text-sm'}`}>
+                                      {isGraded ? `${sub.results?.score} of ${sub.results?.total}` : 'Pending'}
+                                    </p>
+                                  </div>
+                                  <div className="flex-1 bg-slate-50 rounded-[1.5rem] p-4 border border-slate-100 flex flex-col justify-center transition-colors group-hover:bg-slate-100/50">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1.5 text-center">Date</p>
+                                    <p className="text-center font-black text-slate-700 text-sm tracking-tight">{format(new Date(sub.completedAt), 'MMM d')}</p>
+                                  </div>
+                                </div>
+                              </div>
 
-                             <div className="space-y-2 mt-2">
-                               {onViewSubmission && (
-                                 <button 
-                                   onClick={(e) => {
-                                     e.stopPropagation();
-                                     onViewSubmission(sub, task);
-                                   }}
-                                   className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all ${
-                                     isGraded 
-                                       ? 'bg-blue-50 text-blue-600 border-2 border-blue-100 hover:bg-blue-100' 
-                                       : 'bg-emerald-500 text-white shadow-[0_4px_0_0_#059669] hover:bg-emerald-400 active:translate-y-1 active:shadow-none'
-                                   }`}
-                                 >
-                                   {isGraded ? <Eye size={16} /> : <Target size={16} />}
-                                   {isGraded ? 'Review' : 'Grade'}
-                                 </button>
-                               )}
-                               
-                               <div className="grid grid-cols-2 gap-3">
-                                 <button 
-                                   onClick={(e) => {
-                                     e.stopPropagation();
-                                     generateResponsePDF(sub, task, false);
-                                   }}
-                                   className="flex items-center justify-center gap-2 py-2 rounded-xl font-black uppercase tracking-widest text-[8px] border-2 border-gray-100 text-gray-400 hover:bg-gray-50 hover:text-gray-600 transition-all"
-                                 >
-                                   <Download size={12} />
-                                   Raw
-                                 </button>
-                                 {isGraded && (
-                                   <button 
-                                     onClick={(e) => {
-                                       e.stopPropagation();
-                                       generateResponsePDF(sub, task, true);
-                                     }}
-                                     className="flex items-center justify-center gap-2 py-2 rounded-xl font-black uppercase tracking-widest text-[8px] border-2 border-emerald-100 text-emerald-500 bg-emerald-50/50 hover:bg-emerald-50 transition-all shadow-sm"
-                                   >
-                                     <FileText size={12} />
-                                     Report
-                                    </button>
-                                 )}
-                               </div>
+                              <div className="space-y-3 mt-4 relative z-10">
+                                {onViewSubmission && (
+                                  <button 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onViewSubmission(sub, task);
+                                    }}
+                                    className={`w-full flex items-center justify-center gap-3 py-4 rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[11px] transition-all duration-300 ${
+                                      isGraded 
+                                        ? 'bg-slate-900 text-white hover:bg-slate-800 hover:scale-[1.02] active:scale-[0.98]' 
+                                        : 'bg-emerald-500 text-white hover:bg-emerald-400 hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-emerald-500/30'
+                                    }`}
+                                  >
+                                    {isGraded ? <Eye size={18} /> : <Target size={18} />}
+                                    {isGraded ? 'Review Logic' : 'Grade Intake'}
+                                  </button>
+                                )}
+                                
+                                <div className="grid grid-cols-2 gap-4">
+                                  <button 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      generateResponsePDF(sub, task, false);
+                                    }}
+                                    className="flex items-center justify-center gap-2 py-3 rounded-[1rem] font-black uppercase tracking-[0.2em] text-[9px] border-2 border-slate-100 text-slate-500 hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all duration-300"
+                                  >
+                                    <Download size={14} />
+                                    Data
+                                  </button>
+                                  {isGraded ? (
+                                    <button 
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        generateResponsePDF(sub, task, true);
+                                      }}
+                                      className="flex items-center justify-center gap-2 py-3 rounded-[1rem] font-black uppercase tracking-[0.2em] text-[9px] border-2 border-emerald-100 text-emerald-600 bg-emerald-50/50 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 transition-all duration-300"
+                                    >
+                                      <FileText size={14} />
+                                      Output
+                                     </button>
+                                  ) : <div />}
+                                </div>
 
-                               {isAdmin && onDeleteSubmission && (
-                                 <button 
-                                   onClick={(e) => {
-                                     e.stopPropagation();
-                                     setDeleteConfirmation({ id: sub.id, type: 'submission', title: `${sub.studentName}'s submission` });
-                                   }}
-                                   className="flex items-center justify-center gap-2 py-2 text-red-300 hover:text-red-500 rounded-xl font-black uppercase tracking-widest text-[8px] transition-all w-full"
-                                 >
-                                   <Trash2 size={12} />
-                                   Purge
-                                 </button>
-                               )}
-                             </div>
+                                {isAdmin && onDeleteSubmission && (
+                                  <button 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setDeleteConfirmation({ id: sub.id, type: 'submission', title: `${sub.studentName}'s submission` });
+                                    }}
+                                    className="absolute -bottom-6 -right-6 p-4 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-full transition-all"
+                                  >
+                                    <Trash2 size={16} />
+                                  </button>
+                                )}
+                              </div>
                            </motion.div>
                          );
                        })}
