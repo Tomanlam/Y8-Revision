@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowRight, ArrowLeft, RefreshCcw, Play, Pause, Info, Activity, ArrowDown, ArrowUp, Droplets, FlaskConical, Shield, Zap, Target, CircleCheck, Beaker, Sun, FlaskRound } from 'lucide-react';
+import { ArrowRight, ArrowLeft, RefreshCcw, Play, Pause, Info, Activity, ArrowDown, ArrowUp, Droplets, FlaskConical, Shield, Zap, Target, CircleCheck, Beaker, Sun, FlaskRound, FlaskRound as FlaskConicalIcon, Box, Plane } from 'lucide-react';
 
 interface Particle {
   x: number;
@@ -1541,6 +1542,1121 @@ const BloodCompositionCard: React.FC<{ chineseType?: 'traditional' | 'simplified
   );
 };
 
+const ForcesCard: React.FC<{ chineseType?: 'traditional' | 'simplified' | null }> = ({ chineseType }) => {
+  const [activeTab, setActiveTab] = useState<'box' | 'plane'>('box');
+  const [boxForces, setBoxForces] = useState({ up: 50, down: 50, left: 50, right: 50 });
+  const [planeForces, setPlaneForces] = useState({ lift: 50, weight: 50, thrust: 50, drag: 50 });
+
+  const t = (en: string, sc: string, tc: string) => {
+    if (chineseType === 'simplified') return sc;
+    if (chineseType === 'traditional') return tc;
+    return en;
+  };
+
+  const currentForces = activeTab === 'box' 
+    ? { up: boxForces.up, down: boxForces.down, left: boxForces.left, right: boxForces.right }
+    : { up: planeForces.lift, down: planeForces.weight, left: planeForces.drag, right: planeForces.thrust };
+
+  const balanced = currentForces.up === currentForces.down && currentForces.left === currentForces.right;
+  const netX = currentForces.right - currentForces.left;
+  const netY = currentForces.down - currentForces.up;
+
+  const getPlaneState = () => {
+    if (activeTab !== 'plane') return null;
+    const { lift, weight, thrust, drag } = planeForces;
+    let states = [];
+    if (lift > weight) states.push(t('Rising', '上升', '上升'));
+    else if (weight > lift) states.push(t('Falling', '下降', '下降'));
+    
+    if (thrust > drag) states.push(t('Accelerating Forward', '向前加速', '向前加速'));
+    else if (drag > thrust) states.push(t('Decelerating', '减速', '減速'));
+    else if (thrust === 0 && drag === 0 && lift < weight) states.push(t('Stalling', '失速', '失速'));
+
+    return states.length > 0 ? states.join(' & ') : t('Steady Flight', '平稳飞行', '平穩飛行');
+  };
+
+  return (
+    <div className="bg-white rounded-[2rem] border-2 border-gray-100 shadow-xl overflow-hidden w-full">
+      <div className="bg-gradient-to-r from-blue-50 via-white to-green-50 p-6 border-b-2 border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h3 className="text-2xl font-black text-gray-800 uppercase tracking-tight flex items-center gap-3">
+            <Zap className="text-yellow-500" />
+            {t('Balanced & Unbalanced Forces', '平衡力与非平衡力', '平衡力與非平衡力')}
+          </h3>
+          <p className="text-gray-500 font-bold text-sm mt-1">
+            {t('Explore how resultant forces affect motion.', '探索合力如何影响运动。', '探索合力如何影響運動。')}
+          </p>
+        </div>
+        <div className="flex bg-gray-100 p-1 rounded-2xl border border-gray-200 shadow-sm">
+          <button 
+            onClick={() => setActiveTab('box')}
+            className={`px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${activeTab === 'box' ? 'bg-white shadow-md text-blue-600' : 'text-gray-400 hover:text-gray-600'}`}
+          >
+            {t('Box Simulator', '方块模拟器', '方塊模擬器')}
+          </button>
+          <button 
+            onClick={() => setActiveTab('plane')}
+            className={`px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${activeTab === 'plane' ? 'bg-white shadow-md text-emerald-600' : 'text-gray-400 hover:text-gray-600'}`}
+          >
+            {t('Plane Simulator', '飞机模拟器', '飛機模擬器')}
+          </button>
+        </div>
+      </div>
+
+      <div className="p-8 grid grid-cols-1 lg:grid-cols-2 gap-12">
+        {/* Simulator View */}
+        <div className="relative bg-slate-900 rounded-[3rem] border-8 border-slate-800 aspect-square flex items-center justify-center overflow-hidden">
+          {/* Grid Background */}
+          <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '30px 30px' }} />
+          
+          {/* Resultant Indicator */}
+          <div className="absolute top-6 left-6 flex items-center gap-3 bg-slate-800/80 backdrop-blur-md px-5 py-3 rounded-2xl border border-white/10 z-40">
+            <div className={`w-4 h-4 rounded-full shadow-[0_0_15px_rgba(0,0,0,0.5)] ${balanced ? 'bg-green-500 box-shadow-[0_0_15px_#22c55e]' : 'bg-red-500 box-shadow-[0_0_15px_#ef4444]'}`} />
+            <span className="text-xs font-black text-white uppercase tracking-widest">
+              {balanced ? t('Balanced', '平衡', '平衡') : t('Unbalanced', '非平衡', '非平衡')}
+            </span>
+          </div>
+
+          {activeTab === 'plane' && (
+            <div className="absolute bottom-6 right-6 text-right z-40 bg-slate-900/40 p-4 rounded-2xl backdrop-blur-sm">
+              <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest block mb-1">
+                {t('Flight Status', '飞行状态', '飛行狀態')}
+              </span>
+              <span className="text-xl font-black text-white italic uppercase tracking-tight">
+                {getPlaneState()}
+              </span>
+            </div>
+          )}
+
+          {/* Forces Diagram */}
+          <div className="relative flex items-center justify-center">
+            {/* The Object (Box or Plane) */}
+            <motion.div 
+              animate={{ 
+                x: balanced ? 0 : netX * 0.6,
+                y: balanced ? 0 : netY * 0.6,
+                rotate: activeTab === 'plane' ? (netY * 0.1) : 0
+              }}
+              transition={{ type: 'spring', damping: 12, stiffness: 100 }}
+              className={`relative z-20 w-24 h-24 flex items-center justify-center`}
+            >
+              <div className="absolute inset-0 bg-white/10 backdrop-blur-md border-2 border-white/20 rounded-3xl shadow-2xl z-0" />
+              
+              {activeTab === 'box' ? (
+                <div className="w-16 h-16 bg-orange-500 rounded-xl shadow-[0_8px_0_0_#c2410c] border-2 border-orange-400/30 z-10 flex items-center justify-center">
+                   <div className="w-[80%] h-px bg-orange-400/50" />
+                </div>
+              ) : (
+                <Plane size={56} className="text-white/90 z-10 filter drop-shadow-lg" />
+              )}
+
+              {/* Force Arrows - Up (Red) */}
+              <div 
+                className="absolute bottom-full left-1/2 -translate-x-1/2 flex flex-col items-center"
+                style={{ height: `${currentForces.up}px` }}
+              >
+                <div className="text-[10px] font-black text-red-400 mb-2 absolute -top-6 whitespace-nowrap uppercase tracking-tighter">
+                  {activeTab === 'box' ? t('Up', '向上', '向上') : t('Lift', '升力', '升力')}
+                </div>
+                <div className="w-2.5 h-full bg-red-500 rounded-t-full relative shadow-[0_0_10px_rgba(239,68,68,0.3)]">
+                   <div className="absolute top-0 left-1/2 -translate-x-1/2 w-4 h-4 border-l-4 border-t-4 border-red-500 rotate-45" />
+                </div>
+              </div>
+
+              {/* Force Arrows - Down (Yellow) */}
+              <div 
+                className="absolute top-full left-1/2 -translate-x-1/2 flex flex-col items-center"
+                style={{ height: `${currentForces.down}px` }}
+              >
+                <div className="w-2.5 h-full bg-yellow-400 rounded-b-full relative shadow-[0_0_10px_rgba(234,179,8,0.3)]">
+                   <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-4 border-r-4 border-b-4 border-yellow-400 rotate-45" />
+                </div>
+                <div className="text-[10px] font-black text-yellow-500 mt-2 absolute -bottom-6 whitespace-nowrap uppercase tracking-tighter">
+                  {activeTab === 'box' ? t('Down', '向下', '向下') : t('Weight', '重力', '重力')}
+                </div>
+              </div>
+
+              {/* Force Arrows - Left (Blue) */}
+              <div 
+                className="absolute right-full top-1/2 -translate-y-1/2 flex items-center justify-end"
+                style={{ width: `${currentForces.left}px` }}
+              >
+                <div className="text-[10px] font-black text-blue-400 mr-2 absolute -left-16 whitespace-nowrap uppercase tracking-tighter">
+                  {activeTab === 'box' ? t('Left', '向左', '向左') : t('Drag', '阻力', '阻力')}
+                </div>
+                <div className="h-2.5 w-full bg-blue-500 rounded-l-full relative shadow-[0_0_10px_rgba(59,130,246,0.3)]">
+                   <div className="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-4 border-l-4 border-b-4 border-blue-500 rotate-45" />
+                </div>
+              </div>
+
+              {/* Force Arrows - Right (Green) */}
+              <div 
+                className="absolute left-full top-1/2 -translate-y-1/2 flex items-center justify-start"
+                style={{ width: `${currentForces.right}px` }}
+              >
+                <div className="h-2.5 w-full bg-emerald-500 rounded-r-full relative shadow-[0_0_10px_rgba(16,185,129,0.3)]">
+                   <div className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 border-r-4 border-t-4 border-emerald-500 rotate-45" />
+                </div>
+                <div className="text-[10px] font-black text-emerald-500 ml-2 absolute -right-16 whitespace-nowrap uppercase tracking-tighter">
+                  {activeTab === 'box' ? t('Right', '向右', '向右') : t('Thrust', '推力', '推力')}
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+
+        {/* Controls Layout - 2x2 Grid with larger labels */}
+        <div className="flex flex-col justify-center space-y-6">
+          <div className="bg-gray-50 p-8 rounded-[2.5rem] border-2 border-gray-100 shadow-inner">
+            <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-6 border-b pb-4">
+              {activeTab === 'box' ? t('Force Magnitudes (N)', '受力大小 (N)', '受力大小 (N)') : t('Flight Parameter Control', '飞行参数控制', '飛行參數控制')}
+            </h4>
+            
+            <div className="grid grid-cols-2 gap-x-8 gap-y-10">
+              {/* Force 1 (Up/Lift) */}
+              <div className="space-y-3">
+                <div className="flex justify-between items-end">
+                  <span className="text-xs font-black text-red-600 uppercase tracking-tight">
+                    {activeTab === 'box' ? t('Upward', '向上', '向上') : t('Lift', '升力', '升力')}
+                  </span>
+                  <span className="font-black text-sm text-gray-900">{activeTab === 'box' ? boxForces.up : planeForces.lift}N</span>
+                </div>
+                <input 
+                  type="range" min="0" max="150" 
+                  value={activeTab === 'box' ? boxForces.up : planeForces.lift}
+                  onChange={(e) => activeTab === 'box' ? setBoxForces({...boxForces, up: parseInt(e.target.value)}) : setPlaneForces({...planeForces, lift: parseInt(e.target.value)})}
+                  className="w-full h-3 bg-red-100 rounded-lg appearance-none cursor-pointer accent-red-500"
+                />
+              </div>
+
+              {/* Force 2 (Down/Weight) */}
+              <div className="space-y-3">
+                <div className="flex justify-between items-end">
+                  <span className="text-xs font-black text-yellow-600 uppercase tracking-tight">
+                    {activeTab === 'box' ? t('Downward', '向下', '向下') : t('Weight', '重力', '重力')}
+                  </span>
+                  <span className="font-black text-sm text-gray-900">{activeTab === 'box' ? boxForces.down : planeForces.weight}N</span>
+                </div>
+                <input 
+                  type="range" min="0" max="150" 
+                  value={activeTab === 'box' ? boxForces.down : planeForces.weight}
+                  onChange={(e) => activeTab === 'box' ? setBoxForces({...boxForces, down: parseInt(e.target.value)}) : setPlaneForces({...planeForces, weight: parseInt(e.target.value)})}
+                  className="w-full h-3 bg-yellow-100 rounded-lg appearance-none cursor-pointer accent-yellow-400"
+                />
+              </div>
+
+              {/* Force 3 (Left/Drag) */}
+              <div className="space-y-3">
+                <div className="flex justify-between items-end">
+                  <span className="text-xs font-black text-blue-600 uppercase tracking-tight">
+                    {activeTab === 'box' ? t('Leftward', '向左', '向左') : t('Drag', '阻力', '阻力')}
+                  </span>
+                  <span className="font-black text-sm text-gray-900">{activeTab === 'box' ? boxForces.left : planeForces.drag}N</span>
+                </div>
+                <input 
+                  type="range" min="0" max="150" 
+                  value={activeTab === 'box' ? boxForces.left : planeForces.drag}
+                  onChange={(e) => activeTab === 'box' ? setBoxForces({...boxForces, left: parseInt(e.target.value)}) : setPlaneForces({...planeForces, drag: parseInt(e.target.value)})}
+                  className="w-full h-3 bg-blue-100 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                />
+              </div>
+
+              {/* Force 4 (Right/Thrust) */}
+              <div className="space-y-3">
+                <div className="flex justify-between items-end">
+                  <span className="text-xs font-black text-emerald-600 uppercase tracking-tight">
+                    {activeTab === 'box' ? t('Rightward', '向右', '向右') : t('Thrust', '推力', '推力')}
+                  </span>
+                  <span className="font-black text-sm text-gray-900">{activeTab === 'box' ? boxForces.right : planeForces.thrust}N</span>
+                </div>
+                <input 
+                  type="range" min="0" max="150" 
+                  value={activeTab === 'box' ? boxForces.right : planeForces.thrust}
+                  onChange={(e) => activeTab === 'box' ? setBoxForces({...boxForces, right: parseInt(e.target.value)}) : setPlaneForces({...planeForces, thrust: parseInt(e.target.value)})}
+                  className="w-full h-3 bg-emerald-100 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-slate-50 p-6 rounded-[2rem] border-2 border-slate-100 shadow-sm">
+             <div className="flex items-center gap-3 mb-4">
+               <div className="bg-slate-200 p-2.5 rounded-xl text-slate-600 shadow-inner">
+                 <Info size={18} />
+               </div>
+               <span className="text-xs font-black text-slate-500 uppercase tracking-widest">{t('Physics Insights', '物理小知识', '物理小知識')}</span>
+             </div>
+             <p className="text-xs font-semibold text-slate-600 leading-relaxed italic">
+               {balanced 
+                ? t('When forces are balanced, the net force is ZERO. According to Newton\'s 1st Law, the object remains stationary or moves at constant velocity.', '当受力平衡时，合力为零。根据牛顿第一定律，物体保持静止或匀速直线运动。', '當受力平衡時，合力為零。根據牛頓第一定律，物體保持靜止或勻速直線運動。')
+                : t('Unbalanced forces result in ACCELERATION. The object changes its speed or direction of motion.', '非平衡力会导致加速度。物体改变其速度或运动方向。', '非平衡力會導致加速度。物體改變其速度或運動方向。')}
+             </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const PaperChromatographyCard: React.FC<{ chineseType?: 'traditional' | 'simplified' | null }> = ({ chineseType }) => {
+  const [selectedDye, setSelectedDye] = useState<'red' | 'blue' | 'purple' | 'black'>('purple');
+  const [isRunning, setIsRunning] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [showRf, setShowRf] = useState(false);
+
+  const t = (en: string, sc: string, tc: string) => {
+    if (chineseType === 'simplified') return sc;
+    if (chineseType === 'traditional') return tc;
+    return en;
+  };
+
+  const dyes = {
+    red: { name: t('Pure Red', '纯红', '純紅'), colors: ['#ef4444'], rf: [0.4], type: 'pure' },
+    blue: { name: t('Pure Blue', '纯蓝', '純藍'), colors: ['#3b82f6'], rf: [0.7], type: 'pure' },
+    purple: { name: t('Purple Mix', '紫色混合', '紫色混合'), colors: ['#ef4444', '#3b82f6'], rf: [0.4, 0.7], type: 'mixture' },
+    black: { name: t('Black Ink', '黑墨水', '黑墨水'), colors: ['#eab308', '#ef4444', '#3b82f6'], rf: [0.2, 0.5, 0.85], type: 'mixture' }
+  } as const;
+
+  useEffect(() => {
+    let interval: any;
+    if (isRunning && progress < 100) {
+      interval = setInterval(() => {
+        setProgress(prev => Math.min(100, prev + 0.5));
+      }, 50);
+    } else if (progress >= 100) {
+      setIsRunning(false);
+    }
+    return () => clearInterval(interval);
+  }, [isRunning, progress]);
+
+  const reset = () => {
+    setIsRunning(false);
+    setProgress(0);
+    setShowRf(false);
+  };
+
+  const solventHeight = 200; // Total height of the paper animation area
+  const originY = 180; // Location of pencil line from top
+
+  return (
+    <div className="bg-white rounded-[2rem] border-2 border-gray-100 shadow-xl overflow-hidden w-full">
+      <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-6 border-b-2 border-gray-100">
+         <h3 className="text-2xl font-black text-gray-800 uppercase tracking-tight flex items-center gap-3">
+            <Target className="text-purple-500" />
+            {t('Paper Chromatography', '纸层析法', '紙層析法')}
+         </h3>
+         <p className="text-gray-500 font-bold text-sm mt-1">
+            {t('Separate mixtures based on their affinity for the solvent vs the paper.', '根据对溶剂和纸张的亲和力分离混合物。', '根據對溶劑和紙張的親和力分離混合物。')}
+         </p>
+      </div>
+
+      <div className="p-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+          {/* Main Simulation View */}
+          <div className="bg-slate-50 p-8 rounded-[3rem] border-2 border-gray-100 flex items-center justify-center relative overflow-hidden h-[450px]">
+            {/* Retort Stand (Simple) */}
+            <div className="absolute left-[20%] top-10 bottom-10 w-2 bg-gray-300 rounded-full" />
+            <div className="absolute left-[20%] top-[40px] w-24 h-2 bg-gray-300 rounded-full" />
+            
+            {/* Boiling Tube */}
+            <div className="relative w-24 h-80 border-x-4 border-b-4 border-white/80 rounded-b-full bg-white/30 backdrop-blur-sm z-10 flex flex-col items-center">
+               {/* Solvent at bottom */}
+               <div className="absolute bottom-0 w-full h-12 bg-blue-100/40 rounded-b-full border-t border-blue-200/50" />
+               
+               {/* Chromatography Paper */}
+               <div className="w-12 h-[90%] bg-white shadow-md relative mt-4 flex flex-col items-center p-1">
+                  {/* Solvent Front Line */}
+                  <motion.div 
+                    animate={{ height: `${progress}%` }}
+                    className="absolute bottom-0 left-0 right-0 bg-blue-100/20 border-t-2 border-blue-300 z-0"
+                  />
+
+                  {/* Origin Line (Pencil) */}
+                  <div className="absolute top-[80%] left-0 right-0 h-0.5 bg-gray-400 z-10" />
+                  <span className="absolute top-[82%] right-[-30px] text-[8px] font-black text-gray-400 rotate-90">{t('ORIGIN', '原点', '原點')}</span>
+
+                  {/* Dyes */}
+                  {dyes[selectedDye].colors.map((color, i) => {
+                    const finalRf = dyes[selectedDye].rf[i];
+                    // Calculate current position based on progress and Rf
+                    // progress 0 -> origin (80% from top)
+                    // progress 100 -> final position (80% - (80% * Rf))
+                    const startPos = 80;
+                    const travelMax = 70; // max travel distance in %
+                    const currentPos = startPos - (progress / 100) * travelMax * finalRf;
+
+                    return (
+                      <motion.div 
+                        key={i}
+                        className="absolute w-3 h-3 rounded-full blur-[2px] opacity-80"
+                        style={{ 
+                          backgroundColor: color,
+                          top: `${currentPos}%`,
+                          left: '50%',
+                          marginLeft: '-6px'
+                        }}
+                      />
+                    );
+                  })}
+                  
+                  {/* Labels if Rf is shown */}
+                  {showRf && progress >= 100 && (
+                    <div className="absolute inset-x-0 top-0 bottom-0 pointer-events-none">
+                       {/* Solvent Front Label */}
+                       <div className="absolute top-[10%] left-[-20px] h-px w-20 bg-blue-500 z-30">
+                          <span className="absolute left-full ml-2 text-[8px] font-black text-blue-500 whitespace-nowrap">{t('Solvent Front', '溶剂前沿', '溶劑前沿')} (70mm)</span>
+                       </div>
+                       {/* Dye labels */}
+                       {dyes[selectedDye].colors.map((color, i) => {
+                         const rf = dyes[selectedDye].rf[i];
+                         const dist = Math.round(70 * rf);
+                         const topPos = 80 - 70 * rf;
+                         return (
+                           <div key={i} className="absolute left-[-20px] h-px w-10 z-30" style={{ top: `${topPos}%`, backgroundColor: color }}>
+                              <span className="absolute left-full ml-2 text-[8px] font-black whitespace-nowrap" style={{ color }}>{dist}mm</span>
+                           </div>
+                         );
+                       })}
+                    </div>
+                  )}
+               </div>
+            </div>
+
+            {/* Labels overlay */}
+            <div className="absolute bottom-6 left-6 right-6 flex justify-between z-20">
+               <div className="bg-white/80 p-4 rounded-xl border border-gray-100 shadow-sm backdrop-blur-sm">
+                  <span className="text-xs font-black text-gray-400 uppercase tracking-widest block mb-1">{t('Stationary Phase', '固定相', '固定相')}</span>
+                  <span className="text-sm font-black text-gray-800">{t('Filter Paper', '滤纸', '濾紙')}</span>
+               </div>
+               <div className="bg-white/80 p-4 rounded-xl border border-gray-100 shadow-sm backdrop-blur-sm text-right">
+                  <span className="text-xs font-black text-gray-400 uppercase tracking-widest block mb-1">{t('Mobile Phase', '流动相', '流動相')}</span>
+                  <span className="text-sm font-black text-blue-600">{t('Solvent', '溶剂', '溶劑')}</span>
+               </div>
+            </div>
+          </div>
+
+          {/* Controls and Rf Calculator */}
+          <div className="space-y-8">
+             <div className="bg-gray-50 p-8 rounded-[2.5rem] border-2 border-gray-100 shadow-inner">
+                <h4 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-6 border-b pb-4">{t('Select Dye Sample', '选择染料样本', '選擇染料樣本')}</h4>
+                <div className="grid grid-cols-2 gap-4 mb-8">
+                   {(Object.keys(dyes) as Array<keyof typeof dyes>).map(key => (
+                     <button 
+                       key={key}
+                       onClick={() => { setSelectedDye(key); reset(); }}
+                       className={`p-4 rounded-2xl border-2 transition-all flex items-center justify-between group h-16 ${selectedDye === key ? 'border-purple-500 bg-white shadow-md ring-2 ring-purple-100' : 'border-gray-200 hover:border-purple-200 bg-transparent opacity-70 hover:opacity-100'}`}
+                     >
+                       <div className="flex items-center gap-3">
+                          <div className={`w-4 h-4 rounded-full flex shadow-sm overflow-hidden border border-black/10`}>
+                             {dyes[key].colors.map((c, idx) => (
+                               <div key={idx} className="flex-1" style={{ backgroundColor: c }} />
+                             ))}
+                          </div>
+                          <span className="text-xs font-black uppercase tracking-tight">{dyes[key].name}</span>
+                       </div>
+                       {dyes[key].type === 'mixture' && (
+                         <span className="text-[10px] bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full font-black">{t('MIX', '混', '混')}</span>
+                       )}
+                     </button>
+                   ))}
+                </div>
+
+                <div className="grid grid-cols-2 gap-6">
+                   <button 
+                     onClick={() => setIsRunning(true)}
+                     disabled={isRunning || progress >= 100}
+                     className="bg-purple-600 text-white py-5 rounded-2xl font-black uppercase tracking-[0.2em] text-xs shadow-[0_5px_0_0_#581c87] active:shadow-none active:translate-y-1 transition-all disabled:opacity-50 flex items-center justify-center gap-3"
+                   >
+                     <Play size={16} fill="currentColor" />
+                     {t('Run', '运行', '運行')}
+                   </button>
+                   <button 
+                     onClick={reset}
+                     className="bg-white text-gray-400 border-2 border-gray-200 py-5 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-gray-50 transition-all flex items-center justify-center gap-3 shadow-sm active:translate-y-0.5"
+                   >
+                     <RefreshCcw size={16} />
+                     {t('Reset', '重置', '重置')}
+                   </button>
+                </div>
+             </div>
+
+             <AnimatePresence>
+               {progress >= 100 && (
+                 <motion.div 
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="bg-white p-8 rounded-[2.5rem] border-2 border-purple-100 shadow-2xl shadow-purple-500/10"
+                 >
+                    <div className="flex justify-between items-center mb-8 border-b pb-4">
+                       <h4 className="text-sm font-black text-purple-600 uppercase tracking-widest">{t('Rf Value Analysis', 'Rf 值分析', 'Rf 值分析')}</h4>
+                       <button 
+                        onClick={() => setShowRf(!showRf)}
+                        className={`px-5 py-2 rounded-full text-xs font-black uppercase tracking-widest transition-all shadow-sm ${showRf ? 'bg-purple-600 text-white shadow-purple-200' : 'bg-purple-50 text-purple-600 border border-purple-100'}`}
+                       >
+                         {showRf ? t('Hide Data', '隐藏数据', '隱藏數據') : t('Show Data', '显示数据', '顯示數據')}
+                       </button>
+                    </div>
+
+                    <div className="space-y-6">
+                       <div className="p-6 bg-purple-50/50 rounded-3xl font-sans text-xs border border-purple-100 leading-relaxed shadow-inner">
+                          <p className="text-purple-900 font-black mb-4 flex items-center gap-2">
+                             <div className="w-1.5 h-4 bg-purple-400 rounded-full" />
+                             Rf = {t('Dist. Solute / Dist. Solvent', '溶质距离 / 溶剂距离', '溶質距離 / 溶劑距離')}
+                          </p>
+                          <div className="space-y-3">
+                             {dyes[selectedDye].colors.map((color, i) => {
+                               const rf = dyes[selectedDye].rf[i];
+                               const solubility = rf > 0.7 ? t('High', '高', '高') : rf > 0.4 ? t('Medium', '中', '中') : t('Low', '低', '低');
+                               return (
+                                 <div key={i} className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-purple-100">
+                                    <div className="flex items-center gap-3">
+                                       <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: color }} />
+                                       <div className="flex flex-col">
+                                         <span className="font-black text-gray-800 tracking-tight">{t('Spot', '斑点', '斑點')} {i + 1}</span>
+                                         <span className="text-[10px] font-bold text-gray-400">{t('Solubility:', '溶解度:', '溶解度:')} {solubility}</span>
+                                       </div>
+                                    </div>
+                                    <div className="text-right">
+                                       <span className="font-black text-purple-700 block text-sm">{rf.toFixed(2)}</span>
+                                       <span className="text-[8px] font-bold text-gray-400 uppercase">{Math.round(70 * rf)}mm / 70mm</span>
+                                    </div>
+                                 </div>
+                               );
+                             })}
+                          </div>
+                       </div>
+                       
+                       <p className="text-xs text-gray-500 font-semibold leading-relaxed">
+                          {t('More soluble substances travel FURTHER. mixtures show multiple spots, while pure substances show only ONE.', '溶解度越大的物质移动距离越远。混合物显示多个斑点，而纯净物只显示一个。', '溶解度越大的物質移動距離越遠。混合物顯示多個斑點，而純淨物只顯示一個。')}
+                       </p>
+                    </div>
+                 </motion.div>
+               )}
+             </AnimatePresence>
+
+             {!isRunning && progress === 0 && (
+               <div className="bg-blue-50/50 p-8 rounded-[2rem] border-2 border-blue-100 flex items-start gap-5 shadow-sm backdrop-blur-sm">
+                  <div className="bg-blue-500 p-3 rounded-2xl text-white shadow-lg shadow-blue-500/20">
+                    <Info size={20} />
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-xs font-black text-blue-700 uppercase tracking-widest">{t('Lab Tip', '实验室贴士', '實驗室貼士')}</span>
+                    <p className="text-xs font-semibold text-blue-800 leading-relaxed">
+                      {t('A PENCIL line is used because graphite is INSOLUBLE. If you use ink, it will separate and interfere with the experiment.', '之所以使用铅笔线，是因为石墨是不溶的。如果使用墨水，它会分离并干扰实验。', '之所以使用鉛筆線，是因為石墨是不溶的。如果使用墨水，它會分離並干擾實驗。')}
+                    </p>
+                  </div>
+               </div>
+             )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const SolubilityCurveCard: React.FC<{ chineseType?: 'traditional' | 'simplified' | null }> = ({ chineseType }) => {
+  const [selectedSalt, setSelectedSalt] = useState<'kno3' | 'nacl' | 'pbno3'>('kno3');
+  const [temp, setTemp] = useState(20);
+
+  const t = (en: string, sc: string, tc: string) => {
+    if (chineseType === 'simplified') return sc;
+    if (chineseType === 'traditional') return tc;
+    return en;
+  };
+
+  const salts = {
+    kno3: { name: t('Potassium Nitrate', '硝酸钾', '硝酸鉀'), color: '#ef4444', formula: 'KNO₃' },
+    nacl: { name: t('Sodium Chloride', '氯化钠', '氯化鈉'), color: '#eab308', formula: 'NaCl' },
+    pbno3: { name: t('Lead(II) Nitrate', '硝酸铅(II)', '硝酸鉛(II)'), color: '#22c55e', formula: 'Pb(NO₃)₂' },
+  } as const;
+
+  const solubilityData = [
+    { temp: 0, kno3: 13, nacl: 36, pbno3: 37 },
+    { temp: 10, kno3: 21, nacl: 36, pbno3: 45 },
+    { temp: 20, kno3: 32, nacl: 36, pbno3: 54 },
+    { temp: 30, kno3: 46, nacl: 37, pbno3: 63 },
+    { temp: 40, kno3: 64, nacl: 37, pbno3: 73 },
+    { temp: 50, kno3: 86, nacl: 37, pbno3: 84 },
+    { temp: 60, kno3: 110, nacl: 38, pbno3: 95 },
+    { temp: 70, kno3: 138, nacl: 38, pbno3: 106 },
+    { temp: 80, kno3: 169, nacl: 39, pbno3: 117 },
+    { temp: 90, kno3: 202, nacl: 39, pbno3: 127 },
+    { temp: 100, kno3: 246, nacl: 40, pbno3: 138 },
+  ];
+
+  const getSolubility = (salt: 'kno3' | 'nacl' | 'pbno3', tVal: number) => {
+    const index = solubilityData.findIndex(d => d.temp > tVal);
+    if (index === -1) return solubilityData[solubilityData.length - 1][salt];
+    if (index === 0) return solubilityData[0][salt];
+    
+    const d1 = solubilityData[index - 1];
+    const d2 = solubilityData[index];
+    const ratio = (tVal - d1.temp) / (d2.temp - d1.temp);
+    return Math.round(d1[salt] + ratio * (d2[salt] - d1[salt]));
+  };
+
+  const currentSolubility = getSolubility(selectedSalt, temp);
+
+  return (
+    <div className="bg-white rounded-[2rem] border-2 border-gray-100 shadow-xl overflow-hidden w-full">
+      <div className="bg-gradient-to-r from-red-50 to-emerald-50 p-6 border-b-2 border-gray-100">
+         <h3 className="text-2xl font-black text-gray-800 uppercase tracking-tight flex items-center gap-3">
+            <Activity className="text-emerald-500" />
+            {t('Solubility Curves', '溶解度曲线', '溶解度曲線')}
+         </h3>
+         <p className="text-gray-500 font-bold text-sm mt-1">
+            {t('Investigate how temperature affects the solubility of different salts.', '研究温度如何影响不同盐类的溶解度。', '研究溫度如何影響不同鹽類的溶解度。')}
+         </p>
+      </div>
+
+      <div className="p-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+           <div className="bg-gray-50 p-6 rounded-[2.5rem] border-2 border-gray-100 flex flex-col">
+              <div className="flex justify-between items-center mb-4">
+                <span className="text-[8px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest">{t('Solubility (g/100g water)', '溶解度 (g/100g水)', '溶解度 (g/100g水)')}</span>
+                <span className="text-[8px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest">{t('Temperature (°C)', '温度 (°C)', '溫度 (°C)')}</span>
+              </div>
+              <div className="flex-1 min-h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                   <LineChart data={solubilityData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                      <XAxis dataKey="temp" fontSize={10} fontWeight="bold" tick={{ fill: '#94a3b8' }} />
+                      <YAxis fontSize={10} fontWeight="bold" tick={{ fill: '#94a3b8' }} />
+                      <Tooltip 
+                         contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', fontWeight: 'bold', fontSize: '10px' }}
+                      />
+                      <Legend verticalAlign="top" iconType="circle" fontSize={10} wrapperStyle={{ paddingBottom: '20px' }} />
+                      <Line type="monotone" dataKey="kno3" stroke="#ef4444" strokeWidth={3} dot={{ r: 4 }} name={t('KNO₃', '硝酸钾', '硝酸鉀')} />
+                      <Line type="monotone" dataKey="nacl" stroke="#eab308" strokeWidth={3} dot={{ r: 4 }} name={t('NaCl', '氯化钠', '氯化鈉')} />
+                      <Line type="monotone" dataKey="pbno3" stroke="#22c55e" strokeWidth={3} dot={{ r: 4 }} name={t('Pb(NO₃)₂', '硝酸铅(II)', '硝酸鉛(II)')} />
+                   </LineChart>
+                </ResponsiveContainer>
+              </div>
+              
+              <div className="mt-4 pt-4 border-t border-gray-200">
+                <div className="flex justify-between mb-2">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t('Test Temperature', '测试温度', '測試溫度')}</label>
+                  <span className="text-sm font-black text-gray-800">{temp}°C</span>
+                </div>
+                <input 
+                  type="range" min="0" max="100" value={temp} 
+                  onChange={(e) => setTemp(parseInt(e.target.value))}
+                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                />
+              </div>
+           </div>
+
+           <div className="space-y-8">
+              <div className="flex bg-gray-100 p-1 rounded-2xl border border-gray-200 shadow-sm overflow-x-auto">
+                {(['kno3', 'nacl', 'pbno3'] as const).map((salt) => (
+                  <button 
+                    key={salt}
+                    onClick={() => setSelectedSalt(salt)}
+                    className={`flex-1 px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all whitespace-nowrap ${selectedSalt === salt ? 'bg-white shadow-md ring-1 ring-black/5 text-gray-800' : 'text-gray-400 hover:text-gray-600'}`}
+                  >
+                    {salts[salt].formula}
+                  </button>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {[50, 100, 200].map((vol) => {
+                  const amount = Math.round((currentSolubility * vol) / 100);
+                  const maxDots = 80; // visual cap
+                  const displayDots = Math.min(amount, maxDots);
+                  
+                  return (
+                    <div key={vol} className="bg-white p-6 rounded-3xl border-2 border-gray-100 flex flex-col items-center">
+                       <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">{vol} cm³ {t('Water', '水', '水')}</span>
+                       <div className="relative w-16 h-24 border-x-4 border-b-4 border-blue-100 rounded-b-2xl overflow-hidden bg-gray-50/50">
+                          <div className="absolute bottom-0 w-full bg-blue-100/40 h-[80%]" />
+                          <div className="absolute inset-0 flex flex-wrap-reverse gap-[2px] p-2 items-end justify-center overflow-hidden">
+                             {[...Array(displayDots)].map((_, i) => (
+                               <motion.div 
+                                 key={i} 
+                                 initial={{ scale: 0 }}
+                                 animate={{ scale: 1 }}
+                                 className="w-1.5 h-1.5 rounded-full opacity-80" 
+                                 style={{ backgroundColor: salts[selectedSalt].color }} 
+                               />
+                             ))}
+                          </div>
+                       </div>
+                       <div className="mt-4 text-center">
+                          <p className="text-xl font-black tracking-tighter" style={{ color: salts[selectedSalt].color }}>{amount}g</p>
+                          <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">{t('Max Solute', '最大溶质', '最大溶質')}</p>
+                       </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="bg-emerald-50 p-6 rounded-3xl border-2 border-emerald-100">
+                <div className="flex items-center gap-3 mb-2">
+                  <Info className="text-emerald-500" size={18} />
+                  <span className="text-xs font-black text-emerald-700 uppercase tracking-widest">{t('Key Concept', '核心概念', '核心概念')}</span>
+                </div>
+                <p className="text-[10px] font-bold text-emerald-800 leading-relaxed font-sans">
+                   {t('This graph shows the SATURATED point. Any point ON the line means the solution is saturated. BELOW the line is unsaturated, and ABOVE is supersaturated.', '该图显示了饱和点。线上的任何点都表示溶液已饱和。线下表示未饱和，线上表示过饱和。', '該圖顯示了飽和點。線上的任何點都表示溶液已飽和。線下表示未飽和，線上表示過飽和。')}
+                </p>
+              </div>
+           </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const FiltrationDistillationCard: React.FC<{ chineseType?: 'traditional' | 'simplified' | null }> = ({ chineseType }) => {
+  const [activeMode, setActiveMode] = useState<'filtration' | 'distillation'>('filtration');
+  const [isFiltrationStarted, setIsFiltrationStarted] = useState(false);
+  const [pourProgress, setPourProgress] = useState(0);
+  
+  const [greenBP, setGreenBP] = useState(78);
+  const [orangeBP, setOrangeBP] = useState(100);
+  const [currentTemp, setCurrentTemp] = useState(20);
+
+  const t = (en: string, sc: string, tc: string) => {
+    if (chineseType === 'simplified') return sc;
+    if (chineseType === 'traditional') return tc;
+    return en;
+  };
+
+  const resetFiltration = () => {
+    setIsFiltrationStarted(false);
+    setPourProgress(0);
+  };
+
+  useEffect(() => {
+    if (isFiltrationStarted && pourProgress < 100) {
+      const timer = setInterval(() => {
+        setPourProgress(prev => Math.min(100, prev + 1));
+      }, 50);
+      return () => clearInterval(timer);
+    }
+  }, [isFiltrationStarted, pourProgress]);
+
+  return (
+    <div className="bg-white rounded-[2rem] border-2 border-gray-100 shadow-xl overflow-hidden w-full">
+      <div className="bg-gradient-to-r from-blue-50 to-orange-50 p-6 border-b-2 border-gray-100">
+        <h3 className="text-2xl font-black text-gray-800 uppercase tracking-tight flex items-center gap-3">
+          <FlaskConical className="text-orange-500" />
+          {t('Filtration & Distillation', '过滤与蒸馏', '過濾與蒸餾')}
+        </h3>
+        <p className="text-gray-500 font-bold text-sm mt-1">
+          {t('Explore separation techniques based on physical properties.', '探索基于物理性质的分离技术。', '探索基於物理性質的分離技術。')}
+        </p>
+      </div>
+
+      <div className="p-8">
+        <div className="flex justify-center mb-8">
+          <div className="flex bg-gray-100/80 p-1 rounded-2xl border border-gray-200 backdrop-blur-sm shadow-sm">
+            <button 
+              onClick={() => setActiveMode('filtration')}
+              className={`px-6 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${activeMode === 'filtration' ? 'bg-white text-blue-600 shadow-md ring-1 ring-black/5' : 'text-gray-400 hover:text-gray-600'}`}
+            >
+              {t('Filtration', '过滤', '過濾')}
+            </button>
+            <button 
+              onClick={() => setActiveMode('distillation')}
+              className={`px-6 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${activeMode === 'distillation' ? 'bg-white text-orange-600 shadow-md ring-1 ring-black/5' : 'text-gray-400 hover:text-gray-600'}`}
+            >
+              {t('Distillation', '蒸馏', '蒸餾')}
+            </button>
+          </div>
+        </div>
+        <AnimatePresence mode="wait">
+          {activeMode === 'filtration' ? (
+            <motion.div 
+              key="filtration"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              className="space-y-8"
+            >
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                <div className="relative aspect-square md:aspect-video bg-gray-50 rounded-[3rem] border-4 border-gray-100 p-8 flex items-center justify-center overflow-hidden">
+                  {/* Filtration Setup Visualization */}
+                  <div className="relative w-full h-full flex flex-col items-center justify-center scale-75 md:scale-100">
+                    {/* Retort Stand (Abstract) */}
+                    <div className="absolute left-1/4 bottom-10 w-2 h-64 bg-gray-300 rounded-full" />
+                    <div className="absolute left-1/4 bottom-10 -translate-x-1/2 w-48 h-4 bg-gray-400 rounded-full" />
+                    <div className="absolute left-1/4 top-1/3 w-32 h-2 bg-gray-400 rounded-full shadow-sm" />
+                    
+                    {/* Bottom Beaker (Filtrate) */}
+                    <div className="absolute bottom-10 w-24 h-24 border-x-4 border-b-4 border-blue-200 rounded-b-2xl overflow-hidden bg-white">
+                       <motion.div 
+                         initial={{ height: 0 }}
+                         animate={{ height: `${pourProgress * 0.4}%` }}
+                         className="absolute bottom-0 w-full bg-blue-400/40"
+                       />
+                    </div>
+
+                    {/* Funnel */}
+                    <div className="absolute top-[35%] w-32 flex flex-col items-center">
+                      <div className="w-32 h-24 bg-gray-100/50 border-x-2 border-t-2 border-gray-200 rounded-b-[4rem] relative overflow-hidden">
+                         {/* Filter Paper Line */}
+                         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[90%] h-full border-x-4 border-b-4 border-white/80 rounded-b-[3.8rem] z-10" />
+                         
+                         {/* Residue (Red Particles) */}
+                         <div className="absolute inset-0 flex flex-wrap gap-1.5 p-6 justify-center items-center">
+                            {[...Array(15)].map((_, i) => (
+                              <motion.div
+                                key={i}
+                                initial={{ opacity: 0, scale: 0 }}
+                                animate={pourProgress > i * 6 ? { opacity: 1, scale: 1 } : {}}
+                                className="w-3 h-3 bg-red-500 rounded-full shadow-md z-20 border border-red-400/30"
+                              />
+                            ))}
+                         </div>
+                      </div>
+                      <div className="w-4 h-12 bg-gray-100/50 border-x-2 border-gray-200 z-0" />
+                      
+                      {/* Drip Animation */}
+                      {isFiltrationStarted && pourProgress < 100 && (
+                        <motion.div 
+                          animate={{ y: [0, 40], opacity: [1, 0], scale: [1, 0.8] }}
+                          transition={{ repeat: Infinity, duration: 0.6 }}
+                          className="w-2 h-4 bg-blue-400/60 rounded-full absolute -bottom-8 shadow-sm"
+                        />
+                      )}
+                    </div>
+
+                    {/* Top Beaker (Mixture) */}
+                    <motion.div 
+                      animate={isFiltrationStarted ? { rotate: -45, x: 20, y: -40 } : { rotate: 0, x: 80, y: -40 }}
+                      className="absolute top-1/4 w-20 h-20 border-x-4 border-b-4 border-gray-200 rounded-b-xl overflow-hidden bg-white z-30"
+                    >
+                       <motion.div 
+                         animate={isFiltrationStarted ? { height: `${100 - pourProgress}%` } : { height: '60%' }}
+                         className="absolute bottom-0 w-full bg-blue-400/40 flex flex-wrap gap-1.5 p-3 items-end"
+                       >
+                          {[...Array(6)].map((_, i) => (
+                            <div key={i} className="w-2 h-2 bg-red-500 rounded-full opacity-80 shadow-sm" />
+                          ))}
+                       </motion.div>
+                       
+                       {/* Pouring stream */}
+                       {isFiltrationStarted && pourProgress < 100 && (
+                         <motion.div 
+                           className="absolute -top-10 left-0 w-1 h-20 bg-blue-400/40 -rotate-45 origin-bottom"
+                         />
+                       )}
+                    </motion.div>
+                  </div>
+
+                  <div className="absolute bottom-6 left-6 right-6 flex gap-4">
+                    <div className="flex-1 bg-white/80 backdrop-blur-sm p-4 rounded-2xl border border-blue-100 shadow-sm">
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className="w-2 h-2 bg-red-500 rounded-full" />
+                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t('Residue', '滤渣', '濾渣')}</span>
+                      </div>
+                      <p className="text-xs font-black text-red-600">{t('Insoluble Solids', '不溶性固体', '不溶性固體')}</p>
+                    </div>
+                    <div className="flex-1 bg-white/80 backdrop-blur-sm p-4 rounded-2xl border border-blue-100 shadow-sm">
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className="w-2 h-2 bg-blue-400 rounded-full" />
+                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t('Filtrate', '滤液', '濾液')}</span>
+                      </div>
+                      <p className="text-xs font-black text-blue-600">{t('Liquid / Solution', '液体 / 溶液', '液體 / 溶液')}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  <div className="bg-blue-50 p-8 rounded-[2.5rem] border-2 border-blue-100">
+                    <h4 className="text-xl font-black text-blue-700 uppercase tracking-tight mb-4">{t('Separation by State', '按状态分离', '按狀態分離')}</h4>
+                    <p className="text-gray-600 font-medium leading-relaxed mb-6">
+                      {t('Filtration separates an insoluble solid from a liquid. The solid particles are too large to pass through the tiny holes in the filter paper, while the liquid (and dissolved substances) can pass through easily.', '过滤将不溶性固体从液体中分离。固体颗粒太大，无法通过滤纸上的小孔，而液体（和溶解物质）可以轻松通过。', '過濾將不溶性固體從液體中分離。固體顆粒太大，無法通過濾紙上的小孔，而液體（和溶解物質）可以輕鬆通過。')}
+                    </p>
+                    <div className="grid grid-cols-2 gap-4">
+                      <button 
+                        onClick={() => setIsFiltrationStarted(true)}
+                        disabled={isFiltrationStarted}
+                        className="bg-blue-500 text-white py-4 rounded-2xl font-black uppercase tracking-widest shadow-[0_4px_0_0_#1d4ed8] active:shadow-none active:translate-y-1 transition-all disabled:opacity-50"
+                      >
+                        {t('Pour Mixture', '倾倒混合物', '傾倒混合物')}
+                      </button>
+                      <button 
+                        onClick={resetFiltration}
+                        className="bg-white text-gray-500 border-2 border-gray-200 py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-gray-50 transition-all"
+                      >
+                        {t('Reset', '重置', '重置')}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="bg-orange-50 p-6 rounded-3xl border-2 border-orange-100">
+                    <div className="flex items-center gap-3 mb-3">
+                      <Info className="text-orange-500" size={18} />
+                      <span className="text-xs font-black text-orange-700 uppercase tracking-widest">{t('Common Use', '常见应用', '常見應用')}</span>
+                    </div>
+                    <p className="text-[10px] font-bold text-orange-800 leading-relaxed">
+                      {t('Separating sand from water or coffee grounds from coffee. It works because sand is INSOLUBLE and coffee grounds are too big for the filter.', '将沙子从水中分离，或将咖啡渣从咖啡中分离。它之所以有效，是因为沙子是不溶的，咖啡渣对于过滤器来说太大了。', '將沙子從水中分離，或將咖啡渣從咖啡中分離。它之所以有效，是因為沙子是不溶的，咖啡渣對於過濾器來說太大了。')}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div 
+              key="distillation"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="space-y-8"
+            >
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                <div className="space-y-6">
+                  {/* Controls */}
+                  <div className="bg-gray-50 p-8 rounded-[2.5rem] border-2 border-gray-100 space-y-8">
+                    <div>
+                      <div className="flex justify-between mb-4">
+                        <label className="text-[10px] font-black text-orange-600 uppercase tracking-widest">{t('Orange Particle BP', '橙色粒子沸点', '橙色粒子沸點')}</label>
+                        <span className="text-[10px] font-black text-gray-600">{orangeBP}°C</span>
+                      </div>
+                      <input 
+                        type="range" min="40" max="150" value={orangeBP}
+                        onChange={(e) => setOrangeBP(parseInt(e.target.value))}
+                        className="w-full h-2 bg-orange-200 rounded-lg appearance-none cursor-pointer accent-orange-500"
+                      />
+                    </div>
+                    <div>
+                      <div className="flex justify-between mb-4">
+                        <label className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">{t('Green Particle BP', '绿色粒子沸点', '綠色粒子沸點')}</label>
+                        <span className="text-[10px] font-black text-gray-600">{greenBP}°C</span>
+                      </div>
+                      <input 
+                        type="range" min="40" max="150" value={greenBP}
+                        onChange={(e) => setGreenBP(parseInt(e.target.value))}
+                        className="w-full h-2 bg-emerald-200 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                      />
+                    </div>
+                    
+                    <div className="pt-4 border-t border-gray-200">
+                      <div className="flex justify-between mb-4">
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t('Heating Temperature', '加热温度', '加熱溫度')}</label>
+                        <div className="flex items-center gap-2">
+                          <motion.div 
+                            animate={currentTemp > 40 ? { scale: [1, 1.2, 1], color: ['#6b7280', '#ef4444'] } : {}}
+                            transition={{ repeat: Infinity, duration: 1 }}
+                          >
+                            <Sun size={14} />
+                          </motion.div>
+                          <span className="text-xl font-black text-gray-800 tracking-tighter">{currentTemp}°C</span>
+                        </div>
+                      </div>
+                      <input 
+                        type="range" min="20" max="200" value={currentTemp}
+                        onChange={(e) => setCurrentTemp(parseInt(e.target.value))}
+                        className="w-full h-3 bg-red-100 rounded-lg appearance-none cursor-pointer accent-red-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="bg-emerald-50 p-6 rounded-3xl border-2 border-emerald-100">
+                    <h4 className="text-xs font-black text-emerald-700 uppercase tracking-widest mb-2">{t('How it works', '工作原理', '工作原理')}</h4>
+                    <p className="text-[10px] font-bold text-emerald-800 leading-relaxed italic">
+                      {t('Distillation separates liquids based on their different boiling points. The liquid with the lower BP boils first, turns into gas, travels down the condenser, and is cooled back into a pure liquid.', '蒸馏根据液体不同的沸点进行分离。沸点较低的液体首先沸腾，变成气体，沿着冷凝管移动，然后冷却回纯液体。', '蒸餾根據液體不同的沸點進行分離。沸點較低的液體首先沸騰，變成氣體，沿著冷凝管移動，然後冷卻回純液體。')}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-6">
+                  {/* Micro Close-up View */}
+                  <div className="bg-slate-900 rounded-[2.5rem] p-8 border-8 border-slate-800 relative h-80 overflow-hidden shadow-2xl">
+                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(59,130,246,0.1),transparent)]" />
+                     
+                     <div className="absolute top-4 left-6 z-20">
+                        <span className="bg-white/10 backdrop-blur-md text-[10px] font-black text-white/70 px-3 py-1 rounded-full uppercase tracking-widest border border-white/10">
+                           {t('Molecular View', '微观视角', '微觀視角')}
+                        </span>
+                     </div>
+
+                     {/* Particle Animations */}
+                     <div className="relative w-full h-full">
+                        {/* Liquid Container Boundary */}
+                        <div className="absolute bottom-0 inset-x-0 h-24 bg-blue-500/5 border-t border-white/5 rounded-t-xl" />
+
+                        {/* Green Particles */}
+                        {[...Array(15)].map((_, i) => (
+                           <motion.div
+                              key={`green-${i}`}
+                              initial={{ x: (Math.random() - 0.5) * 280, y: 20 + Math.random() * 60 }}
+                              animate={currentTemp >= greenBP ? {
+                                 x: [null, (Math.random() - 0.5) * 350, (Math.random() - 0.5) * 350],
+                                 y: [null, 0, -350],
+                                 scale: [1, 1.5, 0.5],
+                                 opacity: [1, 1, 0]
+                              } : {
+                                 x: [(Math.random() - 0.5) * 260, (Math.random() - 0.5) * 260],
+                                 y: [20 + Math.random() * 60, 20 + Math.random() * 60],
+                                 rotate: [0, 360]
+                              }}
+                              transition={{ 
+                                 duration: currentTemp >= greenBP ? 1 + Math.random() : 8 + Math.random() * 4, 
+                                 repeat: Infinity,
+                                 ease: "linear"
+                              }}
+                              className="absolute left-1/2 bottom-0 w-3 h-3 bg-emerald-400 rounded-full shadow-[0_0_15px_#10b981,inset_0_0_5px_rgba(255,255,255,0.5)] z-10"
+                           />
+                        ))}
+
+                        {/* Orange Particles */}
+                        {[...Array(15)].map((_, i) => (
+                           <motion.div
+                              key={`orange-${i}`}
+                              initial={{ x: (Math.random() - 0.5) * 280, y: 20 + Math.random() * 60 }}
+                              animate={currentTemp >= orangeBP ? {
+                                 x: [null, (Math.random() - 0.5) * 350, (Math.random() - 0.5) * 350],
+                                 y: [null, 0, -350],
+                                 scale: [1, 1.5, 0.5],
+                                 opacity: [1, 1, 0]
+                              } : {
+                                 x: [(Math.random() - 0.5) * 260, (Math.random() - 0.5) * 260],
+                                 y: [20 + Math.random() * 60, 20 + Math.random() * 60],
+                                 rotate: [0, -360]
+                              }}
+                              transition={{ 
+                                 duration: currentTemp >= orangeBP ? 1 + Math.random() : 10 + Math.random() * 5, 
+                                 repeat: Infinity,
+                                 ease: "linear"
+                              }}
+                              className="absolute left-1/2 bottom-0 w-3 h-3 bg-orange-400 rounded-full shadow-[0_0_15px_#f59e0b,inset_0_0_5px_rgba(255,255,255,0.5)] z-10"
+                           />
+                        ))}
+                        
+                        {/* Bubbles during boiling */}
+                        {(currentTemp >= greenBP || currentTemp >= orangeBP) && [...Array(5)].map((_, i) => (
+                           <motion.div
+                             key={`bubble-${i}`}
+                             animate={{ y: [180, 140], opacity: [0, 0.3, 0], scale: [0.5, 1.2] }}
+                             transition={{ repeat: Infinity, duration: 0.8, delay: i * 0.2 }}
+                             className="absolute left-1/2 w-8 h-8 rounded-full border border-white/20 bg-white/5 blur-sm z-5"
+                             style={{ marginLeft: `${(Math.random() - 0.5) * 100}px` }}
+                           />
+                        ))}
+                     </div>
+
+                     <div className="absolute bottom-6 left-6 right-6 flex justify-between items-center text-[10px] font-black uppercase tracking-widest z-20">
+                        <div className={`flex flex-col gap-1 transition-colors duration-500 font-sans ${currentTemp >= orangeBP ? 'text-orange-400' : 'text-orange-400/40'}`}>
+                           <span>{t('Orange Particles', '橙色粒子', '橙色粒子')}</span>
+                           <span className="text-[8px] opacity-80">{currentTemp >= orangeBP ? t('EVAPORATING', '正在蒸发', '正在蒸發') : t('LIQUID', '液态', '液態')}</span>
+                        </div>
+                        <div className={`flex flex-col gap-1 transition-colors duration-500 text-right font-sans ${currentTemp >= greenBP ? 'text-emerald-400' : 'text-emerald-400/40'}`}>
+                           <span>{t('Green Particles', '绿色粒子', '綠色粒子')}</span>
+                           <span className="text-[8px] opacity-80">{currentTemp >= greenBP ? t('EVAPORATING', '正在蒸发', '正在蒸發') : t('LIQUID', '液态', '液態')}</span>
+                        </div>
+                     </div>
+                  </div>
+
+                  {/* Distillation Visual */}
+                  <div className="bg-gray-100 rounded-[2.5rem] p-4 border-2 border-gray-200 relative aspect-video overflow-hidden shadow-inner flex items-center justify-center">
+                     {/* Scientifically Accurate Distillation Setup - Scaled for better visibility */}
+                     <div className="relative w-full h-full transform scale-110 md:scale-125 lg:scale-140 flex items-center justify-center -mt-4">
+                        <div className="relative w-[320px] h-[220px]">
+                           {/* 1. Round bottom flask (The Boiler) */}
+                           <div className="absolute left-[5%] bottom-[60px] w-16 h-16 border-2 border-gray-400/50 rounded-full bg-white/40 backdrop-blur-sm flex flex-col items-center justify-end overflow-hidden z-20">
+                              <div className="absolute top-0 w-6 h-6 bg-transparent border-x-2 border-gray-400/50 -translate-y-[70%]" />
+                              
+                              <motion.div 
+                                 animate={{ height: `${Math.max(10, 50 - (currentTemp/8))}%` }}
+                                 className="w-full bg-blue-100/30 relative flex flex-wrap gap-0.5 p-1 items-end justify-center"
+                              >
+                                 {[...Array(5)].map((_, i) => (
+                                    <motion.div
+                                       key={`flask-green-${i}`}
+                                       animate={currentTemp >= greenBP ? { y: -100, opacity: 0 } : { y: 0, x: [0, 5, -5, 0] }}
+                                       transition={{ repeat: Infinity, duration: 2 }}
+                                       className="w-1.5 h-1.5 bg-emerald-400 rounded-full shadow-sm"
+                                    />
+                                 ))}
+                                 {[...Array(5)].map((_, i) => (
+                                    <motion.div
+                                       key={`flask-orange-${i}`}
+                                       animate={currentTemp >= orangeBP ? { y: -100, opacity: 0 } : { y: 0, x: [0, -5, 5, 0] }}
+                                       transition={{ repeat: Infinity, duration: 2.5 }}
+                                       className="w-1.5 h-1.5 bg-orange-400 rounded-full shadow-sm"
+                                    />
+                                 ))}
+                              </motion.div>
+                           </div>
+                           
+                           {/* 2. Still Head (Connects flask to condenser/thermometer) */}
+                           <div className="absolute left-[5%] bottom-[125px] w-16 h-12 flex flex-col items-center z-10">
+                              <div className="w-6 h-full bg-white/40 border-x-2 border-gray-400/50" />
+                              {/* Thermometer */}
+                              <div className="absolute top-0 w-1.5 h-16 bg-red-100 border border-red-200 -translate-y-[60%] rounded-full z-30 shadow-sm">
+                                 <div className="absolute bottom-1 w-full bg-red-500 rounded-full transition-all duration-300" 
+                                      style={{ height: `${(currentTemp/200)*100}%` }} />
+                              </div>
+                           </div>
+
+                           {/* Side arm connection */}
+                           <div className="absolute left-[calc(5%+8px)] bottom-[calc(140px)] w-12 h-3 bg-white/40 border-y-2 border-r-2 border-gray-400/50 -rotate-[25deg] origin-left z-10" />
+
+                           {/* 3. Condenser (The Cooling Tube) */}
+                           <div className="absolute left-[calc(5%+3.5rem)] bottom-[calc(125px)] w-36 h-8 bg-blue-50/40 border-2 border-blue-200 rounded-full -rotate-[25deg] origin-left flex items-center justify-center z-20 shadow-sm">
+                              <div className="w-[105%] h-1.5 bg-white/60 border-y border-gray-300 rounded-full absolute -left-[2.5%]" />
+                              <span className="text-[5px] font-black text-blue-500 uppercase tracking-widest relative z-30">{t('Condenser', '冷凝管', '冷凝管')}</span>
+                              
+                              <div className="absolute -top-1 left-4 w-1 h-3 bg-blue-300 rounded-full" />
+                              <div className="absolute -bottom-1 right-4 w-1 h-3 bg-blue-300 rounded-full" />
+                           </div>
+
+                           {/* 4. Vacuum Adapter / Receiver Adapter */}
+                           <div className="absolute left-[calc(5%+3.5rem+7.8rem)] bottom-[calc(92px)] w-8 h-6 bg-white/40 border-l-2 border-b-2 border-gray-400/50 rotate-[65deg] z-10" />
+
+                           {/* 5. Collection Flask (The Receiver) */}
+                           <div className="absolute left-[calc(5%+3.5rem+8.2rem)] bottom-[60px] w-12 h-16 border-2 border-gray-300 rounded-b-xl bg-white/50 backdrop-blur-sm overflow-hidden flex flex-col justify-end z-20 shadow-sm">
+                              <motion.div 
+                                 animate={{ 
+                                   height: currentTemp >= Math.min(greenBP, orangeBP) 
+                                     ? (currentTemp >= Math.max(greenBP, orangeBP) ? '50%' : '25%') 
+                                     : '0%' 
+                                 }}
+                                 className="w-full bg-blue-400/20 relative flex flex-wrap gap-1 p-1 items-end justify-center"
+                              >
+                                 {currentTemp >= greenBP && (
+                                   <div className="w-2 h-2 bg-emerald-400/70 rounded-full shadow-sm" />
+                                 )}
+                                 {currentTemp >= orangeBP && (
+                                   <div className="w-2 h-2 bg-orange-400/70 rounded-full shadow-sm" />
+                                 )}
+                              </motion.div>
+                              
+                              {/* Drips into collection */}
+                              {currentTemp >= Math.min(greenBP, orangeBP) && (
+                                <motion.div 
+                                  animate={{ y: [-15, 60], opacity: [1, 0] }}
+                                  transition={{ repeat: Infinity, duration: 0.8 }}
+                                  className="absolute top-0 left-1/2 -translate-x-1/2 w-1 h-3 bg-blue-400/60 rounded-full z-30"
+                                />
+                              )}
+                           </div>
+
+                           {/* 6. Heat Source (Bunsen Burner) */}
+                           <div className="absolute left-[5.5%] bottom-0 w-14 flex flex-col items-center">
+                              <motion.div 
+                                animate={currentTemp > 40 ? { scale: [1, 1.2, 1], opacity: [0.2, 0.6, 0.2] } : { opacity: 0.1 }}
+                                className="w-full h-6 bg-blue-400/30 blur-lg rounded-t-full"
+                              />
+                              <div className="w-10 h-14 bg-gray-400 rounded-t-xl z-0 border-x border-t border-gray-500" />
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+};
+
+
 const QuickFacts: React.FC = () => {
   const [chineseType, setChineseType] = useState<'traditional' | 'simplified' | null>(null);
   const [showTranslate, setShowTranslate] = useState(false);
@@ -1607,6 +2723,10 @@ const QuickFacts: React.FC = () => {
       </header>
 
       <div className="space-y-12">
+        <ForcesCard chineseType={chineseType} />
+        <PaperChromatographyCard chineseType={chineseType} />
+        <SolubilityCurveCard chineseType={chineseType} />
+        <FiltrationDistillationCard chineseType={chineseType} />
         <DissolvingSolubilityCard chineseType={chineseType} />
         <BloodCompositionCard chineseType={chineseType} />
         <RespiratorySystemCard chineseType={chineseType} />
