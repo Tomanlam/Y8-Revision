@@ -81,67 +81,91 @@ const AboutView: React.FC = () => {
           </div>
         </motion.div>
 
-        <div className="space-y-6">
-          {/* Version Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="bg-white border-2 border-gray-200 rounded-[2rem] p-6 shadow-[0_4px_0_0_rgba(0,0,0,0.05)] flex items-center justify-between"
-          >
-            <div className="flex items-center gap-4">
-              <div className="bg-blue-100 p-4 rounded-2xl text-blue-600">
-                <RefreshCw size={28} />
+        <div className="grid grid-cols-1 gap-6">
+          {/* Version & Tech Stack Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            {/* Version Card */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-[2rem] p-6 shadow-lg text-white flex flex-col justify-between"
+            >
+              <div className="flex items-center gap-4 mb-6">
+                <div className="bg-white/20 p-3 rounded-2xl backdrop-blur-sm border border-white/20 text-blue-50">
+                  <RefreshCw size={28} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black uppercase tracking-tight leading-none">Version</h3>
+                  <p className="text-blue-100 font-bold text-[10px] uppercase tracking-widest mt-1 opacity-90">v{revisionNumber}</p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-xl font-black text-gray-800 uppercase tracking-tight leading-none">Version</h3>
-                <p className="text-blue-400 font-bold text-[10px] uppercase tracking-widest mt-1">Revision Number</p>
+              
+              <div className="bg-white/10 rounded-2xl border border-white/10 p-4 backdrop-blur-sm">
+                <p className="text-blue-50 font-black text-xs uppercase tracking-widest mb-1 opacity-70">Current Revision</p>
+                <p className="text-2xl font-black text-white leading-none">Production Ready</p>
               </div>
-            </div>
-            <div className="bg-blue-50 border-2 border-blue-100 px-5 py-3 rounded-2xl text-center">
-              <p className="text-2xl font-black text-blue-700">v{revisionNumber}</p>
-            </div>
-          </motion.div>
+            </motion.div>
 
-          {/* Tech Stack Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
-            className="bg-white border-2 border-gray-200 rounded-[2rem] p-6 shadow-[0_4px_0_0_rgba(0,0,0,0.05)] flex items-center justify-between"
-          >
-            <div className="flex items-center gap-4">
-              <div className="bg-orange-100 p-4 rounded-2xl text-orange-600">
-                <Zap size={28} />
+            {/* Tech Stack Card */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 }}
+              className="bg-gradient-to-br from-orange-500 to-red-600 rounded-[2rem] p-6 shadow-lg text-white flex flex-col justify-between"
+            >
+              <div className="flex items-center gap-4 mb-6">
+                <div className="bg-white/20 p-3 rounded-2xl backdrop-blur-sm border border-white/20 text-orange-50">
+                  <Zap size={28} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black uppercase tracking-tight leading-none">Tech Stack</h3>
+                  <p className="text-orange-100 font-bold text-[10px] uppercase tracking-widest mt-1 opacity-90">Modern Web</p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-xl font-black text-gray-800 uppercase tracking-tight leading-none">Tech Stack</h3>
-                <p className="text-orange-400 font-bold text-[10px] uppercase tracking-widest mt-1">Modern Web Tech</p>
+              
+              <div className="bg-white/10 rounded-2xl border border-white/10 p-4 backdrop-blur-sm">
+                <div className="flex flex-wrap gap-2">
+                  <span className="bg-white/20 px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest">React 18</span>
+                  <span className="bg-white/20 px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest">TypeScript</span>
+                  <span className="bg-white/20 px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest">Tailwind</span>
+                  <span className="bg-white/20 px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest">Firebase</span>
+                </div>
               </div>
-            </div>
-            <div className="bg-orange-50 border-2 border-orange-100 px-5 py-3 text-center rounded-2xl">
-              <p className="text-[10px] font-black uppercase text-orange-700">React + Vite</p>
-            </div>
-          </motion.div>
+            </motion.div>
+          </div>
 
           {/* AI Engine Card */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.18 }}
-            className="bg-white border-2 border-gray-200 rounded-[2rem] p-6 shadow-[0_4px_0_0_rgba(0,0,0,0.05)] flex items-center justify-between"
+            className="bg-gradient-to-br from-purple-500 to-indigo-600 rounded-[2rem] p-6 shadow-lg text-white"
           >
-            <div className="flex items-center gap-4">
-              <div className="bg-purple-100 p-4 rounded-2xl text-purple-600">
-                <Sparkles size={28} />
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-4">
+                <div className="bg-white/20 p-3 rounded-2xl backdrop-blur-sm border border-white/20 text-purple-50">
+                  <Sparkles size={28} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black uppercase tracking-tight leading-none">AI Engine</h3>
+                  <p className="text-purple-100 font-bold text-[10px] uppercase tracking-widest mt-1 opacity-90">LLM Processing</p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-xl font-black text-gray-800 uppercase tracking-tight leading-none">AI Engine</h3>
-                <p className="text-purple-400 font-bold text-[10px] uppercase tracking-widest mt-1">Rubric & Report Gen</p>
+              <div className="hidden sm:block bg-purple-900/30 border border-white/10 px-4 py-2 rounded-xl backdrop-blur-sm text-[10px] font-black uppercase tracking-widest text-purple-100">
+                Google DeepMind
               </div>
             </div>
-            <div className="bg-purple-50 border-2 border-purple-100 px-5 py-3 text-center rounded-2xl">
-              <p className="text-[10px] font-black uppercase text-purple-700">Gemini 3.1 Flash Lite</p>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="bg-white/10 rounded-2xl border border-white/10 p-4 backdrop-blur-sm">
+                <p className="text-purple-50 font-black text-[9px] uppercase tracking-widest mb-1 opacity-70">Architecture</p>
+                <p className="text-sm font-black text-white">Gemini 3.1 Flash Lite</p>
+              </div>
+              <div className="bg-white/10 rounded-2xl border border-white/10 p-4 backdrop-blur-sm">
+                <p className="text-purple-50 font-black text-[9px] uppercase tracking-widest mb-1 opacity-70">Capabilities</p>
+                <p className="text-sm font-black text-white">Automated Grading & Feedback</p>
+              </div>
             </div>
           </motion.div>
 

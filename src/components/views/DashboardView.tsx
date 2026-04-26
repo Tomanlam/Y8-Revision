@@ -472,47 +472,56 @@ const DashboardView: React.FC<DashboardViewProps> = (props) => {
           )}
         </AnimatePresence>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {units.map((unit) => (
             <motion.div 
               key={unit.id}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="bg-white border-2 border-gray-200 rounded-2xl p-5 shadow-[0_4px_0_0_rgba(0,0,0,0.05)] hover:border-emerald-400 transition-colors"
+              whileHover={{ y: -5 }}
+              className="group bg-white border-2 border-gray-100 rounded-[2.5rem] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_50px_rgba(16,185,129,0.1)] transition-all duration-300"
             >
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className={`w-12 h-12 ${unit.color} rounded-xl flex items-center justify-center text-white font-bold text-xl`}>
+              <div className="flex items-start justify-between mb-8">
+                <div className="flex items-center gap-4">
+                  <div className={`w-14 h-14 ${unit.color} rounded-[1.25rem] flex items-center justify-center text-white font-black text-2xl shadow-lg ring-4 ring-white`}>
                     {unit.id}
                   </div>
                   <div>
-                    <h3 className="font-black text-gray-800 text-lg uppercase tracking-wide">{unit.title}</h3>
-                    <p className="text-gray-500 text-sm">{unit.description}</p>
+                    <h3 className="font-black text-gray-800 text-xl tracking-tight leading-none mb-1 group-hover:text-emerald-600 transition-colors">{unit.title}</h3>
+                    <div className="flex items-center gap-2">
+                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                       <p className="text-gray-400 font-bold text-[9px] uppercase tracking-widest leading-none">Topic Active</p>
+                    </div>
                   </div>
                 </div>
               </div>
 
+              <p className="text-gray-600 text-xs font-medium leading-relaxed mb-6 px-1">
+                {unit.description}
+              </p>
+
               <div className="grid grid-cols-3 gap-3">
                 <button 
                   onClick={() => startQuiz(unit)}
-                  className="flex flex-col items-center justify-center gap-1 p-3 rounded-xl bg-emerald-50 text-emerald-600 border-2 border-emerald-100 hover:bg-emerald-100 transition-colors"
+                  className="flex flex-col items-center justify-center gap-2 p-4 rounded-2xl bg-white border border-gray-100 text-emerald-600 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 hover:scale-105 active:scale-95 transition-all duration-300 shadow-sm"
+                  title="Practice Quiz"
                 >
-                  <CheckCircle2 size={24} />
-                  <span className="text-xs font-bold uppercase">Quiz</span>
+                  <CheckCircle2 size={20} />
+                  <span className="text-[9px] font-black uppercase tracking-tight">Quiz</span>
                 </button>
                 <button 
                   onClick={() => startRevision(unit)}
-                  className="flex flex-col items-center justify-center gap-1 p-3 rounded-xl bg-blue-50 text-blue-600 border-2 border-blue-100 hover:bg-blue-100 transition-colors"
+                  className="flex flex-col items-center justify-center gap-2 p-4 rounded-2xl bg-white border border-gray-100 text-blue-600 hover:bg-blue-500 hover:text-white hover:border-blue-500 hover:scale-105 active:scale-95 transition-all duration-300 shadow-sm"
+                  title="Revision Notes"
                 >
-                  <BookOpen size={24} />
-                  <span className="text-xs font-bold uppercase">Notes</span>
+                  <BookOpen size={20} />
+                  <span className="text-[9px] font-black uppercase tracking-tight">Notes</span>
                 </button>
                 <button 
                   onClick={() => startVocab(unit)}
-                  className="flex flex-col items-center justify-center gap-1 p-3 rounded-xl bg-purple-50 text-purple-600 border-2 border-purple-100 hover:bg-purple-100 transition-colors"
+                  className="flex flex-col items-center justify-center gap-2 p-4 rounded-2xl bg-white border border-gray-100 text-purple-600 hover:bg-purple-500 hover:text-white hover:border-purple-500 hover:scale-105 active:scale-95 transition-all duration-300 shadow-sm"
+                  title="Vocabulary List"
                 >
-                  <Languages size={24} />
-                  <span className="text-xs font-bold uppercase">Vocab</span>
+                  <Languages size={20} />
+                  <span className="text-[9px] font-black uppercase tracking-tight">Vocab</span>
                 </button>
               </div>
             </motion.div>
