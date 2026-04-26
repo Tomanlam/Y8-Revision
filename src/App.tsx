@@ -907,10 +907,15 @@ function AppContent() {
 
                 if (isAdminLoggedIn && viewedSubmission) {
                   // Admin is grading an existing submission
+                  if (results && results.cheatLogs !== undefined) {
+                    delete results.cheatLogs; // Fix overwriting
+                  }
                   const updateData: any = {
                     gradedAt: new Date().toISOString()
                   };
-                  if (results !== undefined) updateData.results = results;
+                  if (results !== undefined) {
+                    updateData.results = { ...(viewedSubmission.results || {}), ...results };
+                  }
                   if (results?.feedback !== undefined) updateData.feedback = results.feedback;
                   if (results?.generalFeedback !== undefined) updateData.generalFeedback = results.generalFeedback;
 
@@ -918,7 +923,7 @@ function AppContent() {
                   
                   setViewedSubmission({
                     ...viewedSubmission,
-                    results: results,
+                    results: updateData.results || viewedSubmission.results,
                     feedback: results?.feedback,
                     generalFeedback: results?.generalFeedback
                   });
@@ -1008,10 +1013,15 @@ function AppContent() {
 
                 if (isAdminLoggedIn && viewedSubmission) {
                   // Admin is grading an existing submission
+                  if (results && results.cheatLogs !== undefined) {
+                    delete results.cheatLogs; // Fix overwriting
+                  }
                   const updateData: any = {
                     gradedAt: new Date().toISOString()
                   };
-                  if (results !== undefined) updateData.results = results;
+                  if (results !== undefined) {
+                    updateData.results = { ...(viewedSubmission.results || {}), ...results };
+                  }
                   if (results?.feedback !== undefined) updateData.feedback = results.feedback;
                   if (results?.generalFeedback !== undefined) updateData.generalFeedback = results.generalFeedback;
 
@@ -1019,7 +1029,7 @@ function AppContent() {
                   
                   setViewedSubmission({
                     ...viewedSubmission,
-                    results: results,
+                    results: updateData.results || viewedSubmission.results,
                     feedback: results?.feedback,
                     generalFeedback: results?.generalFeedback
                   });

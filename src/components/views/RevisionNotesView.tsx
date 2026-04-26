@@ -179,8 +179,9 @@ const RevisionNotesView: React.FC<RevisionNotesViewProps> = ({ unit, onBack, cha
       });
       setNewStickyContent("");
       setActiveStickyInputPage(null);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      alert(`Failed to add note: ${e.message}`);
     } finally {
       setIsSaving(false);
     }
@@ -218,27 +219,25 @@ Return ONLY the JSON array.`;
     }
   };
 
-  const handleClearAllStickies = async () => {
-    if (!unit || !currentUser || stickyNotes.length === 0) return;
-    if (!window.confirm("ARE YOU ABSOLUTELY SURE? This will permanently erase ALL your scientific observations for this unit. This action is IRREVERSIBLE.")) return;
-    
-    setIsSaving(true);
-    try {
-      const deletePromises = stickyNotes.map(note => deleteDoc(doc(db, 'stickyNotes', note.id)));
-      await Promise.all(deletePromises);
-    } catch (e) {
-      console.error("Error clearing post-its:", e);
-      alert("System Error: Failed to synchronize wipe operation.");
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  // Handle resize debounced
+  // Handle resize via ResizeObserver on the actual container
   useEffect(() => {
-    const handleResize = () => setViewerWidth(window.innerWidth * 0.45);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    if (!leftPaneRef.current) return;
+    
+    const observer = new ResizeObserver((entries) => {
+      for (let entry of entries) {
+        if (entry.contentRect.width > 0) {
+          setViewerWidth((prev) => {
+             if (Math.abs(prev - entry.contentRect.width) > 10) {
+               return entry.contentRect.width;
+             }
+             return prev;
+          });
+        }
+      }
+    });
+    
+    observer.observe(leftPaneRef.current);
+    return () => observer.disconnect();
   }, []);
 
   const pdfOptions = useMemo(() => ({
@@ -472,16 +471,6 @@ Return ONLY the JSON array.`;
                           </div>
                           
                           <div className="flex items-center gap-2">
-                            {hasPersonal && (
-                              <button 
-                                onClick={handleClearAllStickies}
-                                className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all bg-red-50 text-red-500 hover:bg-red-100 shadow-sm opacity-0 group-hover:opacity-100"
-                                title="Clear All Personal Post-its"
-                              >
-                                <Trash2 size={12} />
-                                Clear All
-                              </button>
-                            )}
                             <button 
                               onClick={() => {
                                 setActiveStickyInputPage(activeStickyInputPage === pageNum ? null : pageNum);

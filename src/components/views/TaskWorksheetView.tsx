@@ -63,19 +63,18 @@ const QuestionTextWithCommandTerms = ({ text }: { text: string }) => {
           return (
             <span 
               key={i} 
-              className="relative inline-block group px-1 mx-0.5"
+              className="relative inline-block group cursor-help"
             >
-              <span className="text-orange-500 underline decoration-orange-200 decoration-2 underline-offset-4 cursor-help transition-all duration-300 group-hover:text-orange-600 group-hover:decoration-orange-400">{part}</span>
-              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-4 w-64 pointer-events-none z-[100]">
-                <motion.div 
-                  initial={{ opacity: 0, y: -10 }}
-                  whileHover={{ opacity: 1, y: 0 }}
-                  className="bg-orange-600 text-white p-4 rounded-2xl shadow-2xl border border-orange-400/30 text-center flex flex-col items-center opacity-0 group-hover:opacity-100 transition-all duration-300"
-                >
-                  <div className="bg-white/20 px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-[0.2em] mb-2">Definition</div>
-                  <p className="text-xs font-bold leading-relaxed">{COMMAND_TERMS[lowerPart]}</p>
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 w-3 h-3 bg-orange-600 rotate-45 -mb-1.5 border-l border-t border-orange-400/30" />
-                </motion.div>
+              <span className="text-orange-500 font-black border-b-2 border-orange-200 transition-all group-hover:border-orange-500 group-hover:text-orange-600">
+                {part}
+              </span>
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-64 pointer-events-none z-[100] transition-all duration-200 opacity-0 group-hover:opacity-100 group-hover:translate-y-0 translate-y-1">
+                <div className="bg-orange-600 text-white p-3 rounded-2xl shadow-xl text-center relative">
+                  <p className="text-[10px] font-bold leading-relaxed">
+                    {COMMAND_TERMS[lowerPart]}
+                  </p>
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 w-3 h-3 bg-orange-600 rotate-45 -mt-1.5" />
+                </div>
               </div>
             </span>
           );
@@ -155,7 +154,23 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
   const rightPaneRef = useRef<HTMLDivElement>(null);
   const gradingConsoleContentRef = useRef<HTMLDivElement>(null);
   const pdfContainerRef = useRef<HTMLDivElement>(null);
+
   const pageRefs = useRef<Record<number, HTMLDivElement | null>>({});
+
+  useEffect(() => {
+    if (!pdfContainerRef.current) return;
+    
+    const observer = new ResizeObserver((entries) => {
+      for (let entry of entries) {
+        if (entry.contentRect.width > 0) {
+          setViewerWidth(entry.contentRect.width);
+        }
+      }
+    });
+    
+    observer.observe(pdfContainerRef.current);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     if (initialFeedback) setValidationFeedback(initialFeedback);
@@ -247,12 +262,6 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
     }
   };
 
-  // Handle resize debounced
-  useEffect(() => {
-    const handleResize = () => setViewerWidth(window.innerWidth * 0.48);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   const pdfOptions = useMemo(() => ({
     cMapUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/cmaps/`,
@@ -1344,7 +1353,7 @@ OUTPUT: Plain text paragraph.`;
           <div className={`${isGradingConsoleExpanded ? 'w-[60%]' : 'w-[30%]'} bg-gray-50 overflow-hidden flex flex-col z-10 transition-all duration-500 border-l border-gray-100`}>
             <div className="flex-1 overflow-y-auto custom-scrollbar scroll-smooth relative">
               {/* Sticky Header with Gradient Background */}
-              <div className="sticky top-0 z-20 p-8 pb-4 space-y-8 bg-gradient-to-b from-gray-200/60 via-gray-200/30 to-transparent backdrop-blur-md">
+              <div className="sticky top-0 z-30 p-8 pb-6 space-y-8 bg-gray-200/80 backdrop-blur-md border-b border-gray-200/30 shadow-sm">
                 <div className="space-y-2">
                   <div className="flex items-center gap-3 mb-1">
                     <div className="w-8 h-1 bg-emerald-500 rounded-full" />
@@ -1431,7 +1440,9 @@ OUTPUT: Plain text paragraph.`;
               {gradingLogs.length > 0 && (
                 <div 
                   onDoubleClick={() => setIsGradingConsoleExpanded(!isGradingConsoleExpanded)}
-                  className="my-6 bg-slate-900 rounded-[2rem] p-6 shadow-2xl border border-slate-800 flex flex-col max-h-[500px] cursor-zoom-in"
+                  className={`my-6 bg-slate-900 rounded-[2rem] p-6 shadow-2xl border border-slate-800 flex flex-col transition-all duration-300 shrink-0 overflow-hidden ${
+                    isGradingConsoleExpanded ? 'h-[300px]' : 'h-[180px]'
+                  } ${isGradingConsoleExpanded ? 'cursor-zoom-out' : 'cursor-zoom-in'}`}
                   title="Double click to expand console"
                 >
                   <div className="flex items-center gap-3 mb-3 pb-3 border-b border-white/5">

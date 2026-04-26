@@ -546,13 +546,16 @@ JSON OUTPUT: { "questions": [{ "id": "string", "score": "X of X", "feedback": "s
       printAttempts: "Print/Screenshot attempts"
     };
 
+    const effectiveCheatLogs = submission.results?.cheatLogs;
+    const effectiveTabSwitches = submission.results?.tabSwitches || 0;
+
     const securityValue = isTest 
-      ? (submission.results?.cheatLogs 
-          ? Object.entries(submission.results.cheatLogs)
+      ? (effectiveCheatLogs 
+          ? Object.entries(effectiveCheatLogs)
               .filter(([_, count]) => (count as number) > 0)
               .map(([key, count]) => `${securityMap[key] || key}: ${count}`)
               .join(', ') || 'NONE DETECTED'
-          : `${submission.results?.tabSwitches || 0} Tab Switches Detected`)
+          : `${effectiveTabSwitches} Tab Switches Detected`)
       : 'OFF';
 
     autoTable(doc, {

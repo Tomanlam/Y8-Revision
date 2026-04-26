@@ -41,11 +41,8 @@ service cloud.firestore {
     }
 
     function isValidStickyNote(data) {
-      return data.keys().hasAll(['userId', 'unitId', 'page', 'content', 'createdAt', 'color']) &&
-             data.userId == request.auth.uid &&
-             data.content is string && data.content.size() <= 2000 &&
-             data.page is number &&
-             data.unitId is number &&
+      return data.userId == request.auth.uid &&
+             data.content is string && data.content.size() <= 3000 &&
              data.color is string;
     }
 
@@ -103,7 +100,8 @@ service cloud.firestore {
     }
 
     match /interactiveNotes/{unitId} {
-      allow read: if isSignedIn();
+      allow get: if true;
+      allow list: if isAdmin();
       allow write: if isAdmin();
     }
 

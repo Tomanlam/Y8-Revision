@@ -1,9 +1,9 @@
 import * as React from 'react';
 import { motion } from 'motion/react';
-import { GraduationCap, Github, ExternalLink, Zap, RefreshCw, Info } from 'lucide-react';
+import { GraduationCap, Github, ExternalLink, Zap, RefreshCw, Info, Sparkles } from 'lucide-react';
 
 const AboutView: React.FC = () => {
-  const revisionNumber = "4.5.0";
+  const revisionNumber = "5.0.0";
   const [clickCount, setClickCount] = React.useState(0);
   
   const handleCreatorClick = () => {
@@ -121,6 +121,27 @@ const AboutView: React.FC = () => {
             </div>
             <div className="bg-orange-50 border-2 border-orange-100 px-5 py-3 text-center rounded-2xl">
               <p className="text-[10px] font-black uppercase text-orange-700">React + Vite</p>
+            </div>
+          </motion.div>
+
+          {/* AI Engine Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.18 }}
+            className="bg-white border-2 border-gray-200 rounded-[2rem] p-6 shadow-[0_4px_0_0_rgba(0,0,0,0.05)] flex items-center justify-between"
+          >
+            <div className="flex items-center gap-4">
+              <div className="bg-purple-100 p-4 rounded-2xl text-purple-600">
+                <Sparkles size={28} />
+              </div>
+              <div>
+                <h3 className="text-xl font-black text-gray-800 uppercase tracking-tight leading-none">AI Engine</h3>
+                <p className="text-purple-400 font-bold text-[10px] uppercase tracking-widest mt-1">Rubric & Report Gen</p>
+              </div>
+            </div>
+            <div className="bg-purple-50 border-2 border-purple-100 px-5 py-3 text-center rounded-2xl">
+              <p className="text-[10px] font-black uppercase text-purple-700">Gemini 3.1 Flash Lite</p>
             </div>
           </motion.div>
 
