@@ -1346,41 +1346,44 @@ OUTPUT: Plain text paragraph.`;
       
       {isGradingWorkflow && (
         <div className={`${isGradingConsoleExpanded ? 'w-[60%]' : 'w-[30%]'} bg-gray-50 overflow-hidden flex flex-col z-10 transition-all duration-500 border-l border-gray-100`}>
-          <div className="p-8 space-y-8 flex-1 overflow-y-auto custom-scrollbar scroll-smooth">
-            <div className="space-y-2">
-              <div className="flex items-center gap-3 mb-1">
-                <div className="w-8 h-1 bg-red-600 rounded-full" />
-                <span className="text-[10px] font-black text-red-600 uppercase tracking-[0.3em]">Evaluation Protocol</span>
-              </div>
-              <h3 className="text-3xl font-black text-gray-900 uppercase tracking-tighter leading-none">Grading Engine</h3>
-              <div className="flex items-center gap-2 pt-2">
-                <span className="bg-gray-900 text-white px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest">Gemini 3.1 Flash Lite</span>
-              </div>
-            </div>
-
-            {/* Bento Progress Card */}
-            <div className="bg-white p-8 rounded-[2.5rem] shadow-xl shadow-gray-200/50 border border-gray-100 space-y-6">
-              <div className="flex justify-between items-end">
-                <div className="space-y-1">
-                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Operational Status</span>
-                  <span className="text-sm font-black text-red-600 uppercase">
-                    {gradingPhase === 'extracting_rubrics' ? 'Pre-processing Rubrics' : 
-                     gradingPhase === 'grading' ? `Live Analysis` :
-                     gradingPhase === 'generating_overall' ? 'Compiling Scores' : 'Engine Ready'}
-                  </span>
+          <div className="flex-1 overflow-y-auto custom-scrollbar scroll-smooth relative">
+            {/* Sticky Header with Gradient Background */}
+            <div className="sticky top-0 z-20 p-8 pb-4 space-y-8 bg-gradient-to-b from-gray-200/60 via-gray-200/30 to-transparent backdrop-blur-md">
+              <div className="space-y-2">
+                <div className="flex items-center gap-3 mb-1">
+                  <div className="w-8 h-1 bg-red-600 rounded-full" />
+                  <span className="text-[10px] font-black text-red-600 uppercase tracking-[0.3em]">Protocol Alpha</span>
                 </div>
-                <span className="text-3xl font-black text-gray-900 tracking-tighter">{Math.round(gradingProgress)}%</span>
+                <h3 className="text-3xl font-black text-gray-900 uppercase tracking-tighter leading-none">Grading Engine</h3>
+                <div className="flex items-center gap-2 pt-2">
+                  <span className="bg-gray-900 text-white px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest">Gemini 3.1 Flash Lite</span>
+                </div>
               </div>
-              <div className="h-4 bg-gray-100 rounded-2xl overflow-hidden p-1 border border-gray-200">
-                <motion.div 
-                  initial={{ width: 0 }}
-                  animate={{ width: `${gradingProgress}%` }}
-                  className="h-full bg-red-600 rounded-xl shadow-[0_0_20px_rgba(220,38,38,0.4)]"
-                />
+
+              {/* Bento Progress Card */}
+              <div className="bg-white p-8 rounded-[2.5rem] shadow-xl shadow-gray-200/50 border border-gray-100 space-y-6">
+                <div className="flex justify-between items-end">
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Operational Status</span>
+                    <span className="text-sm font-black text-red-600 uppercase">
+                      {gradingPhase === 'extracting_rubrics' ? 'Pre-processing Rubrics' : 
+                       gradingPhase === 'grading' ? `Live Analysis` :
+                       gradingPhase === 'generating_overall' ? 'Compiling Scores' : 'Engine Ready'}
+                    </span>
+                  </div>
+                  <span className="text-3xl font-black text-gray-900 tracking-tighter">{Math.round(gradingProgress)}%</span>
+                </div>
+                <div className="h-4 bg-gray-100 rounded-2xl overflow-hidden p-1 border border-gray-200">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${gradingProgress}%` }}
+                    className="h-full bg-red-600 rounded-xl shadow-[0_0_20px_rgba(220,38,38,0.4)]"
+                  />
+                </div>
               </div>
             </div>
             
-            <div ref={gradingConsoleContentRef} className="space-y-4">
+            <div ref={gradingConsoleContentRef} className="p-8 pt-4 space-y-4">
                {(task.worksheetQuestions || []).map((q, idx) => (
                  <motion.div 
                    key={q.id} 
@@ -1432,7 +1435,7 @@ OUTPUT: Plain text paragraph.`;
             {gradingLogs.length > 0 && (
               <div 
                 onDoubleClick={() => setIsGradingConsoleExpanded(!isGradingConsoleExpanded)}
-                className="my-6 bg-gray-900 rounded-[2rem] p-6 shadow-2xl border border-gray-800 flex flex-col max-h-32 cursor-zoom-in"
+                className="my-6 bg-gray-900 rounded-[2rem] p-6 shadow-2xl border border-gray-800 flex flex-col max-h-48 cursor-zoom-in"
                 title="Double click to expand console"
               >
                 <div className="flex items-center gap-3 mb-3 pb-3 border-b border-white/5">
