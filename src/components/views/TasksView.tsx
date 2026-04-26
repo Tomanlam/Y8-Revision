@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Star, CheckCircle2, ListChecks, Users, Clock, Plus, Trash2, Layout, Calendar as CalendarIcon, ChevronLeft, ChevronRight as ChevronRightIcon, Target, List, FileText, Eye, ArrowRight, User, Download, Info, Copy, Sparkles, ShieldCheck, Lock, Timer, Send, RefreshCw, X, Edit, Inbox } from 'lucide-react';
+import { Star, CheckCircle2, ListChecks, Users, Clock, Plus, Trash2, Layout, Calendar as CalendarIcon, ChevronLeft, ChevronRight as ChevronRightIcon, Target, List, FileText, Eye, ArrowRight, User, Download, Info, Copy, Sparkles, ShieldCheck, Lock, Timer, Send, RefreshCw, X, Edit, Inbox, Link2 } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, parseISO, startOfDay } from 'date-fns';
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -375,6 +375,8 @@ JSON OUTPUT: { "questions": [{ "id": "string", "score": "X of X", "feedback": "s
   const [isEditingTestTitle, setIsEditingTestTitle] = React.useState(false);
   const [editedTestDate, setEditedTestDate] = React.useState('');
   const [isEditingTestDate, setIsEditingTestDate] = React.useState(false);
+  const [isEditingPdfUrl, setIsEditingPdfUrl] = React.useState(false);
+  const [editedPdfUrl, setEditedPdfUrl] = React.useState('');
   const [editingTaskQuestionsJson, setEditingTaskQuestionsJson] = React.useState('');
   const [editingTaskMarkscheme, setEditingTaskMarkscheme] = React.useState('');
 
@@ -1399,6 +1401,53 @@ Output ONLY the JSON object.`;
                      )}
                   </div>
                   
+                  {/* PDF URL Edit */}
+                  <div className="bg-gray-50 p-4 rounded-3xl border border-gray-100 flex flex-col items-center justify-center gap-2">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">PDF URL</span>
+                    {isEditingPdfUrl ? (
+                       <div className="flex gap-2 w-full px-2">
+                         <input 
+                           type="text"
+                           value={editedPdfUrl}
+                           onChange={(e) => setEditedPdfUrl(e.target.value)}
+                           className="flex-1 font-bold p-2 py-3 rounded-xl border-2 border-emerald-200 outline-none text-[10px] tracking-tight bg-white shadow-sm"
+                           placeholder="https://..."
+                           autoFocus
+                         />
+                         <button 
+                           onClick={async () => {
+                             if (onUpdateTask && selectedTaskForPasscode) {
+                               await onUpdateTask(selectedTaskForPasscode.id, { pdfUrl: editedPdfUrl });
+                               setSelectedTaskForPasscode({...selectedTaskForPasscode, pdfUrl: editedPdfUrl});
+                               setIsEditingPdfUrl(false);
+                             }
+                           }}
+                           className="bg-emerald-500 text-white px-4 rounded-xl font-bold text-[10px] shadow-sm transition-transform active:scale-95"
+                         >
+                           Save
+                         </button>
+                       </div>
+                     ) : (
+                       <div className="flex items-center gap-2 group justify-between w-full">
+                         <div className="flex items-center gap-2 overflow-hidden flex-1 justify-center">
+                            <Link2 size={12} className="text-gray-400" />
+                            <span className="text-xs font-black text-gray-800 truncate max-w-[150px]">
+                               {selectedTaskForPasscode.pdfUrl || 'No PDF Linked'}
+                            </span>
+                         </div>
+                         <button 
+                           onClick={() => {
+                             setEditedPdfUrl(selectedTaskForPasscode.pdfUrl || '');
+                             setIsEditingPdfUrl(true);
+                           }}
+                           className="p-2 hover:bg-gray-200 rounded-xl text-gray-400 hover:text-emerald-500 transition-colors shrink-0 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100"
+                         >
+                           <Edit size={16} />
+                         </button>
+                       </div>
+                     )}
+                  </div>
+                  
                   {/* Time Limit Edit */}
                   <div className="bg-gray-50 p-4 rounded-3xl border border-gray-100 flex flex-col items-center justify-center gap-2 mb-auto">
                     <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Time Limit</span>
@@ -1896,6 +1945,22 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
                   onChange={e => setEditingTask({...editingTask, title: e.target.value})}
                   className="w-full p-4 rounded-2xl border-2 border-white font-bold bg-white focus:border-emerald-500 outline-none text-base shadow-sm"
                 />
+              </div>
+
+              <div className="bg-gray-50 p-6 rounded-3xl border border-gray-100 flex flex-col justify-center gap-3">
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest">PDF URL</label>
+                <div className="relative group">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+                    <Link2 size={16} />
+                  </div>
+                  <input 
+                    type="text" 
+                    value={editingTask.pdfUrl || ''}
+                    onChange={e => setEditingTask({...editingTask, pdfUrl: e.target.value})}
+                    placeholder="https://example.com/file.pdf"
+                    className="w-full p-4 pl-12 rounded-2xl border-2 border-white bg-white font-bold outline-none focus:border-emerald-500 shadow-sm text-sm"
+                  />
+                </div>
               </div>
               
               <div className="bg-gray-50 p-6 rounded-3xl border border-gray-100 flex flex-col justify-center gap-3">

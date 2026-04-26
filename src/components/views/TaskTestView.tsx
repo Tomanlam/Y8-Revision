@@ -2,7 +2,8 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   ChevronLeft, CheckCircle2, AlertCircle, FileText, Layout, ArrowRight, X, 
-  Calculator, Edit, Eye, Send, Trash2, Timer, RefreshCw, ShieldCheck, Terminal
+  Calculator, Edit, Eye, Send, Trash2, Timer, RefreshCw, ShieldCheck, Terminal,
+  Maximize2, Minimize2, Pen
 } from 'lucide-react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
@@ -11,6 +12,7 @@ import { Task, Question } from '../../types';
 import { GoogleGenAI, Type } from "@google/genai";
 import { db } from '../../firebase';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import Sketchpad from '../Sketchpad';
 
 // PDF worker setup
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -89,7 +91,9 @@ const TaskTestView: React.FC<TaskTestViewProps> = ({
   const [generalFeedback, setGeneralFeedback] = useState<string>(initialGeneralFeedback || "");
 
   const [isGradingWorkflow, setIsGradingWorkflow] = useState(false);
+  const [isGradingConsoleExpanded, setIsGradingConsoleExpanded] = useState(false);
   const [gradingPhase, setGradingPhase] = useState('idle');
+  const [showSketchpad, setShowSketchpad] = useState(false);
   const [gradingProgress, setGradingProgress] = useState(0);
   const [gradingComplete, setGradingComplete] = useState(false);
   const [extractedRubrics, setExtractedRubrics] = useState<Record<string, string>>({});
@@ -131,7 +135,8 @@ const TaskTestView: React.FC<TaskTestViewProps> = ({
     blur: 0,
     copyPaste: 0,
     shortcutAttempts: 0,
-    printAttempts: 0
+    printAttempts: 0,
+    tabOpenAttempts: 0
   });
   const [cheatDetected, setCheatDetected] = useState(false);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -221,13 +226,21 @@ const TaskTestView: React.FC<TaskTestViewProps> = ({
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Prevent Print, Save, Inspect, PrintScreen
+      // Prevent Print, Save, Inspect, PrintScreen, New Tab
       if (e.key === 'PrintScreen') {
         logCheat('printAttempts');
       }
-      if ((e.ctrlKey || e.metaKey) && (e.key === 'p' || e.key === 's' || e.key === 'u' || e.key === 'c' || e.key === 'v')) {
-        e.preventDefault();
-        logCheat('shortcutAttempts');
+      if ((e.ctrlKey || e.metaKey)) {
+        if (e.key === 'c' || e.key === 'v') {
+          e.preventDefault();
+          logCheat('copyPaste');
+        } else if (e.key === 't' || e.key === 'n') {
+          e.preventDefault();
+          logCheat('tabOpenAttempts');
+        } else if (e.key === 'p' || e.key === 's' || e.key === 'u') {
+          e.preventDefault();
+          logCheat('shortcutAttempts');
+        }
       }
     };
 
@@ -451,6 +464,8 @@ const TaskTestView: React.FC<TaskTestViewProps> = ({
 
     try {
       const extractionPrompt = `Extract rubric, correct answer, and marks for each question.
+For 'tick-cross' type questions, explicitly set the correct_answer to "TRUE" or "FALSE". Rubric should specify that "TRUE" corresponds to a checkmark and "FALSE" to a cross.
+For 'table' type questions, extract the rubric values as "INDEX CORRECT_VALUE" (e.g. 0 CC, 1 PC) where INDEX is the row index starting from 0 (excluding headers). Ensure the list is ordered by INDEX ascending.
 ---
 MARK SCHEME:
 ${markscheme}
@@ -519,18 +534,27 @@ JSON OUTPUT: { "q_id": { "rubric": "...", "correct_answer": "...", "marks": numb
       else if (Array.isArray(req) && req.length === 0) textReq = "[NO RESPONSE PROVIDED]";
       else if (typeof req === 'object' && !Array.isArray(req) && Object.keys(req).length === 0) textReq = "[NO RESPONSE PROVIDED]";
       else if (q.type === 'table' && q.tableData && typeof req === 'object') {
-        const tableMap = {};
-        for (const [key, val] of Object.entries(req)) {
+        const tableLines: string[] = [];
+        // Sort keys to ensure consistent order by row (r) then column (c)
+        const sortedKeys = Object.keys(req).sort((a, b) => {
+          const [rA, cA] = a.split('_').map(Number);
+          const [rB, cB] = b.split('_').map(Number);
+          if (rA !== rB) return rA - rB;
+          return cA - cB;
+        });
+
+        for (const key of sortedKeys) {
+          const val = req[key];
           const [rStr, cStr] = key.split('_');
           const r = parseInt(rStr, 10);
           const c = parseInt(cStr, 10);
           if (!isNaN(r) && !isNaN(c) && q.tableData[r] && q.tableData[0]) {
-             tableMap[`${q.tableData[0][c]} of ${q.tableData[r][0]}`] = String(val);
+             tableLines.push(`${r}_${c}: ${String(val)}`);
           } else {
-             tableMap[key] = String(val);
+             tableLines.push(`${key}: ${String(val)}`);
           }
         }
-        textReq = JSON.stringify(tableMap);
+        textReq = tableLines.join('\n');
       }
       else if (typeof req === 'object') textReq = JSON.stringify(req);
       return textReq;
@@ -592,7 +616,16 @@ JSON OUTPUT: { "q_id": { "rubric": "...", "correct_answer": "...", "marks": numb
        const strRubric = typeof specific_rubric === 'object' ? JSON.stringify(specific_rubric) : specific_rubric;
 
        const prompt = `Grade student response against rubric. Max 100 words feedback.
-logic:
+STRICT GRADING RULES:
+1. For 'tick-cross' type: Student response is "TRUE" (checkmark) or "FALSE" (cross). Comparison must be CASE-INSENSITIVE against the rubric's "TRUE"/"FALSE" value.
+2. For 'table' type: 
+   - STUDENT RESPONSE: Lines in "R_C: VALUE" format.
+   - RUBRIC: Lines in "INDEX CORRECT_VALUE" format.
+   - ACTION: Sort student response by row index R ascending. Ignore column index C.
+   - COMPARISON: Match student's R with rubric's INDEX. Compare 'VALUE' with 'CORRECT_VALUE'.
+   - SCORING: Each correct pair match = 1 mark. Sum these for final score.
+   - NOTE: If a student's R matches the rubric's INDEX and the VALUE matches CORRECT_VALUE, it is CORRECT. Ignore any perceived 'rubric structure mapping' mismatch if the values themselves align perfectly for each index.
+3. logic:
 - empty/[NO RESPONSE PROVIDED] -> "No response." + ref answer | 0 marks
 - incorrect -> "Incorrect." + ref answer + reason
 - correct/partial -> "Correct."/"Partially correct." + reason
@@ -777,6 +810,14 @@ OUTPUT: Plain text paragraph.`;
         </div>
 
         <div className="flex items-center gap-4 bg-gray-50 p-2 rounded-2xl border border-gray-100">
+          <button 
+            onClick={() => setShowSketchpad(!showSketchpad)}
+            className={`p-3 rounded-xl transition-all shadow-sm ${showSketchpad ? 'bg-indigo-600 text-white -rotate-12 scale-110' : 'bg-white text-gray-400 hover:text-gray-900'}`}
+            title="Virtual Sketchpad"
+          >
+            <Pen size={20} />
+          </button>
+          
           <div className="flex items-center gap-4 px-4 border-r border-gray-200">
              <div className="flex flex-col items-end">
                 <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Time Remaining</span>
@@ -964,7 +1005,7 @@ OUTPUT: Plain text paragraph.`;
       </AnimatePresence>
 
       <main className="flex-1 flex overflow-hidden bg-gray-50">
-        <div ref={pdfContainerRef} className={`${isGradingWorkflow ? 'w-[30%]' : 'flex-1'} overflow-y-auto custom-scrollbar p-8 flex justify-center bg-gray-100 transition-all duration-500`}>
+        <div ref={pdfContainerRef} className={`${isGradingWorkflow ? (isGradingConsoleExpanded ? 'w-0 opacity-0 pointer-events-none p-0 overflow-hidden' : 'w-[20%]') : 'flex-1'} overflow-y-auto custom-scrollbar p-8 flex justify-center bg-gray-100 transition-all duration-500`}>
           <div className="max-w-4xl w-full">
             <Document
               file={task.pdfUrl || ''}
@@ -986,8 +1027,8 @@ OUTPUT: Plain text paragraph.`;
           </div>
         </div>
 
-        <div ref={rightPaneRef} className={`${isGradingWorkflow ? 'w-[35%]' : 'w-[45%]'} border-l border-red-50 bg-gray-50/50 overflow-y-auto custom-scrollbar p-10`}>
-          <div className="max-w-2xl mx-auto space-y-12 pb-32">
+        <div ref={rightPaneRef} className={`${isGradingWorkflow ? (isGradingConsoleExpanded ? 'w-[40%]' : 'w-[50%]') : 'w-[60%]'} border-l border-red-50 bg-gray-50/50 overflow-y-auto custom-scrollbar p-10 transition-all duration-500`}>
+          <div className="max-w-6xl mx-auto space-y-12 pb-32">
             <div className="space-y-6 border-b border-red-100 pb-12">
               <div className="space-y-2">
                 <h3 className="text-4xl font-black text-gray-900 tracking-tighter uppercase leading-none">Formal Assessment</h3>
@@ -1017,7 +1058,21 @@ OUTPUT: Plain text paragraph.`;
 
                   {questionsByPage[pageNum].map((q, idx) => {
                     const typedQ = q as any;
-                    const isAnswered = responses[typedQ.id];
+                    const response = responses[typedQ.id];
+                    const feedback = validationFeedback[typedQ.id];
+                    const isAnswered = !!response;
+
+                    // Enhanced Scoring Logic
+                    const scoreText = feedback?.score || "";
+                    const scoreParts = scoreText.split(/\s*(?:\/|of)\s*/i);
+                    const awarded = parseFloat(scoreParts[0]);
+                    const total = parseFloat(scoreParts[1]);
+                    const isCorrect = feedback && awarded === total && total > 0;
+                    const isPartial = feedback && awarded > 0 && awarded < total;
+                    const isIncorrect = feedback && awarded === 0;
+
+                    const isProcessing = currentlyProcessingId === typedQ.id;
+
                     return (
                       <motion.div 
                         key={typedQ.id}
@@ -1026,15 +1081,21 @@ OUTPUT: Plain text paragraph.`;
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                         className={`p-10 rounded-[3rem] border-2 transition-all duration-300 relative group overflow-hidden ${
+                          isProcessing ? 'border-red-500 ring-8 ring-red-500/10' :
+                          feedback ? (
+                            isCorrect ? 'bg-emerald-50/50 border-emerald-200' : 
+                            isPartial ? 'bg-orange-50/50 border-orange-200' :
+                            'bg-red-50/50 border-red-100'
+                          ) :
                           isAnswered 
                             ? 'bg-white border-red-200 shadow-xl shadow-red-50' 
                             : 'bg-white border-white shadow-lg shadow-gray-100 hover:border-red-100'
                         }`}
                       >
-                        {isAnswered && (
+                        {(isAnswered || feedback) && (
                           <div className="absolute top-0 right-0 p-6">
-                            <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="bg-red-50 p-2 rounded-full text-red-600">
-                              <CheckCircle2 size={16} />
+                            <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className={`p-2 rounded-full ${isCorrect ? 'bg-emerald-100 text-emerald-600' : isPartial ? 'bg-orange-100 text-orange-600' : 'bg-red-50 text-red-600'}`}>
+                              {isCorrect ? <CheckCircle2 size={16} /> : isPartial ? <AlertCircle size={16} /> : <X size={16} />}
                             </motion.div>
                           </div>
                         )}
@@ -1069,18 +1130,18 @@ OUTPUT: Plain text paragraph.`;
 
                         {typedQ.type === 'tick-cross' && (
                           <div className="grid grid-cols-2 gap-4">
-                            {['✓', '✕'].map((opt) => (
+                            {[ {label: '✓', value: 'TRUE'}, {label: '✕', value: 'FALSE'} ].map((opt) => (
                               <button
-                                key={opt}
-                                onClick={() => !(readOnly || submitted) && handleResponse(typedQ.id, opt)}
+                                key={opt.value}
+                                onClick={() => !(readOnly || submitted) && handleResponse(typedQ.id, opt.value)}
                                 disabled={readOnly || submitted}
                                 className={`p-8 rounded-3xl border-4 font-black text-3xl transition-all shadow-sm ${
-                                  responses[typedQ.id] === opt
-                                    ? opt === '✓' ? 'bg-emerald-500 border-emerald-600 text-white' : 'bg-red-500 border-red-600 text-white'
+                                  responses[typedQ.id] === opt.value
+                                    ? opt.value === 'TRUE' ? 'bg-emerald-500 border-emerald-600 text-white' : 'bg-red-500 border-red-600 text-white'
                                     : 'bg-white border-gray-100 text-gray-300 hover:border-gray-200'
                                 }`}
                               >
-                                {opt}
+                                {opt.label}
                               </button>
                             ))}
                           </div>
@@ -1177,32 +1238,58 @@ OUTPUT: Plain text paragraph.`;
                         )}
 
                         {typedQ.type === 'short-response' && (
-                          <textarea
-                            placeholder="Type assessment response..."
-                            value={responses[typedQ.id] || ''}
-                            readOnly={readOnly || submitted}
-                            onChange={(e) => handleResponse(typedQ.id, e.target.value)}
-                            className="w-full p-4 rounded-2xl border-2 border-gray-100 font-bold text-sm outline-none focus:border-red-500 min-h-[120px] bg-red-50/10"
-                          />
+                          <div className="relative">
+                            <textarea
+                              placeholder="Formulate your assessment response here..."
+                              value={responses[typedQ.id] || ''}
+                              readOnly={readOnly || submitted}
+                              onChange={(e) => handleResponse(typedQ.id, e.target.value)}
+                              className={`w-full p-8 rounded-[2rem] border-2 font-bold text-sm text-gray-800 focus:border-red-500 focus:bg-white outline-none transition-all resize-none min-h-[180px] shadow-sm tracking-tight leading-relaxed ${readOnly || submitted ? 'bg-gray-50 border-gray-100 shadow-none' : 'bg-red-50/10 border-gray-100'} placeholder:text-gray-300`}
+                            />
+                            <div className="absolute bottom-6 right-6 px-3 py-1 bg-gray-900/5 rounded-lg">
+                               <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{responses[typedQ.id]?.length || 0} chars</span>
+                            </div>
+                          </div>
                         )}
 
                         {(submitted || readOnly) && validationFeedback[typedQ.id] && (
-                          <div className="mt-6 space-y-3 bg-red-50/30 p-6 rounded-3xl border border-red-100/50">
-                            <div className="flex justify-between items-center">
-                              <div className="flex items-center gap-2">
-                                <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-                                <span className="text-[10px] font-black text-red-800 uppercase tracking-widest">Teacher's Feedback</span>
-                              </div>
-                              <div className="bg-white px-3 py-1 rounded-full border border-red-100 shadow-sm">
-                                <span className={`text-[10px] font-black uppercase tracking-tight ${validationFeedback[typedQ.id].score.startsWith('0 of') ? 'text-red-500' : 'text-emerald-500'}`}>
-                                  Awarded: {validationFeedback[typedQ.id].score}
-                                </span>
-                              </div>
+                          <motion.div 
+                            initial={{ opacity: 0, y: 15 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className={`mt-8 p-8 rounded-[2rem] border-2 relative overflow-hidden ${
+                              isCorrect ? 'bg-emerald-50 border-emerald-200 text-emerald-900' : 
+                              isPartial ? 'bg-orange-50 border-orange-200 text-orange-900' :
+                              'bg-red-50 border-red-100 text-red-900'
+                            }`}
+                          >
+                            <div className="absolute top-0 right-0 p-4">
+                               {isCorrect ? <CheckCircle2 className="text-emerald-500/20" size={80} /> : 
+                                isPartial ? <AlertCircle className="text-orange-500/20" size={80} /> :
+                                <AlertCircle className="text-red-500/20" size={80} />}
                             </div>
-                            <p className="text-xs font-bold text-gray-700 italic leading-relaxed">
-                              "{validationFeedback[typedQ.id].feedback}"
+                            <div className="flex items-center justify-between mb-6 relative z-10">
+                              <div className="flex items-center gap-3">
+                                <div className={`p-2 rounded-xl bg-white shadow-sm ${
+                                  isCorrect ? 'text-emerald-600' : 
+                                  isPartial ? 'text-orange-600' : 
+                                  'text-red-600'
+                                }`}>
+                                  <ShieldCheck size={20} />
+                                </div>
+                                <span className="text-[10px] font-black uppercase tracking-[0.2em]">Teacher's Feedback</span>
+                              </div>
+                              <span className={`px-4 py-1.5 rounded-full text-xs font-black shadow-lg ${
+                                isCorrect ? 'bg-emerald-500 text-white' : 
+                                isPartial ? 'bg-orange-500 text-white' :
+                                'bg-red-500 text-white'
+                              } relative z-20`}>
+                                {validationFeedback[typedQ.id].score}
+                              </span>
+                            </div>
+                            <p className="text-sm font-black leading-relaxed whitespace-pre-wrap relative z-10 text-gray-700">
+                              {validationFeedback[typedQ.id].feedback}
                             </p>
-                          </div>
+                          </motion.div>
                         )}
                       </motion.div>
                     );
@@ -1212,11 +1299,43 @@ OUTPUT: Plain text paragraph.`;
             })}
 
             {generalFeedback && (
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-red-50 border-2 border-red-100 rounded-3xl p-6 space-y-3">
-                <h4 className="text-xs font-black text-red-800 uppercase tracking-widest flex items-center gap-2">
-                  <Eye size={16} /> Overall Comments
-                </h4>
-                <p className="text-sm font-bold text-gray-700 italic">"{generalFeedback}"</p>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-gray-900 border-2 border-gray-800 rounded-[3rem] p-12 space-y-8 shadow-2xl relative overflow-hidden"
+              >
+                <div className="absolute top-0 right-0 w-64 h-64 bg-red-500/5 rounded-full blur-[100px] -mr-32 -mt-32" />
+                <div className="flex items-center justify-between relative z-10">
+                  <div className="flex items-center gap-4">
+                    <div className="bg-red-600 text-white p-3 rounded-2xl shadow-xl shadow-red-600/20">
+                      <Send size={24} />
+                    </div>
+                    <div>
+                      <h4 className="text-xl font-black text-white uppercase tracking-tight">Overall Comments</h4>
+                    </div>
+                  </div>
+                  {readOnly && (
+                    <div className="bg-white/5 px-6 py-3 rounded-2xl border border-white/10 flex items-center gap-4 backdrop-blur-md">
+                       <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Aggregate</span>
+                       <span className="text-2xl font-black text-red-400 tracking-tighter">
+                          {Math.round(Object.values(validationFeedback as any).reduce<number>((acc, f: any) => {
+                             const p = f.score?.toString().split(/\s*(?:\/|of)\s*/i);
+                             return acc + (p?.[0] ? parseFloat(p[0]) : 0);
+                          }, 0))} <span className="text-gray-600 text-lg">/</span> {
+                            Object.values(validationFeedback as any).reduce<number>((acc, f: any) => {
+                              const p = f.score?.toString().split(/\s*(?:\/|of)\s*/i);
+                              return acc + (p?.[1] ? parseFloat(p[1]) : 1);
+                           }, 0)
+                          }
+                       </span>
+                    </div>
+                  )}
+                </div>
+                <div className="bg-white/5 p-8 rounded-[2rem] border border-white/10 relative z-10">
+                  <p className="text-lg font-bold text-gray-300 leading-relaxed italic tracking-tight">
+                    "{generalFeedback}"
+                  </p>
+                </div>
               </motion.div>
             )}
 
@@ -1226,7 +1345,7 @@ OUTPUT: Plain text paragraph.`;
         </div>
       
       {isGradingWorkflow && (
-        <div className="w-[35%] bg-gray-50 overflow-hidden flex flex-col z-10 transition-all duration-500 border-l border-gray-100">
+        <div className={`${isGradingConsoleExpanded ? 'w-[60%]' : 'w-[30%]'} bg-gray-50 overflow-hidden flex flex-col z-10 transition-all duration-500 border-l border-gray-100`}>
           <div className="p-8 space-y-8 flex-1 overflow-y-auto custom-scrollbar scroll-smooth">
             <div className="space-y-2">
               <div className="flex items-center gap-3 mb-1">
@@ -1311,7 +1430,11 @@ OUTPUT: Plain text paragraph.`;
           <div className="p-8 pt-0 border-t border-gray-100 bg-gray-50/80 backdrop-blur-md">
             {/* Console Log for Tests */}
             {gradingLogs.length > 0 && (
-              <div className="my-6 bg-gray-900 rounded-[2rem] p-6 shadow-2xl border border-gray-800 flex flex-col max-h-32">
+              <div 
+                onDoubleClick={() => setIsGradingConsoleExpanded(!isGradingConsoleExpanded)}
+                className="my-6 bg-gray-900 rounded-[2rem] p-6 shadow-2xl border border-gray-800 flex flex-col max-h-32 cursor-zoom-in"
+                title="Double click to expand console"
+              >
                 <div className="flex items-center gap-3 mb-3 pb-3 border-b border-white/5">
                   <Terminal size={12} className="text-red-400" />
                   <span className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-500">Secure Logs</span>
@@ -1355,6 +1478,12 @@ OUTPUT: Plain text paragraph.`;
         </div>
       )}
       </main>
+      <AnimatePresence>
+        {showSketchpad && (
+          <Sketchpad onClose={() => setShowSketchpad(false)} />
+        )}
+      </AnimatePresence>
+
       <AnimatePresence>
         {gradingComplete && (
           <motion.div 
