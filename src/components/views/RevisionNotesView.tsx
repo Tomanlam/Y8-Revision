@@ -218,6 +218,22 @@ Return ONLY the JSON array.`;
     }
   };
 
+  const handleClearAllStickies = async () => {
+    if (!unit || !currentUser || stickyNotes.length === 0) return;
+    if (!window.confirm("ARE YOU ABSOLUTELY SURE? This will permanently erase ALL your scientific observations for this unit. This action is IRREVERSIBLE.")) return;
+    
+    setIsSaving(true);
+    try {
+      const deletePromises = stickyNotes.map(note => deleteDoc(doc(db, 'stickyNotes', note.id)));
+      await Promise.all(deletePromises);
+    } catch (e) {
+      console.error("Error clearing post-its:", e);
+      alert("System Error: Failed to synchronize wipe operation.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   // Handle resize debounced
   useEffect(() => {
     const handleResize = () => setViewerWidth(window.innerWidth * 0.45);
@@ -455,16 +471,28 @@ Return ONLY the JSON array.`;
                             <div className="h-px flex-1 bg-slate-100" />
                           </div>
                           
-                          <button 
-                            onClick={() => {
-                              setActiveStickyInputPage(activeStickyInputPage === pageNum ? null : pageNum);
-                              setNewStickyContent("");
-                            }}
-                            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${activeStickyInputPage === pageNum ? 'bg-red-50 text-red-500' : 'bg-orange-50 text-orange-600 hover:bg-orange-100 shadow-sm opacity-0 group-hover:opacity-100'}`}
-                          >
-                            {activeStickyInputPage === pageNum ? <X size={12} /> : <Plus size={12} />}
-                            {activeStickyInputPage === pageNum ? 'Cancel' : 'Add Post-it'}
-                          </button>
+                          <div className="flex items-center gap-2">
+                            {hasPersonal && (
+                              <button 
+                                onClick={handleClearAllStickies}
+                                className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all bg-red-50 text-red-500 hover:bg-red-100 shadow-sm opacity-0 group-hover:opacity-100"
+                                title="Clear All Personal Post-its"
+                              >
+                                <Trash2 size={12} />
+                                Clear All
+                              </button>
+                            )}
+                            <button 
+                              onClick={() => {
+                                setActiveStickyInputPage(activeStickyInputPage === pageNum ? null : pageNum);
+                                setNewStickyContent("");
+                              }}
+                              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${activeStickyInputPage === pageNum ? 'bg-red-50 text-red-500' : 'bg-orange-50 text-orange-600 hover:bg-orange-100 shadow-sm opacity-0 group-hover:opacity-100'}`}
+                            >
+                              {activeStickyInputPage === pageNum ? <X size={12} /> : <Plus size={12} />}
+                              {activeStickyInputPage === pageNum ? 'Cancel' : 'Add Post-it'}
+                            </button>
+                          </div>
                         </div>
 
                         <div className="space-y-12">
