@@ -50,13 +50,13 @@ const COMMAND_TERMS: Record<string, string> = {
   justify: "Give valid reasons or evidence to support an answer or conclusion."
 };
 
-const QuestionTextWithCommandTerms = ({ text }: { text: string }) => {
+const QuestionTextWithCommandTerms = ({ text, className }: { text: string, className?: string }) => {
   if (!text) return null;
   const regex = new RegExp(`\\b(${Object.keys(COMMAND_TERMS).join('|')})\\b`, 'gi');
   const parts = text.split(regex);
 
   return (
-    <h4 className="font-helvetica font-black text-gray-800 text-lg leading-tight pt-1">
+    <h4 className={`font-helvetica font-black text-lg leading-tight pt-1 ${className || 'text-gray-800'}`}>
       {parts.map((part, i) => {
         const lowerPart = part.toLowerCase();
         if (COMMAND_TERMS[lowerPart]) {
@@ -65,7 +65,7 @@ const QuestionTextWithCommandTerms = ({ text }: { text: string }) => {
               key={i} 
               className="relative inline-block group cursor-help"
             >
-              <span className="text-orange-500 font-black border-b-2 border-orange-200 transition-all group-hover:border-orange-500 group-hover:text-orange-600">
+              <span className={`font-black border-b-2 transition-all ${className ? 'text-white border-white/40 group-hover:border-white' : 'text-orange-500 border-orange-200 group-hover:border-orange-500 group-hover:text-orange-600'}`}>
                 {part}
               </span>
               <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-64 pointer-events-none z-[100] transition-all duration-200 opacity-0 group-hover:opacity-100 group-hover:translate-y-0 translate-y-1">
@@ -651,83 +651,80 @@ OUTPUT: Plain text paragraph.`;
   return (
     <div className="fixed inset-0 bg-gray-50 z-[200] flex flex-col overflow-hidden font-sans">
       {/* Dynamic Header */}
-      <header className="h-20 border-b-2 border-gray-100 px-8 flex items-center justify-between bg-white/90 backdrop-blur-xl sticky top-0 z-50">
-        <div className="flex items-center gap-5">
-          <button 
-            onClick={onBack}
-            className="p-2.5 hover:bg-gray-100 rounded-2xl transition-all text-gray-400 hover:text-gray-900 active:scale-90"
-          >
-            <ChevronLeft size={28} />
-          </button>
-          <div className="h-10 w-px bg-gray-100 mx-1" />
-          <div className="flex flex-col">
-            <div className="flex items-center gap-2 mb-0.5">
-              <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest ${task.type === 'test' ? 'bg-red-500 text-white' : 'bg-emerald-500 text-white'}`}>
-                {task.type === 'test' ? 'Secure Assessment' : 'Interactive Worksheet'}
-              </span>
-              <span className="text-[10px] text-gray-300 font-bold">•</span>
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                Unit {task.unitId || 'General'}
-              </span>
+      <header className="bg-white/5 backdrop-blur-md border-b border-white/10 p-4 shrink-0 sticky top-0 z-[100] shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07)]">
+        <div className="max-w-screen-2xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-5">
+            <button 
+              onClick={onBack}
+              className="w-10 h-10 flex items-center justify-center bg-white hover:bg-slate-50 border-2 border-slate-200 hover:text-slate-900 rounded-[1.2rem] text-slate-500 transition-all active:scale-95 group/btn shadow-sm"
+            >
+              <ChevronLeft size={20} className="stroke-[3] group-hover/btn:-translate-x-1 transition-transform" />
+            </button>
+            <div className="h-8 w-px bg-slate-200 mx-1" />
+            <div className="flex flex-col">
+              <h1 className="text-xl font-black text-slate-800 uppercase tracking-tight leading-none">{task.title}</h1>
+              <div className="flex items-center gap-2 mt-1.5">
+                <span className={`px-2 py-0.5 rounded-[0.4rem] text-[9px] font-black uppercase tracking-[0.2em] border shadow-sm ${task.type === 'test' ? 'bg-red-50 text-red-600 border-red-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'}`}>
+                  {task.type === 'test' ? 'Secure Assessment' : 'Interactive Worksheet'}
+                </span>
+                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none">• Unit {task.unitId || 'General'}</span>
+              </div>
             </div>
-            <h2 className="text-xl font-black text-gray-900 uppercase tracking-tighter truncate max-w-[400px]">
-              {task.title}
-            </h2>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <div className="hidden md:flex items-center gap-6 mr-4 bg-gray-50 px-6 py-2.5 rounded-2xl border border-gray-100">
-             <div className="flex flex-col items-center">
-                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Progress</span>
-                <span className="text-sm font-black text-gray-900 leading-none">
-                  {Object.keys(responses).length}<span className="text-gray-300 mx-0.5">/</span>{task.worksheetQuestions?.length || 0}
-                </span>
-             </div>
-             <div className="w-px h-6 bg-gray-200" />
-             <div className="flex flex-col items-center">
-                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Page</span>
-                <span className="text-sm font-black text-gray-900 leading-none">
-                  {activePage}<span className="text-gray-300 mx-0.5">/</span>{numPages || '?'}
-                </span>
-             </div>
-             {timeLeft !== null && (
-               <>
-                 <div className="w-px h-6 bg-gray-200" />
-                 <div className="flex flex-col items-center">
-                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Time</span>
-                    <span className={`text-sm font-black leading-none ${timeLeft < 300 ? 'text-red-500 animate-pulse' : 'text-orange-500'}`}>
-                      {formatTime(timeLeft)}
-                    </span>
-                 </div>
-               </>
-             )}
           </div>
 
-          <div className="flex items-center gap-2">
-            <button 
-              onClick={() => setShowSketchpad(!showSketchpad)}
-              className={`p-3 rounded-2xl transition-all active:scale-95 ${showSketchpad ? 'bg-indigo-600 text-white shadow-xl -rotate-12' : 'bg-white text-gray-400 hover:bg-gray-50 border border-gray-100'}`}
-              title="Virtual Sketchpad"
-            >
-              <Pen size={22} />
-            </button>
-            <button 
-              onClick={() => setShowCalculator(!showCalculator)}
-              className={`p-3 rounded-2xl transition-all active:scale-95 ${showCalculator ? 'bg-gray-900 text-white shadow-xl rotate-12' : 'bg-white text-gray-400 hover:bg-gray-50 border border-gray-100'}`}
-              title="Virtual Calculator"
-            >
-              <Calculator size={22} />
-            </button>
+          <div className="flex items-center gap-3">
+            <div className="hidden md:flex items-center gap-4 bg-white/10 px-6 py-2.5 rounded-[1.2rem] border border-white/10 backdrop-blur-md">
+               <div className="flex flex-col items-end">
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Progress</span>
+                  <span className="text-sm font-black text-slate-700 leading-none">
+                    {Object.keys(responses).length}<span className="text-gray-300 mx-0.5">/</span>{task.worksheetQuestions?.length || 0}
+                  </span>
+               </div>
+               <div className="w-px h-6 bg-slate-200/50" />
+               <div className="flex flex-col items-end">
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Page</span>
+                  <span className="text-sm font-black text-slate-700 leading-none">
+                    {activePage}<span className="text-gray-300 mx-0.5">/</span>{numPages || '?'}
+                  </span>
+               </div>
+               {timeLeft !== null && (
+                 <>
+                   <div className="w-px h-6 bg-slate-200/50" />
+                   <div className="flex flex-col items-end">
+                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Time</span>
+                      <span className={`text-sm font-black leading-none flex items-center gap-1.5 ${timeLeft < 300 ? 'text-red-500 animate-pulse' : 'text-slate-700'}`}>
+                        <Timer size={12} /> {formatTime(timeLeft)}
+                      </span>
+                   </div>
+                 </>
+               )}
+            </div>
+
+            <div className="bg-slate-100 p-1.5 rounded-[1.2rem] border border-slate-200 flex items-center gap-1.5">
+              <button 
+                onClick={() => setShowSketchpad(!showSketchpad)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-[1.2rem] text-[10px] font-black uppercase tracking-widest transition-all ${showSketchpad ? 'bg-white text-emerald-500 shadow-sm border border-transparent scale-105' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-200/50'}`}
+                title="Virtual Sketchpad"
+              >
+                <Pen size={14} className={showSketchpad ? 'text-emerald-500' : ''} /> Sketchpad
+              </button>
+              <button 
+                onClick={() => setShowCalculator(!showCalculator)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-[1.2rem] text-[10px] font-black uppercase tracking-widest transition-all ${showCalculator ? 'bg-white text-emerald-500 shadow-sm border border-transparent scale-105' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-200/50'}`}
+                title="Virtual Calculator"
+              >
+                <Calculator size={14} className={showCalculator ? 'text-emerald-500' : ''} /> Calc
+              </button>
+            </div>
             
             {isAdmin && (
-              <div className="flex items-center gap-2">
+              <div className="bg-slate-100 p-1.5 rounded-[1.2rem] border border-slate-200 flex items-center gap-1.5">
                 <button
                   onClick={() => {
                     setEditingQuestions(JSON.stringify(task.worksheetQuestions || [], null, 2));
                     setShowQuestionsEditor(true);
                   }}
-                  className="bg-white border border-gray-200 text-gray-600 px-4 py-2.5 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:border-emerald-400 hover:text-emerald-500 transition-all shadow-sm active:translate-y-0.5"
+                  className="flex items-center gap-2 px-4 py-2 rounded-[1.2rem] text-[10px] font-black uppercase tracking-widest transition-all text-slate-400 hover:text-emerald-600 hover:bg-white border border-transparent hover:border-slate-200 shadow-none hover:shadow-sm"
                 >
                   Questions
                 </button>
@@ -736,7 +733,7 @@ OUTPUT: Plain text paragraph.`;
                     setEditingMarkscheme(markscheme);
                     setShowMarkschemeEditor(true);
                   }}
-                  className="bg-white border border-gray-200 text-gray-600 px-4 py-2.5 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:border-blue-400 hover:text-blue-500 transition-all shadow-sm active:translate-y-0.5"
+                  className="flex items-center gap-2 px-4 py-2 rounded-[1.2rem] text-[10px] font-black uppercase tracking-widest transition-all text-slate-400 hover:text-blue-600 hover:bg-white border border-transparent hover:border-slate-200 shadow-none hover:shadow-sm"
                 >
                   Markscheme
                 </button>
@@ -753,21 +750,24 @@ OUTPUT: Plain text paragraph.`;
                     setShowConfirm(true);
                   }
                 }}
-                className={`${task.type === 'test' ? 'bg-red-600 shadow-[0_6px_0_0_#991b1b]' : 'bg-emerald-500 shadow-[0_6px_0_0_#059669]'} text-white px-8 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest active:shadow-none active:translate-y-1.5 transition-all disabled:opacity-50 disabled:translate-y-0 disabled:shadow-none flex items-center gap-3`}
+                className={`ml-3 px-6 py-2.5 rounded-[1.2rem] font-black uppercase text-[10px] tracking-[0.2em] transition-all duration-300 disabled:opacity-50 flex items-center gap-2 group/btn shadow-xl backdrop-blur-xl border ${
+                  isAdmin && readOnly && !isGradingWorkflow
+                    ? 'bg-indigo-600/90 border-indigo-400/50 text-white hover:bg-indigo-500 shadow-indigo-900/20'
+                    : 'bg-emerald-600/90 border-emerald-400/50 text-white hover:bg-emerald-500 shadow-emerald-900/20'
+                }`}
               >
-                {isValidating ? (
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                ) : <Send size={16} />}
-                <span>{isValidating ? 'Grading...' : (isAdmin && readOnly ? 'Finalize Grading' : (task.type === 'test' ? 'Submit assessment' : 'Submit worksheet'))}</span>
+                <div className="w-7 h-7 flex items-center justify-center bg-white/20 rounded-[0.6rem] group-hover/btn:scale-110 transition-transform text-current">{isValidating ? <RefreshCw className="animate-spin" size={14} /> : (isAdmin && readOnly && !isGradingWorkflow ? <CheckCircle2 size={14} /> : <Send size={14} />)}</div>
+                <span>{isValidating ? 'Grading...' : (isAdmin && readOnly && !isGradingWorkflow ? 'Admin Grade' : (task.type === 'test' ? 'Submit assessment' : 'Submit worksheet'))}</span>
               </button>
             )}
 
             {submitted && isAdmin && !readOnly && (
                <button
                  onClick={handleEdit}
-                 className="bg-orange-500 text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-[0_6px_0_0_#c2410c] active:shadow-none active:translate-y-1.5 transition-all flex items-center gap-2"
+                 className="px-6 py-2.5 rounded-[1.2rem] font-black uppercase text-[10px] tracking-[0.2em] transition-all disabled:opacity-50 flex items-center gap-2 group/btn bg-orange-500 hover:bg-orange-600 text-white border-2 border-orange-600 shadow-[0_4px_0_0_#c2410c] active:shadow-none active:translate-y-1 ml-2"
                >
-                 <Edit size={16} /> Edit
+                 <div className="w-5 h-5 flex items-center justify-center bg-white/20 rounded-lg group-hover/btn:scale-110 transition-transform text-current"><Edit size={12} /></div>
+                 <span>Edit</span>
                </button>
             )}
           </div>
@@ -1075,33 +1075,32 @@ OUTPUT: Plain text paragraph.`;
                           initial={{ opacity: 0, scale: 0.95 }}
                           whileInView={{ opacity: 1, scale: 1 }}
                           viewport={{ once: true }}
-                          className={`p-10 rounded-[3rem] border-2 transition-all duration-500 relative group overflow-hidden ${
-                            isProcessing ? 'bg-emerald-50 border-emerald-400 ring-8 ring-emerald-500/10' :
-                            feedback ? (
-                              isCorrect ? 'bg-emerald-50/50 border-emerald-200' : 
-                              isPartial ? 'bg-orange-50/50 border-orange-200' :
-                              'bg-red-50/50 border-red-100'
-                            ) :
-                            response ? 'bg-white border-emerald-200 shadow-xl shadow-emerald-50/50' : 
-                            'bg-white border-gray-100 hover:border-emerald-100'
+                          className={`rounded-[3rem] transition-all duration-500 relative group overflow-hidden flex flex-col shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 hover:shadow-xl hover:-translate-y-1 ${
+                            isProcessing ? 'ring-8 ring-emerald-500/10' : ''
                           }`}
                         >
-                          <div className="flex items-start gap-6 mb-8">
-                            <div className="relative">
-                               <div className={`flex-shrink-0 w-14 h-14 rounded-2xl flex items-center justify-center font-black text-xl shadow-2xl relative overflow-hidden group/num transition-all duration-500 hover:rotate-6 ${
-                                 response 
-                                   ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-emerald-200 ring-2 ring-emerald-400 ring-offset-2' 
-                                   : 'bg-slate-900 text-white shadow-gray-200'
-                               }`}>
-                                 {response && <div className="absolute inset-0 bg-white/20 backdrop-blur-sm" />}
-                                 <span className="relative z-10">{idx + 1}</span>
-                               </div>
-                              {response && !feedback && <div className="absolute -top-2 -right-2 w-5 h-5 bg-emerald-500 rounded-full border-4 border-white animate-pulse" />}
+                          <div className={`px-6 py-4 sm:px-8 sm:py-5 ${task.type === 'test' ? 'bg-red-600' : 'bg-emerald-600'}`}>
+                            <div className="flex flex-col gap-2">
+                              <div className="flex items-center justify-between">
+                                <div className={`inline-flex items-center px-3 py-1 rounded-[0.8rem] font-black text-[10px] uppercase tracking-widest shadow-sm bg-white/20 text-white border border-white/30 backdrop-blur-sm`}>
+                                  Question {idx + 1}
+                                </div>
+                                {response && !feedback && <div className="w-5 h-5 bg-white text-emerald-500 rounded-full flex items-center justify-center shadow-lg"><CheckCircle2 size={12} className="stroke-[3]" /></div>}
+                              </div>
+                              <div className="text-white pt-1">
+                                <QuestionTextWithCommandTerms text={typedQ.question} className="text-white drop-shadow-sm" />
+                              </div>
                             </div>
-                            <QuestionTextWithCommandTerms text={typedQ.question} />
                           </div>
 
-                          <div className="relative z-10">
+                          <div className={`px-6 py-5 sm:px-8 sm:py-6 bg-white relative transition-colors duration-500 ${
+                            feedback ? (
+                              isCorrect ? 'bg-emerald-50/10' : 
+                              isPartial ? 'bg-orange-50/10' :
+                              'bg-red-50/10'
+                            ) : ''
+                          }`}>
+                            <div className="relative z-10">
                             {typedQ.type === 'mcq' && (
                               <div className="grid gap-4">
                                 {typedQ.options?.map((opt: string, oIdx: number) => (
@@ -1289,6 +1288,7 @@ OUTPUT: Plain text paragraph.`;
                                 </p>
                               </motion.div>
                             )}
+                          </div>
                           </div>
                         </motion.div>
                       </React.Fragment>
@@ -1541,7 +1541,7 @@ OUTPUT: Plain text paragraph.`;
                    transition={{ delay: 0.6 }}
                    className="text-gray-500 font-bold text-lg"
                 >
-                  The AI Engine has successfully evaluated all responses and generated a comprehensive feedback report.
+                  The Large Language Model (LLM) Deployed has successfully evaluated all responses and generated a comprehensive feedback report.
                 </motion.p>
               </div>
 

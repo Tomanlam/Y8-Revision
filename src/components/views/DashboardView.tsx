@@ -672,7 +672,7 @@ const DashboardView: React.FC<DashboardViewProps> = (props) => {
             <motion.div 
               key={unit.id}
               whileHover={{ y: -4 }}
-              className={`group ${unit.color} rounded-[2.5rem] p-5 shadow-xl text-white flex flex-col h-[260px] sm:h-[280px] relative overflow-hidden`}
+              className={`group ${unit.color} rounded-[2.5rem] p-5 shadow-xl text-white flex flex-col h-full relative overflow-hidden`}
             >
               <div className="absolute -right-4 -top-4 w-32 h-32 bg-white/10 rounded-full blur-2xl group-hover:bg-white/20 transition-all duration-500" />
               
@@ -691,7 +691,7 @@ const DashboardView: React.FC<DashboardViewProps> = (props) => {
                 </div>
               </div>
 
-              <div className="relative z-10 mb-4 flex-grow">
+              <div className="relative z-10 mb-4">
                 <div className="bg-white/10 rounded-2xl border border-white/10 p-3 backdrop-blur-sm group-hover:bg-white/15 transition-all">
                   <p className="text-white/90 text-[10px] sm:text-xs font-semibold leading-relaxed line-clamp-2">
                     {unit.description}

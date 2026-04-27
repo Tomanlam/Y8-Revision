@@ -286,60 +286,60 @@ Return ONLY the JSON array.`;
   }, {} as Record<number, StickyNote[]>);
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col font-sans selection:bg-emerald-500/30">
+    <div className="flex-1 bg-transparent flex flex-col font-sans selection:bg-emerald-200">
       {/* Header */}
-      <header className="bg-white/5 backdrop-blur-md border-b border-white/10 p-4 shrink-0 sticky top-0 z-50">
+      <header className="bg-white/5 backdrop-blur-md border-b border-white/10 p-4 shrink-0 sticky top-0 z-[100] shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07)]">
         <div className="max-w-screen-2xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-5">
             <button 
               onClick={onBack} 
-              className="w-10 h-10 flex items-center justify-center bg-white/10 hover:bg-white border border-white/20 hover:text-slate-900 rounded-[1.2rem] text-white transition-all active:scale-95 group/btn"
+              className="w-10 h-10 flex items-center justify-center bg-white hover:bg-slate-50 border-2 border-slate-200 hover:text-slate-900 rounded-[1.2rem] text-slate-500 transition-all active:scale-95 group/btn shadow-sm"
             >
               <X size={20} className="stroke-[3] group-hover/btn:scale-110 transition-transform" />
             </button>
-            <div className="h-8 w-px bg-white/10" />
+            <div className="h-8 w-px bg-slate-200" />
             <div className="flex flex-col">
-              <h1 className="text-xl font-black text-white uppercase tracking-tight leading-none">Unit {unit.id}: {unit.title}</h1>
+              <h1 className="text-xl font-black text-slate-800 uppercase tracking-tight leading-none">Unit {unit.id}: {unit.title}</h1>
               <div className="flex items-center gap-2 mt-1.5">
-                <span className="text-[9px] font-black text-emerald-400 uppercase tracking-[0.2em] px-2 py-0.5 bg-emerald-500/10 rounded-md border border-emerald-500/20">Revision Hub</span>
+                <span className="text-[9px] font-black text-emerald-600 uppercase tracking-[0.2em] px-2 py-0.5 bg-emerald-50 rounded-md border border-emerald-100">Revision Hub</span>
                 {numPages && (
-                  <span className="text-[9px] font-black text-white/50 uppercase tracking-widest leading-none">• Page {activePage} / {numPages}</span>
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none">• Page {activePage} / {numPages}</span>
                 )}
               </div>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="bg-white/5 p-1.5 rounded-[1.2rem] border border-white/10 flex items-center gap-1.5 backdrop-blur-sm">
+            <div className="bg-slate-100 p-1.5 rounded-[1.2rem] border border-slate-200 flex items-center gap-1.5">
               <button 
                 onClick={() => setViewMode('interactive')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-[1.2rem] text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'interactive' ? 'bg-white/20 text-white shadow-sm border border-white/20 scale-105' : 'text-white/50 hover:text-white hover:bg-white/10'}`}
+                className={`flex items-center gap-2 px-4 py-2 rounded-[1.2rem] text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'interactive' ? 'bg-white text-slate-800 shadow-sm border border-transparent scale-105' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-200/50'}`}
               >
-                <Zap size={14} className={viewMode === 'interactive' ? 'text-emerald-400' : ''} /> Interactive
+                <Zap size={14} className={viewMode === 'interactive' ? 'text-emerald-500' : ''} /> Interactive
               </button>
               <button 
                 onClick={() => setViewMode('summary')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-[1.2rem] text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'summary' ? 'bg-white/20 text-white shadow-sm border border-white/20 scale-105' : 'text-white/50 hover:text-white hover:bg-white/10'}`}
+                className={`flex items-center gap-2 px-4 py-2 rounded-[1.2rem] text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'summary' ? 'bg-white text-slate-800 shadow-sm border border-transparent scale-105' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-200/50'}`}
               >
-                <Layout size={14} className={viewMode === 'summary' ? 'text-blue-400' : ''} /> Summary
+                <Layout size={14} className={viewMode === 'summary' ? 'text-blue-500' : ''} /> Summary
               </button>
             </div>
 
-            <div className="h-8 w-px bg-white/10 mx-2" />
+            <div className="h-8 w-px bg-slate-200 mx-2" />
 
             {viewMode === 'interactive' && (
-              <div className="flex items-center gap-1 mr-2 bg-white/5 rounded-[1.2rem] p-1 border border-white/10 backdrop-blur-sm">
+              <div className="flex items-center gap-1 mr-2 bg-white rounded-[1.2rem] p-1 border-2 border-slate-100 shadow-sm">
                 <button
                   onClick={() => setZoomLevel(prev => Math.max(0.5, prev - 0.25))}
-                  className="w-8 h-8 flex items-center justify-center rounded-xl text-white/50 hover:text-white hover:bg-white/10 transition-colors"
+                  className="w-8 h-8 flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-colors"
                   title="Zoom Out"
                 >
                   <ZoomOut size={16} />
                 </button>
-                <div className="text-[10px] font-black text-white/50 w-8 text-center">{Math.round(zoomLevel * 100)}%</div>
+                <div className="text-[10px] font-black text-slate-400 w-8 text-center">{Math.round(zoomLevel * 100)}%</div>
                 <button
                   onClick={() => setZoomLevel(prev => Math.min(3, prev + 0.25))}
-                  className="w-8 h-8 flex items-center justify-center rounded-xl text-white/50 hover:text-white hover:bg-white/10 transition-colors"
+                  className="w-8 h-8 flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-colors"
                   title="Zoom In"
                 >
                   <ZoomIn size={16} />
@@ -353,7 +353,7 @@ Return ONLY the JSON array.`;
                   setEditingNotes(JSON.stringify(interactiveNotes, null, 2));
                   setShowEditor(true);
                 }}
-                className="w-10 h-10 flex items-center justify-center bg-white/10 hover:bg-amber-500/20 text-amber-400 rounded-[1.2rem] border border-white/20 hover:border-amber-500/30 shadow-sm transition-all active:scale-95 group/btn"
+                className="w-10 h-10 flex items-center justify-center bg-amber-50 hover:bg-amber-100 text-amber-500 rounded-[1.2rem] border-2 border-amber-200 shadow-sm transition-all active:scale-95 group/btn"
                 title="Edit Interactive Notes"
               >
                 <Database size={18} className="stroke-[2.5] group-hover/btn:scale-110 transition-transform" />
@@ -362,7 +362,7 @@ Return ONLY the JSON array.`;
 
             <button 
               onClick={() => setAssistMode(!assistMode)}
-              className={`w-10 h-10 flex items-center justify-center rounded-[1.2rem] border transition-all active:scale-95 group/btn ${assistMode ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' : 'bg-white/10 text-white border-white/20 hover:bg-white hover:text-slate-900'}`}
+              className={`w-10 h-10 flex items-center justify-center rounded-[1.2rem] border-2 transition-all active:scale-95 group/btn ${assistMode ? 'bg-blue-50 text-blue-500 border-blue-200' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50 hover:text-slate-900 shadow-sm'}`}
               title="Assist Mode"
             >
               <Languages size={18} className="stroke-[2.5] group-hover/btn:scale-110 transition-transform" />
@@ -371,7 +371,7 @@ Return ONLY the JSON array.`;
             {assistMode && (
               <button 
                 onClick={() => setCharType(charType === 'traditional' ? 'simplified' : 'traditional')}
-                className="px-3 h-10 rounded-[1.2rem] text-xs font-black border border-white/20 text-white bg-white/10 hover:bg-white hover:text-slate-900 transition-all active:scale-95"
+                className="px-3 h-10 rounded-[1.2rem] text-xs font-black border-2 border-slate-200 text-slate-600 bg-white hover:bg-slate-50 hover:text-slate-900 shadow-sm transition-all active:scale-95"
               >
                 {charType === 'traditional' ? '繁' : '簡'}
               </button>
@@ -389,12 +389,12 @@ Return ONLY the JSON array.`;
           {viewMode === 'summary' ? (
             <div className="max-w-4xl mx-auto p-10 space-y-12 min-h-screen">
               <div className="flex items-center gap-4 mb-8">
-                <div className="w-12 h-12 flex items-center justify-center rounded-[1.2rem] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 backdrop-blur-sm">
+                <div className="w-12 h-12 flex items-center justify-center rounded-[1.2rem] bg-emerald-50 text-emerald-500 border border-emerald-100">
                   <Sparkles size={24} />
                 </div>
                 <div>
-                  <h2 className="text-3xl font-black text-white uppercase tracking-tight">Revision Summary</h2>
-                  <p className="text-xs font-black text-white/50 uppercase tracking-[0.2em] mt-1">Core Concepts & Key Takeaways</p>
+                  <h2 className="text-3xl font-black text-slate-800 uppercase tracking-tight">Revision Summary</h2>
+                  <p className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mt-1">Core Concepts & Key Takeaways</p>
                 </div>
               </div>
               
@@ -409,14 +409,14 @@ Return ONLY the JSON array.`;
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: idx * 0.05 }}
                       key={idx}
-                      className={`p-8 bg-white/5 rounded-[2rem] border transition-all group backdrop-blur-xl shadow-xl ${assistMode ? 'border-emerald-500/30 shadow-emerald-500/10 hover:bg-white/10' : 'border-white/10 hover:bg-white/10'}`}
+                      className={`p-8 bg-white rounded-[2rem] border-2 transition-all group shadow-sm ${assistMode ? 'border-emerald-200 shadow-emerald-50 hover:shadow-md' : 'border-slate-100 hover:shadow-md'}`}
                     >
                       <div className="flex items-start gap-6">
-                        <div className={`w-10 h-10 flex-shrink-0 rounded-[1.2rem] flex items-center justify-center font-black text-sm transition-colors border ${assistMode ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-white/10 text-white/50 border-white/10 group-hover:bg-white/20 group-hover:text-white'}`}>
+                        <div className={`w-10 h-10 flex-shrink-0 rounded-[1.2rem] flex items-center justify-center font-black text-sm transition-colors border-2 ${assistMode ? 'bg-emerald-50 text-emerald-500 border-emerald-100' : 'bg-slate-50 text-slate-400 border-slate-100 group-hover:bg-slate-100 group-hover:text-slate-600'}`}>
                           {idx + 1}
                         </div>
                         <div className="flex-1 space-y-4">
-                          <p className="text-[15px] font-bold text-white/90 leading-relaxed tracking-tight">
+                          <p className="text-[15px] font-bold text-slate-700 leading-relaxed tracking-tight">
                             {concept as unknown as string}
                           </p>
                           <AnimatePresence>
@@ -427,8 +427,8 @@ Return ONLY the JSON array.`;
                                 exit={{ opacity: 0, height: 0 }}
                                 className="overflow-hidden"
                               >
-                                <div className="pt-5 border-t border-white/10 mt-2">
-                                  <p className="text-[13px] font-black text-emerald-400 leading-relaxed italic opacity-90">
+                                <div className="pt-5 border-t-2 border-slate-50 mt-2">
+                                  <p className="text-[13px] font-black text-emerald-600 leading-relaxed italic opacity-90">
                                     {translation}
                                   </p>
                                 </div>
@@ -465,12 +465,12 @@ Return ONLY the JSON array.`;
                       key={`row_${pageNum}`} 
                       data-page-index={pageNum}
                       ref={el => pageRefs.current[pageNum] = el}
-                      className="flex border-b border-white/10 min-h-[70vh] scroll-mt-20"
+                      className="flex border-b border-slate-200 min-h-[70vh] scroll-mt-20"
                     >
                       {/* Left: PDF Page */}
-                      <div className="w-1/2 p-4 md:p-8 flex justify-center items-start border-r border-white/10 relative overflow-hidden">
+                      <div className="w-1/2 p-4 md:p-8 flex justify-center items-start border-r border-slate-200 relative overflow-hidden bg-slate-50">
                         <div 
-                          className="shadow-2xl rounded-lg overflow-auto bg-white ring-1 ring-white/20 sticky top-24 max-w-full max-h-[80vh] custom-scrollbar"
+                          className="shadow-md rounded-lg overflow-auto bg-white ring-1 ring-slate-200 sticky top-24 max-w-full max-h-[80vh] custom-scrollbar"
                         >
                           <Page 
                             pageNumber={pageNum} 
@@ -482,13 +482,13 @@ Return ONLY the JSON array.`;
                       </div>
 
                       {/* Right: Notes Page */}
-                      <div className="w-1/2 p-12 space-y-10 group">
+                      <div className="w-1/2 p-12 space-y-10 group bg-transparent">
                         <div className="flex items-center justify-between gap-4">
                           <div className="flex items-center gap-4 flex-1">
-                            <span className="text-[10px] font-black text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-[1.2rem] border border-emerald-500/20 uppercase tracking-widest backdrop-blur-sm">
+                            <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-3 py-1 rounded-[1.2rem] border border-emerald-100 uppercase tracking-widest backdrop-blur-sm">
                               Page {pageNum} Insights
                             </span>
-                            <div className="h-px flex-1 bg-white/10" />
+                            <div className="h-px flex-1 bg-slate-200" />
                           </div>
                           
                           <div className="flex items-center gap-2">
@@ -497,7 +497,7 @@ Return ONLY the JSON array.`;
                                 setActiveStickyInputPage(activeStickyInputPage === pageNum ? null : pageNum);
                                 setNewStickyContent("");
                               }}
-                              className={`flex items-center gap-2 px-3 py-1.5 rounded-[1.2rem] text-[9px] font-black uppercase tracking-widest transition-all ${activeStickyInputPage === pageNum ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-orange-500/10 text-orange-400 border border-orange-500/20 hover:bg-orange-500/20 opacity-0 group-hover:opacity-100'}`}
+                              className={`flex items-center gap-2 px-3 py-1.5 rounded-[1.2rem] text-[9px] font-black uppercase tracking-widest transition-all shadow-sm ${activeStickyInputPage === pageNum ? 'bg-red-50 text-red-500 border border-red-200' : 'bg-orange-50 text-orange-500 border border-orange-200 hover:bg-orange-100 opacity-0 group-hover:opacity-100'}`}
                             >
                               {activeStickyInputPage === pageNum ? <X size={12} /> : <Plus size={12} />}
                               {activeStickyInputPage === pageNum ? 'Cancel' : 'Add Post-it'}
@@ -510,18 +510,18 @@ Return ONLY the JSON array.`;
                           {hasOfficial && (
                             <div className="space-y-8">
                               {notesByPage[pageNum].map((note) => (
-                                <div key={note.id} className="relative pl-6 border-l-4 border-emerald-500/30 hover:border-emerald-400 transition-colors">
-                                  <h3 className="text-sm font-black text-white uppercase tracking-tight mb-3 flex items-center gap-2 group-hover:text-emerald-400">
-                                    <Zap size={14} className="text-emerald-400" />
+                                <div key={note.id} className="relative pl-6 border-l-4 border-emerald-200 hover:border-emerald-400 transition-colors">
+                                  <h3 className="text-sm font-black text-slate-800 uppercase tracking-tight mb-3 flex items-center gap-2 group-hover:text-emerald-500">
+                                    <Zap size={14} className="text-emerald-500" />
                                     {note.title}
                                   </h3>
-                                  <div className="p-6 bg-white/5 rounded-[2rem] border border-white/10 group-hover:bg-white/10 transition-all shadow-xl backdrop-blur-xl">
-                                    <p className="text-[13px] font-bold text-white/80 leading-relaxed">
+                                  <div className="p-6 bg-white rounded-[2rem] border-2 border-slate-100 group-hover:shadow-md transition-all shadow-sm">
+                                    <p className="text-[13px] font-bold text-slate-600 leading-relaxed">
                                       {note.content}
                                     </p>
                                     {assistMode && note.translation && (
-                                      <div className="mt-4 pt-4 border-t border-white/10">
-                                        <p className="text-[11px] font-black text-emerald-400 italic opacity-90">
+                                      <div className="mt-4 pt-4 border-t border-slate-100">
+                                        <p className="text-[11px] font-black text-emerald-600 italic opacity-90">
                                           {note.translation}
                                         </p>
                                       </div>
@@ -539,13 +539,13 @@ Return ONLY the JSON array.`;
                                 initial={{ opacity: 0, scale: 0.95, y: -10 }}
                                 animate={{ opacity: 1, scale: 1, y: 0 }}
                                 exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                                className="bg-orange-500/10 p-6 rounded-[2.5rem] border border-orange-500/20 shadow-xl backdrop-blur-xl"
+                                className="bg-white/40 backdrop-blur-xl p-6 rounded-[2rem] border border-white/40 shadow-xl"
                               >
                                 <textarea 
                                   value={newStickyContent}
                                   onChange={(e) => setNewStickyContent(e.target.value)}
                                   placeholder="Annotate this page with your observations..."
-                                  className="w-full bg-white/5 rounded-2xl p-5 text-sm font-bold border border-white/10 text-white placeholder-white/30 outline-none focus:border-orange-500/50 transition-all resize-none min-h-[100px]"
+                                  className="w-full bg-white/50 backdrop-blur-md rounded-[1.2rem] p-5 text-sm font-bold border border-white/40 text-slate-800 placeholder-slate-400 outline-none focus:border-orange-400 transition-all resize-none min-h-[100px]"
                                 />
                                 <div className="flex items-center justify-between mt-4">
                                   <div className="flex gap-2">
@@ -560,10 +560,12 @@ Return ONLY the JSON array.`;
                                   <button 
                                     onClick={() => handleAddSticky(pageNum)}
                                     disabled={!newStickyContent.trim() || isSaving}
-                                    className="px-6 py-2.5 bg-white/10 hover:bg-white text-white hover:text-slate-900 border border-white/20 rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] shadow-md active:scale-95 transition-all disabled:opacity-50 flex items-center gap-2 group/btn"
+                                    className="px-4 py-2.5 bg-orange-50 hover:bg-orange-500 text-orange-600 hover:text-white border border-orange-200 rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] transition-all duration-300 disabled:opacity-50 flex items-center gap-3 group/btn shadow-sm"
                                   >
-                                    {isSaving ? <RefreshCw size={12} className="animate-spin" /> : <Send size={12} className="group-hover/btn:scale-110 transition-transform" />}
-                                    Preserve Note
+                                    <div className="w-7 h-7 rounded-[0.6rem] bg-orange-500/10 group-hover/btn:bg-white/20 group-hover/btn:scale-110 flex items-center justify-center transition-all text-current">
+                                      {isSaving ? <RefreshCw size={12} className="animate-spin" /> : <Send size={12} />}
+                                    </div>
+                                    Save note
                                   </button>
                                 </div>
                               </motion.div>
@@ -575,12 +577,12 @@ Return ONLY the JSON array.`;
                             <div className="grid grid-cols-1 gap-4">
                               {stickyByPage[pageNum].map(note => (
                                 <div key={note.id} className="relative group/note">
-                                  <div className={`p-6 rounded-[2rem] border transition-all shadow-xl backdrop-blur-xl ${colorOptions.find(c => c.name === (note as any).color)?.bg || 'bg-white/5'} ${colorOptions.find(c => c.name === (note as any).color)?.border || 'border-white/10'} hover:shadow-2xl hover:scale-[1.01]`} style={{ backgroundColor: colorOptions.find(c => c.name === (note as any).color)?.bg.includes('bg-white') ? 'rgba(255,255,255,0.05)' : undefined }}>
-                                    <p className="text-[12px] font-black leading-relaxed italic" style={{ color: colorOptions.find(c => c.name === (note as any).color)?.bg.includes('bg-white') ? 'rgba(255,255,255,0.8)' : undefined }}>
+                                  <div className={`p-6 rounded-[2rem] border transition-all backdrop-blur-xl shadow-xl ${colorOptions.find(c => c.name === (note as any).color)?.bg || 'bg-white/40'} border-white/40 hover:shadow-2xl hover:scale-[1.01]`}>
+                                    <p className="text-[12px] font-black leading-relaxed italic text-slate-800">
                                       "{note.content}"
                                     </p>
                                     <div className="flex items-center justify-between mt-4">
-                                      <div className="flex items-center gap-2 opacity-40 text-current">
+                                      <div className="flex items-center gap-2 opacity-40 text-slate-600">
                                         <Clock size={10} />
                                         <p className="text-[8px] font-black uppercase tracking-widest">
                                           {new Date(note.createdAt).toLocaleDateString()}
@@ -588,7 +590,7 @@ Return ONLY the JSON array.`;
                                       </div>
                                       <button 
                                         onClick={() => handleDeleteSticky(note.id)}
-                                        className="p-1.5 text-current opacity-0 group-hover/note:opacity-50 hover:!opacity-100 transition-all hover:text-red-400"
+                                        className="p-1.5 text-slate-400 opacity-0 group-hover/note:opacity-100 transition-all hover:text-red-500"
                                       >
                                         <Trash2 size={14} />
                                       </button>
@@ -600,9 +602,9 @@ Return ONLY the JSON array.`;
                           )}
 
                           {!hasOfficial && !hasPersonal && !activeStickyInputPage && (
-                            <div className="py-12 text-center border border-dashed border-white/10 rounded-[2rem] bg-white/5 flex flex-col items-center justify-center gap-3">
-                              <BookOpen size={24} className="text-white/20" />
-                              <p className="text-[10px] font-black text-white/30 uppercase tracking-widest">Awaiting scientific observations...</p>
+                            <div className="py-12 text-center border-2 border-dashed border-slate-200 rounded-[2rem] bg-slate-50 flex flex-col items-center justify-center gap-3">
+                              <BookOpen size={24} className="text-slate-300" />
+                              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Awaiting scientific observations...</p>
                             </div>
                           )}
                         </div>
@@ -618,41 +620,41 @@ Return ONLY the JSON array.`;
 
       <AnimatePresence>
         {showEditor && (
-          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-3xl z-[100] flex items-center justify-center p-6">
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-3xl z-[100] flex items-center justify-center p-6">
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white/5 border border-white/20 rounded-[2.5rem] p-10 max-w-2xl w-full shadow-2xl flex flex-col max-h-[90vh] backdrop-blur-xl"
+              className="bg-white border-2 border-slate-100 rounded-[2.5rem] p-10 max-w-2xl w-full shadow-2xl flex flex-col max-h-[90vh]"
             >
               <div className="flex justify-between items-start mb-8">
                 <div className="flex items-center gap-4">
-                  <div className="bg-amber-500/10 p-3 rounded-[1.2rem] text-amber-400 shadow-sm border border-amber-500/20 backdrop-blur-sm">
+                  <div className="bg-amber-50 p-3 rounded-[1.2rem] text-amber-500 shadow-sm border border-amber-100">
                     <Database size={24} />
                   </div>
                   <div>
-                    <h3 className="text-2xl font-black text-white uppercase tracking-tighter">Sync Repository</h3>
-                    <p className="text-[10px] font-black text-white/50 uppercase tracking-widest mt-0.5">Unit {unit.id} • Dynamic Hub JSON</p>
+                    <h3 className="text-2xl font-black text-slate-800 uppercase tracking-tighter">Sync Repository</h3>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">Unit {unit.id} • Dynamic Hub JSON</p>
                   </div>
                 </div>
                 
                 <div className="flex items-center gap-3">
                   <button
                     onClick={copyAIPrompt}
-                    className="px-6 py-3 rounded-2xl font-black uppercase text-[10px] text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 tracking-widest transition-all flex items-center gap-2 group/btn"
+                    className="px-6 py-3 rounded-2xl font-black uppercase text-[10px] text-amber-500 bg-amber-50 hover:bg-amber-100 border border-amber-200 tracking-widest transition-all flex items-center gap-2 group/btn"
                   >
-                    <div className="w-5 h-5 flex items-center justify-center bg-amber-500/20 rounded-lg group-hover/btn:scale-110 transition-transform"><Copy size={12} /></div> Copy Prompt
+                    <div className="w-5 h-5 flex items-center justify-center bg-amber-200/50 rounded-lg group-hover/btn:scale-110 transition-transform"><Copy size={12} /></div> Copy Prompt
                   </button>
                   <button
                     onClick={() => setShowEditor(false)}
-                    className="px-6 py-3 rounded-2xl font-black uppercase text-[10px] text-white bg-white/10 hover:bg-white border border-white/20 hover:text-slate-900 tracking-widest transition-all group/btn"
+                    className="px-6 py-3 rounded-2xl font-black uppercase text-[10px] text-slate-500 bg-slate-100 hover:bg-slate-200 border border-slate-200 hover:text-slate-800 tracking-widest transition-all group/btn"
                     disabled={isSaving}
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleSaveNotes}
-                    className="px-8 py-3 bg-emerald-500 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest flex items-center gap-2 disabled:opacity-50 hover:bg-emerald-400 transition-all border border-emerald-400 group/btn shadow-xl shadow-emerald-500/20"
+                    className="px-8 py-3 bg-emerald-500 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest flex items-center gap-2 disabled:opacity-50 hover:bg-emerald-600 transition-all border border-emerald-600 group/btn shadow-[0_4px_0_0_#059669] active:shadow-none active:translate-y-1"
                     disabled={isSaving}
                   >
                     <div className="w-5 h-5 flex items-center justify-center bg-white/20 rounded-lg group-hover/btn:scale-110 transition-transform">
@@ -663,14 +665,14 @@ Return ONLY the JSON array.`;
                 </div>
               </div>
 
-              <div className="bg-white/5 rounded-[1.2rem] p-6 border border-white/10 mb-8 space-y-3">
-                <p className="text-[10px] font-black text-white/50 uppercase tracking-widest leading-relaxed">JSON Cleaner active: Auto-detects schema & repairs missing IDs.</p>
+              <div className="bg-slate-50 rounded-[1.2rem] p-6 border-2 border-slate-100 mb-8 space-y-3">
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-relaxed">JSON Cleaner active: Auto-detects schema & repairs missing IDs.</p>
               </div>
 
               <textarea
                 value={editingNotes}
                 onChange={(e) => setEditingNotes(e.target.value)}
-                className="w-full flex-1 min-h-[300px] p-6 rounded-[1.5rem] border border-white/10 font-mono text-xs leading-relaxed resize-none focus:border-emerald-500/50 outline-none custom-scrollbar bg-black/20 text-emerald-400 shadow-inner"
+                className="w-full flex-1 min-h-[300px] p-6 rounded-[1.5rem] border-2 border-slate-200 font-mono text-xs leading-relaxed resize-none focus:border-emerald-400 outline-none custom-scrollbar bg-slate-50 text-slate-700 shadow-inner"
                 placeholder="Paste JSON array here..."
               />
             </motion.div>

@@ -770,7 +770,7 @@ JSON OUTPUT: { "questions": [{ "id": "string", "score": "X of X", "feedback": "s
                 <div className="p-3 bg-emerald-500/20 rounded-xl text-emerald-400 border border-emerald-500/20">
                   <Sparkles size={18} className="animate-pulse" />
                 </div>
-                <span className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em]">AI Engine</span>
+                <span className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em]">Large Language Model (LLM) Deployed</span>
               </div>
               <div>
                 <p className="text-2xl font-black text-white tracking-tighter leading-none mb-1">Gemini 3.1 Flash</p>
@@ -2123,7 +2123,7 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
                                      <p className="text-[9px] font-black text-white/60 uppercase tracking-[0.2em]">Subject</p>
                                    </div>
                                  </div>
-                                 <div className={`px-3 py-1 rounded-xl border text-[8px] font-black uppercase tracking-[0.2em] shadow-sm ${statusColor.replace('bg-emerald-500/10 text-emerald-500 border-emerald-500/20', 'bg-white/20 text-white border-white/20').replace('bg-rose-500/10 text-rose-500 border-rose-500/20', 'bg-white/20 text-white border-white/20').replace('bg-blue-500/10 text-blue-500 border-blue-500/20', 'bg-white/20 text-white border-white/20')}`}>
+                                 <div className="hidden">
                                    {statusText}
                                  </div>
                                </div>
@@ -2273,8 +2273,27 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
                                <p className="text-[9px] font-black text-white/60 uppercase tracking-[0.2em]">{isTest ? (task.isABVersion ? 'SECURE EXAM A/B' : 'SECURE EXAM') : 'ASSIGNMENT'}</p>
                             </div>
                           </div>
-                          <div className="px-3 py-1 rounded-xl border text-[8px] font-black uppercase tracking-[0.2em] shadow-sm bg-white/20 text-white border-white/20">
-                             {isCompleted ? 'DONE' : isTest ? 'TEST' : 'WORKSHEET'}
+                          
+                          <div className="flex items-center gap-2">
+                            {isAdmin && isTest && (
+                              <div 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setRevealedKeys(prev => {
+                                    const newSet = new Set(prev);
+                                    if (newSet.has(task.id)) newSet.delete(task.id);
+                                    else newSet.add(task.id);
+                                    return newSet;
+                                  });
+                                }}
+                                className="bg-red-600/50 hover:bg-red-600 text-white px-2 py-1 rounded-xl text-[8px] font-black uppercase tracking-widest shadow-sm border border-red-400/30 cursor-pointer transition-colors whitespace-nowrap"
+                              >
+                                {revealedKeys.has(task.id) ? `KEY: ${task.passcode}` : 'CLICK TO REVEAL KEY'}
+                              </div>
+                            )}
+                            <div className="px-3 py-1 rounded-xl border text-[8px] font-black uppercase tracking-[0.2em] shadow-sm bg-white/20 text-white border-white/20 whitespace-nowrap shrink-0">
+                               {isCompleted ? 'DONE' : isTest ? 'TEST' : 'WORKSHEET'}
+                            </div>
                           </div>
                         </div>
 
@@ -2295,22 +2314,7 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
                           </p>
                         )}
 
-                        {isAdmin && isTest && (
-                          <div 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setRevealedKeys(prev => {
-                                const newSet = new Set(prev);
-                                if (newSet.has(task.id)) newSet.delete(task.id);
-                                else newSet.add(task.id);
-                                return newSet;
-                              });
-                            }}
-                            className="self-center bg-red-600/50 hover:bg-red-600 text-white px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest shadow-lg border border-red-400/30 mb-4 cursor-pointer transition-colors"
-                          >
-                            {revealedKeys.has(task.id) ? `KEY: ${task.passcode}` : 'CLICK TO REVEAL KEY'}
-                          </div>
-                        )}
+
 
                         <div className="flex items-center gap-2 mt-auto pt-2">
                            {isAdmin && (

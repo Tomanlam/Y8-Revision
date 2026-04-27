@@ -50,13 +50,13 @@ const COMMAND_TERMS: Record<string, string> = {
   justify: "Give valid reasons or evidence to support an answer or conclusion."
 };
 
-const QuestionTextWithCommandTerms = ({ text }: { text: string }) => {
+const QuestionTextWithCommandTerms = ({ text, className }: { text: string, className?: string }) => {
   if (!text) return null;
   const regex = new RegExp(`\\b(${Object.keys(COMMAND_TERMS).join('|')})\\b`, 'gi');
   const parts = text.split(regex);
 
   return (
-    <h4 className="font-helvetica font-black text-gray-800 text-lg leading-tight pt-1">
+    <h4 className={`font-helvetica font-black text-lg leading-tight pt-1 ${className || 'text-gray-800'}`}>
       {parts.map((part, i) => {
         const lowerPart = part.toLowerCase();
         if (COMMAND_TERMS[lowerPart]) {
@@ -65,7 +65,7 @@ const QuestionTextWithCommandTerms = ({ text }: { text: string }) => {
               key={i} 
               className="relative inline-block group cursor-help"
             >
-              <span className="text-orange-500 font-black border-b-2 border-orange-200 transition-all group-hover:border-orange-500 group-hover:text-orange-600">
+              <span className={`font-black border-b-2 transition-all ${className ? 'text-white border-white/40 group-hover:border-white' : 'text-orange-500 border-orange-200 group-hover:border-orange-500 group-hover:text-orange-600'}`}>
                 {part}
               </span>
               <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-64 pointer-events-none z-[100] transition-all duration-200 opacity-0 group-hover:opacity-100 group-hover:translate-y-0 translate-y-1">
@@ -819,91 +819,96 @@ OUTPUT: Plain text paragraph.`;
         )}
       </AnimatePresence>
 
-      <header className="h-20 border-b border-red-50 px-8 flex items-center justify-between bg-white/80 backdrop-blur-xl sticky top-0 z-[100]">
-        <div className="flex items-center gap-6">
-          <button onClick={onBack} className="p-3 hover:bg-red-50 rounded-2xl transition-all text-gray-400 hover:text-red-600 group">
-            <ChevronLeft size={28} className="group-hover:-translate-x-1 transition-transform" />
-          </button>
-          <div className="h-10 w-px bg-red-100" />
-          <div className="flex flex-col">
-            <div className="flex items-center gap-2 mb-1">
-               <span className="px-2 py-0.5 bg-red-600 text-white rounded text-[9px] font-black uppercase tracking-widest">Secure Assessment</span>
-               {task.subject && <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">{task.subject}</span>}
+      <header className="bg-white/5 backdrop-blur-md border-b border-white/10 p-4 shrink-0 sticky top-0 z-[100] shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07)]">
+        <div className="max-w-screen-2xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-5">
+            <button 
+              onClick={onBack}
+              className="w-10 h-10 flex items-center justify-center bg-white hover:bg-red-50 border-2 border-slate-200 hover:border-red-200 hover:text-red-600 rounded-[1.2rem] text-slate-500 transition-all active:scale-95 group/btn shadow-sm"
+            >
+              <ChevronLeft size={20} className="stroke-[3] group-hover/btn:-translate-x-1 transition-transform" />
+            </button>
+            <div className="h-8 w-px bg-slate-200 mx-1" />
+            <div className="flex flex-col">
+              <h1 className="text-xl font-black text-slate-800 uppercase tracking-tight leading-none">{task.title}</h1>
+              <div className="flex items-center gap-2 mt-1.5">
+                <span className="text-[9px] font-black text-red-600 uppercase tracking-[0.2em] px-2 py-0.5 bg-red-50 rounded-md border border-red-100">Secure Assessment</span>
+                {task.subject && <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none">• {task.subject}</span>}
+              </div>
             </div>
-            <h2 className="text-xl font-black text-gray-900 uppercase tracking-tighter truncate max-w-[400px]">
-              {task.title}
-            </h2>
           </div>
-        </div>
 
-        <div className="flex items-center gap-4 bg-gray-50 p-2 rounded-2xl border border-gray-100">
-          <button 
-            onClick={() => setShowSketchpad(!showSketchpad)}
-            className={`p-3 rounded-xl transition-all shadow-sm ${showSketchpad ? 'bg-indigo-600 text-white -rotate-12 scale-110' : 'bg-white text-gray-400 hover:text-gray-900'}`}
-            title="Virtual Sketchpad"
-          >
-            <Pen size={20} />
-          </button>
-          
-          <div className="flex items-center gap-4 px-4 border-r border-gray-200">
-             <div className="flex flex-col items-end">
-                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Time Remaining</span>
-                <span className={`text-sm font-black tracking-widest flex items-center gap-2 ${timeLeft && timeLeft < 300 ? 'text-red-500 animate-pulse' : 'text-gray-900'}`}>
-                  <Timer size={14} /> {formatTime(timeLeft || 0)}
-                </span>
+          <div className="flex items-center gap-3">
+             <div className="hidden md:flex items-center gap-4 bg-white/10 px-6 py-2.5 rounded-[1.2rem] border border-white/10 backdrop-blur-md">
+                <div className="flex flex-col items-end">
+                   <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Time Remaining</span>
+                   <span className={`text-sm font-black tracking-widest leading-none flex items-center gap-1.5 ${timeLeft && timeLeft < 300 ? 'text-red-500 animate-pulse' : 'text-slate-700'}`}>
+                     <Timer size={12} /> {formatTime(timeLeft || 0)}
+                   </span>
+                </div>
              </div>
+
+             <div className="bg-slate-100 p-1.5 rounded-[1.2rem] border border-slate-200 flex items-center gap-1.5">
+               <button 
+                 onClick={() => setShowSketchpad(!showSketchpad)}
+                 className={`flex items-center gap-2 px-4 py-2 rounded-[1.2rem] text-[10px] font-black uppercase tracking-widest transition-all ${showSketchpad ? 'bg-white text-indigo-500 shadow-sm border border-transparent scale-105' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-200/50'}`}
+                 title="Virtual Sketchpad"
+               >
+                 <Pen size={14} className={showSketchpad ? 'text-indigo-500' : ''} /> Sketchpad
+               </button>
+               <button 
+                 onClick={() => setShowCalculator(!showCalculator)}
+                 className={`flex items-center gap-2 px-4 py-2 rounded-[1.2rem] text-[10px] font-black uppercase tracking-widest transition-all ${showCalculator ? 'bg-white text-indigo-500 shadow-sm border border-transparent scale-105' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-200/50'}`}
+                 title="Calculator"
+               >
+                 <Calculator size={14} className={showCalculator ? 'text-indigo-500' : ''} /> Calc
+               </button>
+             </div>
+
+              {isAdmin && (
+                <div className="bg-slate-100 p-1.5 rounded-[1.2rem] border border-slate-200 flex items-center gap-1.5">
+                  <button
+                    onClick={() => {
+                      setEditingQuestions(JSON.stringify(task.worksheetQuestions || [], null, 2));
+                      setShowQuestionsEditor(true);
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 rounded-[1.2rem] text-[10px] font-black uppercase tracking-widest transition-all text-slate-400 hover:text-emerald-600 hover:bg-white border border-transparent hover:border-slate-200 shadow-none hover:shadow-sm"
+                  >
+                    Questions
+                  </button>
+                  <button
+                    onClick={() => {
+                      setEditingMarkscheme(markscheme);
+                      setShowMarkschemeEditor(true);
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 rounded-[1.2rem] text-[10px] font-black uppercase tracking-widest transition-all text-slate-400 hover:text-blue-600 hover:bg-white border border-transparent hover:border-slate-200 shadow-none hover:shadow-sm"
+                  >
+                    Markscheme
+                  </button>
+                </div>
+              )}
+
+             {(!readOnly || isAdmin) && (
+               <button
+                 disabled={isValidating}
+                 onClick={() => {
+                   if (isAdmin && readOnly && !isGradingWorkflow) {
+                     startGradingWorkflow();
+                   } else if (!isGradingWorkflow) {
+                     setShowConfirm(true);
+                   }
+                 }}
+                 className={`ml-3 px-6 py-2.5 rounded-[1.2rem] font-black uppercase text-[10px] tracking-[0.2em] transition-all duration-300 disabled:opacity-50 flex items-center gap-2 group/btn shadow-xl backdrop-blur-xl border ${
+                   isAdmin && readOnly && !isGradingWorkflow
+                     ? 'bg-indigo-600/90 border-indigo-400/50 text-white hover:bg-indigo-500 shadow-indigo-900/20'
+                     : 'bg-red-600/90 border-red-400/50 text-white hover:bg-red-500 shadow-red-900/20'
+                 }`}
+               >
+                 <div className="w-7 h-7 flex items-center justify-center bg-white/20 rounded-[0.6rem] group-hover/btn:scale-110 transition-transform text-current">{isValidating ? <RefreshCw className="animate-spin" size={14} /> : (isAdmin && readOnly && !isGradingWorkflow ? <CheckCircle2 size={14} /> : <Send size={14} />)}</div>
+                 <span>{isValidating ? 'Validating...' : (isAdmin && readOnly && !isGradingWorkflow ? 'Admin Grade' : 'Final Submit')}</span>
+               </button>
+             )}
           </div>
-
-          <button 
-            onClick={() => setShowCalculator(!showCalculator)}
-            className={`p-3 rounded-xl transition-all shadow-sm ${showCalculator ? 'bg-gray-900 text-white rotate-12 scale-110' : 'bg-white text-gray-400 hover:text-gray-900'}`}
-          >
-            <Calculator size={20} />
-          </button>
-
-          {isAdmin && (
-            <div className="flex items-center gap-2 border-l border-gray-200 pl-4 ml-2">
-              <button
-                onClick={() => {
-                  setEditingQuestions(JSON.stringify(task.worksheetQuestions || [], null, 2));
-                  setShowQuestionsEditor(true);
-                }}
-                className="p-3 bg-purple-50 text-purple-600 rounded-xl hover:bg-purple-100 transition-colors"
-                title="Edit Questions"
-              >
-                <Edit size={18} />
-              </button>
-              <button
-                onClick={() => {
-                  setEditingMarkscheme(markscheme);
-                  setShowMarkschemeEditor(true);
-                }}
-                className="p-3 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-colors"
-                title="Edit Markscheme"
-              >
-                <FileText size={18} />
-              </button>
-            </div>
-          )}
-          
-          {(!readOnly || isAdmin) && (
-            <div className="pl-4 ml-2 border-l border-gray-200">
-              <button
-                disabled={isValidating}
-                onClick={() => {
-                  if (isAdmin && readOnly && !isGradingWorkflow) {
-                    startGradingWorkflow();
-                  } else if (!isGradingWorkflow) {
-                    setShowConfirm(true);
-                  }
-                }}
-                className="bg-red-600 text-white px-8 py-3 rounded-xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-red-100 hover:bg-red-700 active:translate-y-1 active:shadow-none transition-all disabled:opacity-50 flex items-center gap-3"
-              >
-                {isValidating ? <RefreshCw className="animate-spin" size={16} /> : <Send size={16} />}
-                {isValidating ? 'Validating...' : (isAdmin && readOnly ? 'Evaluate Performance' : 'Final Submit')}
-              </button>
-            </div>
-          )}
         </div>
       </header>
 
@@ -1134,39 +1139,40 @@ OUTPUT: Plain text paragraph.`;
                         initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
-                        className={`p-10 rounded-[3rem] border-2 transition-all duration-300 relative group overflow-hidden ${
-                          isProcessing ? 'border-red-500 ring-8 ring-red-500/10' :
-                          feedback ? (
-                            isCorrect ? 'bg-emerald-50/50 border-emerald-200' : 
-                            isPartial ? 'bg-orange-50/50 border-orange-200' :
-                            'bg-red-50/50 border-red-100'
-                          ) :
-                          isAnswered 
-                            ? 'bg-white border-red-200 shadow-xl shadow-red-50' 
-                            : 'bg-white border-white shadow-lg shadow-gray-100 hover:border-red-100'
+                        className={`rounded-[3rem] transition-all duration-300 relative group overflow-hidden flex flex-col shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 hover:shadow-xl hover:-translate-y-1 ${
+                          isProcessing ? 'ring-8 ring-red-500/10' : ''
                         }`}
                       >
-                        {(isAnswered || feedback) && (
-                          <div className="absolute top-0 right-0 p-6">
-                            <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className={`p-2 rounded-full ${isCorrect ? 'bg-emerald-100 text-emerald-600' : isPartial ? 'bg-orange-100 text-orange-600' : 'bg-red-50 text-red-600'}`}>
-                              {isCorrect ? <CheckCircle2 size={16} /> : isPartial ? <AlertCircle size={16} /> : <X size={16} />}
-                            </motion.div>
-                          </div>
-                        )}
-
-                        <div className="flex items-start gap-6 mb-10">
-                          <div className={`flex-shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center font-black text-lg shadow-xl relative overflow-hidden group/num transition-all duration-500 ${
-                            isAnswered 
-                              ? 'bg-gradient-to-br from-red-500 to-rose-600 text-white shadow-red-200 ring-2 ring-red-400 ring-offset-2' 
-                              : 'bg-white text-gray-400 border-2 border-gray-100 hover:border-red-200'
-                          }`}>
-                            {isAnswered && <div className="absolute inset-0 bg-white/20 backdrop-blur-sm" />}
-                            <span className="relative z-10">{idx + 1}</span>
-                          </div>
-                          <div className="pt-2">
-                            <QuestionTextWithCommandTerms text={typedQ.question} />
+                        <div className="px-6 py-4 sm:px-8 sm:py-5 bg-red-600">
+                          <div className="flex flex-col gap-2">
+                            <div className="flex items-center justify-between">
+                              <div className={`inline-flex items-center px-3 py-1 rounded-[0.8rem] font-black text-[10px] uppercase tracking-widest shadow-sm bg-white/20 text-white border border-white/30 backdrop-blur-sm`}>
+                                Question {idx + 1}
+                              </div>
+                              {isAnswered && !feedback && <div className="w-5 h-5 bg-white text-red-500 rounded-full flex items-center justify-center shadow-lg"><CheckCircle2 size={12} className="stroke-[3]" /></div>}
+                            </div>
+                            <div className="text-white pt-1">
+                              <QuestionTextWithCommandTerms text={typedQ.question} className="text-white drop-shadow-sm" />
+                            </div>
                           </div>
                         </div>
+
+                        <div className={`px-6 py-5 sm:px-8 sm:py-6 bg-white relative transition-colors duration-500 ${
+                          feedback ? (
+                            isCorrect ? 'bg-emerald-50/10' : 
+                            isPartial ? 'bg-orange-50/10' :
+                            'bg-red-50/10'
+                          ) : ''
+                        }`}>
+                          {(isAnswered || feedback) && (
+                            <div className="absolute top-0 right-0 p-6 z-20">
+                              <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className={`p-2 rounded-full ${isCorrect ? 'bg-emerald-100 text-emerald-600' : isPartial ? 'bg-orange-100 text-orange-600' : 'bg-red-50 text-red-600'}`}>
+                                {isCorrect ? <CheckCircle2 size={16} /> : isPartial ? <AlertCircle size={16} /> : <X size={16} />}
+                              </motion.div>
+                            </div>
+                          )}
+
+                          <div className="relative z-10">
 
                         {typedQ.type === 'mcq' && (
                           <div className="grid gap-2">
@@ -1348,6 +1354,8 @@ OUTPUT: Plain text paragraph.`;
                             </p>
                           </motion.div>
                         )}
+                        </div>
+                        </div>
                       </motion.div>
                     );
                   })}
@@ -1586,7 +1594,7 @@ OUTPUT: Plain text paragraph.`;
                    transition={{ delay: 0.6 }}
                    className="text-gray-500 font-bold text-lg"
                 >
-                  The AI Engine has successfully evaluated all test responses. Performance metrics and cheat logs have been compiled into the final report.
+                  The Large Language Model (LLM) Deployed has successfully evaluated all test responses. Performance metrics and cheat logs have been compiled into the final report.
                 </motion.p>
               </div>
 
