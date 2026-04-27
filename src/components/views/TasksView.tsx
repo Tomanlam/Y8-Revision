@@ -1142,22 +1142,22 @@ Output ONLY the JSON object.`;
       {/* Passcode Unlock Modal */}
       <AnimatePresence>
         {isPasscodeModalOpen && selectedTaskForPasscode && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[600] flex items-center justify-center p-6">
+          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[600] flex items-center justify-center p-6">
             <motion.div 
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className={`bg-white ${isAdmin ? 'rounded-[3rem] p-6 lg:p-10 shadow-xl border-4 border-red-50 max-w-6xl flex flex-col max-h-[95vh] w-full' : 'rounded-[2.5rem] p-10 max-w-md w-full shadow-2xl border-4 border-red-50'}`}
+              className={isAdmin ? 'bg-white/10 backdrop-blur-xl border border-white/20 text-white rounded-[3rem] p-6 lg:p-10 shadow-xl max-w-6xl flex flex-col max-h-[95vh] w-full' : 'bg-white rounded-[2.5rem] p-10 max-w-md w-full shadow-2xl border-4 border-red-50'}
             >
               {isAdmin ? (
-                <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-8 shrink-0 pb-6 border-b-2 border-gray-50">
+                <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-8 shrink-0 pb-6 border-b border-white/10">
                   <div className="flex items-center gap-5">
-                    <div className="w-14 h-14 bg-red-50 rounded-[1.5rem] flex items-center justify-center text-red-500 shadow-inner">
+                    <div className="w-14 h-14 bg-white/20 rounded-[1.5rem] border border-white/20 flex items-center justify-center text-white shadow-inner">
                       <Lock size={28} />
                     </div>
                     <div>
-                      <h2 className="text-2xl font-black text-gray-800 uppercase tracking-tight">Assessment Controls</h2>
-                      <p className="text-gray-500 font-medium text-sm">Update the test name, passcodes, questions, and markscheme.</p>
+                      <h2 className="text-2xl font-black text-white uppercase tracking-tight">Edit Test Details (Case sensitive)</h2>
+                      <p className="text-white/60 font-medium text-[10px] tracking-widest uppercase">Update the test name, passcodes, questions, and markscheme.</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 w-full md:w-auto">
@@ -1171,7 +1171,7 @@ Output ONLY the JSON object.`;
                         setEditingTaskQuestionsJson('');
                         setEditingTaskMarkscheme('');
                       }}
-                      className="flex-1 md:flex-none px-6 py-3 rounded-2xl font-black uppercase tracking-widest text-[10px] text-gray-400 hover:bg-gray-50 border-2 border-transparent transition-colors shadow-sm active:scale-95"
+                      className="flex-1 md:flex-none px-6 py-3 rounded-2xl font-black uppercase tracking-widest text-[10px] text-white/60 hover:bg-white/10 hover:text-white border border-transparent transition-all"
                     >
                       Discard
                     </button>
@@ -1201,9 +1201,9 @@ Output ONLY the JSON object.`;
                           setEditingTaskMarkscheme('');
                         }
                       }}
-                      className="flex-1 md:flex-none bg-red-500 hover:bg-red-400 text-white px-8 py-3 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-[0_4px_0_0_#ef4444] active:translate-y-1 active:shadow-none transition-all"
+                      className="group/btn flex-1 md:flex-none bg-white/10 hover:bg-white text-white border border-white/20 hover:text-slate-900 px-6 py-2.5 rounded-2xl flex items-center justify-center transition-all duration-300"
                     >
-                      Save Questions & Markscheme
+                      <span className="text-[10px] font-black uppercase tracking-widest">Save Questions & Markscheme</span>
                     </button>
                   </div>
                 </div>
@@ -1832,34 +1832,35 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
       )}
 
       {editingTask && (
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          className="bg-white rounded-[3rem] p-6 lg:p-10 shadow-xl border-4 border-emerald-50 max-w-6xl w-full mx-auto mb-12 fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 max-h-[95vh] overflow-y-auto flex flex-col"
-        >
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-8 shrink-0 pb-6 border-b-2 border-gray-50">
-            <div className="flex items-center gap-5">
-              <div className="w-14 h-14 bg-emerald-50 rounded-[1.5rem] flex items-center justify-center text-emerald-500 shadow-inner">
-                <Plus size={28} />
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[600] flex items-center justify-center p-6">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="bg-white/10 backdrop-blur-xl border border-white/20 text-white rounded-[3rem] p-6 lg:p-10 shadow-xl max-w-6xl w-full mx-auto max-h-[95vh] flex flex-col overflow-y-auto"
+          >
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-8 shrink-0 pb-6 border-b border-white/10">
+              <div className="flex items-center gap-5">
+                <div className="w-14 h-14 bg-white/20 rounded-[1.5rem] border border-white/20 flex items-center justify-center text-white shadow-inner">
+                  <Plus size={28} />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-black text-white uppercase tracking-tight">Edit Worksheet Details</h2>
+                  <p className="text-white/60 font-medium text-[10px] tracking-widest uppercase">Update the task name, dates, questions, and markscheme.</p>
+                </div>
               </div>
-              <div>
-                <h2 className="text-2xl font-black text-gray-800 uppercase tracking-tight">Edit Task Details</h2>
-                <p className="text-gray-500 font-medium text-sm">Update the task name, dates, questions, and markscheme.</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-3 w-full md:w-auto">
-              <button 
-                type="button"
-                onClick={() => {
-                  setEditingTask(null);
-                  setEditingTaskQuestionsJson('');
-                  setEditingTaskMarkscheme('');
-                }}
-                className="flex-1 md:flex-none px-6 py-3 rounded-2xl font-black uppercase tracking-widest text-[10px] text-gray-400 hover:bg-gray-50 border-2 border-transparent transition-colors shadow-sm active:scale-95"
-              >
-                Discard
-              </button>
+              
+              <div className="flex items-center gap-3 w-full md:w-auto">
+                <button 
+                  type="button"
+                  onClick={() => {
+                    setEditingTask(null);
+                    setEditingTaskQuestionsJson('');
+                    setEditingTaskMarkscheme('');
+                  }}
+                  className="flex-1 md:flex-none px-6 py-3 rounded-2xl font-black uppercase tracking-widest text-[10px] text-white/60 hover:bg-white/10 hover:text-white border border-transparent transition-all"
+                >
+                  Discard
+                </button>
               <button 
                 onClick={async () => {
                  if (onUpdateTask) {
@@ -1977,10 +1978,9 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
             </div>
           </div>
         </motion.div>
+        </div>
       )}
       
-      {editingTask && <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 transition-opacity" onClick={() => setEditingTask(null)} />}
-
       {activeTab === 'submissions' && isAdmin ? (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div className="flex flex-col md:flex-row items-start md:items-center gap-6 bg-slate-950/80 backdrop-blur-3xl p-6 rounded-[2.5rem] border border-white/10 shadow-2xl relative overflow-hidden group">
@@ -2054,15 +2054,21 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
                        <div className="flex flex-col gap-3">
                          <button 
                            onClick={() => filteredSubs.forEach(s => generateResponsePDF(s, task, false))}
-                           className="text-[11px] uppercase font-black tracking-widest text-slate-500 bg-white hover:bg-slate-950 hover:text-white px-5 py-3 rounded-[1.25rem] transition-all duration-500 border border-slate-200 flex items-center justify-center gap-3 shadow-lg hover:shadow-slate-200"
+                           className="bg-white/90 backdrop-blur-xl border border-slate-200 text-slate-500 hover:bg-slate-900 hover:text-white px-5 py-4 rounded-[1.2rem] transition-all duration-300 flex items-center justify-center gap-3 shadow-sm hover:shadow-xl group/cmd"
                          >
-                           <Download size={14} /> Raw PDF
+                           <div className="w-7 h-7 rounded-[0.6rem] bg-slate-100 group-hover/cmd:bg-white/20 flex items-center justify-center transition-colors text-current">
+                             <Download size={14} /> 
+                           </div>
+                           <span className="text-[10px] uppercase font-black tracking-[0.2em]">Raw PDF</span>
                          </button>
                          <button 
                            onClick={() => filteredSubs.filter(s => s.feedback).forEach(s => generateResponsePDF(s, task, true))}
-                           className="text-[11px] uppercase font-black tracking-widest text-emerald-600 bg-emerald-50 hover:bg-emerald-600 hover:text-white px-5 py-3 rounded-[1.25rem] transition-all duration-500 border border-emerald-200 flex items-center justify-center gap-3 shadow-lg shadow-emerald-500/10 hover:shadow-emerald-500/30"
+                           className="bg-emerald-50/90 backdrop-blur-xl border border-emerald-200 text-emerald-600 hover:bg-emerald-600 hover:border-emerald-500 hover:text-white px-5 py-4 rounded-[1.2rem] transition-all duration-300 flex items-center justify-center gap-3 shadow-sm hover:shadow-xl group/cmd"
                          >
-                           <Download size={14} /> Report PDF
+                           <div className="w-7 h-7 rounded-[0.6rem] bg-emerald-100 group-hover/cmd:bg-emerald-500/80 group-hover/cmd:border-emerald-400 flex items-center justify-center transition-colors border border-emerald-200 text-current">
+                             <Download size={14} /> 
+                           </div>
+                           <span className="text-[10px] uppercase font-black tracking-[0.2em]">Report PDF</span>
                          </button>
                        </div>
 
@@ -2071,21 +2077,21 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
                        {/* Removed */}
 
                         <div className="flex gap-3">
-                          <div className="bg-white px-4 py-3 rounded-xl border border-slate-100 shadow-sm text-center min-w-[100px] flex flex-col justify-center">
-                            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5 opacity-50 whitespace-nowrap">Total Intake</p>
-                            <p className="text-xl font-black text-slate-950 leading-none">{filteredSubs.length}</p>
+                          <div className="bg-white/80 backdrop-blur-xl px-6 py-4 rounded-[1.2rem] border border-slate-200 shadow-sm text-center min-w-[120px] flex flex-col justify-center transition-all hover:bg-white hover:shadow-md">
+                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 opacity-70 whitespace-nowrap">Total</p>
+                            <p className="text-3xl font-black text-slate-950 leading-none">{filteredSubs.length}</p>
                           </div>
                           {ungradedCount > 0 && (
-                            <div className="bg-rose-50 px-4 py-3 rounded-xl border border-rose-100 shadow-sm text-center min-w-[100px] flex flex-col justify-center">
-                              <p className="text-[8px] font-black text-rose-500 uppercase tracking-widest mb-0.5 opacity-60">Pending</p>
-                              <p className="text-xl font-black text-rose-600 leading-none">{ungradedCount}</p>
+                            <div className="bg-rose-50/80 backdrop-blur-xl px-6 py-4 rounded-[1.2rem] border border-rose-200 shadow-sm text-center min-w-[120px] flex flex-col justify-center transition-all hover:bg-rose-100 hover:shadow-md">
+                              <p className="text-[9px] font-black text-rose-500 uppercase tracking-widest mb-1 opacity-80">Pending</p>
+                              <p className="text-3xl font-black text-rose-600 leading-none">{ungradedCount}</p>
                             </div>
                           )}
                         </div>
                      </div>
                    </div>
 
-                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                      <AnimatePresence mode="popLayout">
                        {filteredSubs.map((sub) => {
                          const isGraded = !!sub.feedback;
@@ -2114,17 +2120,24 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
 
                              <div className="relative z-10">
                                <div className="flex justify-between items-start mb-4">
-                                 <div className="flex items-center gap-3">
+                                 <div className="flex items-center gap-3 pr-2">
                                    <div className={`w-12 h-12 rounded-[1rem] flex items-center justify-center transition-colors duration-500 shrink-0 ${isGraded ? 'bg-white/20 text-white' : 'bg-white/10 text-white group-hover:bg-white group-hover:text-slate-900 border border-white/10 shadow-sm'}`}>
                                      <User size={20} />
                                    </div>
                                    <div>
-                                     <h4 className="font-black text-white text-base uppercase truncate max-w-[140px] tracking-tight">{sub.studentName}</h4>
+                                     <h4 className="font-black text-white text-base uppercase line-clamp-2 tracking-tight">{sub.studentName}</h4>
                                      <p className="text-[9px] font-black text-white/60 uppercase tracking-[0.2em]">Subject</p>
                                    </div>
                                  </div>
-                                 <div className="hidden">
-                                   {statusText}
+                                 <div className="flex flex-col items-end gap-2 shrink-0">
+                                   {isGraded && (
+                                     <div className="bg-white/10 backdrop-blur-md px-2.5 py-1 border border-white/20 rounded-lg text-white text-[9px] font-black uppercase tracking-widest shadow-sm">
+                                       Graded
+                                     </div>
+                                   )}
+                                   <div className="hidden">
+                                     {statusText}
+                                   </div>
                                  </div>
                                </div>
 
@@ -2216,7 +2229,7 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
       ) : (
         <div className="flex flex-col lg:flex-row gap-8">
           <div className="flex-1">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-6">                {tasks.map(task => {
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-6">                {tasks.map(task => {
                   const isCompleted = mySubmissions.some(sub => sub.taskId === task.id);
                   const submission = mySubmissions.find(sub => sub.taskId === task.id);
                   const taskDate = task.dueDate.includes('T') ? parseISO(task.dueDate) : new Date(task.dueDate + 'T00:00:00');
@@ -2264,12 +2277,12 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
                       
                       <div className="relative z-10 flex flex-col h-full">
                         <div className="flex justify-between items-start mb-4">
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-3 pr-2">
                             <div className={`w-12 h-12 rounded-[1rem] flex items-center justify-center transition-colors duration-500 shrink-0 ${isCompleted ? 'bg-white/20 text-white border border-white/20' : 'bg-white/10 text-white group-hover:bg-white group-hover:text-slate-900 border border-white/10 shadow-sm'}`}>
                                {isCompleted ? <CheckCircle2 size={20} /> : isTest ? <ShieldCheck size={20} /> : <Target size={20} />}
                             </div>
                             <div>
-                               <h4 className="font-black text-white text-base uppercase truncate max-w-[140px] tracking-tight">{task.title}</h4>
+                               <h4 className="font-black text-white text-base uppercase line-clamp-2 tracking-tight">{task.title}</h4>
                                <p className="text-[9px] font-black text-white/60 uppercase tracking-[0.2em]">{isTest ? (task.isABVersion ? 'SECURE EXAM A/B' : 'SECURE EXAM') : 'ASSIGNMENT'}</p>
                             </div>
                           </div>

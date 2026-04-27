@@ -1000,7 +1000,7 @@ OUTPUT: Plain text paragraph.`;
         </div>
 
         {/* Right Side: Interactive Worksheet */}
-        <div ref={rightPaneRef} className={`${isGradingWorkflow ? (isGradingConsoleExpanded ? 'w-[40%]' : 'w-[50%]') : 'w-[50%]'}  border-l border-gray-100 bg-white overflow-y-auto custom-scrollbar p-10 transition-all duration-700 ease-in-out`}>
+        <div ref={rightPaneRef} className={`${isGradingWorkflow ? (isGradingConsoleExpanded ? 'w-[40%]' : 'w-[40%]') : 'w-[50%]'}  border-l border-gray-100 bg-white overflow-y-auto custom-scrollbar p-10 transition-all duration-700 ease-in-out`}>
           <div className="max-w-7xl mx-auto space-y-24 pb-32">
             <header className="space-y-6">
               <div className="flex flex-col">
@@ -1355,7 +1355,7 @@ OUTPUT: Plain text paragraph.`;
         </div>
       
         {isGradingWorkflow && (
-          <div className={`${isGradingConsoleExpanded ? 'w-[60%]' : 'w-[30%]'} bg-gray-50 overflow-hidden flex flex-col z-10 transition-all duration-500 border-l border-gray-100`}>
+          <div className={`${isGradingConsoleExpanded ? 'w-[60%]' : 'w-[40%]'} bg-gray-50 overflow-hidden flex flex-col z-10 transition-all duration-500 border-l border-gray-100`}>
             <div className="flex-1 overflow-y-auto custom-scrollbar scroll-smooth relative">
               {/* Sticky Header with Gradient Background */}
               <div className="sticky top-0 z-30 p-8 pb-6 space-y-8 bg-gray-200/80 backdrop-blur-md border-b border-gray-200/30 shadow-sm">

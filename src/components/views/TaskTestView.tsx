@@ -1086,7 +1086,7 @@ OUTPUT: Plain text paragraph.`;
           </div>
         </div>
 
-        <div ref={rightPaneRef} className={`${isGradingWorkflow ? (isGradingConsoleExpanded ? 'w-[40%]' : 'w-[50%]') : 'w-[50%]'} border-l border-red-50 bg-gray-50/50 overflow-y-auto custom-scrollbar p-10 transition-all duration-500`}>
+        <div ref={rightPaneRef} className={`${isGradingWorkflow ? (isGradingConsoleExpanded ? 'w-[40%]' : 'w-[40%]') : 'w-[50%]'} border-l border-red-50 bg-gray-50/50 overflow-y-auto custom-scrollbar p-10 transition-all duration-500`}>
           <div className="max-w-6xl mx-auto space-y-12 pb-32">
             <div className="space-y-6 border-b border-red-100 pb-12">
               <div className="space-y-2">
@@ -1410,7 +1410,7 @@ OUTPUT: Plain text paragraph.`;
         </div>
       
       {isGradingWorkflow && (
-        <div className={`${isGradingConsoleExpanded ? 'w-[60%]' : 'w-[30%]'} bg-gray-50 overflow-hidden flex flex-col z-10 transition-all duration-500 border-l border-gray-100`}>
+        <div className={`${isGradingConsoleExpanded ? 'w-[60%]' : 'w-[40%]'} bg-gray-50 overflow-hidden flex flex-col z-10 transition-all duration-500 border-l border-gray-100`}>
           <div className="flex-1 overflow-y-auto custom-scrollbar scroll-smooth relative">
             {/* Sticky Header with Gradient Background */}
             <div className="sticky top-0 z-30 p-8 pb-6 space-y-8 bg-gray-200/80 backdrop-blur-md border-b border-gray-200/30 shadow-sm">
