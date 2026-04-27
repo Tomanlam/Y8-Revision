@@ -2166,7 +2166,7 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
                      </div>
                    </div>
 
-                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                      <AnimatePresence mode="popLayout">
                        {filteredSubs.map((sub) => {
                          const isGraded = !!sub.feedback;
@@ -2297,7 +2297,7 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
       ) : (
         <div className="flex flex-col lg:flex-row gap-8">
           <div className="flex-1">
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">                {tasks.map(task => {
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-6">                {tasks.map(task => {
                   const isCompleted = mySubmissions.some(sub => sub.taskId === task.id);
                   const submission = mySubmissions.find(sub => sub.taskId === task.id);
                   const taskDate = task.dueDate.includes('T') ? parseISO(task.dueDate) : new Date(task.dueDate + 'T00:00:00');
@@ -2370,9 +2370,11 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
                           </div>
                         </div>
 
-                        <p className={`text-white/70 text-[10px] font-bold mb-4 line-clamp-2 uppercase tracking-wide italic ${isTest ? 'text-red-200' : ''}`}>
-                          {task.description || (isTest ? "Test" : "Worksheet")}
-                        </p>
+                        {task.description && (
+                          <p className={`text-white/70 text-[10px] font-bold mb-4 line-clamp-2 uppercase tracking-wide italic ${isTest ? 'text-red-200' : ''}`}>
+                            {task.description}
+                          </p>
+                        )}
 
                         {isAdmin && isTest && (
                           <div 
