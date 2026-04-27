@@ -139,6 +139,7 @@ const TasksView = ({
   const [viewingRubricTask, setViewingRubricTask] = React.useState<Task | null>(null);
   const [rubricData, setRubricData] = React.useState<any>(null);
   const [isLoadingRubric, setIsLoadingRubric] = React.useState(false);
+  const [revealedKeys, setRevealedKeys] = React.useState<Set<string>>(new Set());
 
   const openRubricViewer = async (task: Task) => {
     setViewingRubricTask(task);
@@ -558,42 +559,54 @@ JSON OUTPUT: { "questions": [{ "id": "string", "score": "X of X", "feedback": "s
           : `${effectiveTabSwitches} Tab Switches Detected`)
       : 'OFF';
 
-    autoTable(doc, {
-      startY: currentY,
-      body: [
-        ['Student Name:', submission.studentName],
-        [isTest ? 'Assessment Title:' : 'Assignment Title:', task.title],
-        ['Completion Time:', format(new Date(submission.completedAt), 'PPP p')],
-        ['Punctuality:', punctuality],
-        ['Security Violations:', securityValue],
-        ['Performance Metric:', submission.results ? `${submission.results.score} of ${submission.results.total} (${Math.round((submission.results.score/submission.results.total)*100)}%)` : 'Awaiting Grading']
-      ],
-      theme: 'grid',
-      didParseCell: (data) => {
-        // Handle Security Violations color (Row 4, Column 1 in info table)
-        if (data.row.index === 4 && data.column.index === 1 && isTest && securityValue !== 'NONE DETECTED') {
-          data.cell.styles.textColor = [220, 38, 38]; // Red
-        }
-        // Handle Punctuality color
-        if (data.column.index === 1 && data.cell.text[0] === punctuality) {
-          if (punctuality === "EARLY") data.cell.styles.textColor = [16, 185, 129] as any;
-          if (punctuality === "LATE") data.cell.styles.textColor = [239, 68, 68] as any;
-          if (punctuality === "ON-TIME") data.cell.styles.textColor = [245, 158, 11] as any;
-        }
-      },
-      styles: { 
-        fontSize: 10, 
-        cellPadding: 4,
-        lineColor: [230, 230, 230],
-        lineWidth: 0.1
-      },
-      columnStyles: { 
-        0: { fontStyle: 'bold', cellWidth: 45, fillColor: [249, 250, 251], textColor: [100, 116, 139] },
-        1: { fillColor: [255, 255, 255], textColor: [15, 23, 42], fontStyle: 'bold' }
-      },
-    });
+    const drawBentoCard = (x: number, y: number, w: number, label: string, value: string, valueColor: [number, number, number] = [31, 41, 55], bgColor: [number, number, number] = [248, 250, 252]) => {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      const splitValue = doc.splitTextToSize(value, w - 10);
+      const textHeight = splitValue.length * 4.5;
+      const h = Math.max(18, 10 + textHeight + 2);
+  
+      doc.setFillColor(bgColor[0], bgColor[1], bgColor[2]);
+      doc.roundedRect(x, y, w, h, 3, 3, 'F');
+      
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(7);
+      doc.setTextColor(156, 163, 175);
+      doc.text(label.toUpperCase(), x + 5, y + 6);
+      
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.setTextColor(valueColor[0], valueColor[1], valueColor[2]);
+      doc.text(splitValue, x + 5, y + 12);
+      
+      return h;
+    };
 
-    currentY = (doc as any).lastAutoTable.finalY + 12;
+    const cardWidth = 87.5;
+    
+    // Row 1
+    const perfString = submission.results ? `${submission.results.score} of ${submission.results.total} (${Math.round((submission.results.score/submission.results.total)*100)}%)` : 'Awaiting Grading';
+    const h1 = drawBentoCard(15, currentY, cardWidth, "Student Name", submission.studentName);
+    const h2 = drawBentoCard(107.5, currentY, cardWidth, "Performance Metric", perfString, primaryColor, [248, 250, 252]);
+    currentY += Math.max(h1, h2) + 5;
+
+    // Row 2
+    const h3 = drawBentoCard(15, currentY, cardWidth, isTest ? 'Assessment Title' : 'Assignment Title', task.title);
+    const h4 = drawBentoCard(107.5, currentY, cardWidth, "Completion Time", format(new Date(submission.completedAt), 'PPP p'));
+    currentY += Math.max(h3, h4) + 5;
+
+    // Row 3
+    let pColor: [number, number, number] = [31, 41, 55];
+    if (punctuality === "EARLY") pColor = [16, 185, 129];
+    if (punctuality === "LATE") pColor = [239, 68, 68];
+    if (punctuality === "ON-TIME") pColor = [245, 158, 11];
+
+    const isSecurityBad = isTest && securityValue !== 'NONE DETECTED';
+    const sColor: [number, number, number] = isSecurityBad ? [220, 38, 38] : [31, 41, 55];
+
+    const h5 = drawBentoCard(15, currentY, cardWidth, "Punctuality", punctuality, pColor);
+    const h6 = drawBentoCard(107.5, currentY, cardWidth, "Security Violations", securityValue, sColor);
+    currentY += Math.max(h5, h6) + 12;
 
     const tableData = task.worksheetQuestions?.map((q, idx) => {
       const qId = q.id.trim();
@@ -625,29 +638,31 @@ JSON OUTPUT: { "questions": [{ "id": "string", "score": "X of X", "feedback": "s
       startY: currentY,
       head: [includeFeedback ? ['#', 'Question Stem', 'Student Response', 'Targeted Feedback'] : ['#', 'Question Stem', 'Student Response']],
       body: tableData,
-      theme: 'grid',
+      theme: 'plain',
       headStyles: { 
-        fillColor: primaryColor, 
-        textColor: [255, 255, 255],
+        fillColor: [255, 255, 255], 
+        textColor: [100, 116, 139],
         fontStyle: 'bold',
-        fontSize: 10
+        fontSize: 8,
+        halign: 'left'
       },
       styles: { 
         fontSize: 9, 
-        cellPadding: 5, 
+        cellPadding: 6, 
         overflow: 'linebreak',
         lineColor: [255, 255, 255], 
-        lineWidth: 1.5
+        lineWidth: 2,
+        valign: 'middle'
       },
       columnStyles: includeFeedback ? {
         0: { cellWidth: 10, halign: 'center', fillColor: [248, 250, 252], textColor: [100, 116, 139] },
         1: { cellWidth: 50, fillColor: [248, 250, 252], textColor: [31, 41, 55], fontStyle: 'bold' },
-        2: { cellWidth: 65, fillColor: [241, 245, 249], textColor: [30, 58, 138], fontStyle: 'bold' }, 
+        2: { cellWidth: 65, fillColor: [241, 245, 249], textColor: [30, 58, 138], fontStyle: 'normal' }, 
         3: { cellWidth: 65, fillColor: [254, 242, 242], textColor: [153, 27, 27], fontStyle: 'italic' } 
       } : {
         0: { cellWidth: 10, halign: 'center', fillColor: [248, 250, 252], textColor: [100, 116, 139] },
         1: { cellWidth: 80, fillColor: [248, 250, 252], textColor: [31, 41, 55], fontStyle: 'bold' },
-        2: { cellWidth: 90, fillColor: [239, 246, 255], textColor: [30, 58, 138], fontStyle: 'bold' }
+        2: { cellWidth: 90, fillColor: [239, 246, 255], textColor: [30, 58, 138], fontStyle: 'normal' }
       }
     });
 
@@ -2329,101 +2344,94 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
                       </div>
                       
                       <div className="relative z-10 flex flex-col h-full">
-                        <div className="flex items-center justify-between mb-4">
-                          <div className={`w-10 h-10 rounded-2xl backdrop-blur-md flex items-center justify-center border border-white/20 transition-transform group-hover:scale-110 ${isTest && !isCompleted ? 'bg-red-500 shadow-lg shadow-red-500/50' : 'bg-white/20'}`}>
-                            {isCompleted ? <CheckCircle2 size={20} /> : isTest ? <ShieldCheck size={20} /> : <Target size={20} />}
+                        <div className="flex justify-between items-start mb-4">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-12 h-12 rounded-[1rem] flex items-center justify-center transition-colors duration-500 shrink-0 ${isCompleted ? 'bg-white/20 text-white border border-white/20' : 'bg-white/10 text-white group-hover:bg-white group-hover:text-slate-900 border border-white/10 shadow-sm'}`}>
+                               {isCompleted ? <CheckCircle2 size={20} /> : isTest ? <ShieldCheck size={20} /> : <Target size={20} />}
+                            </div>
+                            <div>
+                               <h4 className="font-black text-white text-base uppercase truncate max-w-[140px] tracking-tight">{task.title}</h4>
+                               <p className="text-[9px] font-black text-white/60 uppercase tracking-[0.2em]">{isTest ? (task.isABVersion ? 'SECURE EXAM A/B' : 'SECURE EXAM') : 'ASSIGNMENT'}</p>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                             {isAdmin && (
-                              <button 
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setDeleteConfirmation({ id: task.id, type: 'task', title: task.title });
-                                }}
-                                className="w-8 h-8 rounded-xl bg-white/20 hover:bg-red-500 flex items-center justify-center transition-all backdrop-blur-sm border border-white/10 group/trash"
-                                title="Delete Assignment"
-                              >
-                                <Trash2 size={14} className="group-hover/trash:scale-110" />
-                              </button>
-                            )}
-                             {isTest && (
-                               <div className="bg-white/10 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest backdrop-blur-md border border-white/10 flex items-center gap-1">
-                                 <Timer size={10} className="text-red-400" /> {task.timeLimit}m
-                               </div>
-                             )}
-                            {isAdmin && isTest && (
-                              <div className="bg-red-600 text-white px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest shadow-lg border border-red-400/30">
-                                KEY: {task.passcode}
-                              </div>
-                            )}
-                            {isCompleted && (
-                              <div className="bg-white/30 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest backdrop-blur-md">
-                                Done
-                              </div>
-                            )}
+                          <div className="px-3 py-1 rounded-xl border text-[8px] font-black uppercase tracking-[0.2em] shadow-sm bg-white/20 text-white border-white/20">
+                             {isCompleted ? 'DONE' : isTest ? 'TEST' : 'WORKSHEET'}
                           </div>
                         </div>
 
-                        <div className="flex-1">
-                          <div className="flex flex-col gap-0.5 mb-1">
-                            {isTest && (
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-[8px] font-black uppercase bg-red-600 px-2 py-0.5 rounded text-white shadow-sm">Secure Examination</span>
-                                {task.isABVersion && <span className="text-[8px] font-black uppercase bg-blue-600 px-2 py-0.5 rounded text-white italic">A/B</span>}
-                              </div>
-                            )}
-                            <h3 className="text-xl font-black uppercase tracking-tight leading-none line-clamp-2 mt-1 group-hover:translate-x-1 transition-transform">{task.title}</h3>
+                        <div className="flex gap-3 mb-2 flex-grow">
+                          <div className="flex-1 bg-white/10 rounded-[1.2rem] p-3 border border-white/10 flex flex-col justify-center transition-colors group-hover:bg-white/20">
+                            <p className="text-[9px] font-black text-white/60 uppercase tracking-[0.2em] mb-1 text-center">Info</p>
+                            <p className="text-center font-black text-white text-[10px] uppercase tracking-widest">{isTest ? `${task.timeLimit}m Limit` : 'No Limit'}</p>
                           </div>
-                          <p className={`text-white/70 text-[10px] font-bold mb-6 line-clamp-2 uppercase tracking-wide italic ${isTest ? 'text-red-200' : ''}`}>
-                            {task.description || (isTest ? "Standard Security Protocol Active" : "Active Assignment")}
-                          </p>
+                          <div className="flex-1 bg-white/10 rounded-[1.2rem] p-3 border border-white/10 flex flex-col justify-center transition-colors group-hover:bg-white/20">
+                            <p className="text-[9px] font-black text-white/60 uppercase tracking-[0.2em] mb-1 text-center">Due</p>
+                            <p className="text-center font-black text-white text-[10px] tracking-tight">{format(taskDate, 'MMM d')}</p>
+                          </div>
                         </div>
-                        
-                        <div className="mt-auto pt-4 border-t border-white/10 flex items-center justify-between">
-                          <div className="flex items-center gap-2 bg-black/10 px-3 py-1.5 rounded-xl border border-white/5">
-                            <CalendarIcon size={12} className="text-white/60" />
-                            <span className="text-[9px] font-black uppercase tracking-widest">{format(taskDate, 'MMM d, yyyy')}</span>
+
+                        <p className={`text-white/70 text-[10px] font-bold mb-4 line-clamp-2 uppercase tracking-wide italic ${isTest ? 'text-red-200' : ''}`}>
+                          {task.description || (isTest ? "Test" : "Worksheet")}
+                        </p>
+
+                        {isAdmin && isTest && (
+                          <div 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setRevealedKeys(prev => {
+                                const newSet = new Set(prev);
+                                if (newSet.has(task.id)) newSet.delete(task.id);
+                                else newSet.add(task.id);
+                                return newSet;
+                              });
+                            }}
+                            className="self-center bg-red-600/50 hover:bg-red-600 text-white px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest shadow-lg border border-red-400/30 mb-4 cursor-pointer transition-colors"
+                          >
+                            {revealedKeys.has(task.id) ? `KEY: ${task.passcode}` : 'CLICK TO REVEAL KEY'}
                           </div>
-                          {isCompleted ? (
-                            <div className="flex items-center gap-3">
-                              <div className="text-right">
-                                 <p className="text-[8px] font-black text-white/50 uppercase tracking-widest mb-0.5">Grade</p>
-                                 <p className="text-xs font-black">{submission?.results?.score !== undefined ? `${submission?.results?.score}/${submission?.results?.total}` : 'Pending'}</p>
-                              </div>
-                              {submission && submission.feedback && (
-                                <button 
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    generateResponsePDF(submission, task, true);
-                                  }}
-                                  className="bg-white/20 text-white p-2 rounded-xl hover:bg-white hover:text-emerald-600 hover:scale-110 active:scale-95 transition-all shadow-sm backdrop-blur-sm border border-white/20"
-                                  title="Download Graded Report"
-                                >
-                                  <FileText size={14} />
-                                </button>
-                              )}
-                            </div>
-                          ) : (
-                            <button 
+                        )}
+
+                        <div className="flex items-center gap-2 mt-auto pt-2">
+                           {isAdmin && (
+                             <button 
+                               onClick={(e) => {
+                                 e.stopPropagation();
+                                 setDeleteConfirmation({ id: task.id, type: 'task', title: task.title });
+                               }}
+                               className="w-[42px] h-[42px] flex flex-col items-center justify-center rounded-2xl bg-white/10 border border-white/20 text-white hover:bg-rose-500 hover:text-white transition-all duration-300 shadow-sm shrink-0 group/trash"
+                               title="Delete Assignment"
+                             >
+                                <div className="w-7 h-7 rounded-[0.6rem] bg-white/20 flex items-center justify-center group-hover/trash:scale-110 transition-transform text-current">
+                                  <Trash2 size={14} />
+                                </div>
+                             </button>
+                           )}
+                           
+                           <button 
                               onClick={(e) => {
                                 e.stopPropagation();
-                                if (isTest) {
-                                  setSelectedTaskForPasscode(task);
-                                  setIsPasscodeModalOpen(true);
-                                } else {
-                                  onStartTask(task);
+                                if (isCompleted && submission?.feedback) {
+                                  generateResponsePDF(submission, task, true);
+                                } else if (!isCompleted) {
+                                  if (isTest) {
+                                    setSelectedTaskForPasscode(task);
+                                    setIsPasscodeModalOpen(true);
+                                  } else {
+                                    onStartTask(task);
+                                  }
                                 }
                               }}
-                              className={`bg-white p-2 rounded-xl hover:scale-110 active:scale-95 transition-all shadow-sm ${isTest ? 'text-red-600' : 'text-blue-600'}`}
-                            >
-                              <ArrowRight size={14} />
-                            </button>
-                          )}
+                              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl bg-white/10 border border-white/20 text-white hover:bg-white hover:text-slate-900 transition-all duration-300 shadow-sm group/btn h-[42px]"
+                           >
+                              <div className="w-7 h-7 rounded-[0.6rem] bg-white/20 flex items-center justify-center group-hover/btn:scale-110 transition-transform text-current">
+                                 {isCompleted ? (submission?.feedback ? <FileText size={14} /> : <CheckCircle2 size={14} />) : <ArrowRight size={14} />}
+                              </div>
+                              <span className="font-black uppercase tracking-[0.2em] text-[10px]">
+                                {isCompleted ? (submission?.feedback ? 'REPORT PDF' : 'PENDING GRADE') : 'START TASK'}
+                              </span>
+                           </button>
                         </div>
-
-
-                      {/* Task Info Area */}
-                    </div>
+                      </div>
                   </motion.div>
                 );
               })}

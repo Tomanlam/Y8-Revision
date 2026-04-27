@@ -843,30 +843,33 @@ const DashboardView: React.FC<DashboardViewProps> = (props) => {
       {isQRModalOpen && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-md z-[500] flex items-center justify-center p-6">
           <motion.div 
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.9, opacity: 0 }}
-            className="bg-white/90 backdrop-blur-3xl rounded-[3rem] p-10 max-w-sm w-full shadow-[0_30px_60px_-15px_rgba(0,0,0,0.3)] text-center relative border border-white/20"
+            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+            className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-[2.5rem] p-8 max-w-sm w-full shadow-[0_30px_60px_-15px_rgba(0,0,0,0.3)] relative text-white border border-white/20"
           >
             <button 
               onClick={() => setIsQRModalOpen(false)}
-              className="absolute top-6 right-6 text-slate-400 hover:text-slate-900 transition-colors"
+              className="absolute top-6 right-6 text-white/50 hover:text-white transition-colors"
             >
               <XCircle size={28} />
             </button>
             
-            <div className="bg-emerald-500/10 w-20 h-20 rounded-3xl flex items-center justify-center text-emerald-600 mx-auto mb-6 shadow-inner">
-              <QrCode size={40} />
+            <div className="flex items-center gap-4 mb-8">
+              <div className="bg-white/20 p-3.5 rounded-[1.25rem] backdrop-blur-sm border border-white/20 text-teal-50 flex items-center justify-center">
+                <QrCode size={32} />
+              </div>
+              <div>
+                <h3 className="text-xl font-black uppercase tracking-tight leading-none text-white">Scan the QR code</h3>
+                <p className="text-emerald-100 font-bold text-[10px] uppercase tracking-widest mt-1 opacity-90">Device Connect</p>
+              </div>
             </div>
-
-            <h3 className="text-3xl font-black text-slate-900 uppercase tracking-tighter mb-2">QR Portal</h3>
-            <p className="text-slate-500 font-bold text-xs uppercase tracking-widest mb-8 opacity-60 italic">Mobile Synchronisation</p>
             
-            <div className="bg-white p-6 rounded-[2rem] border border-slate-100 flex justify-center mb-8 shadow-sm group hover:scale-[1.02] transition-transform duration-500">
+            <div className="bg-white p-6 rounded-[2rem] border border-white/10 flex justify-center mb-6 shadow-xl group hover:scale-[1.02] transition-transform duration-500">
               <QRCodeSVG value="https://y8rev.vercel.app" size={200} level="H" includeMargin={false} />
             </div>
             
-            <div className="bg-slate-900 text-white py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] shadow-xl shadow-slate-900/20">
+            <div className="bg-white/10 text-white py-4 rounded-2xl border border-white/10 backdrop-blur-sm font-black text-[10px] uppercase tracking-[0.3em] shadow-sm text-center">
               y8rev.vercel.app
             </div>
           </motion.div>

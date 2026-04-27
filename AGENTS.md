@@ -1,5 +1,11 @@
 # Custom Agent Rules
 
+- **Design Language Pattern (Bento Box & UI):**
+  - **Cards (Bento Base):** Use heavily rounded corners (`rounded-[2rem]`), `backdrop-blur-xl`, semi-transparent backgrounds (e.g., `bg-white/10`, `bg-gradient-to-br from-.../90 to-.../90`), and thin borders (`border border-white/20`), along with `shadow-xl`.
+  - **Bento Sub-cards (Info Areas):** Use nested smaller radii (`rounded-[1.2rem]`), `bg-white/10 border border-white/10`, `transition-colors hover:bg-white/20`. Small label text should be `text-[9px] font-black text-white/60 uppercase tracking-[0.2em]`.
+  - **Action Buttons:** Use `bg-white/10 border border-white/20 text-white hover:bg-white hover:text-slate-900 rounded-2xl py-2.5 transition-all duration-300 group/btn`. For icon blocks inside buttons: `w-7 h-7 rounded-[0.6rem] bg-white/20 group-hover/btn:scale-110 flex items-center justify-center transition-transform text-current`. Button text should be `text-[6.5px]` to `text-[10px] font-black uppercase tracking-tight`.
+  - **Navigation & Structural Overlays (Sidebar, Topbar, Mobile Nav):** Use heavily blurred, subtle backgrounds: `bg-white/5 backdrop-blur-md border-white/10`. (e.g., `border-r`, `border-b`, or full `border`).
+
 - **Gemini Model Choice:** When assigning or updating the AI model, prefer the latest available "lite" model (e.g., `gemini-3.1-flash-lite-preview`) to minimize API and token cost, unless otherwise requested for highly complex reasoning tasks.
 - **Grading Feedback Format:** Always format scores as 'X of X' instead of 'X / X' (e.g. 5 of 10).
 - **Grading Prompt Logic STRICT WORKFLOW:** 
