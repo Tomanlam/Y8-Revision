@@ -56,7 +56,7 @@ const QuestionTextWithCommandTerms = ({ text }: { text: string }) => {
   const parts = text.split(regex);
 
   return (
-    <h4 className="font-black text-gray-800 text-lg leading-tight pt-1">
+    <h4 className="font-helvetica font-black text-gray-800 text-lg leading-tight pt-1">
       {parts.map((part, i) => {
         const lowerPart = part.toLowerCase();
         if (COMMAND_TERMS[lowerPart]) {
@@ -70,7 +70,7 @@ const QuestionTextWithCommandTerms = ({ text }: { text: string }) => {
               </span>
               <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-64 pointer-events-none z-[100] transition-all duration-200 opacity-0 group-hover:opacity-100 group-hover:translate-y-0 translate-y-1">
                 <div className="bg-orange-600 text-white p-3 rounded-2xl shadow-xl text-center relative">
-                  <p className="text-[10px] font-bold leading-relaxed">
+                  <p className="text-[10px] font-helvetica font-bold leading-relaxed">
                     {COMMAND_TERMS[lowerPart]}
                   </p>
                   <div className="absolute top-full left-1/2 -translate-x-1/2 w-3 h-3 bg-orange-600 rotate-45 -mt-1.5" />
@@ -1155,12 +1155,15 @@ OUTPUT: Plain text paragraph.`;
                         )}
 
                         <div className="flex items-start gap-6 mb-10">
-                          <span className={`flex-shrink-0 w-10 h-10 rounded-2xl flex items-center justify-center font-black text-sm transition-colors duration-300 ${
-                            isAnswered ? 'bg-red-600 text-white shadow-lg shadow-red-200' : 'bg-gray-100 text-gray-400'
+                          <div className={`flex-shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center font-black text-lg shadow-xl relative overflow-hidden group/num transition-all duration-500 ${
+                            isAnswered 
+                              ? 'bg-gradient-to-br from-red-500 to-rose-600 text-white shadow-red-200 ring-2 ring-red-400 ring-offset-2' 
+                              : 'bg-white text-gray-400 border-2 border-gray-100 hover:border-red-200'
                           }`}>
-                            {idx + 1}
-                          </span>
-                          <div className="pt-1">
+                            {isAnswered && <div className="absolute inset-0 bg-white/20 backdrop-blur-sm" />}
+                            <span className="relative z-10">{idx + 1}</span>
+                          </div>
+                          <div className="pt-2">
                             <QuestionTextWithCommandTerms text={typedQ.question} />
                           </div>
                         </div>
@@ -1172,7 +1175,7 @@ OUTPUT: Plain text paragraph.`;
                                 key={oIdx}
                                 onClick={() => !(readOnly || submitted) && handleResponse(typedQ.id, opt)}
                                 disabled={readOnly || submitted}
-                                className={`w-full text-left p-4 rounded-xl border-2 font-black text-sm transition-all ${
+                                className={`w-full text-left p-4 rounded-xl border-2 font-helvetica font-black text-sm transition-all ${
                                   responses[typedQ.id] === opt ? 'bg-red-600 border-red-600 text-white' : 'bg-white border-gray-50 text-gray-600 hover:border-red-200'
                                 } ${(readOnly || submitted) && responses[typedQ.id] !== opt ? 'opacity-50 cursor-not-allowed' : ''}`}
                               >
@@ -1189,7 +1192,7 @@ OUTPUT: Plain text paragraph.`;
                                 key={opt.value}
                                 onClick={() => !(readOnly || submitted) && handleResponse(typedQ.id, opt.value)}
                                 disabled={readOnly || submitted}
-                                className={`p-8 rounded-3xl border-4 font-black text-3xl transition-all shadow-sm ${
+                                className={`p-8 rounded-3xl border-4 font-helvetica font-black text-3xl transition-all shadow-sm ${
                                   responses[typedQ.id] === opt.value
                                     ? opt.value === 'TRUE' ? 'bg-emerald-500 border-emerald-600 text-white' : 'bg-red-500 border-red-600 text-white'
                                     : 'bg-white border-gray-100 text-gray-300 hover:border-gray-200'
@@ -1212,7 +1215,7 @@ OUTPUT: Plain text paragraph.`;
                                 <span className="bg-gray-100 text-gray-500 w-8 h-8 rounded-lg flex items-center justify-center font-black text-xs shrink-0">
                                   {iIdx + 1}
                                 </span>
-                                <span className="flex-1 font-bold text-gray-700">{item}</span>
+                                <span className="flex-1 font-helvetica font-bold text-gray-700">{item}</span>
                                 {!(readOnly || submitted) && (
                                   <div className="flex gap-1">
                                     <button
@@ -1266,7 +1269,7 @@ OUTPUT: Plain text paragraph.`;
                                       return (
                                         <td key={cIdx} className={`p-0 border-r border-red-50 last:border-r-0 ${!isEditableCell ? 'bg-gray-50/50' : 'bg-white'}`}>
                                           {!isEditableCell ? (
-                                            <div className="p-4 text-xs font-bold text-gray-600">{cell}</div>
+                                            <div className="p-4 text-xs font-helvetica font-bold text-gray-600">{cell}</div>
                                           ) : (
                                             <input
                                               type="text"
@@ -1278,7 +1281,7 @@ OUTPUT: Plain text paragraph.`;
                                                 newTableResponse[`${rIdx}_${cIdx}`] = e.target.value;
                                                 handleResponse(typedQ.id, newTableResponse);
                                               }}
-                                              className="w-full h-full p-4 text-xs font-black text-red-600 outline-none focus:bg-red-50/30 transition-colors placeholder:text-gray-200"
+                                              className="w-full h-full p-4 text-xs font-helvetica font-black text-red-600 outline-none focus:bg-red-50/30 transition-colors placeholder:text-gray-200"
                                             />
                                           )}
                                         </td>
@@ -1298,7 +1301,7 @@ OUTPUT: Plain text paragraph.`;
                               value={responses[typedQ.id] || ''}
                               readOnly={readOnly || submitted}
                               onChange={(e) => handleResponse(typedQ.id, e.target.value)}
-                              className={`w-full p-8 rounded-[2rem] border-2 font-bold text-sm text-gray-800 focus:border-red-500 focus:bg-white outline-none transition-all resize-none min-h-[180px] shadow-sm tracking-tight leading-relaxed ${readOnly || submitted ? 'bg-gray-50 border-gray-100 shadow-none' : 'bg-red-50/10 border-gray-100'} placeholder:text-gray-300`}
+                              className={`w-full p-8 rounded-[2rem] border-2 font-helvetica font-bold text-sm text-gray-800 focus:border-red-500 focus:bg-white outline-none transition-all resize-none min-h-[180px] shadow-sm tracking-tight leading-relaxed ${readOnly || submitted ? 'bg-gray-50 border-gray-100 shadow-none' : 'bg-red-50/10 border-gray-100'} placeholder:text-gray-300`}
                             />
                             <div className="absolute bottom-6 right-6 px-3 py-1 bg-gray-900/5 rounded-lg">
                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{responses[typedQ.id]?.length || 0} chars</span>
@@ -1340,7 +1343,7 @@ OUTPUT: Plain text paragraph.`;
                                 {validationFeedback[typedQ.id].score}
                               </span>
                             </div>
-                            <p className="text-sm font-black leading-relaxed whitespace-pre-wrap relative z-10 text-gray-700">
+                            <p className="text-sm font-helvetica font-black leading-relaxed whitespace-pre-wrap relative z-10 text-gray-700">
                               {validationFeedback[typedQ.id].feedback}
                             </p>
                           </motion.div>

@@ -56,7 +56,7 @@ const QuestionTextWithCommandTerms = ({ text }: { text: string }) => {
   const parts = text.split(regex);
 
   return (
-    <h4 className="font-black text-gray-800 text-lg leading-tight pt-1">
+    <h4 className="font-helvetica font-black text-gray-800 text-lg leading-tight pt-1">
       {parts.map((part, i) => {
         const lowerPart = part.toLowerCase();
         if (COMMAND_TERMS[lowerPart]) {
@@ -70,7 +70,7 @@ const QuestionTextWithCommandTerms = ({ text }: { text: string }) => {
               </span>
               <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-64 pointer-events-none z-[100] transition-all duration-200 opacity-0 group-hover:opacity-100 group-hover:translate-y-0 translate-y-1">
                 <div className="bg-orange-600 text-white p-3 rounded-2xl shadow-xl text-center relative">
-                  <p className="text-[10px] font-bold leading-relaxed">
+                  <p className="text-[10px] font-helvetica font-bold leading-relaxed">
                     {COMMAND_TERMS[lowerPart]}
                   </p>
                   <div className="absolute top-full left-1/2 -translate-x-1/2 w-3 h-3 bg-orange-600 rotate-45 -mt-1.5" />
@@ -1088,9 +1088,14 @@ OUTPUT: Plain text paragraph.`;
                         >
                           <div className="flex items-start gap-6 mb-8">
                             <div className="relative">
-                               <span className="flex-shrink-0 w-12 h-12 rounded-2xl bg-gray-900 text-white flex items-center justify-center font-black text-lg shadow-2xl shadow-gray-200 group-hover:rotate-12 transition-transform duration-500">
-                                {idx + 1}
-                              </span>
+                               <div className={`flex-shrink-0 w-14 h-14 rounded-2xl flex items-center justify-center font-black text-xl shadow-2xl relative overflow-hidden group/num transition-all duration-500 hover:rotate-6 ${
+                                 response 
+                                   ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-emerald-200 ring-2 ring-emerald-400 ring-offset-2' 
+                                   : 'bg-slate-900 text-white shadow-gray-200'
+                               }`}>
+                                 {response && <div className="absolute inset-0 bg-white/20 backdrop-blur-sm" />}
+                                 <span className="relative z-10">{idx + 1}</span>
+                               </div>
                               {response && !feedback && <div className="absolute -top-2 -right-2 w-5 h-5 bg-emerald-500 rounded-full border-4 border-white animate-pulse" />}
                             </div>
                             <QuestionTextWithCommandTerms text={typedQ.question} />
@@ -1104,7 +1109,7 @@ OUTPUT: Plain text paragraph.`;
                                     key={oIdx}
                                     onClick={() => !(readOnly || submitted) && handleResponse(typedQ.id, opt)}
                                     disabled={readOnly || submitted}
-                                    className={`w-full text-left p-6 rounded-2xl border-2 font-black text-sm transition-all flex items-center justify-between group/btn ${
+                                    className={`w-full text-left p-6 rounded-2xl border-2 font-helvetica font-black text-sm transition-all flex items-center justify-between group/btn ${
                                       responses[typedQ.id] === opt
                                         ? 'bg-emerald-500 border-emerald-500 text-white shadow-2xl shadow-emerald-200'
                                         : 'bg-white border-gray-100 text-gray-600 hover:border-emerald-300 hover:bg-emerald-50/50'
@@ -1126,7 +1131,7 @@ OUTPUT: Plain text paragraph.`;
                                     key={opt.value}
                                     onClick={() => !(readOnly || submitted) && handleResponse(typedQ.id, opt.value)}
                                     disabled={readOnly || submitted}
-                                    className={`p-10 rounded-[2.5rem] border-4 font-black text-4xl transition-all shadow-xl group/btn overflow-hidden relative ${
+                                    className={`p-10 rounded-[2.5rem] border-4 font-helvetica font-black text-4xl transition-all shadow-xl group/btn overflow-hidden relative ${
                                       responses[typedQ.id] === opt.value
                                         ? opt.value === 'TRUE' ? 'bg-emerald-500 border-emerald-600 text-white shadow-emerald-200' : 'bg-red-500 border-red-600 text-white shadow-red-200'
                                         : 'bg-white border-gray-100 text-gray-200 hover:border-emerald-300 hover:text-emerald-500'
@@ -1150,7 +1155,7 @@ OUTPUT: Plain text paragraph.`;
                                     <span className="bg-gray-900 text-white w-8 h-8 rounded-xl flex items-center justify-center font-black text-[10px] shrink-0 group-hover/item:scale-110 transition-transform">
                                       {iIdx + 1}
                                     </span>
-                                    <span className="flex-1 font-bold text-gray-700 text-sm tracking-tight">{item}</span>
+                                    <span className="flex-1 font-helvetica font-bold text-gray-700 text-sm tracking-tight">{item}</span>
                                     {!(readOnly || submitted) && (
                                       <div className="flex gap-1.5">
                                         <button
@@ -1191,7 +1196,7 @@ OUTPUT: Plain text paragraph.`;
                                   value={responses[typedQ.id] || ''}
                                   readOnly={readOnly || submitted}
                                   onChange={(e) => handleResponse(typedQ.id, e.target.value)}
-                                  className={`w-full p-8 rounded-[2rem] border-2 font-bold text-sm text-gray-800 focus:border-emerald-500 focus:bg-white outline-none transition-all resize-none min-h-[180px] shadow-sm tracking-tight leading-relaxed ${readOnly || submitted ? 'bg-gray-50 border-gray-100 shadow-none' : 'bg-gray-50/50 border-gray-100'} placeholder:text-gray-300`}
+                                  className={`w-full p-8 rounded-[2rem] border-2 font-helvetica font-bold text-sm text-gray-800 focus:border-emerald-500 focus:bg-white outline-none transition-all resize-none min-h-[180px] shadow-sm tracking-tight leading-relaxed ${readOnly || submitted ? 'bg-gray-50 border-gray-100 shadow-none' : 'bg-gray-50/50 border-gray-100'} placeholder:text-gray-300`}
                                 />
                                 <div className="absolute bottom-6 right-6 px-3 py-1 bg-gray-900/5 rounded-lg">
                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{responses[typedQ.id]?.length || 0} chars</span>
@@ -1219,7 +1224,7 @@ OUTPUT: Plain text paragraph.`;
                                           return (
                                             <td key={cIdx} className={`p-0 border-r border-gray-50 last:border-r-0 ${!isEditableCell ? 'bg-gray-50/30' : 'bg-white'}`}>
                                               {!isEditableCell ? (
-                                                <div className="p-5 text-xs font-black text-gray-900 opacity-60 uppercase tracking-tight">{cell}</div>
+                                                <div className="p-5 text-xs font-helvetica font-black text-gray-900 opacity-60 uppercase tracking-tight">{cell}</div>
                                               ) : (
                                                 <input
                                                   type="text"
@@ -1231,7 +1236,7 @@ OUTPUT: Plain text paragraph.`;
                                                     newTableResponse[`${rIdx}_${cIdx}`] = e.target.value;
                                                     handleResponse(typedQ.id, newTableResponse);
                                                   }}
-                                                  className={`w-full h-full p-5 text-sm font-black text-emerald-600 outline-none focus:bg-emerald-50 group-hover/tr:bg-gray-50/20 transition-colors placeholder:text-gray-200 ${readOnly || submitted ? 'bg-gray-50' : ''}`}
+                                                  className={`w-full h-full p-5 text-sm font-helvetica font-black text-emerald-600 outline-none focus:bg-emerald-50 group-hover/tr:bg-gray-50/20 transition-colors placeholder:text-gray-200 ${readOnly || submitted ? 'bg-gray-50' : ''}`}
                                                 />
                                               )}
                                             </td>
@@ -1279,7 +1284,7 @@ OUTPUT: Plain text paragraph.`;
                                     {validationFeedback[typedQ.id].score}
                                   </span>
                                 </div>
-                                <p className="text-sm font-black leading-relaxed whitespace-pre-wrap relative z-10">
+                                <p className="text-sm font-helvetica font-black leading-relaxed whitespace-pre-wrap relative z-10">
                                   {validationFeedback[typedQ.id].feedback}
                                 </p>
                               </motion.div>

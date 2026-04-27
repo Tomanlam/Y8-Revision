@@ -133,7 +133,7 @@ const Sidebar = ({ currentMode, setMode, onQRClick, hasOutstandingTasks, user, i
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       animate={{ width: isHovered ? 280 : 88 }}
-      className="fixed left-0 top-0 bottom-0 bg-white/10 backdrop-blur-3xl border-r border-white/20 z-[150] hidden md:flex flex-col py-8 transition-all duration-500 ease-in-out shadow-[0_0_50px_-12px_rgba(0,0,0,0.08)]"
+      className="fixed left-0 top-0 bottom-0 bg-white/5 backdrop-blur-md border-r border-white/10 z-[150] hidden md:flex flex-col py-8 transition-all duration-500 ease-in-out shadow-[0_0_50px_-12px_rgba(0,0,0,0.08)]"
     >
       <div className="px-4 mb-4 flex flex-col gap-3">
         <button 
@@ -1160,38 +1160,42 @@ function AppContent() {
 
       {/* Mobile Nav */}
       {['dashboard', 'user-stats', 'about', 'quick-facts', 'tasks', 'achievement'].includes(mode) && (
-        <nav className="fixed bottom-6 left-6 right-6 bg-white/10 backdrop-blur-3xl border border-white/20 px-4 py-3 z-[150] md:hidden rounded-3xl shadow-[0_20px_50px_-15px_rgba(0,0,0,0.15)]">
-          <div className="flex justify-between items-center max-w-md mx-auto">
+        <nav className="fixed bottom-6 left-4 right-4 bg-white/5 backdrop-blur-md border border-white/10 p-2 z-[150] md:hidden rounded-[2rem] shadow-[0_20px_50px_-15px_rgba(0,0,0,0.15)]">
+          <div className="grid grid-cols-5 gap-1.5">
             {APP_NAV_ITEMS.map((item) => {
               const Icon = item.icon;
               const isActive = mode === item.mode;
               return (
-              <button 
-                key={item.mode}
-                onClick={() => setMode(item.mode)}
-                className={`relative p-3 rounded-2xl transition-all duration-300 ${isActive ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400 hover:text-slate-900'}`}
-              >
-                <Icon size={20} fill={isActive ? "currentColor" : "none"} />
-                {isActive && (
-                  <motion.div 
-                    layoutId="mobile-nav-pill"
-                    className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-slate-900 rounded-full"
-                  />
-                )}
-              </button>
-            )})}
-            <div className="w-px h-6 bg-slate-200/50 mx-2" />
+                <button 
+                  key={item.mode}
+                  onClick={() => setMode(item.mode)}
+                  className={`flex flex-col items-center justify-center gap-1 py-3 rounded-2xl transition-all duration-300 ${
+                    isActive 
+                      ? 'bg-slate-900 text-white shadow-xl shadow-slate-900/20' 
+                      : 'bg-white/5 border border-white/10 text-slate-400 hover:text-slate-900'
+                  }`}
+                >
+                  <Icon size={18} fill={isActive ? "currentColor" : "none"} />
+                  <span className="text-[7px] font-black uppercase tracking-tight">{item.label}</span>
+                </button>
+              )
+            })}
             <button 
               onClick={() => setMode('achievement')}
-              className={`p-1 rounded-2xl border-2 transition-all ${mode === 'achievement' ? 'border-emerald-500' : 'border-transparent'}`}
+              className={`flex flex-col items-center justify-center gap-1 py-3 rounded-2xl transition-all duration-300 ${
+                mode === 'achievement' 
+                  ? 'bg-emerald-500 text-white shadow-xl shadow-emerald-500/20' 
+                  : 'bg-white/5 border border-white/10 text-slate-400'
+              }`}
             >
               {userProfile?.photoURL ? (
-                <img src={userProfile.photoURL} alt="User" className="w-8 h-8 rounded-xl object-cover shadow-sm" />
+                <img src={userProfile.photoURL} alt="User" className="w-[18px] h-[18px] rounded-lg object-cover shadow-sm border border-white/20" />
               ) : (
-                <div className="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center font-black text-xs">
+                <div className={`w-[18px] h-[18px] rounded-lg flex items-center justify-center font-black text-[8px] ${mode === 'achievement' ? 'bg-white/20' : 'bg-emerald-500 text-white'}`}>
                   {userProfile?.displayName?.charAt(0) || 'U'}
                 </div>
               )}
+              <span className="text-[7px] font-black uppercase tracking-tight">Me</span>
             </button>
           </div>
         </nav>

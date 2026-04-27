@@ -349,7 +349,7 @@ const DashboardView: React.FC<DashboardViewProps> = (props) => {
         {isY8Open && <Y8Splash onClose={() => setIsY8Open(false)} />}
       </AnimatePresence>
 
-      <header className="bg-white/10 backdrop-blur-3xl border-b border-white/20 p-4 sticky top-0 z-[100] shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07)]">
+      <header className="bg-white/5 backdrop-blur-md border-b border-white/10 p-4 sticky top-0 z-[100] shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07)]">
         <div className="max-w-7xl mx-auto flex justify-between items-center px-4">
           <div className="flex flex-col">
             <h1 className="font-black tracking-tighter leading-none flex items-baseline gap-2">
@@ -571,7 +571,13 @@ const DashboardView: React.FC<DashboardViewProps> = (props) => {
                       <h2 className="text-xl font-black tracking-tight mb-0.5">
                         {currentUser ? `Welcome Back, ${currentUser.displayName?.split(' ')[0]}` : 'Welcome Back'}
                       </h2>
-                      <p className="text-emerald-100 font-bold text-[9px] uppercase tracking-widest opacity-80">{format(new Date(), 'EEEE, MMMM do yyyy')}</p>
+                      <p className="text-emerald-100 font-bold text-[9px] uppercase tracking-widest opacity-80 mb-2">{format(new Date(), 'EEEE, MMMM do yyyy')}</p>
+                      <div className="flex items-center">
+                        <div className={`px-2 py-0.5 rounded-full flex items-center gap-1 scale-[1.1] origin-left border shadow-sm ${isAdminLoggedIn ? 'bg-amber-500/20 text-amber-50 border-amber-500/30' : 'bg-emerald-500/30 text-white border-emerald-500/40'}`}>
+                          {isAdminLoggedIn ? <ShieldCheck size={10} /> : <GraduationCap size={10} />}
+                          <span className="text-[8px] font-black uppercase tracking-widest">{isAdminLoggedIn ? 'Admin Mode' : 'Student Mode'}</span>
+                        </div>
+                      </div>
                     </div>
                     
                     <div className="grid grid-cols-3 gap-2 w-full">

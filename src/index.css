@@ -3,6 +3,7 @@
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-helvetica: "Helvetica", "Arial", sans-serif;
   --animate-shine: shine 3s infinite;
   
   @keyframes shine {

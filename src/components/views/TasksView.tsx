@@ -712,82 +712,66 @@ JSON OUTPUT: { "questions": [{ "id": "string", "score": "X of X", "feedback": "s
         )}
       </AnimatePresence>
       {isAdmin ? (
-        <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 bg-slate-900 px-10 py-12 rounded-[3.5rem] text-white shadow-[0_30px_60px_-15px_rgba(0,0,0,0.4)] relative overflow-hidden ring-1 ring-white/10">
+        <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-slate-900 px-8 py-5 rounded-[2.5rem] text-white shadow-[0_20px_50px_-10px_rgba(0,0,0,0.4)] relative overflow-hidden ring-1 ring-white/10">
           <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-emerald-500/10 rounded-full blur-[120px] -mr-80 -mt-80" />
           <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-[100px] -ml-64 -mb-64" />
           
           <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center gap-8">
-            <div className="relative group">
-              <div className="absolute -inset-1 bg-gradient-to-tr from-emerald-600 to-cyan-400 rounded-[2rem] blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
-              <div className="relative w-24 h-24 rounded-[2rem] bg-slate-800 flex items-center justify-center text-emerald-400 shadow-2xl border border-white/10 group-hover:scale-105 transition-transform duration-500">
-                <Layout size={44} className="drop-shadow-[0_0_15px_rgba(52,211,153,0.5)]" />
-              </div>
-            </div>
-            
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-1">
               <div className="flex items-center gap-3">
-                <div className="px-3 py-1 bg-emerald-500/10 text-emerald-400 text-[9px] font-black uppercase tracking-[0.2em] rounded-full border border-emerald-500/20 backdrop-blur-md">
+                <div className="px-2.5 py-0.5 bg-emerald-500/10 text-emerald-400 text-[8px] font-black uppercase tracking-[0.2em] rounded-full border border-emerald-500/20 backdrop-blur-md">
                    Control Terminal 02
                 </div>
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse" />
+                <div className="w-1 h-1 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse" />
               </div>
-              <h1 className="text-5xl lg:text-6xl font-black tracking-tighter leading-none text-white">
+              <h1 className="text-4xl font-black tracking-tighter leading-none text-white whitespace-nowrap">
                 Command <span className="text-emerald-400">Center</span>
               </h1>
-              <p className="text-slate-400 text-lg font-medium leading-relaxed tracking-tight max-w-lg mt-2">
-                 High-fidelity management interface for curriculum deployment & intelligence metrics.
-              </p>
             </div>
           </div>
           
           <div className="flex items-center relative z-10 shrink-0">
-            <div className="bg-white/5 backdrop-blur-3xl p-2 rounded-[2.5rem] flex items-center border border-white/10 shadow-2xl shadow-black/20">
+            <div className="bg-white/5 backdrop-blur-3xl p-1.5 rounded-[2rem] flex items-center border border-white/10 shadow-2xl shadow-black/20">
               <button 
                 onClick={() => setActiveTab('tasks')}
-                className={`px-10 py-5 rounded-[2rem] font-black uppercase tracking-widest transition-all duration-500 flex items-center gap-3 text-[10px] ${
+                className={`px-6 py-3 rounded-[1.25rem] font-black uppercase tracking-widest transition-all duration-500 flex items-center gap-3 text-[9px] ${
                   activeTab === 'tasks' 
                     ? 'bg-white text-slate-900 shadow-xl scale-105' 
                     : 'text-slate-400 hover:text-white hover:bg-white/5'
                 }`}
               >
-                <ListChecks size={18} className={activeTab === 'tasks' ? 'text-emerald-500' : ''} />
+                <ListChecks size={16} className={activeTab === 'tasks' ? 'text-emerald-500' : ''} />
                 Deploy
               </button>
               <button 
                 onClick={() => setActiveTab('submissions')}
-                className={`px-10 py-5 rounded-[2rem] font-black uppercase tracking-widest transition-all duration-500 flex items-center gap-3 text-[10px] ${
+                className={`px-6 py-3 rounded-[1.25rem] font-black uppercase tracking-widest transition-all duration-500 flex items-center gap-3 text-[9px] ${
                   activeTab === 'submissions' 
                     ? 'bg-white text-slate-900 shadow-xl scale-105' 
                     : 'text-slate-400 hover:text-white hover:bg-white/5'
                 }`}
               >
-                <Users size={18} className={activeTab === 'submissions' ? 'text-blue-500' : ''} />
+                <Users size={16} className={activeTab === 'submissions' ? 'text-blue-500' : ''} />
                 Inbox
               </button>
             </div>
           </div>
         </header>
       ) : (
-        <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-10 bg-gradient-to-br from-slate-900 to-slate-800 px-10 py-14 rounded-[4rem] text-white shadow-[0_40px_80px_-20px_rgba(15,23,42,0.3)] relative overflow-hidden">
+        <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-slate-900 px-8 py-5 rounded-[2.5rem] text-white shadow-[0_20px_50px_-10px_rgba(0,0,0,0.4)] relative overflow-hidden ring-1 ring-white/10">
           <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-blue-500/10 rounded-full blur-[120px] -mr-80 -mt-80" />
-          <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-emerald-500/5 rounded-full blur-[100px] -ml-64 -mb-64" />
+          <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-emerald-500/5 rounded-full blur-[100px] -ml-64 -mb-64" />
           
           <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center gap-8">
-            <div className="w-24 h-24 rounded-[2rem] bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center text-blue-400 shadow-inner">
-              <Target size={44} className="drop-shadow-[0_0_15px_rgba(96,165,250,0.5)]" />
-            </div>
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-1">
               <div className="flex items-center gap-3">
                 <span className="text-[10px] font-black text-blue-400 uppercase tracking-[0.3em]">Core Mission</span>
                 <div className="w-1 h-1 rounded-full bg-blue-400/50" />
                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none">Learning Path Alpha</span>
               </div>
-              <h1 className="text-5xl lg:text-7xl font-black tracking-tighter leading-none text-white">
+              <h1 className="text-4xl font-black tracking-tighter leading-none text-white">
                 Task <span className="text-blue-400">Hub</span>
               </h1>
-              <p className="text-slate-400 text-lg font-medium leading-relaxed tracking-tight max-w-lg mt-2">
-                Analyze your active objectives, deploy secure solutions, and monitor your scientific progression.
-              </p>
             </div>
           </div>
 
@@ -2064,43 +2048,34 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
       {editingTask && <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 transition-opacity" onClick={() => setEditingTask(null)} />}
 
       {activeTab === 'submissions' && isAdmin ? (
-        <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <div className="flex flex-col md:flex-row items-center gap-10 bg-slate-950 p-12 rounded-[3.5rem] border border-white/10 shadow-2xl relative overflow-hidden group">
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className="flex flex-col md:flex-row items-start md:items-center gap-6 bg-slate-950/80 backdrop-blur-3xl p-6 rounded-[2.5rem] border border-white/10 shadow-2xl relative overflow-hidden group">
               <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/10 via-transparent to-emerald-500/10 opacity-50 group-hover:opacity-80 transition-opacity duration-1000" />
-              <div className="flex items-center gap-10 flex-1 relative z-10">
-                <div className="w-24 h-24 bg-white/5 backdrop-blur-2xl rounded-[2rem] flex items-center justify-center text-emerald-400 shadow-[0_0_50px_rgba(16,185,129,0.2)] border border-white/10 shrink-0 group">
-                  <motion.div
-                    animate={{ rotate: [0, 10, 0, -10, 0] }}
-                    transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-                  >
-                    <Users size={44} />
-                  </motion.div>
-                </div>
+              <div className="flex items-center gap-8 flex-1 relative z-10">
                 <div>
-                  <div className="flex items-center gap-4 mb-3">
-                    <span className="px-3 py-1 bg-emerald-500/10 text-emerald-400 text-[10px] font-black uppercase tracking-[0.3em] rounded-lg border border-emerald-500/20">Administrative Intelligence</span>
-                    <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,1)]" />
+                  <div className="flex items-center gap-3 mb-1.5">
+                    <span className="px-2.5 py-0.5 bg-emerald-500/10 text-emerald-400 text-[8px] font-black uppercase tracking-[0.3em] rounded-lg border border-emerald-500/20">Administrative Intelligence</span>
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,1)]" />
                   </div>
-                  <h3 className="text-[3.5rem] font-black text-white tracking-tighter leading-none mb-3">Grading Inbox</h3>
-                  <p className="text-slate-400 text-base font-medium tracking-tight max-w-md opacity-80 leading-relaxed">Centralized telemetry for student response analysis and evaluation protocols.</p>
+                  <h3 className="text-4xl font-black text-white tracking-tighter leading-none mb-1.5">Grading Inbox</h3>
                 </div>
               </div>
   
-              <div className="w-full md:w-[450px] relative group z-10">
-                <div className="absolute inset-y-0 left-8 flex items-center pointer-events-none">
-                  <List className="text-slate-500 group-focus-within:text-emerald-400 transition-colors" size={24} />
+              <div className="w-full md:w-[380px] relative group z-10">
+                <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none">
+                  <List className="text-slate-500 group-focus-within:text-emerald-400 transition-colors" size={18} />
                 </div>
                 <input 
                   type="text"
                   placeholder="Filter by student or assessment..."
                   value={submissionFilter}
                   onChange={(e) => setSubmissionFilter(e.target.value)}
-                  className="w-full pl-16 pr-10 py-6 rounded-[2.5rem] border border-white/10 font-black text-xs uppercase tracking-[0.25em] focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500/50 outline-none transition-all bg-white/5 backdrop-blur-xl text-white placeholder:text-slate-600 shadow-2xl"
+                  className="w-full pl-14 pr-8 py-4 rounded-[2rem] border border-white/10 font-black text-[10px] uppercase tracking-[0.2em] focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500/50 outline-none transition-all bg-white/5 backdrop-blur-xl text-white placeholder:text-slate-600 shadow-2xl"
                 />
               </div>
             </div>
            
-           <div className="space-y-16">
+           <div className="space-y-12">
              {Object.keys(submissionsByTask).length === 0 ? (
                <div className="col-span-full py-40 flex flex-col items-center justify-center text-center bg-slate-900/50 backdrop-blur-3xl rounded-[4rem] border border-white/5 shadow-2xl">
                  <div className="w-32 h-32 bg-slate-950 rounded-[2.5rem] flex items-center justify-center text-slate-700 mb-10 border border-white/5 shadow-inner group transition-transform hover:scale-110 duration-700">
@@ -2124,24 +2099,18 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
                  <section key={taskId} className="space-y-16">
                    <div className="flex flex-col xl:flex-row xl:items-center justify-between border-b border-slate-200/80 pb-12 mb-4 gap-10">
                      <div className="flex items-center gap-10">
-                       <div className="relative group/task">
-                         <div className="absolute -inset-3 bg-emerald-500/20 rounded-[2.5rem] blur opacity-0 group-hover/task:opacity-100 transition duration-700"></div>
-                         <div className="relative bg-slate-950 p-8 rounded-[2.5rem] text-emerald-400 shadow-2xl border border-white/10 group-hover/task:scale-110 transition-transform duration-700">
-                           <Layout size={44} />
-                         </div>
-                       </div>
                        <div>
                          <div className="flex items-center gap-4 mb-3">
                             <div className="px-3 py-1 bg-emerald-500/10 text-emerald-500 text-[10px] font-black uppercase tracking-[0.25em] rounded-lg border border-emerald-500/20">Protocol Active</div>
                             <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,1)] animate-pulse" />
                          </div>
-                         <h4 className="font-black text-slate-950 text-[3.5rem] uppercase tracking-tighter leading-none mb-4">
+                         <h4 className="font-black text-slate-950 text-[1.75rem] uppercase tracking-tighter leading-none mb-3">
                            {task.title}
                          </h4>
                          <div className="flex items-center gap-6">
                            <div className="flex items-center gap-3 text-slate-400">
                               <Clock size={18} className="text-blue-500" />
-                              <span className="text-[11px] font-black uppercase tracking-[0.15em] opacity-60">Cutoff: {format(new Date(task.dueDate), 'PPP')}</span>
+                              <span className="text-[11px] font-black uppercase tracking-[0.15em] opacity-60">Due date: {format(new Date(task.dueDate), 'PPP')}</span>
                            </div>
                          </div>
                        </div>
@@ -2151,76 +2120,48 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
                        <div className="flex flex-col gap-3">
                          <button 
                            onClick={() => filteredSubs.forEach(s => generateResponsePDF(s, task, false))}
-                           className="text-[11px] uppercase font-black tracking-widest text-slate-500 bg-white hover:bg-slate-950 hover:text-white px-8 py-4 rounded-[1.5rem] transition-all duration-500 border border-slate-200 flex items-center justify-center gap-4 shadow-xl hover:shadow-slate-200"
+                           className="text-[11px] uppercase font-black tracking-widest text-slate-500 bg-white hover:bg-slate-950 hover:text-white px-5 py-3 rounded-[1.25rem] transition-all duration-500 border border-slate-200 flex items-center justify-center gap-3 shadow-lg hover:shadow-slate-200"
                          >
-                           <Download size={20} /> Data Extraction
+                           <Download size={14} /> Raw PDF
                          </button>
                          <button 
                            onClick={() => filteredSubs.filter(s => s.feedback).forEach(s => generateResponsePDF(s, task, true))}
-                           className="text-[11px] uppercase font-black tracking-widest text-emerald-600 bg-emerald-50 hover:bg-emerald-600 hover:text-white px-8 py-4 rounded-[1.5rem] transition-all duration-500 border border-emerald-200 flex items-center justify-center gap-4 shadow-xl shadow-emerald-500/10 hover:shadow-emerald-500/30"
+                           className="text-[11px] uppercase font-black tracking-widest text-emerald-600 bg-emerald-50 hover:bg-emerald-600 hover:text-white px-5 py-3 rounded-[1.25rem] transition-all duration-500 border border-emerald-200 flex items-center justify-center gap-3 shadow-lg shadow-emerald-500/10 hover:shadow-emerald-500/30"
                          >
-                           <Download size={20} /> Intelligence Report
+                           <Download size={14} /> Report PDF
                          </button>
                        </div>
 
                        <div className="hidden xl:block h-24 w-px bg-slate-200/80" />
 
-                       {ungradedCount > 0 && typeof doBatchGrade === 'function' && (
-                         <div className="relative group">
-                           <div className="absolute -inset-1 bg-gradient-to-r from-emerald-400 via-blue-500 to-purple-600 rounded-[2rem] blur opacity-30 group-hover:opacity-100 transition duration-1000"></div>
-                           <button
-                             onClick={() => doBatchGrade(task, filteredSubs)}
-                             disabled={batchGradingTask !== null}
-                             className={`relative h-24 px-12 rounded-[2rem] flex items-center gap-6 font-black uppercase tracking-[0.25em] text-[12px] shadow-2xl transition-all duration-700 ${
-                               batchGradingTask === task.id 
-                                 ? 'bg-slate-50 text-slate-400 cursor-wait' 
-                                 : 'bg-slate-950 text-white hover:scale-105 active:scale-95'
-                             }`}
-                           >
-                             {batchGradingTask === task.id ? (
-                               <><RefreshCw size={24} className="animate-spin text-emerald-400" /> Synthesizing Data Stream...</>
-                             ) : (
-                               <><Sparkles size={24} className="text-emerald-400 drop-shadow-[0_0_12px_rgba(52,211,153,1)]" /> Launch Batch Logic</>
-                             )}
-                           </button>
-                         </div>
-                       )}
+                       {/* Removed */}
 
-                       <div className="flex gap-6">
-                         <div className="bg-white px-12 py-6 rounded-[3rem] border border-slate-100 shadow-[0_20px_40px_-20px_rgba(0,0,0,0.1)] text-center min-w-[160px] flex flex-col justify-center transition-transform hover:scale-105 duration-500">
-                           <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.25em] mb-2 opacity-50">Total Intake</p>
-                           <p className="text-5xl font-black text-slate-950 tracking-tighter leading-none">{filteredSubs.length}</p>
-                         </div>
-                         {ungradedCount > 0 && (
-                           <div className="bg-rose-50 px-12 py-6 rounded-[3rem] border border-rose-100 shadow-[0_20px_40px_-20px_rgba(244,63,94,0.2)] text-center min-w-[160px] flex flex-col justify-center transition-transform hover:scale-105 duration-500">
-                             <p className="text-[11px] font-black text-rose-500 uppercase tracking-[0.25em] mb-2 opacity-60">Pending</p>
-                             <p className="text-5xl font-black text-rose-600 tracking-tighter leading-none">{ungradedCount}</p>
-                           </div>
-                         )}
-                       </div>
+                        <div className="flex gap-3">
+                          <div className="bg-white px-4 py-3 rounded-xl border border-slate-100 shadow-sm text-center min-w-[100px] flex flex-col justify-center">
+                            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5 opacity-50 whitespace-nowrap">Total Intake</p>
+                            <p className="text-xl font-black text-slate-950 leading-none">{filteredSubs.length}</p>
+                          </div>
+                          {ungradedCount > 0 && (
+                            <div className="bg-rose-50 px-4 py-3 rounded-xl border border-rose-100 shadow-sm text-center min-w-[100px] flex flex-col justify-center">
+                              <p className="text-[8px] font-black text-rose-500 uppercase tracking-widest mb-0.5 opacity-60">Pending</p>
+                              <p className="text-xl font-black text-rose-600 leading-none">{ungradedCount}</p>
+                            </div>
+                          )}
+                        </div>
                      </div>
                    </div>
 
-                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                      <AnimatePresence mode="popLayout">
                        {filteredSubs.map((sub) => {
                          const isGraded = !!sub.feedback;
-                         let statusColor = 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20';
-                         let statusText = 'Optimal';
-                         
-                         if (task.dueDate) {
-                           const dueEnd = new Date(task.dueDate);
-                           dueEnd.setHours(23, 59, 59, 999);
-                           const subDate = new Date(sub.completedAt);
-                           if (subDate.getTime() > dueEnd.getTime()) {
-                             statusColor = 'bg-rose-500/10 text-rose-500 border-rose-500/20';
-                             statusText = 'Delayed';
-                           } else if (dueEnd.getTime() - subDate.getTime() > 24 * 60 * 60 * 1000) {
-                             statusColor = 'bg-blue-500/10 text-blue-500 border-blue-500/20';
-                             statusText = 'Accelerated';
-                           }
-                         }
-                         
+                         const statusText = task.type === 'test' ? 'TEST' : 'WORKSHEET';
+                         const statusColor = isGraded 
+                           ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' 
+                           : task.type === 'test' 
+                             ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' 
+                             : 'bg-blue-500/10 text-blue-500 border-blue-500/20';
+
                          return (
                            <motion.div 
                              key={sub.id}
@@ -2228,97 +2169,105 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
                              initial={{ opacity: 0, scale: 0.95 }}
                              animate={{ opacity: 1, scale: 1 }}
                              exit={{ opacity: 0, scale: 0.95 }}
-                             whileHover={{ y: -8, scale: 1.02 }}
-                             className={`group relative p-8 rounded-[2.5rem] transition-all duration-500 flex flex-col justify-between overflow-hidden shadow-xl ${
-                               isGraded ? 'bg-white hover:border-emerald-200 hover:shadow-emerald-500/20' : 'bg-slate-50 hover:border-slate-300 hover:shadow-slate-300/50'
-                             } border border-slate-200`}
+                             whileHover={{ y: -5, scale: 1.01 }}
+                             className={`group relative p-5 rounded-[2rem] transition-all duration-500 flex flex-col justify-between overflow-hidden shadow-xl text-white ${
+                               task.type === 'test' 
+                                 ? 'bg-gradient-to-br from-red-600 to-rose-700' 
+                                 : 'bg-gradient-to-br from-orange-400 to-amber-600'
+                             } border-b-4 ${task.type === 'test' ? 'border-red-900' : 'border-orange-700'}`}
                            >
-                             <div className={`absolute top-0 right-0 w-32 h-32 rounded-bl-[100px] transition-opacity duration-700 ${isGraded ? 'bg-emerald-500/10 opacity-100 group-hover:bg-emerald-500/20' : 'bg-slate-200/50 opacity-0 group-hover:opacity-100'}`} />
+                             <div className="absolute top-0 right-0 w-24 h-24 rounded-bl-[80px] bg-white/5 opacity-0 group-hover:opacity-20 transition-opacity duration-700" />
 
                              <div className="relative z-10">
-                               <div className="flex justify-between items-start mb-6">
-                                 <div className="flex items-center gap-4">
-                                   <div className={`w-14 h-14 rounded-[1.5rem] flex items-center justify-center transition-colors duration-500 shrink-0 ${isGraded ? 'bg-emerald-50 text-emerald-600' : 'bg-white text-slate-400 group-hover:bg-slate-900 group-hover:text-white border border-slate-200 shadow-sm'}`}>
-                                     <User size={24} />
+                               <div className="flex justify-between items-start mb-4">
+                                 <div className="flex items-center gap-3">
+                                   <div className={`w-12 h-12 rounded-[1rem] flex items-center justify-center transition-colors duration-500 shrink-0 ${isGraded ? 'bg-white/20 text-white' : 'bg-white/10 text-white group-hover:bg-white group-hover:text-slate-900 border border-white/10 shadow-sm'}`}>
+                                     <User size={20} />
                                    </div>
                                    <div>
-                                     <h4 className="font-black text-slate-950 text-lg uppercase truncate max-w-[150px] tracking-tight">{sub.studentName}</h4>
-                                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Subject</p>
+                                     <h4 className="font-black text-white text-base uppercase truncate max-w-[140px] tracking-tight">{sub.studentName}</h4>
+                                     <p className="text-[9px] font-black text-white/60 uppercase tracking-[0.2em]">Subject</p>
                                    </div>
                                  </div>
-                                 <div className={`px-4 py-1.5 rounded-xl border text-[9px] font-black uppercase tracking-[0.2em] shadow-sm ${statusColor}`}>
+                                 <div className={`px-3 py-1 rounded-xl border text-[8px] font-black uppercase tracking-[0.2em] shadow-sm ${statusColor.replace('bg-emerald-500/10 text-emerald-500 border-emerald-500/20', 'bg-white/20 text-white border-white/20').replace('bg-rose-500/10 text-rose-500 border-rose-500/20', 'bg-white/20 text-white border-white/20').replace('bg-blue-500/10 text-blue-500 border-blue-500/20', 'bg-white/20 text-white border-white/20')}`}>
                                    {statusText}
                                  </div>
                                </div>
 
-                                <div className="flex gap-4 mb-6">
-                                  <div className="flex-1 bg-slate-50 rounded-[1.5rem] p-4 border border-slate-100 flex flex-col justify-center transition-colors group-hover:bg-slate-100/50">
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1.5 text-center">Score</p>
-                                    <p className={`text-xl font-black text-center ${isGraded ? 'text-emerald-500' : 'text-slate-400 italic text-sm'}`}>
+                                <div className="flex gap-3 mb-4">
+                                  <div className="flex-1 bg-white/10 rounded-[1.2rem] p-3 border border-white/10 flex flex-col justify-center transition-colors group-hover:bg-white/20">
+                                    <p className="text-[9px] font-black text-white/60 uppercase tracking-[0.2em] mb-1 text-center">Score</p>
+                                    <p className={`text-lg font-black text-center ${isGraded ? 'text-white' : 'text-white/40 italic text-xs'}`}>
                                       {isGraded ? `${sub.results?.score} of ${sub.results?.total}` : 'Pending'}
                                     </p>
                                   </div>
-                                  <div className="flex-1 bg-slate-50 rounded-[1.5rem] p-4 border border-slate-100 flex flex-col justify-center transition-colors group-hover:bg-slate-100/50">
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1.5 text-center">Date</p>
-                                    <p className="text-center font-black text-slate-700 text-sm tracking-tight">{format(new Date(sub.completedAt), 'MMM d')}</p>
+                                  <div className="flex-1 bg-white/10 rounded-[1.2rem] p-3 border border-white/10 flex flex-col justify-center transition-colors group-hover:bg-white/20">
+                                    <p className="text-[9px] font-black text-white/60 uppercase tracking-[0.2em] mb-1 text-center">Date</p>
+                                    <p className="text-center font-black text-white text-xs tracking-tight">{format(new Date(sub.completedAt), 'MMM d')}</p>
                                   </div>
                                 </div>
                               </div>
 
-                              <div className="space-y-3 mt-4 relative z-10">
+                              <div className="space-y-2 mt-2 relative z-10">
                                 {onViewSubmission && (
                                   <button 
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       onViewSubmission(sub, task);
                                     }}
-                                    className={`w-full flex items-center justify-center gap-3 py-4 rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[11px] transition-all duration-300 ${
-                                      isGraded 
-                                        ? 'bg-slate-900 text-white hover:bg-slate-800 hover:scale-[1.02] active:scale-[0.98]' 
-                                        : 'bg-emerald-500 text-white hover:bg-emerald-400 hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-emerald-500/30'
-                                    }`}
+                                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl bg-white/10 border border-white/20 text-white hover:bg-white hover:text-slate-900 transition-all duration-300 shadow-sm group/btn"
                                   >
-                                    {isGraded ? <Eye size={18} /> : <Target size={18} />}
-                                    {isGraded ? 'Review Logic' : 'Grade Intake'}
+                                    <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center group-hover/btn:scale-110 transition-transform text-current">
+                                      {isGraded ? <Eye size={16} /> : <Target size={16} />}
+                                    </div>
+                                    <span className="font-black uppercase tracking-[0.2em] text-[10px]">{isGraded ? 'GRADE' : 'Grade Intake'}</span>
                                   </button>
                                 )}
                                 
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-3 gap-2">
                                   <button 
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       generateResponsePDF(sub, task, false);
                                     }}
-                                    className="flex items-center justify-center gap-2 py-3 rounded-[1rem] font-black uppercase tracking-[0.2em] text-[9px] border-2 border-slate-100 text-slate-500 hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all duration-300"
+                                    className="flex flex-col items-center justify-center gap-1.5 py-2.5 rounded-2xl bg-white/10 border border-white/20 text-white hover:bg-white hover:text-slate-900 transition-all duration-300 shadow-sm group/btn"
                                   >
-                                    <Download size={14} />
-                                    Data
+                                    <div className="w-7 h-7 rounded-[0.6rem] bg-white/20 flex items-center justify-center group-hover/btn:scale-110 transition-transform text-current">
+                                      <Download size={14} />
+                                    </div>
+                                    <span className="text-[6.5px] font-black uppercase tracking-tight">Raw PDF</span>
                                   </button>
+                                  
                                   {isGraded ? (
                                     <button 
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         generateResponsePDF(sub, task, true);
                                       }}
-                                      className="flex items-center justify-center gap-2 py-3 rounded-[1rem] font-black uppercase tracking-[0.2em] text-[9px] border-2 border-emerald-100 text-emerald-600 bg-emerald-50/50 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 transition-all duration-300"
+                                      className="flex flex-col items-center justify-center gap-1.5 py-2.5 rounded-2xl bg-white/10 border border-white/20 text-white hover:bg-white hover:text-slate-900 transition-all duration-300 shadow-sm group/btn"
                                     >
-                                      <FileText size={14} />
-                                      Output
-                                     </button>
-                                  ) : <div />}
+                                      <div className="w-7 h-7 rounded-[0.6rem] bg-white/20 flex items-center justify-center group-hover/btn:scale-110 transition-transform text-current">
+                                        <FileText size={14} />
+                                      </div>
+                                      <span className="text-[6.5px] font-black uppercase tracking-tight">Report PDF</span>
+                                      </button>
+                                  ) : <div className="rounded-2xl bg-white/5 border border-white/5" />}
+                                  
+                                  {isAdmin && onDeleteSubmission ? (
+                                    <button 
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setDeleteConfirmation({ id: sub.id, type: 'submission', title: `${sub.studentName}'s submission` });
+                                      }}
+                                      className="flex flex-col items-center justify-center gap-1.5 py-2.5 rounded-2xl bg-white/10 border border-white/20 text-white hover:bg-rose-500 hover:text-white transition-all duration-300 shadow-sm group/btn"
+                                    >
+                                      <div className="w-7 h-7 rounded-[0.6rem] bg-white/20 flex items-center justify-center group-hover/btn:scale-110 transition-transform text-current">
+                                        <Trash2 size={14} />
+                                      </div>
+                                      <span className="text-[6.5px] font-black uppercase tracking-tight">Delete</span>
+                                    </button>
+                                  ) : <div className="rounded-2xl bg-white/5 border border-white/5" />}
                                 </div>
-
-                                {isAdmin && onDeleteSubmission && (
-                                  <button 
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setDeleteConfirmation({ id: sub.id, type: 'submission', title: `${sub.studentName}'s submission` });
-                                    }}
-                                    className="absolute -bottom-6 -right-6 p-4 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-full transition-all"
-                                  >
-                                    <Trash2 size={16} />
-                                  </button>
-                                )}
                               </div>
                            </motion.div>
                          );
@@ -2363,13 +2312,13 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
                           onStartTask(task);
                         }
                       }}
-                      className={`rounded-[2.5rem] p-6 shadow-xl text-white cursor-pointer relative overflow-hidden group h-full flex flex-col min-h-[220px] transition-all border-b-4
+                      className={`rounded-[2.5rem] p-6 shadow-xl text-white cursor-pointer relative overflow-hidden group h-full flex flex-col min-h-[220px] transition-all backdrop-blur-xl border border-white/20
                         ${isSelectedDate ? 'ring-4 ring-offset-4 ring-emerald-400' : ''}
                         ${isCompleted 
-                          ? 'bg-gradient-to-br from-emerald-500 to-teal-600 shadow-emerald-200 border-emerald-700' 
+                          ? 'bg-gradient-to-br from-emerald-500/90 to-teal-600/90 shadow-emerald-500/20' 
                           : isTest 
-                            ? 'bg-red-600 shadow-red-200 border-red-800'
-                            : 'bg-gradient-to-br from-orange-400 to-amber-600 shadow-orange-200 border-orange-700'}
+                            ? 'bg-gradient-to-br from-red-500/90 to-rose-700/90 shadow-red-500/20'
+                            : 'bg-gradient-to-br from-orange-400/90 to-amber-600/90 shadow-orange-500/20'}
                       `}
                     >
                       {isTest && !isCompleted && (
