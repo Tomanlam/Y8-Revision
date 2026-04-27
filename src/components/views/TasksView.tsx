@@ -34,87 +34,6 @@ interface TasksViewProps {
   onDeleteSubmission?: (id: string) => void;
   onWipeCleanSlate?: () => void;
 }
-
-const CalendarSection = ({ tasks, selectedDate, setSelectedDate }: { tasks: Task[], selectedDate: Date, setSelectedDate: (d: Date) => void }) => {
-  const [currentDate, setCurrentDate] = React.useState(new Date());
-
-  const monthStart = startOfMonth(currentDate);
-  const monthEnd = endOfMonth(monthStart);
-  const startDate = startOfWeek(monthStart);
-  const endDate = endOfWeek(monthEnd);
-
-  const calendarDays = eachDayOfInterval({
-    start: startDate,
-    end: endDate,
-  });
-
-  const nextMonth = () => setCurrentDate(addMonths(currentDate, 1));
-  const prevMonth = () => setCurrentDate(subMonths(currentDate, 1));
-
-  return (
-    <div className="bg-white border-2 border-gray-100 rounded-[2rem] p-6 shadow-sm">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-100/50">
-            <CalendarIcon size={20} />
-          </div>
-          <div>
-            <h3 className="text-sm font-black text-gray-800 tracking-tight leading-none uppercase">{format(currentDate, 'MMM yyyy')}</h3>
-            <span className="text-[9px] font-black text-blue-500 uppercase tracking-widest leading-none">Schedule</span>
-          </div>
-        </div>
-        <div className="flex items-center gap-1 bg-gray-50 p-1 rounded-lg border border-gray-100">
-          <button onClick={prevMonth} className="p-1.5 hover:bg-white hover:shadow-sm rounded-md transition-all text-gray-400 hover:text-blue-500">
-            <ChevronLeft size={16} />
-          </button>
-          <button onClick={nextMonth} className="p-1.5 hover:bg-white hover:shadow-sm rounded-md transition-all text-gray-400 hover:text-blue-500">
-            <ChevronRightIcon size={16} />
-          </button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-7 gap-1">
-        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
-          <div key={`cal-header-${day}-${i}`} className="text-center text-[8px] font-black text-gray-300 uppercase tracking-widest mb-1">
-            {day}
-          </div>
-        ))}
-        {calendarDays.map((day, idx) => {
-          const dayTasks = (tasks || []).filter(t => {
-            try {
-              const taskDate = t.dueDate.includes('T') ? parseISO(t.dueDate) : new Date(t.dueDate + 'T00:00:00');
-              return isSameDay(startOfDay(taskDate), startOfDay(day));
-            } catch {
-              return false;
-            }
-          });
-          const isSelected = isSameDay(day, selectedDate);
-          const isToday = isSameDay(day, new Date());
-          const isCurrentMonth = isSameMonth(day, monthStart);
-          const hasTasks = dayTasks.length > 0;
-
-          return (
-            <button
-              key={idx}
-              onClick={() => setSelectedDate(day)}
-              className={`
-                group relative aspect-square rounded-xl flex flex-col items-center justify-center transition-all text-[11px] font-bold
-                ${isSelected ? 'bg-blue-500 text-white shadow-md z-10 scale-105' : isToday ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'}
-                ${!isCurrentMonth ? 'opacity-20 scale-90' : 'opacity-100'}
-              `}
-            >
-              <span>{format(day, 'd')}</span>
-              {hasTasks && !isSelected && (
-                <div className="absolute bottom-1 w-1 h-1 rounded-full bg-blue-400" />
-              )}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
-
 const TasksView = ({ 
   showEasterNotice,
   setShowEasterNotice,
@@ -2445,10 +2364,6 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
                  </div>
                )}
             </div>
-          </div>
-
-          <div className="w-full lg:w-80 lg:sticky lg:top-24 h-fit space-y-6">
-            <CalendarSection tasks={tasks} selectedDate={selectedDate} setSelectedDate={setSelectedDate} />
           </div>
         </div>
       )}

@@ -649,7 +649,7 @@ const DashboardView: React.FC<DashboardViewProps> = (props) => {
                             <Sparkles size={24} />
                           </div>
                           <div>
-                            <p className="text-[10px] font-bold text-purple-100 uppercase tracking-widest opacity-80 leading-none mb-1">AI Engine</p>
+                            <p className="text-[10px] font-bold text-purple-100 uppercase tracking-widest opacity-80 leading-none mb-1">Large Language Model (LLM) Deployed</p>
                             <h3 className="text-lg font-black uppercase tracking-tight leading-none">Gemini 3.1 Flash Lite</h3>
                           </div>
                         </div>

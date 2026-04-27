@@ -148,7 +148,7 @@ const AboutView: React.FC = () => {
                   <Sparkles size={28} />
                 </div>
                 <div>
-                  <h3 className="text-xl font-black uppercase tracking-tight leading-none">AI Engine</h3>
+                  <h3 className="text-xl font-black uppercase tracking-tight leading-none">Large Language Model (LLM) Deployed</h3>
                   <p className="text-purple-100 font-bold text-[10px] uppercase tracking-widest mt-1 opacity-90">LLM Processing</p>
                 </div>
               </div>
