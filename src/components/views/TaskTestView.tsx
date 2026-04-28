@@ -1369,13 +1369,37 @@ OUTPUT: Plain text paragraph.`;
                               )}
                             </div>
                             {responses[typedQ.id]?.length > 0 && (
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {responses[typedQ.id].map((file: any, i: number) => (
-                                  <a href={file.url} target="_blank" rel="noopener noreferrer" key={i} className="flex flex-col gap-1 p-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 transition-colors shadow-sm">
-                                    <span className="text-sm font-black text-slate-700 truncate">{file.name}</span>
-                                    <span className="text-[10px] uppercase font-black tracking-widest text-red-600">Attached</span>
-                                  </a>
-                                ))}
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {responses[typedQ.id].map((file: any, i: number) => {
+                                  const isImage = file.name.match(/\.(jpeg|jpg|gif|png|webp|svg)$/i) || file.url.match(/\.(jpeg|jpg|gif|png|webp|svg)/i) || file.name.startsWith('sketch_');
+                                  return (
+                                    <div key={i} className="flex flex-col rounded-[1.5rem] border border-slate-200 bg-white overflow-hidden shadow-sm relative group w-full">
+                                      {isImage && (
+                                        <div className="h-40 bg-slate-100 flex items-center justify-center overflow-hidden border-b border-slate-200 w-full relative">
+                                          <img src={file.url} alt={file.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
+                                        </div>
+                                      )}
+                                      <a href={file.url} target="_blank" rel="noopener noreferrer" className="flex flex-col gap-1 p-4 hover:bg-slate-50 transition-colors flex-grow">
+                                        <span className="text-sm font-black text-slate-700 truncate" title={file.name}>{file.name}</span>
+                                        <span className="text-[10px] uppercase font-black tracking-widest text-red-600">Attached</span>
+                                      </a>
+                                      {!readOnly && !submitted && (
+                                        <button 
+                                          onClick={(e) => {
+                                            e.preventDefault();
+                                            const existing = responses[typedQ.id] || [];
+                                            handleResponse(typedQ.id, existing.filter((_: any, idx: number) => idx !== i));
+                                          }}
+                                          className="absolute top-3 right-3 w-8 h-8 bg-red-500 text-white rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-md hover:scale-110 hover:bg-red-600"
+                                          title="Remove file"
+                                        >
+                                          <X size={16} />
+                                        </button>
+                                      )}
+                                    </div>
+                                  );
+                                })}
                               </div>
                             )}
                           </div>
