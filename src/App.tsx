@@ -261,7 +261,7 @@ const Sidebar = ({ currentMode, setMode, onQRClick, hasOutstandingTasks, user, i
                 exit={{ opacity: 0, x: -10 }}
                 className="text-[10px] font-black uppercase tracking-widest whitespace-nowrap"
               >
-                QR Portal
+                QR code
               </motion.span>
             )}
           </AnimatePresence>
@@ -333,6 +333,24 @@ function AppContent() {
     (window as any).toggleY8 = () => setIsY8Open(true);
     return () => { delete (window as any).toggleY8; };
   }, []);
+
+  const spawnEmoji = () => {
+    const facialEmojis = ["😀", "😃", "😄", "😁", "😆", "😅", "😂", "🤣", "😊", "😇", "🙂", "🙃", "😉", "😌", "😍", "🥰", "😘", "😗", "😙", "😚", "😋", "😛", "😝", "😜", "🤪", "🤨", "🧐", "🤓", "😎", "🤩", "🥳", "😏", "😒", "😞", "😔", "😟", "😕", "🙁", "☹️", "😣", "😖", "😫", "😩", "🥺", "😢", "😭", "😤", "😠", "😡", "🤬", "🤯", "😳", "🥵", "🥶", "😱", "😨", "😰", "😥", "😓", "🤗", "🤔", "🤭", "🤫", "🤥", "😶", "😐", "😑", "😬", "🙄", "😯", "😦", "😧", "😮", "😲", "🥱", "😴", "🤤", "😪", "😵", "🤐", "🥴", "🤢", "🤮", "🤧", "😷", "🤒", "🤕", "🤑", "🤠", "😈", "👿", "👹", "👺", "🤡", "💩", "👻", "💀", "☠️", "👽", "👾", "🤖", "🎃", "😺", "😸", "😻", "😼", "😽", "🙀", "😿", "😾"];
+    const id = Date.now();
+    const newEmoji = {
+      id,
+      emoji: facialEmojis[Math.floor(Math.random() * facialEmojis.length)],
+      x: Math.random() * 80 + 10,
+      y: Math.random() * 80 + 10,
+      size: Math.random() * 60 + 40,
+    };
+    setActiveEmojis(prev => [...prev, newEmoji]);
+    setTimeout(() => {
+      setActiveEmojis(prev => prev.filter(e => e.id !== id));
+    }, 1000);
+  };
+
+  const [activeEmojis, setActiveEmojis] = React.useState<{ id: number; emoji: string; x: number; y: number; size: number }[]>([]);
 
   const selectedUnit = useMemo(() => units.find(u => u.id === selectedUnitId), [selectedUnitId]);
 
@@ -771,8 +789,6 @@ function AppContent() {
           {mode === 'dashboard' && (
             <DashboardView 
               key="dashboard"
-              isY8Open={isY8Open} setIsY8Open={setIsY8Open}
-              setIsQRModalOpen={setIsQRModalOpen}
               showEasterNotice={showEasterNotice} setShowEasterNotice={setShowEasterNotice}
               easterNoticeAgreed={easterNoticeAgreed} setEasterNoticeAgreed={setEasterNoticeAgreed}
               proceedToEasterAssignment={startEasterAssignment}
@@ -785,7 +801,7 @@ function AppContent() {
               showExitConfirm={showExitConfirm} setShowExitConfirm={setShowExitConfirm}
               challengeCurrentIndex={challengeCurrentIndex} challengeQuestions={challengeQuestions}
               handleChallengeAnswer={handleChallengeAnswer} shortResponseInput={shortResponseInput}
-              setShortResponseInput={setShortResponseInput} isQRModalOpen={isQRModalOpen}
+              setShortResponseInput={setShortResponseInput}
               isAdminOpen={isAdminOpen} setIsAdminOpen={setIsAdminOpen}
               isAdminLoggedIn={isAdminLoggedIn} setIsAdminLoggedIn={setIsAdminLoggedIn}
               handleAdminLogin={handleAdminLogin} adminUsername={adminUsername}
@@ -1120,6 +1136,151 @@ function AppContent() {
         {/* Virtual Calculator global overlay - Moved outside wait container to fix warning */}
         <AnimatePresence>
           {showCalculator && <Calculator key="global-calc" onClose={() => setShowCalculator(false)} />}
+        </AnimatePresence>
+
+        {/* Global Modals */}
+        <AnimatePresence>
+          {isY8Open && (
+            <div 
+              className="fixed inset-0 z-[500] flex items-center justify-center p-6 backdrop-blur-[4px] cursor-pointer"
+              onClick={() => setIsY8Open(false)}
+            >
+              <motion.div
+                initial={{ scale: 0, x: -300, y: 200, rotate: -720, opacity: 0 }}
+                animate={{ scale: 1, x: 0, y: 0, rotate: 0, opacity: 1 }}
+                exit={{ scale: 0, x: -300, y: 200, rotate: -720, opacity: 0 }}
+                transition={{ 
+                  type: "spring", 
+                  damping: 20, 
+                  stiffness: 100,
+                  duration: 0.8
+                }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-gradient-to-br from-orange-500 to-amber-600 rounded-[2.5rem] p-8 max-w-2xl w-full shadow-[0_30px_60px_-15px_rgba(0,0,0,0.3)] relative text-white border border-white/20 flex flex-col items-center overflow-hidden cursor-default"
+              >
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16" />
+                <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -ml-16 -mb-16" />
+
+                <button 
+                  onClick={() => setIsY8Open(false)}
+                  className="absolute top-6 right-6 text-white/50 hover:text-white transition-colors z-[120]"
+                >
+                  <XCircle size={32} />
+                </button>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="relative z-10 text-center mb-8"
+                >
+                  <div className="bg-white/20 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 backdrop-blur-md border border-white/20">
+                    <GraduationCap size={32} className="text-white" />
+                  </div>
+                  <h2 className="text-3xl font-black uppercase tracking-tighter text-white">
+                    Class 25-26
+                  </h2>
+                  <p className="text-orange-100 font-bold text-[10px] uppercase tracking-[0.2em] mt-1 opacity-80">Final Year Cohort</p>
+                </motion.div>
+
+                <motion.div 
+                  initial="hidden"
+                  animate="visible"
+                  variants={{
+                    hidden: { opacity: 0 },
+                    visible: { opacity: 1, transition: { staggerChildren: 0.03, delayChildren: 0.4 } }
+                  }}
+                  className="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full relative z-10 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar"
+                >
+                  {[
+                    "Edith", "Demi", "Hanson", "Dickson", "Helen", "Kiki", "Felix", "Hanna", 
+                    "Ariel", "Alex", "Silvio", "Tony", "Anka", "Kiyo", "Billy", "Samuel", 
+                    "Lawrence", "Xosox", "Chandler", "Mori", "Marli", "Hiro"
+                  ].map((name) => (
+                    <motion.button
+                      key={name}
+                      variants={{
+                        hidden: { opacity: 0, scale: 0.8 },
+                        visible: { opacity: 1, scale: 1 }
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        spawnEmoji();
+                      }}
+                      className="bg-white/10 hover:bg-white/20 border border-white/10 py-3 rounded-xl text-white text-xs font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95 text-center outline-none"
+                    >
+                      {name}
+                    </motion.button>
+                  ))}
+                </motion.div>
+
+                <AnimatePresence>
+                  {activeEmojis.map(emoji => (
+                    <motion.div
+                      key={emoji.id}
+                      initial={{ opacity: 0, scale: 0, y: 20 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 1.5, y: -50 }}
+                      className="fixed pointer-events-none z-[600]"
+                      style={{ 
+                        left: `${emoji.x}%`, 
+                        top: `${emoji.y}%`, 
+                        fontSize: `${emoji.size}px` 
+                      }}
+                    >
+                      {emoji.emoji}
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </motion.div>
+            </div>
+          )}
+
+          {isQRModalOpen && (
+            <div 
+              className="fixed inset-0 z-[500] flex items-center justify-center p-6 backdrop-blur-[4px] cursor-pointer"
+              onClick={() => setIsQRModalOpen(false)}
+            >
+              <motion.div 
+                initial={{ scale: 0, x: -300, y: 200, rotate: -720, opacity: 0 }}
+                animate={{ scale: 1, x: 0, y: 0, rotate: 0, opacity: 1 }}
+                exit={{ scale: 0, x: -300, y: 200, rotate: -720, opacity: 0 }}
+                transition={{ 
+                  type: "spring", 
+                  damping: 20, 
+                  stiffness: 100,
+                  duration: 0.8
+                }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-[2.5rem] p-8 max-w-sm w-full shadow-[0_30px_60px_-15px_rgba(0,0,0,0.3)] relative text-white border border-white/20 cursor-default"
+              >
+                <button 
+                  onClick={() => setIsQRModalOpen(false)}
+                  className="absolute top-6 right-6 text-white/50 hover:text-white transition-colors"
+                >
+                  <XCircle size={28} />
+                </button>
+                
+                <div className="flex items-center gap-4 mb-8">
+                  <div className="bg-white/20 p-3.5 rounded-[1.25rem] backdrop-blur-sm border border-white/20 text-teal-50 flex items-center justify-center">
+                    <QrCode size={32} />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-black uppercase tracking-tight leading-none text-white">Scan the QR code</h3>
+                    <p className="text-emerald-100 font-bold text-[10px] uppercase tracking-widest mt-1 opacity-90">Device Connect</p>
+                  </div>
+                </div>
+                
+                <div className="bg-white p-6 rounded-[2rem] border border-white/10 flex justify-center mb-6 shadow-xl group hover:scale-[1.02] transition-transform duration-500">
+                  <QRCodeSVG value="https://y8rev.vercel.app" size={200} level="H" includeMargin={false} />
+                </div>
+                
+                <div className="bg-white/10 text-white py-4 rounded-2xl border border-white/10 backdrop-blur-sm font-black text-[10px] uppercase tracking-[0.3em] shadow-sm text-center">
+                  y8rev.vercel.app
+                </div>
+              </motion.div>
+            </div>
+          )}
         </AnimatePresence>
       </div>
 

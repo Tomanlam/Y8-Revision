@@ -257,6 +257,7 @@ JSON OUTPUT: { "questions": [{ "id": "string", "score": "X of X", "feedback": "s
   const [showAnalyticsMap, setShowAnalyticsMap] = React.useState<Record<string, boolean>>({});
   const [chartModeMap, setChartModeMap] = React.useState<Record<string, 'distribution'|'students'>>({});
   const [cardAspectMap, setCardAspectMap] = React.useState<Record<string, 'default'|'tall'>>({});
+  const [globalCardAspect, setGlobalCardAspect] = React.useState<'default'|'tall'>('default');
 
   const [worksheetQuestionsJson, setWorksheetQuestionsJson] = React.useState('');
   const [markschemeContent, setMarkschemeContent] = React.useState('');
@@ -964,19 +965,19 @@ Sample PERFECT Markscheme JSON for MCQ, SHORT-RESPONSE, TICK-CROSS, TABLE, REORD
           </div>
         </header>
       ) : (
-        <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-slate-900 px-8 py-5 rounded-[2.5rem] text-white shadow-[0_20px_50px_-10px_rgba(0,0,0,0.4)] relative overflow-hidden ring-1 ring-white/10">
-          <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-blue-500/10 rounded-full blur-[120px] -mr-80 -mt-80" />
-          <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-emerald-500/5 rounded-full blur-[100px] -ml-64 -mb-64" />
+        <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-emerald-900 px-8 py-5 rounded-[2.5rem] text-white shadow-[0_20px_50px_-10px_rgba(0,0,0,0.4)] relative overflow-hidden ring-1 ring-white/10">
+          <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-emerald-500/20 rounded-full blur-[120px] -mr-80 -mt-80" />
+          <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-teal-500/10 rounded-full blur-[100px] -ml-64 -mb-64" />
           
           <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center gap-8">
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-3">
-                <span className="text-[10px] font-black text-blue-400 uppercase tracking-[0.3em]">Core Mission</span>
-                <div className="w-1 h-1 rounded-full bg-blue-400/50" />
-                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none">Learning Path Alpha</span>
+                <span className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.3em]">Core Mission</span>
+                <div className="w-1 h-1 rounded-full bg-emerald-400/50" />
+                <span className="text-[10px] font-black text-emerald-100/60 uppercase tracking-widest leading-none">Learning Path Alpha</span>
               </div>
               <h1 className="text-4xl font-black tracking-tighter leading-none text-white">
-                Task <span className="text-blue-400">Hub</span>
+                Task <span className="text-emerald-400">Hub</span>
               </h1>
             </div>
           </div>
@@ -984,11 +985,11 @@ Sample PERFECT Markscheme JSON for MCQ, SHORT-RESPONSE, TICK-CROSS, TABLE, REORD
           <div className="relative z-10 grid grid-cols-2 gap-4">
             <div className="bg-white/5 backdrop-blur-md rounded-3xl p-5 border border-white/10 flex flex-col items-center justify-center min-w-[140px]">
               <span className="text-3xl font-black text-white">{tasks.length}</span>
-              <span className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] mt-1">Total Goals</span>
+              <span className="text-[8px] font-black text-emerald-100/50 uppercase tracking-[0.2em] mt-1">Total Goals</span>
             </div>
-            <div className="bg-blue-500/10 backdrop-blur-md rounded-3xl p-5 border border-blue-500/20 flex flex-col items-center justify-center min-w-[140px]">
-              <span className="text-3xl font-black text-blue-400">{tasks.filter(t => !mySubmissions.some(s => s.taskId === t.id)).length}</span>
-              <span className="text-[8px] font-black text-blue-400/70 uppercase tracking-[0.2em] mt-1">Pending</span>
+            <div className="bg-emerald-500/20 backdrop-blur-md rounded-3xl p-5 border border-emerald-500/30 flex flex-col items-center justify-center min-w-[140px]">
+              <span className="text-3xl font-black text-emerald-300">{tasks.filter(t => !mySubmissions.some(s => s.taskId === t.id)).length}</span>
+              <span className="text-[8px] font-black text-emerald-400/80 uppercase tracking-[0.2em] mt-1">Pending</span>
             </div>
           </div>
         </header>
@@ -2546,138 +2547,131 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
                      )}
                    </AnimatePresence>
 
-                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                     <AnimatePresence mode="popLayout">
-                       {filteredSubs.map((sub) => {
-                         const isGraded = !!sub.feedback;
-                         const statusText = task.type === 'test' ? 'TEST' : 'WORKSHEET';
-                         const statusColor = isGraded 
-                           ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' 
-                           : task.type === 'test' 
-                             ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' 
-                             : 'bg-blue-500/10 text-blue-500 border-blue-500/20';
+                  <div className={`grid gap-6 ${cardAspectMap[taskId] === 'tall' ? 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3'}`}>
+                    <AnimatePresence mode="popLayout">
+                      {filteredSubs.map((sub) => {
+                        const isGraded = !!sub.feedback;
+                        const statusText = task.type === 'test' ? 'TEST' : 'WORKSHEET';
+                        const isTall = cardAspectMap[taskId] === 'tall';
 
-                         return (
-                           <motion.div 
-                             key={sub.id}
-                             layout
-                             initial={{ opacity: 0, scale: 0.95 }}
-                             animate={{ opacity: 1, scale: 1 }}
-                             exit={{ opacity: 0, scale: 0.95 }}
-                             whileHover={{ y: -5, scale: 1.01 }}
-                             className={`group relative p-5 rounded-[2rem] transition-all duration-500 flex flex-col justify-between overflow-hidden shadow-xl text-white ${
-                               task.type === 'test' 
-                                 ? 'bg-gradient-to-br from-red-600 to-rose-700' 
-                                 : 'bg-gradient-to-br from-orange-400 to-amber-600'
-                             } border-b-4 ${task.type === 'test' ? 'border-red-900' : 'border-orange-700'} ${cardAspectMap[taskId] === 'tall' ? 'aspect-[3/4]' : ''}`}
-                           >
-                             <div className="absolute top-0 right-0 w-24 h-24 rounded-bl-[80px] bg-white/5 opacity-0 group-hover:opacity-20 transition-opacity duration-700 z-10" />
-                             
-                             {isGraded && (
-                               <div className="absolute inset-0 pointer-events-none z-0">
-                                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent w-[200%] h-full animate-[shine_3s_infinite_ease-in-out]" />
-                               </div>
-                             )}
+                        return (
+                          <motion.div 
+                            key={sub.id}
+                            layout
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            whileHover={{ y: -5, scale: 1.01 }}
+                            className={`group relative ${isTall ? 'p-4 aspect-[3/4]' : 'p-5'} rounded-[2rem] transition-all duration-500 flex flex-col justify-between overflow-hidden shadow-xl text-white ${
+                              task.type === 'test' 
+                                ? 'bg-gradient-to-br from-red-600 to-rose-700' 
+                                : 'bg-gradient-to-br from-orange-400 to-amber-600'
+                            } border-b-4 ${task.type === 'test' ? 'border-red-900' : 'border-orange-700'}`}
+                          >
+                            <div className="absolute top-0 right-0 w-24 h-24 rounded-bl-[80px] bg-white/5 opacity-0 group-hover:opacity-20 transition-opacity duration-700 z-10" />
+                            
+                            {isGraded && (
+                              <div className="absolute inset-0 pointer-events-none z-0">
+                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent w-[200%] h-full animate-[shine_3s_infinite_ease-in-out]" />
+                              </div>
+                            )}
 
-                             <div className="relative z-10">
-                               <div className="flex justify-between items-start mb-4">
-                                 <div className="flex items-center gap-3 pr-2">
-                                   <div className={`w-12 h-12 rounded-[1rem] flex items-center justify-center transition-colors duration-500 shrink-0 ${isGraded ? 'bg-white/20 text-white' : 'bg-white/10 text-white group-hover:bg-white group-hover:text-slate-900 border border-white/10 shadow-sm'}`}>
-                                     <User size={20} />
-                                   </div>
-                                   <div>
-                                     <h4 className="font-black text-white text-base uppercase line-clamp-2 tracking-tight">{sub.studentName}</h4>
-                                     <p className="text-[9px] font-black text-white/60 uppercase tracking-[0.2em]">Subject</p>
-                                   </div>
+                            <div className="relative z-10 flex flex-col h-full">
+                              <div className={`flex items-start ${isTall ? 'flex-col gap-2 mb-2' : 'justify-between mb-4'}`}>
+                                <div className="flex items-center gap-3 pr-2">
+                                  <div className={`w-10 h-10 ${!isTall && 'sm:w-12 sm:h-12'} rounded-[1rem] flex items-center justify-center transition-colors duration-500 shrink-0 ${isGraded ? 'bg-white/20 text-white' : 'bg-white/10 text-white group-hover:bg-white group-hover:text-slate-900 border border-white/10 shadow-sm'}`}>
+                                    <User size={18} />
+                                  </div>
+                                  <div>
+                                    <h4 className={`font-black text-white uppercase line-clamp-2 tracking-tight ${isTall ? 'text-sm' : 'text-base'}`}>{sub.studentName}</h4>
+                                    <p className="text-[8px] font-black text-white/60 uppercase tracking-[0.2em]">Subject</p>
+                                  </div>
+                                </div>
+                                <div className={`flex flex-col ${isTall ? 'items-start' : 'items-end'} gap-2 shrink-0`}>
+                                  {isGraded && (
+                                    <div className="bg-white/10 backdrop-blur-md px-2 py-0.5 border border-white/20 rounded-lg text-white text-[8px] font-black uppercase tracking-widest shadow-sm">
+                                      Graded
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+
+                               <div className={`flex ${isTall ? 'flex-col flex-1 shrink min-h-0' : ''} gap-2 mb-2`}>
+                                 <div className={`flex-1 bg-white/10 ${isTall ? 'rounded-xl p-2' : 'rounded-[1.2rem] p-3'} border border-white/10 flex flex-col justify-center transition-colors group-hover:bg-white/20`}>
+                                   <p className="text-[8px] font-black text-white/60 uppercase tracking-[0.2em] mb-1 text-center">Score</p>
+                                   <p className={`font-black text-center ${isTall ? 'text-base' : 'text-lg'} ${isGraded ? 'text-white' : 'text-white/40 italic text-xs'}`}>
+                                     {isGraded ? `${sub.results?.score} of ${sub.results?.total}` : 'Pending'}
+                                   </p>
                                  </div>
-                                 <div className="flex flex-col items-end gap-2 shrink-0">
-                                   {isGraded && (
-                                     <div className="bg-white/10 backdrop-blur-md px-2.5 py-1 border border-white/20 rounded-lg text-white text-[9px] font-black uppercase tracking-widest shadow-sm">
-                                       Graded
+                                 <div className={`flex-1 bg-white/10 ${isTall ? 'rounded-xl p-2' : 'rounded-[1.2rem] p-3'} border border-white/10 flex flex-col justify-center transition-colors group-hover:bg-white/20`}>
+                                   <p className="text-[8px] font-black text-white/60 uppercase tracking-[0.2em] mb-1 text-center">Date</p>
+                                   <p className={`text-center font-black text-white tracking-tight ${isTall ? 'text-xs' : 'text-xs'}`}>{format(new Date(sub.completedAt), 'MMM d')}</p>
+                                 </div>
+                               </div>
+
+                             <div className="space-y-2 mt-auto relative z-10">
+                               {onViewSubmission && (
+                                 <button 
+                                   onClick={(e) => {
+                                     e.stopPropagation();
+                                     onViewSubmission(sub, task);
+                                   }}
+                                   className={`w-full flex items-center justify-center gap-2 ${isTall ? 'py-1.5' : 'py-2.5'} rounded-xl bg-white/10 border border-white/20 text-white hover:bg-white hover:text-slate-900 transition-all duration-300 shadow-sm group/btn`}
+                                 >
+                                   <div className={`w-6 h-6 rounded-lg bg-white/20 flex items-center justify-center group-hover/btn:scale-110 transition-transform text-current`}>
+                                     {isGraded ? <Eye size={12} /> : <Target size={12} />}
+                                   </div>
+                                   <span className="font-black uppercase tracking-[0.2em] text-[9px]">{isGraded ? 'GRADE' : 'Grade Intake'}</span>
+                                 </button>
+                               )}
+                               
+                               <div className="grid grid-cols-3 gap-1.5">
+                                 <button 
+                                   onClick={(e) => {
+                                     e.stopPropagation();
+                                     generateResponsePDF(sub, task, false);
+                                   }}
+                                   className={`flex flex-col items-center justify-center gap-1 ${isTall ? 'py-1.5' : 'py-2.5'} rounded-xl bg-white/10 border border-white/20 text-white hover:bg-white hover:text-slate-900 transition-all duration-300 shadow-sm group/btn`}
+                                 >
+                                   <div className="w-5 h-5 rounded-[0.4rem] bg-white/20 flex items-center justify-center group-hover/btn:scale-110 transition-transform text-current">
+                                     <Download size={10} />
+                                   </div>
+                                   <span className="text-[6px] font-black uppercase tracking-tight">Raw PDF</span>
+                                 </button>
+                                 
+                                 {isGraded ? (
+                                   <button 
+                                     onClick={(e) => {
+                                       e.stopPropagation();
+                                       generateResponsePDF(sub, task, true);
+                                     }}
+                                     className={`flex flex-col items-center justify-center gap-1 ${isTall ? 'py-1.5' : 'py-2.5'} rounded-xl bg-white/10 border border-white/20 text-white hover:bg-white hover:text-slate-900 transition-all duration-300 shadow-sm group/btn`}
+                                   >
+                                     <div className="w-5 h-5 rounded-[0.4rem] bg-white/20 flex items-center justify-center group-hover/btn:scale-110 transition-transform text-current">
+                                       <FileText size={10} />
                                      </div>
-                                   )}
-                                   <div className="hidden">
-                                     {statusText}
-                                   </div>
-                                 </div>
+                                     <span className="text-[6px] font-black uppercase tracking-tight">Report PDF</span>
+                                     </button>
+                                 ) : <div className="rounded-xl bg-white/5 border border-white/5" />}
+                                 
+                                 {isAdmin && onDeleteSubmission ? (
+                                   <button 
+                                     onClick={(e) => {
+                                       e.stopPropagation();
+                                       setDeleteConfirmation({ id: sub.id, type: 'submission', title: `${sub.studentName}'s submission` });
+                                     }}
+                                     className={`flex flex-col items-center justify-center gap-1 ${isTall ? 'py-1.5' : 'py-2.5'} rounded-xl bg-white/10 border border-white/20 text-white hover:bg-rose-500 hover:text-white transition-all duration-300 shadow-sm group/btn`}
+                                   >
+                                     <div className="w-5 h-5 rounded-[0.4rem] bg-white/20 flex items-center justify-center group-hover/btn:scale-110 transition-transform text-current">
+                                       <Trash2 size={10} />
+                                     </div>
+                                     <span className="text-[6px] font-black uppercase tracking-tight">Delete</span>
+                                   </button>
+                                 ) : <div className="rounded-xl bg-white/5 border border-white/5" />}
                                </div>
-
-                                <div className="flex gap-3 mb-4">
-                                  <div className="flex-1 bg-white/10 rounded-[1.2rem] p-3 border border-white/10 flex flex-col justify-center transition-colors group-hover:bg-white/20">
-                                    <p className="text-[9px] font-black text-white/60 uppercase tracking-[0.2em] mb-1 text-center">Score</p>
-                                    <p className={`text-lg font-black text-center ${isGraded ? 'text-white' : 'text-white/40 italic text-xs'}`}>
-                                      {isGraded ? `${sub.results?.score} of ${sub.results?.total}` : 'Pending'}
-                                    </p>
-                                  </div>
-                                  <div className="flex-1 bg-white/10 rounded-[1.2rem] p-3 border border-white/10 flex flex-col justify-center transition-colors group-hover:bg-white/20">
-                                    <p className="text-[9px] font-black text-white/60 uppercase tracking-[0.2em] mb-1 text-center">Date</p>
-                                    <p className="text-center font-black text-white text-xs tracking-tight">{format(new Date(sub.completedAt), 'MMM d')}</p>
-                                  </div>
-                                </div>
-                              </div>
-
-                              <div className="space-y-2 mt-2 relative z-10">
-                                {onViewSubmission && (
-                                  <button 
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      onViewSubmission(sub, task);
-                                    }}
-                                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl bg-white/10 border border-white/20 text-white hover:bg-white hover:text-slate-900 transition-all duration-300 shadow-sm group/btn"
-                                  >
-                                    <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center group-hover/btn:scale-110 transition-transform text-current">
-                                      {isGraded ? <Eye size={16} /> : <Target size={16} />}
-                                    </div>
-                                    <span className="font-black uppercase tracking-[0.2em] text-[10px]">{isGraded ? 'GRADE' : 'Grade Intake'}</span>
-                                  </button>
-                                )}
-                                
-                                <div className="grid grid-cols-3 gap-2">
-                                  <button 
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      generateResponsePDF(sub, task, false);
-                                    }}
-                                    className="flex flex-col items-center justify-center gap-1.5 py-2.5 rounded-2xl bg-white/10 border border-white/20 text-white hover:bg-white hover:text-slate-900 transition-all duration-300 shadow-sm group/btn"
-                                  >
-                                    <div className="w-7 h-7 rounded-[0.6rem] bg-white/20 flex items-center justify-center group-hover/btn:scale-110 transition-transform text-current">
-                                      <Download size={14} />
-                                    </div>
-                                    <span className="text-[6.5px] font-black uppercase tracking-tight">Raw PDF</span>
-                                  </button>
-                                  
-                                  {isGraded ? (
-                                    <button 
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        generateResponsePDF(sub, task, true);
-                                      }}
-                                      className="flex flex-col items-center justify-center gap-1.5 py-2.5 rounded-2xl bg-white/10 border border-white/20 text-white hover:bg-white hover:text-slate-900 transition-all duration-300 shadow-sm group/btn"
-                                    >
-                                      <div className="w-7 h-7 rounded-[0.6rem] bg-white/20 flex items-center justify-center group-hover/btn:scale-110 transition-transform text-current">
-                                        <FileText size={14} />
-                                      </div>
-                                      <span className="text-[6.5px] font-black uppercase tracking-tight">Report PDF</span>
-                                      </button>
-                                  ) : <div className="rounded-2xl bg-white/5 border border-white/5" />}
-                                  
-                                  {isAdmin && onDeleteSubmission ? (
-                                    <button 
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setDeleteConfirmation({ id: sub.id, type: 'submission', title: `${sub.studentName}'s submission` });
-                                      }}
-                                      className="flex flex-col items-center justify-center gap-1.5 py-2.5 rounded-2xl bg-white/10 border border-white/20 text-white hover:bg-rose-500 hover:text-white transition-all duration-300 shadow-sm group/btn"
-                                    >
-                                      <div className="w-7 h-7 rounded-[0.6rem] bg-white/20 flex items-center justify-center group-hover/btn:scale-110 transition-transform text-current">
-                                        <Trash2 size={14} />
-                                      </div>
-                                      <span className="text-[6.5px] font-black uppercase tracking-tight">Delete</span>
-                                    </button>
-                                  ) : <div className="rounded-2xl bg-white/5 border border-white/5" />}
-                                </div>
-                              </div>
-                           </motion.div>
+                             </div>
+                            </div>
+                          </motion.div>
                          );
                        })}
                      </AnimatePresence>

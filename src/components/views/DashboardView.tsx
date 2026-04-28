@@ -13,9 +13,6 @@ import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInte
 import { User as FirebaseUser } from 'firebase/auth';
 
 interface DashboardViewProps {
-  isY8Open: boolean;
-  setIsY8Open: (v: boolean) => void;
-  setIsQRModalOpen: (v: boolean) => void;
   showEasterNotice: boolean;
   setShowEasterNotice: (v: boolean) => void;
   easterNoticeAgreed: boolean;
@@ -41,7 +38,6 @@ interface DashboardViewProps {
   handleChallengeAnswer: (answer: string) => void;
   shortResponseInput: string;
   setShortResponseInput: (v: string) => void;
-  isQRModalOpen: boolean;
   isAdminOpen: boolean;
   setIsAdminOpen: (v: boolean) => void;
   isAdminLoggedIn: boolean;
@@ -81,107 +77,6 @@ interface DashboardViewProps {
   mySubmissions: TaskSubmission[];
   allSubmissions: TaskSubmission[];
 }
-
-const Y8Splash = ({ onClose }: { onClose: () => void }) => {
-  const [activeEmojis, setActiveEmojis] = React.useState<{ id: number; emoji: string; x: number; y: number; size: number }[]>([]);
-  
-  React.useEffect(() => {
-    const timer = setTimeout(() => {
-      onClose();
-    }, 6000); // 6 seconds wait time
-    return () => clearTimeout(timer);
-  }, [onClose]);
-  
-  const spawnEmoji = () => {
-    const facialEmojis = ["😀", "😃", "😄", "😁", "😆", "😅", "😂", "🤣", "😊", "😇", "🙂", "🙃", "😉", "😌", "😍", "🥰", "😘", "😗", "😙", "😚", "😋", "😛", "😝", "😜", "🤪", "🤨", "🧐", "🤓", "😎", "🤩", "🥳", "😏", "😒", "😞", "😔", "😟", "😕", "🙁", "☹️", "😣", "😖", "😫", "😩", "🥺", "😢", "😭", "😤", "😠", "😡", "🤬", "🤯", "😳", "🥵", "🥶", "😱", "😨", "😰", "😥", "😓", "🤗", "🤔", "🤭", "🤫", "🤥", "😶", "😐", "😑", "😬", "🙄", "😯", "😦", "😧", "😮", "😲", "🥱", "😴", "🤤", "😪", "😵", "🤐", "🥴", "🤢", "🤮", "🤧", "😷", "🤒", "🤕", "🤑", "🤠", "😈", "👿", "👹", "👺", "🤡", "💩", "👻", "💀", "☠️", "👽", "👾", "🤖", "🎃", "😺", "😸", "😻", "😼", "😽", "🙀", "😿", "😾"];
-    const id = Date.now();
-    const newEmoji = {
-      id,
-      emoji: facialEmojis[Math.floor(Math.random() * facialEmojis.length)],
-      x: Math.random() * 80 + 10,
-      y: Math.random() * 80 + 10,
-      size: Math.random() * 60 + 40,
-    };
-    setActiveEmojis(prev => [...prev, newEmoji]);
-    setTimeout(() => {
-      setActiveEmojis(prev => prev.filter(e => e.id !== id));
-    }, 1000);
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[100] bg-orange-500 flex flex-col items-center justify-center p-8 overflow-y-auto"
-    >
-      <button 
-        onClick={onClose}
-        className="absolute top-6 right-6 text-white/60 hover:text-white transition-colors z-[120]"
-      >
-        <XCircle size={40} />
-      </button>
-
-      <motion.h2 
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="text-white text-4xl font-black uppercase tracking-tighter mb-12 text-center"
-      >
-        Class of 2025-26
-      </motion.h2>
-
-      <motion.div 
-        initial="hidden"
-        animate="visible"
-        variants={{
-          hidden: { opacity: 0 },
-          visible: { opacity: 1, transition: { staggerChildren: 0.05 } }
-        }}
-        className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 max-w-4xl w-full"
-      >
-        {[
-          "Edith", "Demi", "Hanson", "Dickson", "Helen", "Kiki", "Felix", "Hanna", 
-          "Ariel", "Alex", "Silvio", "Tony", "Anka", "Kiyo", "Billy", "Samuel", 
-          "Lawrence", "Xosox", "Chandler", "Mori", "Marli", "Hiro"
-        ].map((name) => (
-          <motion.button
-            key={name}
-            variants={{
-              hidden: { opacity: 0, x: -20 },
-              visible: { opacity: 1, x: 0 }
-            }}
-            onClick={(e) => {
-              e.stopPropagation();
-              spawnEmoji();
-            }}
-            className="text-white text-2xl font-bold uppercase tracking-wide hover:scale-110 transition-transform text-center outline-none"
-          >
-            {name}
-          </motion.button>
-        ))}
-      </motion.div>
-
-      <AnimatePresence>
-        {activeEmojis.map(emoji => (
-          <motion.div
-            key={emoji.id}
-            initial={{ opacity: 0, scale: 0, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 1.5, y: -50 }}
-            className="fixed pointer-events-none z-[110]"
-            style={{ 
-              left: `${emoji.x}%`, 
-              top: `${emoji.y}%`, 
-              fontSize: `${emoji.size}px` 
-            }}
-          >
-            {emoji.emoji}
-          </motion.div>
-        ))}
-      </AnimatePresence>
-    </motion.div>
-  );
-};
 
 const CalendarWidget = ({ tasks, mySubmissions }: { tasks: Task[], mySubmissions: TaskSubmission[] }) => {
   const unfinished = tasks.filter(t => t.status === 'active' && !mySubmissions.some(s => s.taskId === t.id));
@@ -311,7 +206,7 @@ const DashboardView: React.FC<DashboardViewProps> = (props) => {
   }, []);
 
   const {
-    isY8Open, setIsY8Open, setIsQRModalOpen, showEasterNotice, setShowEasterNotice,
+    showEasterNotice, setShowEasterNotice,
     easterNoticeAgreed, setEasterNoticeAgreed, proceedToEasterAssignment,
     isChallengeModeOpen, setIsChallengeModeOpen, startEasterAssignment, units,
     challengeSelectedUnits, setChallengeSelectedUnits, challengeQuestionCount,
@@ -319,7 +214,7 @@ const DashboardView: React.FC<DashboardViewProps> = (props) => {
     setIsChallengeQuizActive, isEventMode, setIsEventMode, showExitConfirm,
     setShowExitConfirm, challengeCurrentIndex, challengeQuestions,
     handleChallengeAnswer, shortResponseInput, setShortResponseInput,
-    isQRModalOpen, isAdminOpen, setIsAdminOpen, isAdminLoggedIn, setIsAdminLoggedIn,
+    isAdminOpen, setIsAdminOpen, isAdminLoggedIn, setIsAdminLoggedIn,
     handleAdminLogin, adminUsername, setAdminUsername, adminPassword,
     setAdminPassword, adminError, challengeRecords, generatePDF,
     deleteChallengeRecord, editingRecord, setEditingRecord, updateChallengeRecord,
@@ -345,10 +240,6 @@ const DashboardView: React.FC<DashboardViewProps> = (props) => {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
-      <AnimatePresence>
-        {isY8Open && <Y8Splash onClose={() => setIsY8Open(false)} />}
-      </AnimatePresence>
-
       <header className="bg-white/5 backdrop-blur-md border-b border-white/10 p-4 sticky top-0 z-[100] shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07)]">
         <div className="max-w-7xl mx-auto flex justify-between items-center px-4">
           <div className="flex flex-col">
@@ -837,42 +728,6 @@ const DashboardView: React.FC<DashboardViewProps> = (props) => {
               </motion.div>
             </div>
           )}
-        </div>
-      )}
-
-      {isQRModalOpen && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-md z-[500] flex items-center justify-center p-6">
-          <motion.div 
-            initial={{ scale: 0.9, opacity: 0, y: 20 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.9, opacity: 0, y: 20 }}
-            className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-[2.5rem] p-8 max-w-sm w-full shadow-[0_30px_60px_-15px_rgba(0,0,0,0.3)] relative text-white border border-white/20"
-          >
-            <button 
-              onClick={() => setIsQRModalOpen(false)}
-              className="absolute top-6 right-6 text-white/50 hover:text-white transition-colors"
-            >
-              <XCircle size={28} />
-            </button>
-            
-            <div className="flex items-center gap-4 mb-8">
-              <div className="bg-white/20 p-3.5 rounded-[1.25rem] backdrop-blur-sm border border-white/20 text-teal-50 flex items-center justify-center">
-                <QrCode size={32} />
-              </div>
-              <div>
-                <h3 className="text-xl font-black uppercase tracking-tight leading-none text-white">Scan the QR code</h3>
-                <p className="text-emerald-100 font-bold text-[10px] uppercase tracking-widest mt-1 opacity-90">Device Connect</p>
-              </div>
-            </div>
-            
-            <div className="bg-white p-6 rounded-[2rem] border border-white/10 flex justify-center mb-6 shadow-xl group hover:scale-[1.02] transition-transform duration-500">
-              <QRCodeSVG value="https://y8rev.vercel.app" size={200} level="H" includeMargin={false} />
-            </div>
-            
-            <div className="bg-white/10 text-white py-4 rounded-2xl border border-white/10 backdrop-blur-sm font-black text-[10px] uppercase tracking-[0.3em] shadow-sm text-center">
-              y8rev.vercel.app
-            </div>
-          </motion.div>
         </div>
       )}
 
