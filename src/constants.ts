@@ -11,6 +11,7 @@ export const facts = [
   "The shortest war in history lasted only 38 minutes.",
   "A day on Venus is longer than a year on Venus.",
   "Bananas are berries, but strawberries aren't.",
+  "The Earth's magnetic field is what protects us from harmful solar radiation.",
   "Octopuses have three hearts and blue blood.",
   "The Eiffel Tower can be 15 cm taller during the summer due to thermal expansion.",
   "A tsp of a neutron star would weigh about 6 billion tons."

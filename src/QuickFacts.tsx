@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { RefreshCcw, Info } from 'lucide-react';
 
 // Import refactored card components
+import MagneticFieldsCard from './components/quick-facts/MagneticFieldsCard';
 import ForcesCard from './components/quick-facts/ForcesCard';
 import PaperChromatographyCard from './components/quick-facts/PaperChromatographyCard';
 import SolubilityCurveCard from './components/quick-facts/SolubilityCurveCard';
@@ -79,6 +80,7 @@ const QuickFacts: React.FC = () => {
       </header>
 
       <div className="space-y-12">
+        <MagneticFieldsCard chineseType={chineseType} />
         <ForcesCard chineseType={chineseType} />
         <PaperChromatographyCard chineseType={chineseType} />
         <SolubilityCurveCard chineseType={chineseType} />
