@@ -1549,32 +1549,32 @@ OUTPUT: Plain text paragraph.`;
         <div className={`${isGradingConsoleExpanded ? 'w-[60%]' : 'w-[40%]'} bg-gray-50 overflow-hidden flex flex-col z-10 transition-all duration-500 border-l border-gray-100`}>
           <div className="flex-1 overflow-y-auto custom-scrollbar scroll-smooth relative">
             {/* Sticky Header with Gradient Background */}
-            <div className="sticky top-0 z-30 p-8 pb-6 flex items-center justify-between gap-8 bg-gray-200/80 backdrop-blur-md border-b border-gray-200/30 shadow-sm relative">
-              <div className="space-y-2 shrink-0">
-                <div className="flex items-center gap-3 mb-1">
-                  <div className="w-8 h-1 bg-red-600 rounded-full" />
-                  <span className="text-[10px] font-black text-red-600 uppercase tracking-[0.3em]">Protocol Alpha</span>
+            <div className="sticky top-0 z-30 p-5 flex items-center justify-between gap-6 bg-gradient-to-b from-gray-200/95 via-gray-200/50 to-transparent backdrop-blur-md border-b border-gray-200/30 shadow-sm relative">
+              <div className="space-y-1 shrink-0">
+                <div className="flex items-center gap-3 mb-0.5">
+                  <div className="w-6 h-1 bg-red-600 rounded-full" />
+                  <span className="text-[9px] font-black text-red-600 uppercase tracking-[0.3em]">Protocol Alpha</span>
                 </div>
-                <h3 className="text-3xl font-black text-gray-900 uppercase tracking-tighter leading-none">Grading Engine</h3>
-                <div className="flex items-center gap-2 pt-2">
-                  <span className="bg-gray-900 text-white px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest">Gemini 3.1 Flash Lite</span>
+                <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tighter leading-none">Grading Engine</h3>
+                <div className="flex items-center gap-2 pt-1">
+                  <span className="bg-gray-900 text-white px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest">Gemini 3.1 Flash Lite</span>
                 </div>
               </div>
 
               {/* Bento Progress Card */}
-              <div className="flex-1 bg-white p-6 rounded-[2rem] shadow-xl shadow-gray-200/50 border border-gray-100 space-y-4">
+              <div className="flex-1 bg-white/90 p-4 rounded-[1.5rem] shadow-xl shadow-gray-200/50 border border-gray-100 space-y-2">
                 <div className="flex justify-between items-end">
-                  <div className="space-y-1">
-                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Operational Status</span>
-                    <span className="text-sm font-black text-red-600 uppercase leading-none block mt-1">
+                  <div className="space-y-0.5">
+                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block">Operational Status</span>
+                    <span className="text-xs font-black text-red-600 uppercase leading-none block mt-0.5">
                       {gradingPhase === 'extracting_rubrics' ? 'Pre-processing Rubrics' : 
                        gradingPhase === 'grading' ? `Live Analysis` :
                        gradingPhase === 'generating_overall' ? 'Compiling Scores' : 'Engine Ready'}
                     </span>
                   </div>
-                  <span className="text-2xl font-black text-gray-900 tracking-tighter leading-none">{Math.round(gradingProgress)}%</span>
+                  <span className="text-xl font-black text-gray-900 tracking-tighter leading-none">{Math.round(gradingProgress)}%</span>
                 </div>
-                <div className="h-3 bg-gray-100 rounded-2xl overflow-hidden p-[3px] border border-gray-200">
+                <div className="h-2.5 bg-gray-100 rounded-2xl overflow-hidden p-[2px] border border-gray-200">
                   <motion.div 
                     initial={{ width: 0 }}
                     animate={{ width: `${gradingProgress}%` }}
