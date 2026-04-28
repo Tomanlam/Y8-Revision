@@ -255,6 +255,7 @@ JSON OUTPUT: { "questions": [{ "id": "string", "score": "X of X", "feedback": "s
   const [submissionFilter, setSubmissionFilter] = React.useState('');
   const [nukeLevel, setNukeLevel] = React.useState(0);
   const [showAnalyticsMap, setShowAnalyticsMap] = React.useState<Record<string, boolean>>({});
+  const [chartModeMap, setChartModeMap] = React.useState<Record<string, 'distribution'|'students'>>({});
 
   const [worksheetQuestionsJson, setWorksheetQuestionsJson] = React.useState('');
   const [markschemeContent, setMarkschemeContent] = React.useState('');
@@ -2354,6 +2355,13 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
                  ];
                }
                const isAnalyticsShown = showAnalyticsMap[taskId] || false;
+               const isStudentMode = chartModeMap[taskId] === 'students';
+               const sortedSubs = [...gradedSubs].sort((a,b) => (a.results!.score - b.results!.score));
+               const studentChartData = sortedSubs.map(s => ({
+                 name: s.studentName,
+                 score: s.results!.score,
+                 percent: (s.results!.score / s.results!.total) * 100
+               }));
  
                return (
                  <section key={taskId} className="space-y-16">
@@ -2377,7 +2385,7 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
                      </div>
 
                      <div className="flex flex-wrap items-center gap-10">
-                       <div className="flex flex-col gap-3">
+                       <div className="flex flex-row flex-wrap gap-3">
                          <button 
                            onClick={() => filteredSubs.forEach(s => generateResponsePDF(s, task, false))}
                            className="bg-white/90 backdrop-blur-xl border border-slate-200 text-slate-500 hover:bg-slate-900 hover:text-white px-5 py-4 rounded-[1.2rem] transition-all duration-300 flex items-center justify-center gap-3 shadow-sm hover:shadow-xl group/cmd"
@@ -2385,7 +2393,7 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
                            <div className="w-7 h-7 rounded-[0.6rem] bg-slate-100 group-hover/cmd:bg-white/20 flex items-center justify-center transition-colors text-current">
                              <Download size={14} /> 
                            </div>
-                           <span className="text-[10px] uppercase font-black tracking-[0.2em]">Raw PDF</span>
+                           <span className="text-[10px] uppercase font-black tracking-[0.2em] hidden sm:inline">Raw PDF</span>
                          </button>
                          <button 
                            onClick={() => filteredSubs.filter(s => s.feedback).forEach(s => generateResponsePDF(s, task, true))}
@@ -2394,7 +2402,7 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
                            <div className="w-7 h-7 rounded-[0.6rem] bg-emerald-100 group-hover/cmd:bg-emerald-500/80 group-hover/cmd:border-emerald-400 flex items-center justify-center transition-colors border border-emerald-200 text-current">
                              <Download size={14} /> 
                            </div>
-                           <span className="text-[10px] uppercase font-black tracking-[0.2em]">Report PDF</span>
+                           <span className="text-[10px] uppercase font-black tracking-[0.2em] hidden sm:inline">Report PDF</span>
                          </button>
                          <button 
                            onClick={() => setShowAnalyticsMap(prev => ({...prev, [taskId]: !prev[taskId]}))}
@@ -2403,13 +2411,11 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
                            <div className={`w-7 h-7 rounded-[0.6rem] flex items-center justify-center transition-colors border text-current ${isAnalyticsShown ? 'bg-indigo-500/80 border-indigo-400' : 'bg-indigo-100 border-indigo-200 group-hover/cmd:bg-indigo-200'}`}>
                              <Target size={14} /> 
                            </div>
-                           <span className="text-[10px] uppercase font-black tracking-[0.2em]">Analytics</span>
+                           <span className="text-[10px] uppercase font-black tracking-[0.2em] hidden sm:inline">Analytics</span>
                          </button>
                        </div>
 
                        <div className="hidden xl:block h-24 w-px bg-slate-200/80" />
-
-                       {/* Removed */}
 
                         <div className="flex gap-3">
                           <div className="bg-white/80 backdrop-blur-xl px-6 py-4 rounded-[1.2rem] border border-slate-200 shadow-sm text-center min-w-[120px] flex flex-col justify-center transition-all hover:bg-white hover:shadow-md">
@@ -2435,26 +2441,59 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
                          className="mb-8 overflow-hidden"
                        >
                          <div className="bg-white/80 backdrop-blur-xl border border-indigo-100 rounded-[2.5rem] p-8 shadow-xl flex flex-col xl:flex-row gap-8">
-                           <div className="flex-1 xl:w-2/3 h-[300px]">
-                             <h4 className="font-black text-indigo-900 uppercase tracking-widest text-[9px] mb-6">Score Distribution</h4>
-                             <ResponsiveContainer width="100%" height="100%">
-                               <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E0E7FF" />
-                                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#6366F1', fontWeight: 600 }} dy={10} />
-                                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#6366F1', fontWeight: 600 }} />
-                                 <Tooltip 
-                                   cursor={{ fill: '#EEF2FF' }}
-                                   contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)', fontWeight: 'bold' }}
-                                 />
-                                 <Bar dataKey="count" radius={[8, 8, 0, 0]}>
-                                   {
-                                     chartData.map((entry, index) => (
-                                       <Cell key={`cell-${index}`} fill={index === chartData.length - 1 ? '#4F46E5' : '#818CF8'} />
-                                     ))
-                                   }
-                                 </Bar>
-                               </BarChart>
-                             </ResponsiveContainer>
+                           <div className="flex-1 xl:w-2/3 h-[300px] flex flex-col">
+                             <div className="flex justify-between items-center mb-6">
+                               <h4 className="font-black text-indigo-900 uppercase tracking-widest text-[9px]">
+                                 {isStudentMode ? 'Score by Student' : 'Score Distribution'}
+                               </h4>
+                               <button 
+                                 onClick={() => setChartModeMap(prev => ({...prev, [taskId]: isStudentMode ? 'distribution' : 'students'}))}
+                                 className="text-[9px] px-3 py-1.5 bg-indigo-100 text-indigo-600 rounded-lg font-black uppercase tracking-widest hover:bg-indigo-200 transition-colors border border-indigo-200"
+                               >
+                                 Toggle View
+                               </button>
+                             </div>
+                             <div className="flex-1 min-h-[250px]">
+                               {isStudentMode ? (
+                                 <ResponsiveContainer width="100%" height="100%">
+                                   <BarChart data={studentChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E0E7FF" />
+                                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#6366F1', fontWeight: 600 }} dy={10} />
+                                     <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#6366F1', fontWeight: 600 }} />
+                                     <Tooltip 
+                                       cursor={{ fill: '#EEF2FF' }}
+                                       contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)', fontWeight: 'bold' }}
+                                     />
+                                     <Bar dataKey="percent" radius={[8, 8, 0, 0]}>
+                                       {
+                                         studentChartData.map((entry, index) => (
+                                           <Cell key={`cell-${index}`} fill={'#818CF8'} />
+                                         ))
+                                       }
+                                     </Bar>
+                                   </BarChart>
+                                 </ResponsiveContainer>
+                               ) : (
+                                 <ResponsiveContainer width="100%" height="100%">
+                                   <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E0E7FF" />
+                                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#6366F1', fontWeight: 600 }} dy={10} />
+                                     <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#6366F1', fontWeight: 600 }} />
+                                     <Tooltip 
+                                       cursor={{ fill: '#EEF2FF' }}
+                                       contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)', fontWeight: 'bold' }}
+                                     />
+                                     <Bar dataKey="count" radius={[8, 8, 0, 0]}>
+                                       {
+                                         chartData.map((entry, index) => (
+                                           <Cell key={`cell-${index}`} fill={index === chartData.length - 1 ? '#4F46E5' : '#818CF8'} />
+                                         ))
+                                       }
+                                     </Bar>
+                                   </BarChart>
+                                 </ResponsiveContainer>
+                               )}
+                             </div>
                            </div>
                            <div className="flex-1 xl:w-1/3 flex flex-col justify-center gap-4">
                              <h4 className="font-black text-indigo-900 uppercase tracking-widest text-[9px] mb-2">Performance Dashboard</h4>
@@ -2519,15 +2558,13 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
                                task.type === 'test' 
                                  ? 'bg-gradient-to-br from-red-600 to-rose-700' 
                                  : 'bg-gradient-to-br from-orange-400 to-amber-600'
-                             } border-b-4 ${task.type === 'test' ? 'border-red-900' : 'border-orange-700'} ${
-                               isGraded ? 'ring-2 ring-emerald-400 shadow-[0_0_20px_rgba(52,211,153,0.4)]' : ''
-                             }`}
+                             } border-b-4 ${task.type === 'test' ? 'border-red-900' : 'border-orange-700'}`}
                            >
                              <div className="absolute top-0 right-0 w-24 h-24 rounded-bl-[80px] bg-white/5 opacity-0 group-hover:opacity-20 transition-opacity duration-700 z-10" />
                              
                              {isGraded && (
                                <div className="absolute inset-0 pointer-events-none z-0">
-                                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent w-[200%] h-full animate-shine" />
+                                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent w-[200%] h-full animate-[shine_8s_infinite_ease-in-out]" />
                                </div>
                              )}
 
