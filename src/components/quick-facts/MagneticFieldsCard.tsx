@@ -41,6 +41,7 @@ const generatePaths = (type: 'bar' | 'horseshoe') => {
       
       let points = [`M ${x.toFixed(2)} ${y.toFixed(2)}`];
       
+      let steps = 0;
       for (let step=0; step<250; step++) {
         let {bx, by} = getBField(x, y, type);
         const mag = Math.sqrt(bx*bx + by*by);
@@ -50,6 +51,7 @@ const generatePaths = (type: 'bar' | 'horseshoe') => {
         x += (bx / mag) * stepSize;
         y += (by / mag) * stepSize;
         points.push(`L ${x.toFixed(2)} ${y.toFixed(2)}`);
+        steps++;
         
         const sPole = poles.find(p => p.type === 'S');
         if (sPole) {
@@ -59,7 +61,7 @@ const generatePaths = (type: 'bar' | 'horseshoe') => {
         
         if (x < -100 || x > 600 || y < -100 || y > 600) break;
       }
-      paths.push(points.join(' '));
+      paths.push({ d: points.join(' '), steps });
     }
   }
   return paths;
@@ -189,8 +191,21 @@ const MagneticFieldsCard: React.FC<MagneticFieldsCardProps> = ({ chineseType }) 
 
             {/* Field Lines */}
             <g filter="url(#glowMag)">
-              {paths.map((p, i) => (
-                <path key={i} d={p} className="mag-line" />
+              {paths.map((pObj, i) => (
+                <g key={i}>
+                  <path d={pObj.d} className="mag-line" />
+                  {pObj.steps > 10 && (
+                    <polygon points="-6,-4 6,0 -6,4" fill="#4ade80">
+                      <animateMotion
+                        dur={`${Math.max(1, pObj.steps * 0.04)}s`}
+                        repeatCount="indefinite"
+                        rotate="auto"
+                        path={pObj.d}
+                        begin={`-${(i % 10) * 0.4}s`}
+                      />
+                    </polygon>
+                  )}
+                </g>
               ))}
             </g>
 
