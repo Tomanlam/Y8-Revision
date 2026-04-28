@@ -13,6 +13,7 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { db } from '../../firebase';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import Sketchpad from '../Sketchpad';
+import { FileUpload } from '../FileUpload';
 
 // PDF worker setup
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -103,7 +104,7 @@ const TaskTestView: React.FC<TaskTestViewProps> = ({
   const [isGradingWorkflow, setIsGradingWorkflow] = useState(false);
   const [isGradingConsoleExpanded, setIsGradingConsoleExpanded] = useState(false);
   const [gradingPhase, setGradingPhase] = useState('idle');
-  const [showSketchpad, setShowSketchpad] = useState(false);
+  const [showSketchpad, setShowSketchpad] = useState<boolean | string>(false);
   const [gradingProgress, setGradingProgress] = useState(0);
   const [gradingComplete, setGradingComplete] = useState(false);
   const [extractedRubrics, setExtractedRubrics] = useState<Record<string, string>>({});
@@ -642,7 +643,7 @@ JSON OUTPUT: { "q_id": { "rubric": "...", "correct_answer": "...", "marks": numb
        const strAns = typeof correct_answer === 'object' ? JSON.stringify(correct_answer) : correct_answer;
        const strRubric = typeof specific_rubric === 'object' ? JSON.stringify(specific_rubric) : specific_rubric;
 
-       const prompt = `Grade student response against rubric. Max 100 words feedback.
+       const promptText = `Grade student response against rubric. Max 100 words feedback.
 STRICT GRADING RULES:
 1. For 'tick-cross' type: Student response is "TRUE" (checkmark) or "FALSE" (cross). Comparison must be CASE-INSENSITIVE against the rubric's "TRUE"/"FALSE" value.
 2. For 'table' type: 
@@ -664,13 +665,42 @@ STUDENT ANSWER: ${textReq}
 ---
 JSON OUTPUT: { "earned_marks": float, "total_marks": float, "feedback": "string" }`;
 
-       console.log("GRADING PROMPT FOR QUESTION " + q.id + ":\n", prompt);
+       console.log("GRADING PROMPT FOR QUESTION " + q.id + ":\n", promptText);
 
        try {
          addLog(`Requesting grade for ${q.id} from Gemini...`);
+         
+         const parts: any[] = [{ text: promptText }];
+         
+         if (q.type === 'file-upload' && Array.isArray(responses[q.id])) {
+            const files = responses[q.id];
+            for (const f of files) {
+               try {
+                  const r = await fetch(f.url);
+                  const arrayBuffer = await r.arrayBuffer();
+                  const uint8Array = new Uint8Array(arrayBuffer);
+                  let binary = '';
+                  for (let i = 0; i < uint8Array.byteLength; i++) {
+                     binary += String.fromCharCode(uint8Array[i]);
+                  }
+                  const base64Data = window.btoa(binary);
+                  const mimeType = f.name.endsWith('.pdf') ? 'application/pdf' : f.name.endsWith('.png') ? 'image/png' : 'image/jpeg';
+                  parts.push({
+                     inlineData: {
+                        mimeType,
+                        data: base64Data
+                     }
+                  });
+               } catch (fetchErr) {
+                  console.error("Failed to fetch file for grading:", fetchErr);
+                  addLog("Failed to fetch file for grading: " + f.name);
+               }
+            }
+         }
+
          const response = await ai.models.generateContent({
             model: "gemini-3.1-flash-lite-preview",
-            contents: prompt,
+            contents: { role: 'user', parts },
             config: {
               responseMimeType: "application/json",
             }
@@ -850,7 +880,7 @@ OUTPUT: Plain text paragraph.`;
 
              <div className="bg-slate-100 p-1.5 rounded-[1.2rem] border border-slate-200 flex items-center gap-1.5">
                <button 
-                 onClick={() => setShowSketchpad(!showSketchpad)}
+                 onClick={() => setShowSketchpad(showSketchpad ? false : true)}
                  className={`flex items-center gap-2 px-4 py-2 rounded-[1.2rem] text-[10px] font-black uppercase tracking-widest transition-all ${showSketchpad ? 'bg-white text-indigo-500 shadow-sm border border-transparent scale-105' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-200/50'}`}
                  title="Virtual Sketchpad"
                >
@@ -1315,6 +1345,42 @@ OUTPUT: Plain text paragraph.`;
                           </div>
                         )}
 
+                        {typedQ.type === 'file-upload' && (
+                          <div className="bg-slate-50 border-2 border-slate-100 rounded-[2rem] p-8 flex flex-col gap-6">
+                            <div>
+                              <h4 className="text-sm font-black text-slate-800 uppercase tracking-tight mb-2">Upload Required File</h4>
+                              <p className="text-xs text-slate-500 font-medium">Please attach your work file. You can also use the sketchpad to generate an image to be submitted with this question.</p>
+                            </div>
+                            <div className="flex gap-4 items-center">
+                              <FileUpload 
+                                disabled={readOnly || submitted}
+                                onUpload={(url, name) => {
+                                  const existing = responses[typedQ.id] || [];
+                                  handleResponse(typedQ.id, [...existing, { url, name }]);
+                                }}
+                              />
+                              {!readOnly && !submitted && (
+                                <button 
+                                  onClick={() => setShowSketchpad(typedQ.id)}
+                                  className="px-6 py-3 bg-red-50 text-red-600 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-red-100 transition-colors border border-red-100"
+                                >
+                                  Create Sketch
+                                </button>
+                              )}
+                            </div>
+                            {responses[typedQ.id]?.length > 0 && (
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {responses[typedQ.id].map((file: any, i: number) => (
+                                  <a href={file.url} target="_blank" rel="noopener noreferrer" key={i} className="flex flex-col gap-1 p-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 transition-colors shadow-sm">
+                                    <span className="text-sm font-black text-slate-700 truncate">{file.name}</span>
+                                    <span className="text-[10px] uppercase font-black tracking-widest text-red-600">Attached</span>
+                                  </a>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
                         {(submitted || readOnly) && validationFeedback[typedQ.id] && (
                           <motion.div 
                             initial={{ opacity: 0, y: 15 }}
@@ -1362,6 +1428,52 @@ OUTPUT: Plain text paragraph.`;
                 </div>
               );
             })}
+
+            {!isAdmin && !readOnly && !submitted && (
+               <div className="bg-white p-8 rounded-[2rem] border-2 border-slate-100 mt-12 space-y-6">
+                 <div>
+                   <h4 className="text-xl font-black text-slate-800 uppercase tracking-tight mb-2">Test Attachments</h4>
+                   <p className="text-xs font-medium text-slate-500">Upload any reference material, answer sheets, or work files required for this task.</p>
+                 </div>
+                 <FileUpload 
+                   onUpload={(url, name) => {
+                     setResponses(prev => {
+                       const next = { ...prev };
+                       const attachments = Array.isArray(next._attachments) ? next._attachments : [];
+                       next._attachments = [...attachments, { url, name }];
+                       return next;
+                     });
+                   }} 
+                 />
+                 {responses._attachments?.length > 0 && (
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                     {responses._attachments.map((file: any, i: number) => (
+                       <a href={file.url} target="_blank" rel="noopener noreferrer" key={i} className="flex flex-col gap-1 p-4 rounded-xl border border-slate-100 bg-slate-50 hover:bg-slate-100 transition-colors">
+                         <span className="text-sm font-black text-slate-700 truncate">{file.name}</span>
+                         <span className="text-[10px] uppercase font-black tracking-widest text-red-600">Attached</span>
+                       </a>
+                     ))}
+                   </div>
+                 )}
+               </div>
+            )}
+
+            {(isAdmin || readOnly || submitted) && responses._attachments?.length > 0 && (
+               <div className="bg-white p-8 rounded-[2rem] border-2 border-slate-100 mt-12 space-y-6">
+                 <div>
+                   <h4 className="text-xl font-black text-slate-800 uppercase tracking-tight mb-2">Attached Files</h4>
+                   <p className="text-xs font-medium text-slate-500">The student has included the following files.</p>
+                 </div>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                   {responses._attachments.map((file: any, i: number) => (
+                     <a href={file.url} target="_blank" rel="noopener noreferrer" key={i} className="flex flex-col gap-1 p-4 rounded-xl border border-slate-100 bg-slate-50 hover:bg-slate-100 transition-colors">
+                       <span className="text-sm font-black text-slate-700 truncate">{file.name}</span>
+                       <span className="text-[10px] uppercase font-black tracking-widest text-red-600">Attached</span>
+                     </a>
+                   ))}
+                 </div>
+               </div>
+            )}
 
             {generalFeedback && (
               <motion.div
@@ -1550,7 +1662,16 @@ OUTPUT: Plain text paragraph.`;
       </main>
       <AnimatePresence>
         {showSketchpad && (
-          <Sketchpad onClose={() => setShowSketchpad(false)} />
+          <Sketchpad 
+            onClose={() => setShowSketchpad(false)} 
+            onSave={typeof showSketchpad === 'string' ? (url, name) => {
+              const qId = showSketchpad;
+              setResponses(prev => {
+                 const existing = prev[qId] || [];
+                 return { ...prev, [qId]: [...existing, { url, name }] };
+              });
+            } : undefined}
+          />
         )}
       </AnimatePresence>
 

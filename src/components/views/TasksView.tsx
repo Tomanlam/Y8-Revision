@@ -263,6 +263,198 @@ JSON OUTPUT: { "questions": [{ "id": "string", "score": "X of X", "feedback": "s
 
   const [seedingStatus, setSeedingStatus] = React.useState<'idle' | 'seeding' | 'success'>('idle');
 
+  const handleCopyGemInstructions = () => {
+    const prompt = `you are a professional worksheet and test question JSON parser and markscheme analyzer
+
+user will provide a PDF e.g. gs.pdf, which may be a notes, a test, a worksheet or equivalent.
+
+PROMPT USER IF ONLY PDF IS PROVIDED for type of questions the test/worksheet required and their the type of output required:
+
+Type of questions: MCQ, SHORT-RESPONSE, TICK-CROSS, TABLE, REORDER and FILE-UPLOAD type questions (user can choose 1 or multiple or all)
+Type of output: question JSON only (qp), markscheme JSON only (ms) or both (both)
+
+THE first part of "id" text string before the "_" string of the question and markscheme are randomly generated or there will be a data clash with database e.g. in "gs_q1", "gs" needs to changed to randomized letters. but that string needs to be consistent within a SINGLE JSON and between a pair of question JSON and markscheme JSON
+
+For QUESTIONS (qp)
+if it is not already a question set, parse the information from the PDF into questions of the following possible question types: MC, short response, reorder, tick-cross, fill in the blank(s) in a table, file-upload. OUTPUT RAW JSON output
+if it is already a question set, parse the questions following the following example strictly. OUTPUT RAW JSON only
+FOR "TABLE" type questions involving tables, each row of the table CANNOT have more than 1 blank that requires student input. also, there cannot be OTHER TEXTS in cells that requires user input
+
+
+For MARKSCHEME (ms): Generate a markscheme JSON as rubric for the provided questions. It should contain detailed criteria for each question to guide the grading process. OUTPUT RAW JSON only
+
+
+Sample PERFECT QUESTION JSON for MCQ, SHORT-RESPONSE, TICK-CROSS, TABLE, REORDER and FILE-UPLOAD type questions: (note that for table type questions, "" marks cells where student input is required and "x" that contains the text string x are cells that do not require student input as they are populated)
+
+the "page": X tag means that question is found on page X on the PDF provided by the user. if the user did not provide a PDF, ignore and do not include this tag.
+
+Also, DO NOT INCLUDE question number in the "question" tag in JSON when generating question JSON
+
+[
+  {
+    "id": "gs_q1",
+    "type": "mcq",
+    "question": "Which of the following is a primary color in the additive color model (RGB)?",
+    "options": [
+      "Yellow",
+      "Green",
+      "Orange",
+      "Purple"
+    ],
+    "page": 1
+  },
+  {
+    "id": "gs_q2",
+    "type": "short-response",
+    "question": "Explain why the sky appears blue during a clear day. Use valid scientific terminology.",
+    "page": 1
+  },
+  {
+    "id": "gs_q3",
+    "type": "table",
+    "question": "Complete the following table tracking square roots of perfect squares.",
+    "tableData": [
+      [
+        "Number (x)",
+        "Square Root (√x)"
+      ],
+      [
+        "4",
+        ""
+      ],
+      [
+        "9",
+        "3"
+      ],
+      [
+        "16",
+        ""
+      ]
+    ],
+    "page": 1
+  },
+  {
+    "id": "gs_q4",
+    "type": "tick-cross",
+    "question": "The Sun is classified as a planet in our solar system.",
+    "page": 1
+  },
+  {
+    "id": "gs_q5",
+    "type": "reorder",
+    "question": "Order these historical events chronologically from EARLIEST to LATEST.",
+    "items": [
+      "Apollo 11 Moon Landing (1969)",
+      "World War II Ends (1945)",
+      "World War I Begins (1914)",
+      "The Great Depression (1929)"
+    ],
+    "page": 1
+  },
+  {
+    "id": "gs_q6",
+    "type": "mcq",
+    "question": "Which organelle is primarily responsible for ATP production in eukaryotic cells?",
+    "options": [
+      "Nucleus",
+      "Ribosome",
+      "Mitochondria",
+      "Golgi Apparatus"
+    ],
+    "page": 1
+  },
+  {
+    "id": "gs_q7",
+    "type": "file-upload",
+    "question": "Please upload a photo of your handwritten calculation.",
+    "page": 1
+  }
+]
+
+Sample PERFECT Markscheme JSON for MCQ, SHORT-RESPONSE, TICK-CROSS, TABLE, REORDER and FILE-UPLOAD type questions (refer to keys allowed for what keys are allowed, DO NOT INCLUDE ANY OTHER RANDOM TYPES OF KEYS!!!)
+
+[
+  {
+    "id": "gs_q1",
+    "type": "mcq",
+    "question": "Which of the following is a primary color in the additive color model (RGB)?",
+    "data": ["Yellow", "Green", "Orange", "Purple"],
+    "correct_answer": "Green",
+    "explanation": "In the RGB (additive) model, the primary colors are Red, Green, and Blue.",
+    "page": 1
+  },
+  {
+    "id": "gs_q2",
+    "type": "short-response",
+    "question": "Explain why the sky appears blue during a clear day. Use valid scientific terminology.",
+    "correct_answer": "Rayleigh scattering",
+    "rubric": "Score 1.0 if the student mentions 'Rayleigh scattering'. Score 0.5 if they describe shorter wavelengths (blue) being scattered more than longer wavelengths (red) without using the specific term.",
+    "explanation": "Blue light has shorter wavelengths and is scattered more efficiently by atmospheric gases.",
+    "page": 1
+  },
+  {
+    "id": "gs_q3",
+    "type": "table",
+    "question": "Complete the following table tracking square roots of perfect squares.",
+    "data": [
+      ["Number (x)", "Square Root (√x)"],
+      ["4", ""],
+      ["9", "3"],
+      ["16", ""]
+    ],
+    "correct_answer": [["4", "2"], ["16", "4"]],
+    "explanation": "The square root of 4 is 2, and the square root of 16 is 4.",
+    "page": 1
+  },
+  {
+    "id": "gs_q4",
+    "type": "tick-cross",
+    "question": "The Sun is classified as a planet in our solar system.",
+    "correct_answer": false,
+    "explanation": "The Sun is a G-type main-sequence star, not a planet.",
+    "page": 1
+  },
+  {
+    "id": "gs_q5",
+    "type": "reorder",
+    "question": "Order these historical events chronologically from EARLIEST to LATEST.",
+    "data": [
+      "Apollo 11 Moon Landing (1969)",
+      "World War II Ends (1945)",
+      "World War I Begins (1914)",
+      "The Great Depression (1929)"
+    ],
+    "correct_answer": [
+      "World War I Begins (1914)",
+      "The Great Depression (1929)",
+      "World War II Ends (1945)",
+      "Apollo 11 Moon Landing (1969)"
+    ],
+    "explanation": "Events follow the timeline of 1914, 1929, 1945, and 1969.",
+    "page": 1
+  },
+  {
+    "id": "gs_q6",
+    "type": "mcq",
+    "question": "Which organelle is primarily responsible for ATP production in eukaryotic cells?",
+    "data": ["Nucleus", "Ribosome", "Mitochondria", "Golgi Apparatus"],
+    "correct_answer": "Mitochondria",
+    "explanation": "Mitochondria are the 'powerhouses' of the cell where ATP is generated through cellular respiration.",
+    "page": 1
+  },
+  {
+    "id": "gs_q7",
+    "type": "file-upload",
+    "question": "Please upload a photo of your handwritten calculation.",
+    "rubric": "Score 1.0 if the calculation is fully correct. Score 0.5 if there's a minor arithmetic error but the method is correct. Score 0 if the method is incorrect.",
+    "explanation": "Ensure all steps are shown.",
+    "page": 1
+  }
+]`;
+    navigator.clipboard.writeText(prompt);
+    alert("GEM Instructions copied to clipboard!");
+  };
+
   const seedGoldenStandardTasks = async () => {
     setSeedingStatus('seeding');
     try {
@@ -395,7 +587,7 @@ JSON OUTPUT: { "questions": [{ "id": "string", "score": "X of X", "feedback": "s
     setMarkschemeContent('');
   };
 
-  const generateResponsePDF = (submission: TaskSubmission, task: Task, includeFeedback: boolean = false) => {
+  const generateResponsePDF = async (submission: TaskSubmission, task: Task, includeFeedback: boolean = false) => {
     const doc = new jsPDF();
     const isTest = task.type === 'test';
     const primaryColor: [number, number, number] = isTest ? [220, 38, 38] : (includeFeedback ? [16, 185, 129] : [59, 130, 246]); 
@@ -527,23 +719,49 @@ JSON OUTPUT: { "questions": [{ "id": "string", "score": "X of X", "feedback": "s
     const h6 = drawBentoCard(107.5, currentY, cardWidth, "Security Violations", securityValue, sColor);
     currentY += Math.max(h5, h6) + 12;
 
-    const tableData = task.worksheetQuestions?.map((q, idx) => {
+    const base64Images: Record<number, string[]> = {};
+    
+    const tablePromises = (task.worksheetQuestions || []).map(async (q, idx) => {
       const qId = q.id.trim();
       let response = submission.responses?.[qId] || submission.responses?.[q.id];
       const feedback = submission.feedback?.[qId] || submission.feedback?.[q.id];
       
-      if (q.type === 'table' && response && typeof response === 'object') {
-        response = Object.entries(response)
+      let responseText = '';
+      if (q.type === 'file-upload' && response && Array.isArray(response)) {
+        responseText = '[Attached Files Rendered Below]';
+        base64Images[idx] = [];
+        for (const file of response) {
+          if (file.url && (file.url.endsWith('.png') || file.url.endsWith('.jpg') || file.url.endsWith('.jpeg'))) {
+            try {
+              const res = await fetch(file.url);
+              const blob = await res.blob();
+              const reader = new FileReader();
+              const b64 = await new Promise<string>((resolve) => {
+                reader.onloadend = () => resolve(reader.result as string);
+                reader.readAsDataURL(blob);
+              });
+              base64Images[idx].push(b64);
+            } catch (err) {
+              console.error("Failed to load image for PDF", err);
+            }
+          } else if (file.name) {
+            responseText += `\n[File: ${file.name}]`;
+          }
+        }
+      } else if (q.type === 'table' && response && typeof response === 'object') {
+        responseText = Object.entries(response)
           .map(([key, val]) => `${key}: ${val}`)
           .join('\n');
       } else if (typeof response === 'object' && response !== null) {
-        response = JSON.stringify(response);
+        responseText = JSON.stringify(response);
+      } else {
+        responseText = response || '---';
       }
       
       const row = [
         idx + 1,
         (q as any).question || (q as any).text || '---',
-        response || '---'
+        responseText
       ];
 
       if (includeFeedback) {
@@ -551,7 +769,9 @@ JSON OUTPUT: { "questions": [{ "id": "string", "score": "X of X", "feedback": "s
       }
 
       return row;
-    }) || [];
+    });
+
+    const tableData = await Promise.all(tablePromises);
 
     autoTable(doc, {
       startY: currentY,
@@ -582,6 +802,54 @@ JSON OUTPUT: { "questions": [{ "id": "string", "score": "X of X", "feedback": "s
         0: { cellWidth: 10, halign: 'center', fillColor: [248, 250, 252], textColor: [100, 116, 139] },
         1: { cellWidth: 80, fillColor: [248, 250, 252], textColor: [31, 41, 55], fontStyle: 'bold' },
         2: { cellWidth: 90, fillColor: [239, 246, 255], textColor: [30, 58, 138], fontStyle: 'normal' }
+      },
+      didParseCell: (data) => {
+        if (data.section === 'body' && data.column.index === 2) {
+          const images = base64Images[data.row.index];
+          if (images && images.length > 0) {
+            let heightNeeded = 20; // Text height padding
+            images.forEach(imgData => {
+              try {
+                const props = doc.getImageProperties(imgData);
+                const ratio = props.height / props.width;
+                // data.cell.width may not be finalized if dynamic, but columnStyles defines it.
+                const cellW = includeFeedback ? 65 : 90;
+                const finalW = Math.min(cellW - 10, 80);
+                const finalH = finalW * ratio;
+                heightNeeded += finalH + 5;
+              } catch (e) {
+                console.error("Failed to parse image props for height padding", e);
+              }
+            });
+            if (data.row.minCellHeight < heightNeeded) {
+              data.row.minCellHeight = heightNeeded;
+            }
+          }
+        }
+      },
+      didDrawCell: (data) => {
+        if (data.section === 'body' && data.column.index === 2) {
+          const images = base64Images[data.row.index];
+          if (images && images.length > 0) {
+            let yOffset = data.cell.y + 15; // padding under text
+            images.forEach(imgData => {
+              try {
+                const props = doc.getImageProperties(imgData);
+                const ratio = props.height / props.width;
+                const finalW = Math.min(data.cell.width - 10, 80);
+                const finalH = finalW * ratio;
+                
+                // Extract format from base64 string
+                const format = imgData.substring("data:image/".length, imgData.indexOf(";base64")).toUpperCase();
+                
+                doc.addImage(imgData, format === 'JPEG' ? 'JPEG' : 'PNG', data.cell.x + 5, yOffset, finalW, finalH);
+                yOffset += finalH + 5;
+              } catch (e) {
+                console.error("Failed to draw image to PDF", e);
+              }
+            });
+          }
+        }
       }
     });
 
@@ -1081,6 +1349,13 @@ Output ONLY the JSON array.`;
                       >
                         <Copy size={12} /> Copy Prompt
                       </button>
+                      <button
+                        type="button"
+                        onClick={handleCopyGemInstructions}
+                        className="flex items-center gap-1 text-[10px] uppercase font-black tracking-widest bg-violet-50 text-violet-600 px-3 py-1.5 rounded-lg border border-violet-200 hover:bg-violet-100 transition-all"
+                      >
+                        <Copy size={12} /> Copy GEM Instructions
+                      </button>
                     </div>
                   </div>
                   <textarea 
@@ -1443,15 +1718,24 @@ Output ONLY the JSON object.`;
                     <div className="flex-1 flex flex-col h-64 md:h-[400px]">
                       <div className="flex justify-between items-center mb-2">
                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Questions JSON</label>
-                        <button 
-                          onClick={() => {
-                             navigator.clipboard.writeText(`Generate a balanced set of 10 questions in JSON format. include MCQ, Short Response, and Table types. use IDs like "test_${Date.now()}_q1".\n1. "mcq" (requires "options": array of strings)\n2. "short-response"\n3. "table" (requires "tableData": 2D array of strings. Use "" for cells where user input is required, and pre-fill other cells with headers or data.)\n4. "tick-cross" (binary selection of ✓ or ✕)\n5. "reorder" (requires "items": array of strings in random initial order)\nOutput a STRICT JSON array.`);
-                             alert('Prompt Copied!');
-                          }}
-                          className="flex items-center gap-1 text-[9px] font-black uppercase text-emerald-500 hover:bg-emerald-50 px-2 py-1 rounded-md transition-colors"
-                        >
-                          <Copy size={12} /> Prompt
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button 
+                            onClick={() => {
+                               navigator.clipboard.writeText(`Generate a balanced set of 10 questions in JSON format. include MCQ, Short Response, and Table types. use IDs like "test_${Date.now()}_q1".\n1. "mcq" (requires "options": array of strings)\n2. "short-response"\n3. "table" (requires "tableData": 2D array of strings. Use "" for cells where user input is required, and pre-fill other cells with headers or data.)\n4. "tick-cross" (binary selection of ✓ or ✕)\n5. "reorder" (requires "items": array of strings in random initial order)\nOutput a STRICT JSON array.`);
+                               alert('Prompt Copied!');
+                            }}
+                            className="flex items-center gap-1 text-[9px] font-black uppercase text-emerald-500 hover:bg-emerald-50 px-2 py-1 rounded-md transition-colors"
+                          >
+                            <Copy size={12} /> Prompt
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleCopyGemInstructions}
+                            className="flex items-center gap-1 text-[9px] font-black uppercase text-violet-500 hover:bg-violet-50 px-2 py-1 rounded-md transition-colors"
+                          >
+                            <Copy size={12} /> GEM Instructions
+                          </button>
+                        </div>
                       </div>
                       <textarea 
                         value={editingTaskQuestionsJson}
@@ -1720,6 +2004,13 @@ Output ONLY the raw JSON array.`;
                       >
                         <Copy size={12} /> Copy Prompt
                       </button>
+                      <button
+                        type="button"
+                        onClick={handleCopyGemInstructions}
+                        className="flex items-center gap-1 text-[10px] uppercase font-black tracking-widest bg-violet-50 text-violet-600 px-3 py-1.5 rounded-lg border border-violet-200 hover:bg-violet-100 transition-all"
+                      >
+                        <Copy size={12} /> GEM Instructions
+                      </button>
                     </div>
                   </div>
 
@@ -1937,15 +2228,24 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
               <div className="flex-1 flex flex-col h-64 md:h-[400px]">
                 <div className="flex justify-between items-center mb-2">
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Questions JSON</label>
-                  <button 
-                    onClick={() => {
-                       navigator.clipboard.writeText(`Generate a balanced set of 10 questions in JSON format. include MCQ, Short Response, and Table types. use IDs like "test_${Date.now()}_q1".\n1. "mcq" (requires "options": array of strings)\n2. "short-response"\n3. "table" (requires "tableData": 2D array of strings. Use "" for cells where user input is required, and pre-fill other cells with headers or data.)\n4. "tick-cross" (binary selection of ✓ or ✕)\n5. "reorder" (requires "items": array of strings in random initial order)\nOutput a STRICT JSON array.`);
-                       alert('Prompt Copied!');
-                    }}
-                    className="flex items-center gap-1 text-[9px] font-black uppercase text-emerald-500 hover:bg-emerald-50 px-2 py-1 rounded-md transition-colors"
-                  >
-                    <Copy size={12} /> Prompt
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={() => {
+                         navigator.clipboard.writeText(`Generate a balanced set of 10 questions in JSON format. include MCQ, Short Response, and Table types. use IDs like "test_${Date.now()}_q1".\n1. "mcq" (requires "options": array of strings)\n2. "short-response"\n3. "table" (requires "tableData": 2D array of strings. Use "" for cells where user input is required, and pre-fill other cells with headers or data.)\n4. "tick-cross" (binary selection of ✓ or ✕)\n5. "reorder" (requires "items": array of strings in random initial order)\nOutput a STRICT JSON array.`);
+                         alert('Prompt Copied!');
+                      }}
+                      className="flex items-center gap-1 text-[9px] font-black uppercase text-emerald-500 hover:bg-emerald-50 px-2 py-1 rounded-md transition-colors"
+                    >
+                      <Copy size={12} /> Prompt
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleCopyGemInstructions}
+                      className="flex items-center gap-1 text-[9px] font-black uppercase text-violet-500 hover:bg-violet-50 px-2 py-1 rounded-md transition-colors"
+                    >
+                      <Copy size={12} /> GEM Instructions
+                    </button>
+                  </div>
                 </div>
                 <textarea 
                   value={editingTaskQuestionsJson}
@@ -2311,14 +2611,25 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
                         </div>
 
                         <div className="flex gap-3 mb-2 flex-grow">
-                          <div className="flex-1 bg-white/10 rounded-[1.2rem] p-3 border border-white/10 flex flex-col justify-center transition-colors group-hover:bg-white/20">
-                            <p className="text-[9px] font-black text-white/60 uppercase tracking-[0.2em] mb-1 text-center">Info</p>
-                            <p className="text-center font-black text-white text-[10px] uppercase tracking-widest">{isTest ? `${task.timeLimit}m Limit` : 'No Limit'}</p>
-                          </div>
-                          <div className="flex-1 bg-white/10 rounded-[1.2rem] p-3 border border-white/10 flex flex-col justify-center transition-colors group-hover:bg-white/20">
-                            <p className="text-[9px] font-black text-white/60 uppercase tracking-[0.2em] mb-1 text-center">Due</p>
-                            <p className="text-center font-black text-white text-[10px] tracking-tight">{format(taskDate, 'MMM d')}</p>
-                          </div>
+                          {isCompleted && submission?.feedback ? (
+                            <div className="flex-1 bg-white/10 rounded-[1.2rem] p-3 border border-white/10 flex flex-col justify-center transition-colors group-hover:bg-white/20">
+                              <p className="text-[9px] font-black text-white/60 uppercase tracking-[0.2em] mb-1 text-center">Score</p>
+                              <p className="text-center font-black text-white tracking-tight text-lg">
+                                {submission?.results?.score} of {submission?.results?.total}
+                              </p>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="flex-1 bg-white/10 rounded-[1.2rem] p-3 border border-white/10 flex flex-col justify-center transition-colors group-hover:bg-white/20">
+                                <p className="text-[9px] font-black text-white/60 uppercase tracking-[0.2em] mb-1 text-center">Info</p>
+                                <p className="text-center font-black text-white text-[10px] uppercase tracking-widest">{isTest ? `${task.timeLimit}m Limit` : 'No Limit'}</p>
+                              </div>
+                              <div className="flex-1 bg-white/10 rounded-[1.2rem] p-3 border border-white/10 flex flex-col justify-center transition-colors group-hover:bg-white/20">
+                                <p className="text-[9px] font-black text-white/60 uppercase tracking-[0.2em] mb-1 text-center">Due</p>
+                                <p className="text-center font-black text-white text-[10px] tracking-tight">{format(taskDate, 'MMM d')}</p>
+                              </div>
+                            </>
+                          )}
                         </div>
 
                         {task.description && (
@@ -2365,7 +2676,7 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
                                  {isCompleted ? (submission?.feedback ? <FileText size={14} /> : <CheckCircle2 size={14} />) : <ArrowRight size={14} />}
                               </div>
                               <span className="font-black uppercase tracking-[0.2em] text-[10px]">
-                                {isCompleted ? (submission?.feedback ? 'REPORT PDF' : 'PENDING GRADE') : 'START TASK'}
+                                {isCompleted ? (submission?.feedback ? 'SEE REPORT' : 'PENDING GRADE') : 'START TASK'}
                               </span>
                            </button>
                         </div>

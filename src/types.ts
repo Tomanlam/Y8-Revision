@@ -113,7 +113,7 @@ export interface Question {
   id: string;
   text?: string;
   question?: string;
-  type?: 'mcq' | 'short-response' | 'table' | string;
+  type?: 'mcq' | 'short-response' | 'table' | 'file-upload' | string;
   options?: string[];
   correctAnswer?: string;
   explanation?: string;
