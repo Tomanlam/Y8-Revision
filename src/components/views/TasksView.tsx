@@ -4,6 +4,7 @@ import { Star, CheckCircle2, ListChecks, Users, Clock, Plus, Trash2, Layout, Cal
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, parseISO, startOfDay } from 'date-fns';
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid } from 'recharts';
 import { db } from '../../firebase';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 
@@ -253,6 +254,7 @@ JSON OUTPUT: { "questions": [{ "id": "string", "score": "X of X", "feedback": "s
   const [activeTab, setActiveTab] = React.useState<'tasks' | 'submissions'>('tasks');
   const [submissionFilter, setSubmissionFilter] = React.useState('');
   const [nukeLevel, setNukeLevel] = React.useState(0);
+  const [showAnalyticsMap, setShowAnalyticsMap] = React.useState<Record<string, boolean>>({});
 
   const [worksheetQuestionsJson, setWorksheetQuestionsJson] = React.useState('');
   const [markschemeContent, setMarkschemeContent] = React.useState('');
@@ -2328,6 +2330,30 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
 
                if (filteredSubs.length === 0) return null;
                const ungradedCount = filteredSubs.filter(s => !s.feedback).length;
+               
+               const gradedSubs = filteredSubs.filter(s => !!s.feedback && s.results?.score !== undefined && s.results?.total !== undefined);
+               let avgScore = 0, avgPercent = 0, highScore = 0, highPercent = 0, lowScore = 0, lowPercent = 0;
+               let chartData:any[] = [];
+               if (gradedSubs.length > 0) {
+                 const scores = gradedSubs.map(s => ({ score: s.results!.score, total: s.results!.total, percent: (s.results!.score / s.results!.total) * 100 }));
+                 const scoreVals = scores.map(s => s.score);
+                 const percentVals = scores.map(s => s.percent);
+                 avgScore = scoreVals.reduce((a,b)=>a+b,0) / scores.length;
+                 avgPercent = percentVals.reduce((a,b)=>a+b,0) / scores.length;
+                 highScore = Math.max(...scoreVals);
+                 highPercent = Math.max(...percentVals);
+                 lowScore = Math.min(...scoreVals);
+                 lowPercent = Math.min(...percentVals);
+
+                 chartData = [
+                   { name: '0-20%', count: percentVals.filter(p => p <= 20).length },
+                   { name: '21-40%', count: percentVals.filter(p => p > 20 && p <= 40).length },
+                   { name: '41-60%', count: percentVals.filter(p => p > 40 && p <= 60).length },
+                   { name: '61-80%', count: percentVals.filter(p => p > 60 && p <= 80).length },
+                   { name: '81-100%', count: percentVals.filter(p => p > 80 && p <= 100).length }
+                 ];
+               }
+               const isAnalyticsShown = showAnalyticsMap[taskId] || false;
  
                return (
                  <section key={taskId} className="space-y-16">
@@ -2370,6 +2396,15 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
                            </div>
                            <span className="text-[10px] uppercase font-black tracking-[0.2em]">Report PDF</span>
                          </button>
+                         <button 
+                           onClick={() => setShowAnalyticsMap(prev => ({...prev, [taskId]: !prev[taskId]}))}
+                           className={`${isAnalyticsShown ? 'bg-indigo-600 border-indigo-500 text-white shadow-indigo-500/20 shadow-lg' : 'bg-indigo-50/90 border-indigo-200 text-indigo-600 hover:bg-indigo-100 shadow-sm hover:shadow-md'} backdrop-blur-xl border px-5 py-4 rounded-[1.2rem] transition-all duration-300 flex items-center justify-center gap-3 group/cmd`}
+                         >
+                           <div className={`w-7 h-7 rounded-[0.6rem] flex items-center justify-center transition-colors border text-current ${isAnalyticsShown ? 'bg-indigo-500/80 border-indigo-400' : 'bg-indigo-100 border-indigo-200 group-hover/cmd:bg-indigo-200'}`}>
+                             <Target size={14} /> 
+                           </div>
+                           <span className="text-[10px] uppercase font-black tracking-[0.2em]">Analytics</span>
+                         </button>
                        </div>
 
                        <div className="hidden xl:block h-24 w-px bg-slate-200/80" />
@@ -2390,6 +2425,76 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
                         </div>
                      </div>
                    </div>
+
+                   <AnimatePresence>
+                     {isAnalyticsShown && gradedSubs.length > 0 && (
+                       <motion.div
+                         initial={{ opacity: 0, height: 0, scale: 0.95 }}
+                         animate={{ opacity: 1, height: 'auto', scale: 1 }}
+                         exit={{ opacity: 0, height: 0, scale: 0.95 }}
+                         className="mb-8 overflow-hidden"
+                       >
+                         <div className="bg-white/80 backdrop-blur-xl border border-indigo-100 rounded-[2.5rem] p-8 shadow-xl flex flex-col xl:flex-row gap-8">
+                           <div className="flex-1 xl:w-2/3 h-[300px]">
+                             <h4 className="font-black text-indigo-900 uppercase tracking-widest text-[9px] mb-6">Score Distribution</h4>
+                             <ResponsiveContainer width="100%" height="100%">
+                               <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E0E7FF" />
+                                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#6366F1', fontWeight: 600 }} dy={10} />
+                                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#6366F1', fontWeight: 600 }} />
+                                 <Tooltip 
+                                   cursor={{ fill: '#EEF2FF' }}
+                                   contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)', fontWeight: 'bold' }}
+                                 />
+                                 <Bar dataKey="count" radius={[8, 8, 0, 0]}>
+                                   {
+                                     chartData.map((entry, index) => (
+                                       <Cell key={`cell-${index}`} fill={index === chartData.length - 1 ? '#4F46E5' : '#818CF8'} />
+                                     ))
+                                   }
+                                 </Bar>
+                               </BarChart>
+                             </ResponsiveContainer>
+                           </div>
+                           <div className="flex-1 xl:w-1/3 flex flex-col justify-center gap-4">
+                             <h4 className="font-black text-indigo-900 uppercase tracking-widest text-[9px] mb-2">Performance Dashboard</h4>
+                             <div className="bg-indigo-50/50 p-6 rounded-[1.5rem] border border-indigo-100 flex items-center justify-between">
+                               <div>
+                                 <p className="text-[9px] uppercase font-black tracking-[0.2em] text-indigo-400 mb-1">Average Performance</p>
+                                 <div className="flex items-baseline gap-2">
+                                   <span className="text-3xl font-black text-indigo-900">{avgScore.toFixed(1)}</span>
+                                   <span className="text-sm font-bold text-indigo-500">pts</span>
+                                   <span className="text-xl pl-2 font-black text-indigo-600">({(avgPercent).toFixed(1)}%)</span>
+                                 </div>
+                               </div>
+                             </div>
+                             
+                             <div className="bg-emerald-50/50 p-6 rounded-[1.5rem] border border-emerald-100 flex items-center justify-between">
+                               <div>
+                                 <p className="text-[9px] uppercase font-black tracking-[0.2em] text-emerald-500 mb-1">Highest Score</p>
+                                 <div className="flex items-baseline gap-2">
+                                   <span className="text-3xl font-black text-emerald-900">{highScore}</span>
+                                   <span className="text-sm font-bold text-emerald-600">pts</span>
+                                   <span className="text-xl pl-2 font-black text-emerald-600">({(highPercent).toFixed(1)}%)</span>
+                                 </div>
+                               </div>
+                             </div>
+
+                             <div className="bg-rose-50/50 p-6 rounded-[1.5rem] border border-rose-100 flex items-center justify-between">
+                               <div>
+                                 <p className="text-[9px] uppercase font-black tracking-[0.2em] text-rose-400 mb-1">Lowest Score</p>
+                                 <div className="flex items-baseline gap-2">
+                                   <span className="text-3xl font-black text-rose-900">{lowScore}</span>
+                                   <span className="text-sm font-bold text-rose-500">pts</span>
+                                   <span className="text-xl pl-2 font-black text-rose-600">({(lowPercent).toFixed(1)}%)</span>
+                                 </div>
+                               </div>
+                             </div>
+                           </div>
+                         </div>
+                       </motion.div>
+                     )}
+                   </AnimatePresence>
 
                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                      <AnimatePresence mode="popLayout">
@@ -2414,9 +2519,17 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
                                task.type === 'test' 
                                  ? 'bg-gradient-to-br from-red-600 to-rose-700' 
                                  : 'bg-gradient-to-br from-orange-400 to-amber-600'
-                             } border-b-4 ${task.type === 'test' ? 'border-red-900' : 'border-orange-700'}`}
+                             } border-b-4 ${task.type === 'test' ? 'border-red-900' : 'border-orange-700'} ${
+                               isGraded ? 'ring-2 ring-emerald-400 shadow-[0_0_20px_rgba(52,211,153,0.4)]' : ''
+                             }`}
                            >
-                             <div className="absolute top-0 right-0 w-24 h-24 rounded-bl-[80px] bg-white/5 opacity-0 group-hover:opacity-20 transition-opacity duration-700" />
+                             <div className="absolute top-0 right-0 w-24 h-24 rounded-bl-[80px] bg-white/5 opacity-0 group-hover:opacity-20 transition-opacity duration-700 z-10" />
+                             
+                             {isGraded && (
+                               <div className="absolute inset-0 pointer-events-none z-0">
+                                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent w-[200%] h-full animate-shine" />
+                               </div>
+                             )}
 
                              <div className="relative z-10">
                                <div className="flex justify-between items-start mb-4">
