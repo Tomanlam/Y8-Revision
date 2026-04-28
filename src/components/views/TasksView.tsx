@@ -256,6 +256,7 @@ JSON OUTPUT: { "questions": [{ "id": "string", "score": "X of X", "feedback": "s
   const [nukeLevel, setNukeLevel] = React.useState(0);
   const [showAnalyticsMap, setShowAnalyticsMap] = React.useState<Record<string, boolean>>({});
   const [chartModeMap, setChartModeMap] = React.useState<Record<string, 'distribution'|'students'>>({});
+  const [cardAspectMap, setCardAspectMap] = React.useState<Record<string, 'default'|'tall'>>({});
 
   const [worksheetQuestionsJson, setWorksheetQuestionsJson] = React.useState('');
   const [markschemeContent, setMarkschemeContent] = React.useState('');
@@ -2417,17 +2418,25 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
 
                        <div className="hidden xl:block h-24 w-px bg-slate-200/80" />
 
-                        <div className="flex gap-3">
-                          <div className="bg-white/80 backdrop-blur-xl px-6 py-4 rounded-[1.2rem] border border-slate-200 shadow-sm text-center min-w-[120px] flex flex-col justify-center transition-all hover:bg-white hover:shadow-md">
-                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 opacity-70 whitespace-nowrap">Total</p>
-                            <p className="text-3xl font-black text-slate-950 leading-none">{filteredSubs.length}</p>
-                          </div>
-                          {ungradedCount > 0 && (
-                            <div className="bg-rose-50/80 backdrop-blur-xl px-6 py-4 rounded-[1.2rem] border border-rose-200 shadow-sm text-center min-w-[120px] flex flex-col justify-center transition-all hover:bg-rose-100 hover:shadow-md">
-                              <p className="text-[9px] font-black text-rose-500 uppercase tracking-widest mb-1 opacity-80">Pending</p>
-                              <p className="text-3xl font-black text-rose-600 leading-none">{ungradedCount}</p>
+                        <div className="flex flex-col gap-2">
+                          <div className="flex gap-3">
+                            <div className="bg-white/80 backdrop-blur-xl px-6 py-4 rounded-[1.2rem] border border-slate-200 shadow-sm text-center min-w-[120px] flex flex-col justify-center transition-all hover:bg-white hover:shadow-md">
+                              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 opacity-70 whitespace-nowrap">Total</p>
+                              <p className="text-3xl font-black text-slate-950 leading-none">{filteredSubs.length}</p>
                             </div>
-                          )}
+                            {ungradedCount > 0 && (
+                              <div className="bg-rose-50/80 backdrop-blur-xl px-6 py-4 rounded-[1.2rem] border border-rose-200 shadow-sm text-center min-w-[120px] flex flex-col justify-center transition-all hover:bg-rose-100 hover:shadow-md">
+                                <p className="text-[9px] font-black text-rose-500 uppercase tracking-widest mb-1 opacity-80">Pending</p>
+                                <p className="text-3xl font-black text-rose-600 leading-none">{ungradedCount}</p>
+                              </div>
+                            )}
+                          </div>
+                          <button 
+                            onClick={() => setCardAspectMap(prev => ({...prev, [taskId]: prev[taskId] === 'tall' ? 'default' : 'tall'}))}
+                            className="text-[9px] uppercase font-black tracking-widest text-slate-500 hover:text-slate-900 border border-slate-200 bg-white/50 hover:bg-white/80 px-3 py-1.5 rounded-lg w-full transition-colors"
+                          >
+                            {cardAspectMap[taskId] === 'tall' ? 'Default View' : 'Tall Cards (3:4)'}
+                          </button>
                         </div>
                      </div>
                    </div>
@@ -2466,9 +2475,10 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
                                      />
                                      <Bar dataKey="percent" radius={[8, 8, 0, 0]}>
                                        {
-                                         studentChartData.map((entry, index) => (
-                                           <Cell key={`cell-${index}`} fill={'#818CF8'} />
-                                         ))
+                                         studentChartData.map((entry, index) => {
+                                           const studentColors = ['#F87171', '#FBBF24', '#34D399', '#60A5FA', '#A78BFA', '#F472B6', '#38BDF8', '#4ADE80'];
+                                           return <Cell key={`cell-${index}`} fill={studentColors[index % studentColors.length]} />
+                                         })
                                        }
                                      </Bar>
                                    </BarChart>
@@ -2485,9 +2495,10 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
                                      />
                                      <Bar dataKey="count" radius={[8, 8, 0, 0]}>
                                        {
-                                         chartData.map((entry, index) => (
-                                           <Cell key={`cell-${index}`} fill={index === chartData.length - 1 ? '#4F46E5' : '#818CF8'} />
-                                         ))
+                                         chartData.map((entry, index) => {
+                                           const categoryColors = ['#EF4444', '#F97316', '#EAB308', '#22C55E', '#3B82F6'];
+                                           return <Cell key={`cell-${index}`} fill={categoryColors[index % categoryColors.length]} />
+                                         })
                                        }
                                      </Bar>
                                    </BarChart>
@@ -2558,13 +2569,13 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
                                task.type === 'test' 
                                  ? 'bg-gradient-to-br from-red-600 to-rose-700' 
                                  : 'bg-gradient-to-br from-orange-400 to-amber-600'
-                             } border-b-4 ${task.type === 'test' ? 'border-red-900' : 'border-orange-700'}`}
+                             } border-b-4 ${task.type === 'test' ? 'border-red-900' : 'border-orange-700'} ${cardAspectMap[taskId] === 'tall' ? 'aspect-[3/4]' : ''}`}
                            >
                              <div className="absolute top-0 right-0 w-24 h-24 rounded-bl-[80px] bg-white/5 opacity-0 group-hover:opacity-20 transition-opacity duration-700 z-10" />
                              
                              {isGraded && (
                                <div className="absolute inset-0 pointer-events-none z-0">
-                                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent w-[200%] h-full animate-[shine_8s_infinite_ease-in-out]" />
+                                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent w-[200%] h-full animate-[shine_3s_infinite_ease-in-out]" />
                                </div>
                              )}
 
