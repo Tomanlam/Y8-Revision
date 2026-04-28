@@ -1589,12 +1589,27 @@ OUTPUT: Plain text paragraph.`;
                  <motion.div 
                    key={q.id} 
                    id={`test-rubric-container-${q.id}`}
-                   className={`p-6 rounded-[2rem] border-2 transition-all duration-500 scroll-mt-24 ${
+                   className={`p-6 rounded-[2rem] border-2 transition-all duration-500 scroll-mt-24 relative overflow-hidden ${
                      currentlyProcessingId === q.id 
                        ? 'bg-white border-red-500 shadow-2xl scale-[1.02] ring-8 ring-red-500/5' 
                        : 'bg-white border-gray-100 shadow-sm opacity-60'
                    }`}
                  >
+                   {/* Shimmer Effect */}
+                   {currentlyProcessingId === q.id && (
+                     <motion.div
+                       initial={{ x: '-100%' }}
+                       animate={{ x: '100%' }}
+                       transition={{
+                         repeat: Infinity,
+                         duration: 1.5,
+                         ease: "linear"
+                       }}
+                       className="absolute inset-0 z-0 bg-gradient-to-r from-transparent via-red-500/10 to-transparent pointer-events-none"
+                     />
+                   )}
+                   
+                   <div className="relative z-10 w-full">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-3">
                         <span className="w-10 h-10 rounded-xl bg-gray-900 text-white flex items-center justify-center font-black text-xs">
@@ -1614,6 +1629,7 @@ OUTPUT: Plain text paragraph.`;
                           {extractedRubrics[q.id] ? (extractedRubrics[q.id]) : "Initializing criteria..."}
                        </p>
                     </div>
+                  </div>
                  </motion.div>
                ))}
                
