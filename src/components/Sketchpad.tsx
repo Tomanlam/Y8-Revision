@@ -90,11 +90,13 @@ const Sketchpad: React.FC<SketchpadProps> = ({ onClose, onSave }) => {
   useEffect(() => {
     if (!fabricCanvas || !containerRef.current) return;
     const resizeObserver = new ResizeObserver(() => {
-       if (containerRef.current) {
-         fabricCanvas.setWidth(containerRef.current.clientWidth);
-         fabricCanvas.setHeight(containerRef.current.clientHeight);
-         fabricCanvas.renderAll();
-       }
+      window.requestAnimationFrame(() => {
+        if (containerRef.current) {
+          fabricCanvas.setWidth(containerRef.current.clientWidth);
+          fabricCanvas.setHeight(containerRef.current.clientHeight);
+          fabricCanvas.renderAll();
+        }
+      });
     });
     resizeObserver.observe(containerRef.current);
     return () => resizeObserver.disconnect();
