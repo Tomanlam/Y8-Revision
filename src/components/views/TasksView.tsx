@@ -252,7 +252,7 @@ JSON OUTPUT: { "questions": [{ "id": "string", "score": "X of X", "feedback": "s
   const [passcodeError, setPasscodeError] = React.useState(false);
   const [showPasscode, setShowPasscode] = React.useState(false);
 
-  const [activeTab, setActiveTab] = React.useState<'tasks' | 'submissions' | 'analytics'>(isAdmin ? 'analytics' : 'tasks');
+  const [activeTab, setActiveTab] = React.useState<'tasks' | 'submissions' | 'analytics' | 'reports' | 'downloads'>(isAdmin ? 'analytics' : 'tasks');
   const [submissionFilter, setSubmissionFilter] = React.useState('');
   const [nukeLevel, setNukeLevel] = React.useState(0);
   const [showAnalyticsMap, setShowAnalyticsMap] = React.useState<Record<string, boolean>>({});
@@ -771,7 +771,26 @@ Sample PERFECT Markscheme JSON for MCQ, SHORT-RESPONSE, TICK-CROSS, TABLE, REORD
       ];
 
       if (includeFeedback) {
-        row.push(feedback ? `[Points: ${feedback.score}]\n${feedback.feedback}` : '---');
+        let cellContent = '---';
+        let fillColor: [number, number, number] = [254, 242, 242]; // Default red
+        let textColor: [number, number, number] = [153, 27, 27];
+
+        if (feedback) {
+          cellContent = `[Points: ${feedback.score}]\n${feedback.feedback}`;
+          const lowerFeedback = feedback.feedback.toLowerCase();
+          if (lowerFeedback.startsWith('correct')) {
+            fillColor = [220, 252, 231]; // Green
+            textColor = [22, 101, 52];
+          } else if (lowerFeedback.startsWith('partially')) {
+            fillColor = [255, 237, 213]; // Orange
+            textColor = [154, 52, 18];
+          }
+        }
+        
+        row.push(feedback ? {
+          content: cellContent,
+          styles: { fillColor, textColor }
+        } : '---');
       }
 
       return row;
@@ -813,22 +832,40 @@ Sample PERFECT Markscheme JSON for MCQ, SHORT-RESPONSE, TICK-CROSS, TABLE, REORD
         if (data.section === 'body' && data.column.index === 2) {
           const images = base64Images[data.row.index];
           if (images && images.length > 0) {
-            let heightNeeded = 20; // Text height padding
+            let imagesHeight = 0;
             images.forEach(imgData => {
               try {
                 const props = doc.getImageProperties(imgData);
                 const ratio = props.height / props.width;
                 // data.cell.width may not be finalized if dynamic, but columnStyles defines it.
                 const cellW = includeFeedback ? 65 : 90;
-                const finalW = Math.min(cellW - 10, 80);
-                const finalH = finalW * ratio;
-                heightNeeded += finalH + 5;
+                
+                const maxW = Math.min(cellW - 10, 80);
+                const maxH = 100; // Cap image height to prevent breaking pages
+                let finalW = maxW;
+                let finalH = finalW * ratio;
+                if (finalH > maxH) {
+                  finalH = maxH;
+                  finalW = finalH / ratio;
+                }
+                
+                imagesHeight += finalH + 5;
               } catch (e) {
                 console.error("Failed to parse image props for height padding", e);
               }
             });
-            if ((data.row as any).minCellHeight < heightNeeded) {
-              (data.row as any).minCellHeight = heightNeeded;
+            // Use cell padding to expand cell naturally
+            if (typeof data.cell.styles.cellPadding === 'number') {
+              const p = data.cell.styles.cellPadding;
+              data.cell.styles.cellPadding = { top: p, left: p, right: p, bottom: p + imagesHeight };
+            } else {
+              const p = data.cell.styles.cellPadding as any;
+              data.cell.styles.cellPadding = { 
+                top: p.top || 6, 
+                left: p.left || 6, 
+                right: p.right || 6, 
+                bottom: (p.bottom || 6) + imagesHeight 
+              };
             }
           }
         }
@@ -837,19 +874,46 @@ Sample PERFECT Markscheme JSON for MCQ, SHORT-RESPONSE, TICK-CROSS, TABLE, REORD
         if (data.section === 'body' && data.column.index === 2) {
           const images = base64Images[data.row.index];
           if (images && images.length > 0) {
-            let yOffset = data.cell.y + 15; // padding under text
-            images.forEach(imgData => {
+            let totalImagesHeight = 0;
+            
+            // First calculate total height needed exactly to position properly
+            const parsedImages = images.map(imgData => {
+              let finalW = 0, finalH = 0, ratio = 1;
               try {
                 const props = doc.getImageProperties(imgData);
-                const ratio = props.height / props.width;
-                const finalW = Math.min(data.cell.width - 10, 80);
-                const finalH = finalW * ratio;
+                ratio = props.height / props.width;
+                const cellW = includeFeedback ? 65 : 90;
                 
-                // Extract format from base64 string
-                const format = imgData.substring("data:image/".length, imgData.indexOf(";base64")).toUpperCase();
-                
-                doc.addImage(imgData, format === 'JPEG' ? 'JPEG' : 'PNG', data.cell.x + 5, yOffset, finalW, finalH);
-                yOffset += finalH + 5;
+                const maxW = Math.min(cellW - 10, 80);
+                const maxH = 100;
+                finalW = maxW;
+                finalH = finalW * ratio;
+                if (finalH > maxH) {
+                  finalH = maxH;
+                  finalW = finalH / ratio;
+                }
+                totalImagesHeight += finalH + 5;
+              } catch (e) {
+                console.error("error parsing inside didDrawCell");
+              }
+              return { imgData, finalW, finalH };
+            });
+
+            // The image starts at the bottom padding area
+            let yOffset = data.cell.y + data.cell.height - totalImagesHeight - 2; 
+
+            parsedImages.forEach(({ imgData, finalW, finalH }) => {
+              try {
+                if (finalW > 0 && finalH > 0) {
+                  // Extract format from base64 string
+                  const format = imgData.substring("data:image/".length, imgData.indexOf(";base64")).toUpperCase();
+                  
+                  // Center the image horizontally within the cell
+                  const xOffset = data.cell.x + (data.cell.width - finalW) / 2;
+                  
+                  doc.addImage(imgData, format === 'JPEG' ? 'JPEG' : 'PNG', xOffset, yOffset, finalW, finalH);
+                  yOffset += finalH + 5;
+                }
               } catch (e) {
                 console.error("Failed to draw image to PDF", e);
               }
@@ -860,6 +924,48 @@ Sample PERFECT Markscheme JSON for MCQ, SHORT-RESPONSE, TICK-CROSS, TABLE, REORD
     });
 
     doc.save(`${includeFeedback?'Report':'Raw_Submission'}_${submission.studentName.replace(/\s+/g, '_')}_${task.title.substring(0,15).replace(/\s+/g, '_')}.pdf`);
+  };
+
+  const downloadSubmissionAttachments = async (submission: TaskSubmission, task: Task) => {
+    let JSZip;
+    try {
+      JSZip = (await import('jszip')).default;
+    } catch (e) {
+      alert("JSZip not available.");
+      return;
+    }
+    const zip = new JSZip();
+    let fileCount = 0;
+    
+    if (submission.responses) {
+      for (const key of Object.keys(submission.responses)) {
+        if (Array.isArray(submission.responses[key])) {
+          for (const file of submission.responses[key]) {
+            if (file && file.url && file.name) {
+              try {
+                const res = await fetch(file.url);
+                const blob = await res.blob();
+                zip.file(file.name, blob);
+                fileCount++;
+              } catch (e) {
+                console.error("Failed to fetch file for zip", file.name, e);
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    if (fileCount === 0) {
+      alert("No files to download.");
+      return;
+    }
+    
+    const content = await zip.generateAsync({ type: "blob" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(content);
+    link.download = `${submission.studentName || 'Student'}_${task.title}_Attachments.zip`;
+    link.click();
   };
 
   const [deleteConfirmation, setDeleteConfirmation] = React.useState<{ id: string, type: 'task' | 'submission', title: string } | null>(null);
@@ -994,14 +1100,52 @@ Sample PERFECT Markscheme JSON for MCQ, SHORT-RESPONSE, TICK-CROSS, TABLE, REORD
             </div>
           </div>
 
-          <div className="relative z-10 grid grid-cols-2 gap-4">
-            <div className="bg-white/5 backdrop-blur-md rounded-3xl p-5 border border-white/10 flex flex-col items-center justify-center min-w-[140px]">
-              <span className="text-3xl font-black text-white">{tasks.length}</span>
-              <span className="text-[8px] font-black text-emerald-100/50 uppercase tracking-[0.2em] mt-1">Total Goals</span>
+          <div className="relative z-10 flex flex-col md:flex-row items-center gap-6">
+            <div className="bg-white/5 backdrop-blur-3xl p-1.5 rounded-[2rem] flex items-center border border-white/10 shadow-2xl shadow-black/20">
+              <button 
+                onClick={() => setActiveTab('tasks')}
+                className={`px-6 py-3 rounded-[1.25rem] font-black uppercase tracking-widest transition-all duration-500 flex items-center gap-2 text-[9px] ${
+                  activeTab === 'tasks' 
+                    ? 'bg-white text-emerald-900 shadow-xl scale-105' 
+                    : 'text-emerald-100/60 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <ListChecks size={16} />
+                Tasks
+              </button>
+              <button 
+                onClick={() => setActiveTab('reports')}
+                className={`px-6 py-3 rounded-[1.25rem] font-black uppercase tracking-widest transition-all duration-500 flex items-center gap-2 text-[9px] ${
+                  activeTab === 'reports' 
+                    ? 'bg-white text-emerald-900 shadow-xl scale-105' 
+                    : 'text-emerald-100/60 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <FileText size={16} />
+                Reports
+              </button>
+              <button 
+                onClick={() => setActiveTab('downloads')}
+                className={`px-6 py-3 rounded-[1.25rem] font-black uppercase tracking-widest transition-all duration-500 flex items-center gap-2 text-[9px] ${
+                  activeTab === 'downloads' 
+                    ? 'bg-white text-emerald-900 shadow-xl scale-105' 
+                    : 'text-emerald-100/60 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <Download size={16} />
+                Downloads
+              </button>
             </div>
-            <div className="bg-emerald-500/20 backdrop-blur-md rounded-3xl p-5 border border-emerald-500/30 flex flex-col items-center justify-center min-w-[140px]">
-              <span className="text-3xl font-black text-emerald-300">{tasks.filter(t => !mySubmissions.some(s => s.taskId === t.id)).length}</span>
-              <span className="text-[8px] font-black text-emerald-400/80 uppercase tracking-[0.2em] mt-1">Pending</span>
+            
+            <div className="flex gap-4">
+              <div className="bg-white/5 backdrop-blur-md rounded-3xl p-4 border border-white/10 flex flex-col items-center justify-center min-w-[100px]">
+                <span className="text-2xl font-black text-white leading-none">{tasks.length}</span>
+                <span className="text-[8px] font-black text-emerald-100/50 uppercase tracking-[0.2em] mt-1">Total Goals</span>
+              </div>
+              <div className="bg-emerald-500/20 backdrop-blur-md rounded-3xl p-4 border border-emerald-500/30 flex flex-col items-center justify-center min-w-[100px]">
+                <span className="text-2xl font-black text-emerald-300 leading-none">{tasks.filter(t => !mySubmissions.some(s => s.taskId === t.id)).length}</span>
+                <span className="text-[8px] font-black text-emerald-400/80 uppercase tracking-[0.2em] mt-1">Pending</span>
+              </div>
             </div>
           </div>
         </header>
@@ -2695,7 +2839,7 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
              })}
            </div>
         </div>
-      ) : (
+      ) : activeTab === 'tasks' ? (
         <div className="flex flex-col lg:flex-row gap-8">
           <div className="flex-1">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-6">                {tasks.map(task => {
@@ -2863,7 +3007,109 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
             </div>
           </div>
         </div>
-      )}
+      ) : activeTab === 'reports' && !isAdmin ? (
+        <div className="flex flex-col gap-6">
+          <div className="bg-white/40 backdrop-blur-3xl p-8 rounded-[2.5rem] border border-white/20 shadow-xl">
+            <h2 className="text-2xl font-black text-slate-800 uppercase tracking-tight mb-6">Completed Reports</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {mySubmissions.length === 0 ? (
+                <div className="col-span-full py-12 flex flex-col items-center justify-center text-center">
+                  <FileText size={48} className="text-slate-300 mb-4" />
+                  <h3 className="font-black text-slate-400 uppercase tracking-widest text-xs">No reports available</h3>
+                </div>
+              ) : (
+                mySubmissions.map(sub => {
+                  const task = tasks.find(t => t.id === sub.taskId);
+                  if (!task) return null;
+                  const isGraded = !!sub.feedback;
+                  
+                  return (
+                    <motion.div key={sub.id} className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 flex flex-col">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="bg-blue-50 w-12 h-12 rounded-2xl flex items-center justify-center text-blue-500 shrink-0">
+                          <FileText size={24} />
+                        </div>
+                        {isGraded && (
+                          <div className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-xl text-[10px] font-black uppercase tracking-widest border border-emerald-100">
+                            Graded
+                          </div>
+                        )}
+                      </div>
+                      <h3 className="text-lg font-black text-slate-800 mb-2">{task.title}</h3>
+                      <div className="mt-auto pt-6 grid grid-cols-2 gap-3">
+                        <button 
+                          onClick={() => generateResponsePDF(sub, task, false)}
+                          className="flex flex-col items-center justify-center gap-1 py-3 rounded-xl bg-slate-50 border border-slate-100 text-slate-600 hover:bg-white hover:border-blue-200 hover:text-blue-600 transition-all shadow-sm"
+                        >
+                          <Download size={14} />
+                          <span className="text-[8px] font-black uppercase tracking-widest">Raw Form</span>
+                        </button>
+                        {isGraded ? (
+                          <button 
+                            onClick={() => generateResponsePDF(sub, task, true)}
+                            className="flex flex-col items-center justify-center gap-1 py-3 rounded-xl bg-slate-50 border border-slate-100 text-slate-600 hover:bg-white hover:border-emerald-200 hover:text-emerald-600 transition-all shadow-sm"
+                          >
+                            <FileText size={14} />
+                            <span className="text-[8px] font-black uppercase tracking-widest">Report PDF</span>
+                          </button>
+                        ) : (
+                          <div className="rounded-xl bg-slate-50 border border-slate-100 opacity-50 flex items-center justify-center">
+                            <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">Pending Eval</span>
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+      ) : activeTab === 'downloads' && !isAdmin ? (
+        <div className="flex flex-col gap-6">
+          <div className="bg-white/40 backdrop-blur-3xl p-8 rounded-[2.5rem] border border-white/20 shadow-xl">
+            <h2 className="text-2xl font-black text-slate-800 uppercase tracking-tight mb-6">Task Attachments</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {mySubmissions.length === 0 || !mySubmissions.some(sub => Object.values(sub.responses || {}).some(val => Array.isArray(val) && val.some(file => file && file.url && file.name))) ? (
+                <div className="col-span-full py-12 flex flex-col items-center justify-center text-center">
+                  <Download size={48} className="text-slate-300 mb-4" />
+                  <h3 className="font-black text-slate-400 uppercase tracking-widest text-xs">No downloads available</h3>
+                </div>
+              ) : (
+                mySubmissions.map(sub => {
+                  const task = tasks.find(t => t.id === sub.taskId);
+                  if (!task) return null;
+                  
+                  // check if there are any attachments
+                  const hasAttachments = Object.values(sub.responses || {}).some(val => Array.isArray(val) && val.some(file => file && file.url && file.name));
+                  if (!hasAttachments) return null;
+
+                  return (
+                    <motion.div key={sub.id} className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="bg-indigo-50 w-12 h-12 rounded-2xl flex items-center justify-center text-indigo-500 shrink-0">
+                          <Target size={24} />
+                        </div>
+                        <div className="flex-1 min-w-0 pr-4">
+                          <h3 className="text-sm font-black text-slate-800 truncate">{task.title}</h3>
+                          <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mt-1">Has Attachments</p>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => downloadSubmissionAttachments(sub, task)}
+                        className="p-4 bg-indigo-50 text-indigo-600 rounded-[1rem] hover:bg-indigo-500 hover:text-white transition-all shadow-sm group shrink-0"
+                        title="Download ZIP"
+                      >
+                        <Download size={20} className="group-hover:scale-110 transition-transform" />
+                      </button>
+                    </motion.div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <AnimatePresence>
         {showEasterNotice && (

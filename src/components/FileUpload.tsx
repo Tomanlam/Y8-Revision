@@ -5,9 +5,10 @@ import { UploadCloud, X, File as FileIcon, Loader2 } from 'lucide-react';
 interface FileUploadProps {
   onUpload: (url: string, filename: string) => void;
   disabled?: boolean;
+  uploadPaths?: string[];
 }
 
-export const FileUpload: React.FC<FileUploadProps> = ({ onUpload, disabled }) => {
+export const FileUpload: React.FC<FileUploadProps> = ({ onUpload, disabled, uploadPaths }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<{ url: string; name: string }[]>([]);
   const inputFileRef = useRef<HTMLInputElement>(null);
@@ -21,13 +22,22 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onUpload, disabled }) =>
     setIsUploading(true);
 
     try {
-      const newBlob = await upload(file.name, file, {
-        access: 'public',
-        handleUploadUrl: '/api/upload',
-      });
+      let returnedUrl = '';
+      const namesToUpload = uploadPaths && uploadPaths.length > 0 
+        ? uploadPaths.map(p => `${p}.${file.name.split('.').pop() || 'tmp'}`) 
+        : [file.name];
+
+      let newBlob: any;
+      for (const nameToUpload of namesToUpload) {
+        newBlob = await upload(nameToUpload, file, {
+          access: 'public',
+          handleUploadUrl: '/api/upload',
+        });
+        if (!returnedUrl) returnedUrl = newBlob.url;
+      }
       
-      setUploadedFiles(prev => [...prev, { url: newBlob.url, name: file.name }]);
-      onUpload(newBlob.url, file.name);
+      setUploadedFiles(prev => [...prev, { url: returnedUrl, name: file.name }]);
+      onUpload(returnedUrl, file.name);
     } catch (error) {
       console.error('Upload failed:', error);
       alert('Upload failed: ' + (error as Error).message);

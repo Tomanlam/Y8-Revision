@@ -13,6 +13,8 @@ import BloodCompositionCard from './components/quick-facts/BloodCompositionCard'
 import RespiratorySystemCard from './components/quick-facts/RespiratorySystemCard';
 import DiffusionCard from './components/quick-facts/DiffusionCard';
 import RespirationCard from './components/quick-facts/RespirationCard';
+import FoodChainCard from './components/quick-facts/FoodChainCard';
+import BioaccumulationCard from './components/quick-facts/BioaccumulationCard';
 
 const QuickFacts: React.FC = () => {
   const [chineseType, setChineseType] = useState<'traditional' | 'simplified' | null>(null);
@@ -90,6 +92,8 @@ const QuickFacts: React.FC = () => {
         <RespiratorySystemCard chineseType={chineseType} />
         <DiffusionCard chineseType={chineseType} />
         <RespirationCard chineseType={chineseType} />
+        <FoodChainCard chineseType={chineseType} />
+        <BioaccumulationCard chineseType={chineseType} />
         
         <div className="bg-gray-50 border-4 border-dashed border-gray-200 rounded-[3rem] p-12 text-center">
           <div className="bg-white w-16 h-16 rounded-2xl flex items-center justify-center text-gray-300 mx-auto mb-4 shadow-sm">

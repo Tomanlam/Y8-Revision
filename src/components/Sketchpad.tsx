@@ -7,9 +7,10 @@ import { fabric } from 'fabric';
 interface SketchpadProps {
   onClose: () => void;
   onSave?: (url: string, filename: string) => void;
+  uploadPaths?: string[];
 }
 
-const Sketchpad: React.FC<SketchpadProps> = ({ onClose, onSave }) => {
+const Sketchpad: React.FC<SketchpadProps> = ({ onClose, onSave, uploadPaths }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -303,11 +304,22 @@ const Sketchpad: React.FC<SketchpadProps> = ({ onClose, onSave }) => {
       const blobData = await (await fetch(dataUrl)).blob();
       
       const file = new File([blobData], `sketch_${Date.now()}.png`, { type: 'image/png' });
-      const newBlob = await upload(file.name, file, {
-        access: 'public',
-        handleUploadUrl: '/api/upload',
-      });
-      onSave(newBlob.url, file.name);
+      
+      let returnedUrl = '';
+      const namesToUpload = uploadPaths && uploadPaths.length > 0 
+        ? uploadPaths.map(p => `${p}.png`) 
+        : [file.name];
+
+      let newBlob: any;
+      for (const nameToUpload of namesToUpload) {
+        newBlob = await upload(nameToUpload, file, {
+          access: 'public',
+          handleUploadUrl: '/api/upload',
+        });
+        if (!returnedUrl) returnedUrl = newBlob.url;
+      }
+      
+      onSave(returnedUrl, file.name);
       onClose();
     } catch (error) {
       console.error('Upload failed:', error);

@@ -30,6 +30,7 @@ interface TaskWorksheetViewProps {
   isAdmin?: boolean;
   showCalculator: boolean;
   setShowCalculator: (v: boolean) => void;
+  studentName?: string;
 }
 
 import { rubrics } from '../../data/markschemes';
@@ -89,7 +90,7 @@ const QuestionTextWithCommandTerms = ({ text, className }: { text: string, class
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY as string });
 
 const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({ 
-  task, onBack, onComplete, onProgress, initialResponses, initialFeedback, initialGeneralFeedback, readOnly, isAdmin, showCalculator, setShowCalculator 
+  task, onBack, onComplete, onProgress, initialResponses, initialFeedback, initialGeneralFeedback, readOnly, isAdmin, showCalculator, setShowCalculator, studentName
 }) => {
   const [numPages, setNumPages] = useState<number | null>(null);
   const [activePage, setActivePage] = useState(1);
@@ -313,6 +314,19 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
 
     return () => observer.disconnect();
   }, [numPages, task.id]); // Re-run if task changes
+
+  const getUploadPaths = (qId?: string) => {
+    if (!studentName || isAdmin) return undefined;
+    const makeSafe = (s: string) => s.replace(/[^a-zA-Z0-9 _-]/g, '').trim();
+    const safeStudentName = makeSafe(studentName);
+    const safeTaskTitle = makeSafe(task.title);
+    if (!safeStudentName || !safeTaskTitle) return undefined;
+    const baseName = `${safeStudentName} ${safeTaskTitle} ${qId ? qId : 'Attachment'}`;
+    return [
+      `STUDENTS/${safeStudentName}/${baseName}`,
+      `TASKS/${safeTaskTitle}/${baseName}`
+    ];
+  };
 
   const handleResponse = (questionId: string, value: any) => {
     setResponses(prev => ({ ...prev, [questionId]: value }));
@@ -669,7 +683,48 @@ OUTPUT: Plain text paragraph.`;
     }
   };
 
-    const handleEdit = () => { setSubmitted(false); setIsValidating(false); setValidationFeedback({}); };
+    const downloadAllAsZip = async () => {
+    let JSZip;
+    try {
+      JSZip = (await import('jszip')).default;
+    } catch (e) {
+      alert("JSZip not available.");
+      return;
+    }
+    const zip = new JSZip();
+    let fileCount = 0;
+    
+    // Gather all files from responses
+    for (const key of Object.keys(responses)) {
+      if (Array.isArray(responses[key])) {
+        for (const file of responses[key]) {
+          if (file && file.url && file.name) {
+            try {
+              const res = await fetch(file.url);
+              const blob = await res.blob();
+              zip.file(file.name, blob);
+              fileCount++;
+            } catch (e) {
+              console.error("Failed to fetch file for zip", file.name, e);
+            }
+          }
+        }
+      }
+    }
+    
+    if (fileCount === 0) {
+      alert("No files to download.");
+      return;
+    }
+    
+    const content = await zip.generateAsync({ type: "blob" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(content);
+    link.download = `${studentName || 'Student'}_${task.title}_Attachments.zip`;
+    link.click();
+  };
+
+  const handleEdit = () => { setSubmitted(false); setIsValidating(false); setValidationFeedback({}); };
   const questionsByPage = task.worksheetQuestions?.reduce((acc, q) => {
     const page = (q as any).page || 1;
     if (!acc[page]) acc[page] = [];
@@ -1241,6 +1296,7 @@ OUTPUT: Plain text paragraph.`;
                                 <div className="flex gap-4 items-center">
                                   <FileUpload 
                                     disabled={readOnly || submitted}
+                                    uploadPaths={getUploadPaths(typedQ.id)}
                                     onUpload={(url, name) => {
                                       const existing = responses[typedQ.id] || [];
                                       handleResponse(typedQ.id, [...existing, { url, name }]);
@@ -1399,29 +1455,52 @@ OUTPUT: Plain text paragraph.`;
               </div>
             )}
 
-            {!isAdmin && !readOnly && !submitted && (
+            {((responses._attachments && responses._attachments.length > 0) || (!isAdmin && !readOnly && !submitted)) && (
                <div className="bg-white p-8 rounded-[2rem] border-2 border-slate-100 mt-12 space-y-6">
-                 <div>
-                   <h4 className="text-xl font-black text-slate-800 uppercase tracking-tight mb-2">Worksheet Attachments</h4>
-                   <p className="text-xs font-medium text-slate-500">Upload any reference material, answer sheets, or work files required for this task.</p>
+                 <div className="flex justify-between items-start">
+                   <div>
+                     <h4 className="text-xl font-black text-slate-800 uppercase tracking-tight mb-2">Worksheet Attachments</h4>
+                     {(!isAdmin && !readOnly && !submitted) && <p className="text-xs font-medium text-slate-500">Upload any reference material, answer sheets, or work files required for this task.</p>}
+                   </div>
                  </div>
-                 <FileUpload 
-                   onUpload={(url, name) => {
-                     setResponses(prev => {
-                       const next = { ...prev };
-                       const attachments = Array.isArray(next._attachments) ? next._attachments : [];
-                       next._attachments = [...attachments, { url, name }];
-                       return next;
-                     });
-                   }} 
-                 />
+                 
+                 {(!isAdmin && !readOnly && !submitted) && (
+                   <FileUpload 
+                     uploadPaths={getUploadPaths()}
+                     onUpload={(url, name) => {
+                       setResponses(prev => {
+                         const next = { ...prev };
+                         const attachments = Array.isArray(next._attachments) ? next._attachments : [];
+                         next._attachments = [...attachments, { url, name }];
+                         return next;
+                       });
+                     }} 
+                   />
+                 )}
                  {responses._attachments?.length > 0 && (
                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
                      {responses._attachments.map((file: any, i: number) => (
-                       <a href={file.url} target="_blank" rel="noopener noreferrer" key={i} className="flex flex-col gap-1 p-4 rounded-xl border border-slate-100 bg-slate-50 hover:bg-slate-100 transition-colors">
-                         <span className="text-sm font-black text-slate-700 truncate">{file.name}</span>
-                         <span className="text-[10px] uppercase font-black tracking-widest text-emerald-600">Attached</span>
-                       </a>
+                       <div key={i} className="flex overflow-hidden rounded-xl border border-slate-100 bg-slate-50 hover:bg-slate-100 transition-colors">
+                         <a href={file.url} target="_blank" rel="noopener noreferrer" className="flex flex-col gap-1 p-4 flex-grow">
+                           <span className="text-sm font-black text-slate-700 truncate">{file.name}</span>
+                           <span className="text-[10px] uppercase font-black tracking-widest text-emerald-600">Attached</span>
+                         </a>
+                         {(!readOnly && !submitted) && (
+                           <button
+                             onClick={() => {
+                               setResponses(prev => {
+                                 const next = { ...prev };
+                                 next._attachments = next._attachments.filter((_: any, idx: number) => idx !== i);
+                                 return next;
+                               });
+                             }}
+                             className="p-4 bg-red-50 hover:bg-red-500 hover:text-white text-red-500 transition-colors flex items-center justify-center shrink-0"
+                             title="Remove attachment"
+                           >
+                             <Trash2 size={16} />
+                           </button>
+                         )}
+                       </div>
                      ))}
                    </div>
                  )}
@@ -1722,6 +1801,7 @@ OUTPUT: Plain text paragraph.`;
         {showSketchpad && (
           <Sketchpad 
             onClose={() => setShowSketchpad(false)} 
+            uploadPaths={typeof showSketchpad === 'string' ? getUploadPaths(showSketchpad) : getUploadPaths()}
             onSave={typeof showSketchpad === 'string' ? (url, name) => {
               const qId = showSketchpad;
               setResponses(prev => {
