@@ -511,36 +511,38 @@ const TasksView = ({
 
                 {isCompleted ? (
                   <div className="p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Attainment</span>
-                      <span className="text-sm font-black text-emerald-700">{submission?.results?.score || 0} of {submission?.results?.total || 0}</span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3 mt-4">
-                      <button
-                        onClick={() => onStartTask(task)}
-                        className="flex-1 py-3 bg-white border border-emerald-200 text-emerald-600 rounded-2xl font-black uppercase tracking-widest text-[8px] hover:bg-emerald-50 transition-all flex items-center justify-center gap-2"
-                      >
-                        <Eye size={14} />
-                        View
-                      </button>
-                      <div className="col-span-2 flex gap-2">
+                    {submission?.results && (
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Attainment</span>
+                        <span className="text-sm font-black text-emerald-700">{submission.results.score} of {submission.results.total}</span>
+                      </div>
+                    )}
+                    <div className="flex flex-col gap-3 mt-4">
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          onClick={() => onStartTask(task)}
+                          className="py-3 bg-white border border-emerald-200 text-emerald-600 rounded-2xl font-black uppercase tracking-widest text-[8px] hover:bg-emerald-50 transition-all flex items-center justify-center gap-2"
+                        >
+                          <Eye size={14} />
+                          View
+                        </button>
                         <button
                           onClick={() => exportReportPDF(submission!, task, true)}
-                          className="flex-1 py-3 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-[8px] hover:bg-slate-800 transition-all flex items-center justify-center gap-2"
+                          className="py-3 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-[8px] hover:bg-slate-800 transition-all flex items-center justify-center gap-2"
                         >
                           <Download size={14} />
                           Raw PDF
                         </button>
-                        {submission?.results && (
-                          <button
-                            onClick={() => exportReportPDF(submission!, task, false)}
-                            className="flex-1 py-3 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest text-[8px] hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/10"
-                          >
-                            <FileText size={14} />
-                            Report PDF
-                          </button>
-                        )}
                       </div>
+                      {submission?.results && (
+                        <button
+                          onClick={() => exportReportPDF(submission!, task, false)}
+                          className="w-full py-3 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest text-[8px] hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/10"
+                        >
+                          <FileText size={14} />
+                          Report PDF
+                        </button>
+                      )}
                     </div>
                   </div>
                 ) : (
