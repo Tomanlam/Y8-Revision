@@ -395,8 +395,10 @@ function AppContent() {
         const userRef = doc(db, 'users', user.uid);
         const userSnap = await getDoc(userRef);
         
-        const isParent = !!PARENT_STUDENT_MAP[user.email || ''];
-        const childInfo = isParent ? PARENT_STUDENT_MAP[user.email || ''] : undefined;
+        const userEmail = user.email ? user.email.trim().toLowerCase() : '';
+        const isParent = !!PARENT_STUDENT_MAP[userEmail];
+        const childInfo = isParent ? PARENT_STUDENT_MAP[userEmail] : undefined;
+        const isAdmin = userEmail === ADMIN_EMAIL.toLowerCase();
 
         if (userSnap.exists()) {
           const data = userSnap.data() as UserProfile;
@@ -404,7 +406,7 @@ function AppContent() {
             ...data,
             lastSeen: new Date().toISOString(),
             photoURL: user.photoURL || data.photoURL || null,
-            isAdmin: user.email === ADMIN_EMAIL,
+            isAdmin: isAdmin,
             isParent: isParent,
             childName: childInfo?.name,
             childEmails: childInfo?.emails,
@@ -423,7 +425,7 @@ function AppContent() {
             photoURL: user.photoURL || null,
             progress: {},
             lastSeen: new Date().toISOString(),
-            isAdmin: user.email === ADMIN_EMAIL,
+            isAdmin: isAdmin,
             isParent: isParent,
             childName: childInfo?.name,
             childEmails: childInfo?.emails,
@@ -434,7 +436,7 @@ function AppContent() {
           setSessionStats({});
         }
         
-        if (user.email === ADMIN_EMAIL) {
+        if (isAdmin) {
           setIsAdminLoggedIn(true);
         } else {
           setIsAdminLoggedIn(false);

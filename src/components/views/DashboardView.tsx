@@ -267,6 +267,11 @@ const DashboardView: React.FC<DashboardViewProps> = (props) => {
                         <ShieldCheck size={10} />
                         <span className="text-[8px] font-black uppercase tracking-widest">Admin</span>
                       </div>
+                    ) : props.userProfile?.isParent ? (
+                      <div className="bg-purple-500/10 text-purple-600 px-2 py-0.5 rounded-full flex items-center gap-1 ring-1 ring-purple-500/20">
+                        <Users size={10} />
+                        <span className="text-[8px] font-black uppercase tracking-widest">Parent</span>
+                      </div>
                     ) : (
                       <div className="bg-emerald-500/10 text-emerald-600 px-2 py-0.5 rounded-full flex items-center gap-1 ring-1 ring-emerald-500/20">
                         <GraduationCap size={10} />
