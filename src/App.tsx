@@ -20,7 +20,7 @@ import { db, auth } from './firebase';
 import { 
   AppMode, SessionStats, ChallengeResponse, ChallengeRecord, 
   OperationType, Unit, Question, NavItem, UserProfile,
-  Task, TaskSubmission
+  Task, TaskSubmission, Message
 } from './types';
 
 // Constants
@@ -40,6 +40,7 @@ import AboutView from './components/views/AboutView';
 import QuickFacts from './QuickFacts';
 import TasksView from './components/views/TasksView';
 import CommandCenterView from './components/views/CommandCenterView';
+import MessagesView from './components/views/MessagesView';
 import AchievementView from './components/views/AchievementView';
 import TaskWorksheetView from './components/views/TaskWorksheetView';
 import TaskTestView from './components/views/TaskTestView';
@@ -122,6 +123,7 @@ const getAppNavItems = (isAdmin: boolean): NavItem[] => {
   const items: NavItem[] = [
     { mode: 'dashboard', icon: LayoutGrid, label: 'Hub' },
     { mode: 'tasks', icon: Target, label: 'Tasks' },
+    { mode: 'messages' as AppMode, icon: MessageSquare, label: 'Messages' },
   ];
   if (isAdmin) {
     items.push({ mode: 'command-center' as AppMode, icon: ShieldCheck, label: 'Command Center' });
@@ -133,7 +135,7 @@ const getAppNavItems = (isAdmin: boolean): NavItem[] => {
   return items;
 };
 
-const Sidebar = ({ currentMode, setMode, onQRClick, hasOutstandingTasks, user, isAdmin }: { currentMode: AppMode, setMode: (m: AppMode) => void, onQRClick: () => void, hasOutstandingTasks?: boolean, user: UserProfile | null, isAdmin: boolean }) => {
+const Sidebar = ({ currentMode, setMode, onQRClick, hasOutstandingTasks, unreadMessagesCount, user, isAdmin }: { currentMode: AppMode, setMode: (m: AppMode) => void, onQRClick: () => void, hasOutstandingTasks?: boolean, unreadMessagesCount: number, user: UserProfile | null, isAdmin: boolean }) => {
   const [isHovered, setIsHovered] = useState(false);
 
   return (
@@ -211,6 +213,9 @@ const Sidebar = ({ currentMode, setMode, onQRClick, hasOutstandingTasks, user, i
                 <Icon size={22} className={`transition-all duration-500 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`} fill={isActive ? "currentColor" : "none"} />
                 {isTasks && hasOutstandingTasks && (
                   <span className="absolute top-[14px] right-[14px] w-2.5 h-2.5 bg-orange-500 rounded-full border-2 border-white ring-2 ring-orange-500/20" />
+                )}
+                {item.mode === 'messages' && unreadMessagesCount > 0 && (
+                  <span className="absolute top-[14px] right-[14px] w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white ring-2 ring-rose-500/20 animate-pulse" />
                 )}
               </div>
               <AnimatePresence>
@@ -359,6 +364,7 @@ function AppContent() {
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [viewedSubmission, setViewedSubmission] = useState<TaskSubmission | null>(null);
   const [showCalculator, setShowCalculator] = useState(false);
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
 
   // Expose Y8 toggle to global scope for Sidebar access
   useEffect(() => {
@@ -541,6 +547,32 @@ function AppContent() {
     });
   }, [currentUser, isAdminLoggedIn, tasks, userProfile]);
 
+  // Fetch Messages for unread count
+  useEffect(() => {
+    if (!currentUser) {
+      setUnreadMessagesCount(0);
+      return;
+    }
+
+    let q;
+    if (isAdminLoggedIn) {
+      q = query(collection(db, 'messages'));
+    } else {
+      q = query(collection(db, 'messages'), where('participants', 'array-contains', currentUser.userId));
+    }
+
+    return onSnapshot(q, (snap) => {
+      const msgs = snap.docs.map(d => ({ id: d.id, ...d.data() } as Message));
+      const myMsgs = msgs.filter(m => 
+        (m.receiverIds.includes(currentUser.userId) || m.type === 'announcement') &&
+        !m.isRead[currentUser.userId]
+      );
+      setUnreadMessagesCount(myMsgs.length);
+    }, (error) => {
+      console.error("Messages unread count listener error:", error);
+    });
+  }, [currentUser]);
+
   useEffect(() => {
     if (userProfile?.isParent && allUsers.length > 0 && allSubmissions.length > 0) {
       const childEmails = userProfile.childEmails || [];
@@ -560,7 +592,11 @@ function AppContent() {
   // Fetch all Submissions (Enabled for all to support class rank)
   useEffect(() => {
     if (!currentUser) return;
-    const q = query(collection(db, 'submissions'), orderBy('completedAt', 'desc'));
+    const baseQuery = collection(db, 'submissions');
+    const q = isAdminLoggedIn 
+      ? query(baseQuery, orderBy('completedAt', 'desc'))
+      : query(baseQuery, where('userId', '==', currentUser.uid));
+
     return onSnapshot(q, (snap) => {
         const subs = snap.docs.map(d => ({ id: d.id, ...d.data() } as TaskSubmission));
         // Fix up task IDs that might be using original/legacy IDs
@@ -850,18 +886,19 @@ function AppContent() {
 
   return (
     <div className="font-sans selection:bg-emerald-200 min-h-screen bg-gray-50 flex">
-      {['dashboard', 'user-stats', 'about', 'quick-facts', 'tasks', 'achievement', 'command-center'].includes(mode) && (
+      {['dashboard', 'user-stats', 'about', 'quick-facts', 'tasks', 'achievement', 'command-center', 'messages'].includes(mode) && (
         <Sidebar 
           currentMode={mode} 
           setMode={setMode} 
           onQRClick={() => setIsQRModalOpen(true)} 
           hasOutstandingTasks={outstandingTasks.length > 0}
+          unreadMessagesCount={unreadMessagesCount}
           user={userProfile}
           isAdmin={isAdminLoggedIn}
         />
       )}
 
-      <div className={`flex-1 transition-all duration-300 ${['dashboard', 'user-stats', 'about', 'quick-facts', 'tasks', 'achievement', 'command-center'].includes(mode) ? 'md:pl-[80px]' : ''}`}>
+      <div className={`flex-1 transition-all duration-300 ${['dashboard', 'user-stats', 'about', 'quick-facts', 'tasks', 'achievement', 'command-center', 'messages'].includes(mode) ? 'md:pl-[80px]' : ''}`}>
         <AnimatePresence mode="wait">
           {mode === 'dashboard' && (
             <DashboardView 
@@ -1214,6 +1251,15 @@ function AppContent() {
           {mode === 'user-stats' && <UserStatsView key="user-stats" units={units} sessionStats={sessionStats} />}
           {mode === 'about' && <AboutView key="about" />}
           {mode === 'quick-facts' && <QuickFacts key="quick-facts" />}
+
+          {mode === 'messages' && (
+            <MessagesView 
+              key="messages"
+              currentUser={userProfile}
+              allUsers={allUsers}
+              isAdmin={isAdminLoggedIn}
+            />
+          )}
         </AnimatePresence>
 
         {/* Virtual Calculator global overlay - Moved outside wait container to fix warning */}
@@ -1403,9 +1449,9 @@ function AppContent() {
       </AnimatePresence>
 
       {/* Mobile Nav */}
-      {['dashboard', 'user-stats', 'about', 'quick-facts', 'tasks', 'achievement', 'command-center'].includes(mode) && (
+      {['dashboard', 'user-stats', 'about', 'quick-facts', 'tasks', 'achievement', 'command-center', 'messages'].includes(mode) && (
         <nav className="fixed bottom-6 left-4 right-4 bg-white/5 backdrop-blur-md border border-white/10 p-2 z-[150] md:hidden rounded-[2rem] shadow-[0_20px_50px_-15px_rgba(0,0,0,0.15)]">
-          <div className={`grid gap-1.5 ${isAdminLoggedIn ? 'grid-cols-6' : 'grid-cols-4'}`}>
+          <div className={`grid gap-1.5 ${isAdminLoggedIn ? 'grid-cols-7' : 'grid-cols-5'}`}>
             {getAppNavItems(isAdminLoggedIn).map((item) => {
               const Icon = item.icon;
               const isActive = mode === item.mode;
@@ -1413,7 +1459,7 @@ function AppContent() {
                 <button 
                   key={item.mode}
                   onClick={() => setMode(item.mode)}
-                  className={`flex flex-col items-center justify-center gap-1 py-3 rounded-2xl transition-all duration-300 ${
+                  className={`flex flex-col items-center justify-center gap-1 py-3 rounded-2xl transition-all duration-300 relative ${
                     isActive 
                       ? 'bg-slate-900 text-white shadow-xl shadow-slate-900/20' 
                       : 'bg-white/5 border border-white/10 text-slate-400 hover:text-slate-900'
@@ -1421,6 +1467,9 @@ function AppContent() {
                 >
                   <Icon size={18} fill={isActive ? "currentColor" : "none"} />
                   <span className="text-[7px] font-black uppercase tracking-tight">{item.label}</span>
+                  {item.mode === 'messages' && unreadMessagesCount > 0 && (
+                    <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border border-white ring-2 ring-rose-500/20 animate-pulse" />
+                  )}
                 </button>
               )
             })}

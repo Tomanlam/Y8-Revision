@@ -46,9 +46,53 @@ service cloud.firestore {
              data.color is string;
     }
 
+    function isValidMessage(data) {
+      return data.senderId == request.auth.uid &&
+             data.senderName is string &&
+             data.receiverIds is list &&
+             data.participants is list &&
+             data.participants.hasAll([data.senderId]) &&
+             data.text is string && data.text.size() <= 5000 &&
+             data.timestamp is string &&
+             data.type in ['individual', 'announcement'] &&
+             data.isRead is map;
+    }
+
     // ===============================================================
     // Match Blocks
     // ===============================================================
+
+    match /messages/{messageId} {
+      allow get: if isSignedIn() && (
+        isAdmin() || 
+        request.auth.uid in resource.data.participants ||
+        resource.data.type == 'announcement'
+      );
+      allow list: if isSignedIn() && (
+        isAdmin() || 
+        request.auth.uid in resource.data.participants ||
+        resource.data.type == 'announcement'
+      );
+      
+      // Admin can create any message
+      // Students/Parents can create individual messages to send (Reply)
+      allow create: if isSignedIn() && isValidMessage(request.resource.data) && (
+        isAdmin() || 
+        (request.resource.data.type == 'individual')
+      );
+
+      // Only allow updating isRead for the current user
+      allow update: if isSignedIn() && (
+        isAdmin() || (
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead']) &&
+          request.resource.data.isRead[request.auth.uid] == true &&
+          request.resource.data.senderId == resource.data.senderId &&
+          request.resource.data.receiverIds == resource.data.receiverIds
+        )
+      );
+
+      allow delete: if isAdmin();
+    }
 
     match /users/{userId} {
       allow get: if isOwner(userId) || isAdmin();

@@ -1,6 +1,6 @@
 import { LucideIcon } from 'lucide-react';
 
-export type AppMode = 'splash' | 'dashboard' | 'revision' | 'quiz' | 'vocab' | 'user-stats' | 'about' | 'playground' | 'quick-facts' | 'tasks' | 'worksheet' | 'test' | 'achievement' | 'command-center';
+export type AppMode = 'splash' | 'dashboard' | 'revision' | 'quiz' | 'vocab' | 'user-stats' | 'about' | 'playground' | 'quick-facts' | 'tasks' | 'worksheet' | 'test' | 'achievement' | 'command-center' | 'messages';
 
 export interface QuizSubMode {
   id: string;
@@ -92,6 +92,18 @@ export interface TaskSubmission {
   feedback?: Record<string, { score: string, feedback: string }> | string;
   generalFeedback?: string;
   cheatLog?: string[];
+}
+
+export interface Message {
+  id: string;
+  senderId: string;
+  senderName: string;
+  receiverIds: string[]; // Can be multiple for announcements
+  participants: string[];
+  text: string;
+  timestamp: string;
+  isRead: Record<string, boolean>; // userId -> readStatus
+  type: 'individual' | 'announcement';
 }
 
 export type OperationType = 'create' | 'update' | 'delete' | 'list' | 'get' | 'write';

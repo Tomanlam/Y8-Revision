@@ -88,6 +88,22 @@
         "updatedAt": { "type": "string", "format": "date-time" }
       },
       "required": ["taskId", "rubrics", "meta", "updatedAt"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "A communication message between admin and student/parent.",
+      "type": "object",
+      "properties": {
+        "senderId": { "type": "string" },
+        "senderName": { "type": "string" },
+        "receiverIds": { "type": "array", "items": { "type": "string" } },
+        "participants": { "type": "array", "items": { "type": "string" } },
+        "text": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "isRead": { "type": "object", "description": "Map of userId to boolean" },
+        "type": { "type": "string", "enum": ["individual", "announcement"] }
+      },
+      "required": ["senderId", "senderName", "receiverIds", "text", "timestamp", "isRead", "type"]
     }
   },
   "firestore": {
@@ -114,6 +130,10 @@
     "/processedRubrics/{taskId}": {
       "schema": "ProcessedRubric",
       "description": "Cached rubrics for automated grading."
+    },
+    "/messages/{messageId}": {
+      "schema": "Message",
+      "description": "System communications and messages."
     }
   }
 }

@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import { GraduationCap, Github, ExternalLink, Zap, RefreshCw, Info, Sparkles } from 'lucide-react';
 
 const AboutView: React.FC = () => {
-  const revisionNumber = "5.0.0";
+  const revisionNumber = "6.0.0";
   const [clickCount, setClickCount] = React.useState(0);
   
   const handleCreatorClick = () => {
