@@ -91,6 +91,7 @@ export interface TaskSubmission {
   responses: Record<string, any>;
   feedback?: Record<string, { score: string, feedback: string }> | string;
   generalFeedback?: string;
+  cheatLog?: string[];
 }
 
 export type OperationType = 'create' | 'update' | 'delete' | 'list' | 'get' | 'write';
