@@ -683,47 +683,6 @@ OUTPUT: Plain text paragraph.`;
     }
   };
 
-    const downloadAllAsZip = async () => {
-    let JSZip;
-    try {
-      JSZip = (await import('jszip')).default;
-    } catch (e) {
-      alert("JSZip not available.");
-      return;
-    }
-    const zip = new JSZip();
-    let fileCount = 0;
-    
-    // Gather all files from responses
-    for (const key of Object.keys(responses)) {
-      if (Array.isArray(responses[key])) {
-        for (const file of responses[key]) {
-          if (file && file.url && file.name) {
-            try {
-              const res = await fetch(file.url);
-              const blob = await res.blob();
-              zip.file(file.name, blob);
-              fileCount++;
-            } catch (e) {
-              console.error("Failed to fetch file for zip", file.name, e);
-            }
-          }
-        }
-      }
-    }
-    
-    if (fileCount === 0) {
-      alert("No files to download.");
-      return;
-    }
-    
-    const content = await zip.generateAsync({ type: "blob" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(content);
-    link.download = `${studentName || 'Student'}_${task.title}_Attachments.zip`;
-    link.click();
-  };
-
   const handleEdit = () => { setSubmitted(false); setIsValidating(false); setValidationFeedback({}); };
   const questionsByPage = task.worksheetQuestions?.reduce((acc, q) => {
     const page = (q as any).page || 1;

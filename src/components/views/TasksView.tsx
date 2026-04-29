@@ -593,7 +593,7 @@ Sample PERFECT Markscheme JSON for MCQ, SHORT-RESPONSE, TICK-CROSS, TABLE, REORD
     setMarkschemeContent('');
   };
 
-  const generateResponsePDF = async (submission: TaskSubmission, task: Task, includeFeedback: boolean = false) => {
+  const generateResponsePDF = async (submission: TaskSubmission, task: Task, includeFeedback: boolean = false, returnBlob: boolean = false) => {
     const doc = new jsPDF();
     const isTest = task.type === 'test';
     const primaryColor: [number, number, number] = isTest ? [220, 38, 38] : (includeFeedback ? [16, 185, 129] : [59, 130, 246]); 
@@ -923,7 +923,10 @@ Sample PERFECT Markscheme JSON for MCQ, SHORT-RESPONSE, TICK-CROSS, TABLE, REORD
       }
     });
 
-    doc.save(`${includeFeedback?'Report':'Raw_Submission'}_${submission.studentName.replace(/\s+/g, '_')}_${task.title.substring(0,15).replace(/\s+/g, '_')}.pdf`);
+    if (returnBlob) {
+      return doc.output('blob');
+    }
+    doc.save(`${includeFeedback?'Report':'Raw_Submission'}_${submission.studentName.replace(/\\s+/g, '_')}_${task.title.substring(0,15).replace(/\\s+/g, '_')}.pdf`);
   };
 
   const downloadSubmissionAttachments = async (submission: TaskSubmission, task: Task) => {
@@ -965,6 +968,54 @@ Sample PERFECT Markscheme JSON for MCQ, SHORT-RESPONSE, TICK-CROSS, TABLE, REORD
     const link = document.createElement("a");
     link.href = URL.createObjectURL(content);
     link.download = `${submission.studentName || 'Student'}_${task.title}_Attachments.zip`;
+    link.click();
+  };
+
+  const downloadReportAndTaskPdf = async (submission: TaskSubmission, task: Task) => {
+    let JSZip;
+    try {
+      JSZip = (await import('jszip')).default;
+    } catch (e) {
+      alert("JSZip not available.");
+      return;
+    }
+    const zip = new JSZip();
+    let fileCount = 0;
+
+    // 1. Generate Report PDF
+    try {
+      const reportBlob = await generateResponsePDF(submission, task, true, true);
+      if (reportBlob) {
+        zip.file(`Report_${submission.studentName.replace(/\\s+/g, '_')}_${task.title.substring(0, 15).replace(/\\s+/g, '_')}.pdf`, reportBlob);
+        fileCount++;
+      }
+    } catch (e) {
+      console.error("Failed to generate report PDF", e);
+    }
+
+    // 2. Fetch Task PDF
+    // Usually pdfUrl inside task
+    const taskPdfUrl = task.pdfUrl;
+    if (taskPdfUrl) {
+      try {
+        const res = await fetch(taskPdfUrl);
+        const taskBlob = await res.blob();
+        zip.file(`Task_${task.title.substring(0, 15).replace(/\\s+/g, '_')}.pdf`, taskBlob);
+        fileCount++;
+      } catch (e) {
+        console.error("Failed to fetch task PDF", e);
+      }
+    }
+
+    if (fileCount === 0) {
+      alert("No files could be gathered.");
+      return;
+    }
+
+    const content = await zip.generateAsync({ type: "blob" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(content);
+    link.download = `${submission.studentName || 'Student'}_${task.title}_Report_and_Files.zip`;
     link.click();
   };
 
@@ -3068,9 +3119,13 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
       ) : activeTab === 'downloads' && !isAdmin ? (
         <div className="flex flex-col gap-6">
           <div className="bg-white/40 backdrop-blur-3xl p-8 rounded-[2.5rem] border border-white/20 shadow-xl">
-            <h2 className="text-2xl font-black text-slate-800 uppercase tracking-tight mb-6">Task Attachments</h2>
+            <h2 className="text-2xl font-black text-slate-800 uppercase tracking-tight mb-6">Task Downloads</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {mySubmissions.length === 0 || !mySubmissions.some(sub => Object.values(sub.responses || {}).some(val => Array.isArray(val) && val.some(file => file && file.url && file.name))) ? (
+              {mySubmissions.length === 0 || !mySubmissions.some(sub => {
+                const hasAttachments = Object.values(sub.responses || {}).some(val => Array.isArray(val) && val.some(file => file && file.url && file.name));
+                const isGraded = !!sub.feedback;
+                return hasAttachments || isGraded;
+              }) ? (
                 <div className="col-span-full py-12 flex flex-col items-center justify-center text-center">
                   <Download size={48} className="text-slate-300 mb-4" />
                   <h3 className="font-black text-slate-400 uppercase tracking-widest text-xs">No downloads available</h3>
@@ -3080,28 +3135,52 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
                   const task = tasks.find(t => t.id === sub.taskId);
                   if (!task) return null;
                   
-                  // check if there are any attachments
                   const hasAttachments = Object.values(sub.responses || {}).some(val => Array.isArray(val) && val.some(file => file && file.url && file.name));
-                  if (!hasAttachments) return null;
+                  const isGraded = !!sub.feedback;
+
+                  if (!hasAttachments && !isGraded) return null;
 
                   return (
-                    <motion.div key={sub.id} className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 flex items-center justify-between">
-                      <div className="flex items-center gap-4">
+                    <motion.div key={sub.id} className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 flex flex-col justify-between">
+                      <div className="flex items-center gap-4 mb-6">
                         <div className="bg-indigo-50 w-12 h-12 rounded-2xl flex items-center justify-center text-indigo-500 shrink-0">
-                          <Target size={24} />
+                          <Download size={24} />
                         </div>
                         <div className="flex-1 min-w-0 pr-4">
                           <h3 className="text-sm font-black text-slate-800 truncate">{task.title}</h3>
-                          <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mt-1">Has Attachments</p>
+                          <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mt-1">Available Downloads</p>
                         </div>
                       </div>
-                      <button 
-                        onClick={() => downloadSubmissionAttachments(sub, task)}
-                        className="p-4 bg-indigo-50 text-indigo-600 rounded-[1rem] hover:bg-indigo-500 hover:text-white transition-all shadow-sm group shrink-0"
-                        title="Download ZIP"
-                      >
-                        <Download size={20} className="group-hover:scale-110 transition-transform" />
-                      </button>
+                      <div className="space-y-3">
+                        {hasAttachments && (
+                          <button 
+                            onClick={() => downloadSubmissionAttachments(sub, task)}
+                            className="w-full flex items-center justify-between p-4 bg-slate-50 text-slate-600 rounded-[1.25rem] hover:bg-indigo-500 hover:text-white transition-all shadow-sm group"
+                          >
+                             <div className="flex items-center gap-3">
+                               <FileText size={18} className="text-indigo-400 group-hover:text-white" />
+                               <span className="text-xs font-black uppercase tracking-widest">Attachments ZIP</span>
+                             </div>
+                             <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center text-indigo-500 group-hover:text-white">
+                               <Download size={14} className="group-hover:scale-110 transition-transform" />
+                             </div>
+                          </button>
+                        )}
+                        {isGraded && (
+                          <button 
+                            onClick={() => downloadReportAndTaskPdf(sub, task)}
+                            className="w-full flex items-center justify-between p-4 bg-slate-50 text-slate-600 rounded-[1.25rem] hover:bg-emerald-500 hover:text-white transition-all shadow-sm group"
+                          >
+                             <div className="flex items-center gap-3">
+                               <Target size={18} className="text-emerald-400 group-hover:text-white" />
+                               <span className="text-xs font-black uppercase tracking-widest">Report & Task ZIP</span>
+                             </div>
+                             <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center text-emerald-500 group-hover:text-white">
+                               <Download size={14} className="group-hover:scale-110 transition-transform" />
+                             </div>
+                          </button>
+                        )}
+                      </div>
                     </motion.div>
                   );
                 })
