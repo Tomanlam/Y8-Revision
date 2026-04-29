@@ -124,11 +124,166 @@ const generatePaths = (type: 'bar' | 'horseshoe', strengthPercent: number) => {
   return paths;
 };
 
+const getInteractionBField = (x: number, y: number, type: 'bar' | 'horseshoe', arrangement: 'opposite' | 'like', distance: number) => {
+  let poles: {x: number, y: number, type: 'N'|'S'}[] = [];
+  
+  if (type === 'bar') {
+    const leftInnerX = 250 - distance / 2;
+    const rightInnerX = 250 + distance / 2;
+    const mLen = 100;
+    poles.push({ x: leftInnerX - mLen, y: 250, type: 'S' });
+    poles.push({ x: leftInnerX, y: 250, type: 'N' });
+    
+    if (arrangement === 'opposite') {
+      poles.push({ x: rightInnerX, y: 250, type: 'S' });
+      poles.push({ x: rightInnerX + mLen, y: 250, type: 'N' });
+    } else {
+      poles.push({ x: rightInnerX, y: 250, type: 'N' });
+      poles.push({ x: rightInnerX + mLen, y: 250, type: 'S' });
+    }
+  } else {
+    // horseshoe
+    const leftInnerX = 250 - distance / 2;
+    const rightInnerX = 250 + distance / 2;
+    poles.push({ x: leftInnerX, y: 210, type: 'N' });
+    poles.push({ x: leftInnerX, y: 290, type: 'S' });
+    
+    if (arrangement === 'opposite') {
+      poles.push({ x: rightInnerX, y: 210, type: 'S' });
+      poles.push({ x: rightInnerX, y: 290, type: 'N' });
+    } else {
+      poles.push({ x: rightInnerX, y: 210, type: 'N' });
+      poles.push({ x: rightInnerX, y: 290, type: 'S' });
+    }
+  }
+
+  let bx = 0, by = 0;
+  for (const p of poles) {
+    const dx = x - p.x;
+    const dy = y - p.y;
+    const distSq = dx*dx + dy*dy + 400; // damping
+    const dist = Math.sqrt(distSq);
+    const str = (p.type === 'N' ? 1 : -1) / distSq;
+    bx += str * (dx / dist);
+    by += str * (dy / dist);
+  }
+  return { bx, by, poles };
+};
+
+const generateInteractionPaths = (type: 'bar' | 'horseshoe', arrangement: 'opposite' | 'like', distance: number) => {
+  const { poles } = getInteractionBField(250, 250, type, arrangement, distance);
+  const paths: {d: string, steps: number}[] = [];
+  
+  const nPoles = poles.filter(p => p.type === 'N');
+  const sPoles = poles.filter(p => p.type === 'S');
+  
+  const numLines = 16; 
+  
+  for (const np of nPoles) {
+    for (let i=0; i<numLines; i++) {
+      const angle = (i / numLines) * 2 * Math.PI;
+      let x = np.x + 8 * Math.cos(angle);
+      let y = np.y + 8 * Math.sin(angle);
+      
+      let points = [];
+      let steps = 0;
+      let hitS = false;
+      
+      for (let step=0; step<300; step++) {
+        let {bx, by} = getInteractionBField(x, y, type, arrangement, distance);
+        const mag = Math.sqrt(bx*bx + by*by);
+        if (mag < 1e-6) break;
+        
+        const stepSize = 4;
+        x += (bx / mag) * stepSize;
+        y += (by / mag) * stepSize;
+        points.push({tx: x, ty: y});
+        steps++;
+        
+        let dSqMin = 999999;
+        for (const sp of sPoles) {
+          const dSq = (x - sp.x)**2 + (y - sp.y)**2;
+          if (dSq < dSqMin) dSqMin = dSq;
+        }
+        if (dSqMin < 150) { hitS = true; break; }
+        
+        if (x < -150 || x > 650 || y < -150 || y > 650) break;
+      }
+      
+      if (points.length > 5) {
+        let d = `M ${(np.x + 8 * Math.cos(angle)).toFixed(2)} ${(np.y + 8 * Math.sin(angle)).toFixed(2)}`;
+        points.forEach(p => { d += ` L ${p.tx.toFixed(2)} ${p.ty.toFixed(2)}`; });
+        paths.push({ d, steps });
+      }
+    }
+  }
+
+  for (const sp of sPoles) {
+    for (let i=0; i<numLines; i++) {
+      const angle = (i / numLines) * 2 * Math.PI;
+      let x = sp.x + 8 * Math.cos(angle);
+      let y = sp.y + 8 * Math.sin(angle);
+      
+      let points = [];
+      let steps = 0;
+      let hitN = false;
+      
+      for (let step=0; step<300; step++) {
+        let {bx, by} = getInteractionBField(x, y, type, arrangement, distance);
+        const mag = Math.sqrt(bx*bx + by*by);
+        if (mag < 1e-6) break;
+        
+        const stepSize = 4;
+        x -= (bx / mag) * stepSize;
+        y -= (by / mag) * stepSize;
+        points.push({tx: x, ty: y});
+        steps++;
+        
+        let dSqMin = 999999;
+        for (const np of nPoles) {
+          const dSq = (x - np.x)**2 + (y - np.y)**2;
+          if (dSq < dSqMin) dSqMin = dSq;
+        }
+        if (dSqMin < 150) { hitN = true; break; }
+        
+        if (x < -150 || x > 650 || y < -150 || y > 650) break;
+      }
+      
+      if (!hitN && points.length > 5) {
+        points.reverse();
+        let startX = points[0].tx, startY = points[0].ty;
+        let d = `M ${startX.toFixed(2)} ${startY.toFixed(2)}`;
+        for(let j=1; j<points.length; j++) {
+           d += ` L ${points[j].tx.toFixed(2)} ${points[j].ty.toFixed(2)}`;
+        }
+        d += ` L ${(sp.x + 8 * Math.cos(angle)).toFixed(2)} ${(sp.y + 8 * Math.sin(angle)).toFixed(2)}`;
+        paths.push({ d, steps: steps + 1 });
+      }
+    }
+  }
+
+  return paths;
+};
+
+const HorseshoeShape = ({ transform, flipPoles, hasCoil }: { transform: string, flipPoles?: boolean; hasCoil?: boolean }) => (
+  <g transform={transform}>
+    <path d="M -124 154 L -124 0 A 124 124 0 0 1 124 0 L 124 154 L 36 154 L 36 0 A 36 36 0 0 0 -36 0 L -36 154 Z" fill="#0f172a" />
+    <path d="M -120 150 L -120 0 A 120 120 0 0 1 120 0 L 120 150 L 40 150 L 40 0 A 40 40 0 0 0 -40 0 L -40 150 Z" fill={flipPoles ? "url(#horseshoeGradFlip)" : "url(#horseshoeGrad)"} />
+    {hasCoil && (
+      <path d="M -120 150 L -120 0 A 120 120 0 0 1 120 0 L 120 150 L 40 150 L 40 0 A 40 40 0 0 0 -40 0 L -40 150 Z" fill="url(#coil)" />
+    )}
+    <rect x={flipPoles ? 40 : -120} y="120" width="80" height="30" fill={flipPoles ? "#3b82f6" : "#ef4444"} />
+    <rect x={flipPoles ? -120 : 40} y="120" width="80" height="30" fill={flipPoles ? "#ef4444" : "#3b82f6"} />
+  </g>
+);
+
 const MagneticFieldsCard: React.FC<MagneticFieldsCardProps> = ({ chineseType }) => {
   const [activeTab, setActiveTab] = useState<'bar' | 'horseshoe'>('bar');
-  const [simMode, setSimMode] = useState<'compass' | 'filings' | 'strength'>('compass');
+  const [simMode, setSimMode] = useState<'compass' | 'filings' | 'strength' | 'interaction'>('compass');
   const [isElectroOn, setIsElectroOn] = useState(true);
   const [strength, setStrength] = useState(100);
+  const [magnetDistance, setMagnetDistance] = useState(100);
+  const [interactionPoles, setInteractionPoles] = useState<'opposite' | 'like'>('opposite');
 
   const svgRef = useRef<SVGSVGElement>(null);
   const [compassPos, setCompassPos] = useState({ x: 250, y: 150 });
@@ -179,18 +334,58 @@ const MagneticFieldsCard: React.FC<MagneticFieldsCardProps> = ({ chineseType }) 
   };
 
   const activeStrength = simMode === 'strength' ? strength : (simMode === 'compass' || isElectroOn ? 100 : 0);
-  const paths = useMemo(() => generatePaths(activeTab, activeStrength), [activeTab, activeStrength]);
+  const paths = useMemo(() => {
+    if (simMode === 'interaction') {
+      return generateInteractionPaths(activeTab, interactionPoles, magnetDistance);
+    }
+    return generatePaths(activeTab, activeStrength);
+  }, [activeTab, activeStrength, simMode, interactionPoles, magnetDistance]);
   
-  const { bx, by } = useMemo(() => getBField(compassPos.x, compassPos.y, activeTab), [compassPos.x, compassPos.y, activeTab]);
+  let { bx, by } = useMemo(() => {
+    if (simMode === 'interaction') {
+      return getInteractionBField(compassPos.x, compassPos.y, activeTab, interactionPoles, magnetDistance);
+    }
+    return getBField(compassPos.x, compassPos.y, activeTab);
+  }, [compassPos.x, compassPos.y, activeTab, simMode, interactionPoles, magnetDistance]);
   const compassAngle = useMemo(() => Math.atan2(by, bx) * 180 / Math.PI, [bx, by]);
 
   const filingsList = useMemo(() => {
     return initialFilingsData.map((pt, i) => {
-      if (!isElectroOn) {
-        return <line key={i} x1={pt.x} y1={pt.y} x2={pt.x + pt.seedSize * 2 * Math.cos(pt.randAngle)} y2={pt.y + pt.seedSize * 2 * Math.sin(pt.randAngle)} stroke="rgba(255,255,255,0.4)" strokeWidth={1} />
+      if (!isElectroOn && simMode === 'filings') {
+        const dx = pt.seedSize * 2 * Math.cos(pt.randAngle);
+        const dy = pt.seedSize * 2 * Math.sin(pt.randAngle);
+        return (
+          <g key={i} transform={`translate(${pt.x}, ${pt.y})`}>
+            <animateTransform 
+               attributeName="transform" 
+               type="rotate" 
+               from={`0`} 
+               to={`360`} 
+               dur={`${4 + (i%4)}s`} 
+               repeatCount="indefinite" 
+               additive="sum"
+            />
+            <animateTransform 
+               attributeName="transform" 
+               type="translate" 
+               values={`0,0; ${-dy},${dx}; 0,0`} 
+               dur={`${3 + (i%5)}s`} 
+               repeatCount="indefinite" 
+               additive="sum"
+            />
+            <line x1={-dx/2} y1={-dy/2} x2={dx/2} y2={dy/2} stroke="rgba(255,255,255,0.4)" strokeWidth={1} />
+          </g>
+        )
       }
       
-      let {bx, by} = getBField(pt.x, pt.y, activeTab);
+      let bx, by;
+      if (simMode === 'interaction') {
+         const res = getInteractionBField(pt.x, pt.y, activeTab, interactionPoles, magnetDistance);
+         bx = res.bx; by = res.by;
+      } else {
+         const res = getBField(pt.x, pt.y, activeTab);
+         bx = res.bx; by = res.by;
+      }
       const m = Math.sqrt(bx*bx + by*by);
       const alignPow = Math.min(1, m * 25000); 
       const angle = Math.atan2(by, bx);
@@ -201,7 +396,7 @@ const MagneticFieldsCard: React.FC<MagneticFieldsCardProps> = ({ chineseType }) 
       
       return <line key={i} x1={pt.x} y1={pt.y} x2={pt.x + len * Math.cos(finalAngle)} y2={pt.y + len * Math.sin(finalAngle)} stroke={`rgba(230,240,250,${opacity})`} strokeWidth={1.5} />
     });
-  }, [initialFilingsData, isElectroOn, activeTab]);
+  }, [initialFilingsData, isElectroOn, activeTab, simMode, interactionPoles, magnetDistance]);
 
   return (
     <div className="bg-white rounded-[2rem] border-2 border-gray-100 shadow-xl overflow-hidden w-full">
@@ -252,6 +447,12 @@ const MagneticFieldsCard: React.FC<MagneticFieldsCardProps> = ({ chineseType }) 
                 <stop offset="49%" stopColor="#ef4444" />
                 <stop offset="51%" stopColor="#3b82f6" />
                 <stop offset="100%" stopColor="#3b82f6" />
+              </linearGradient>
+              <linearGradient id="horseshoeGradFlip" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="#3b82f6" />
+                <stop offset="49%" stopColor="#3b82f6" />
+                <stop offset="51%" stopColor="#ef4444" />
+                <stop offset="100%" stopColor="#ef4444" />
               </linearGradient>
               <style>
                 {`
@@ -310,7 +511,7 @@ const MagneticFieldsCard: React.FC<MagneticFieldsCardProps> = ({ chineseType }) 
             )}
 
             {/* Magnets */}
-            {activeTab === 'bar' && (
+            {simMode !== 'interaction' && activeTab === 'bar' && (
               <g>
                 <rect x="96" y="206" width="308" height="88" fill="#0f172a" rx="4" />
                 <rect x="100" y="210" width="150" height="80" fill="#ef4444" />
@@ -321,15 +522,84 @@ const MagneticFieldsCard: React.FC<MagneticFieldsCardProps> = ({ chineseType }) 
               </g>
             )}
 
-            {activeTab === 'horseshoe' && (
+            {simMode !== 'interaction' && activeTab === 'horseshoe' && (
               <g>
-                <path d="M 126 354 L 126 200 A 124 124 0 0 1 374 200 L 374 354 L 286 354 L 286 200 A 36 36 0 0 0 214 200 L 214 354 Z" fill="#0f172a" />
-                <path d="M 130 350 L 130 200 A 120 120 0 0 1 370 200 L 370 350 L 290 350 L 290 200 A 40 40 0 0 0 210 200 L 210 350 Z" fill="url(#horseshoeGrad)" />
-                {simMode !== 'compass' && (
-                  <path d="M 130 350 L 130 200 A 120 120 0 0 1 370 200 L 370 350 L 290 350 L 290 200 A 40 40 0 0 0 210 200 L 210 350 Z" fill="url(#coil)" />
+                <HorseshoeShape transform="translate(250, 200) scale(1)" flipPoles={false} hasCoil={simMode !== 'compass'} />
+                <text x="170" y="335" fill="white" fontSize="20" fontWeight="900" textAnchor="middle" dominantBaseline="middle">N</text>
+                <text x="330" y="335" fill="white" fontSize="20" fontWeight="900" textAnchor="middle" dominantBaseline="middle">S</text>
+              </g>
+            )}
+
+            {simMode === 'interaction' && activeTab === 'bar' && (
+              <g>
+                {/* Left Magnet */}
+                <rect x={250 - magnetDistance / 2 - 100} y="220" width="50" height="60" fill="#3b82f6" />
+                <rect x={250 - magnetDistance / 2 - 50} y="220" width="50" height="60" fill="#ef4444" />
+                <text x={250 - magnetDistance / 2 - 75} y="250" fill="white" fontSize="20" fontWeight="900" textAnchor="middle" dominantBaseline="middle">S</text>
+                <text x={250 - magnetDistance / 2 - 25} y="250" fill="white" fontSize="20" fontWeight="900" textAnchor="middle" dominantBaseline="middle">N</text>
+
+                {/* Right Magnet */}
+                {interactionPoles === 'opposite' ? (
+                  <>
+                    <rect x={250 + magnetDistance / 2} y="220" width="50" height="60" fill="#3b82f6" />
+                    <rect x={250 + magnetDistance / 2 + 50} y="220" width="50" height="60" fill="#ef4444" />
+                    <text x={250 + magnetDistance / 2 + 25} y="250" fill="white" fontSize="20" fontWeight="900" textAnchor="middle" dominantBaseline="middle">S</text>
+                    <text x={250 + magnetDistance / 2 + 75} y="250" fill="white" fontSize="20" fontWeight="900" textAnchor="middle" dominantBaseline="middle">N</text>
+                  </>
+                ) : (
+                  <>
+                    <rect x={250 + magnetDistance / 2} y="220" width="50" height="60" fill="#ef4444" />
+                    <rect x={250 + magnetDistance / 2 + 50} y="220" width="50" height="60" fill="#3b82f6" />
+                    <text x={250 + magnetDistance / 2 + 25} y="250" fill="white" fontSize="20" fontWeight="900" textAnchor="middle" dominantBaseline="middle">N</text>
+                    <text x={250 + magnetDistance / 2 + 75} y="250" fill="white" fontSize="20" fontWeight="900" textAnchor="middle" dominantBaseline="middle">S</text>
+                  </>
                 )}
-                <text x="170" y="325" fill="white" fontSize="28" fontWeight="900" textAnchor="middle" dominantBaseline="middle">N</text>
-                <text x="330" y="325" fill="white" fontSize="28" fontWeight="900" textAnchor="middle" dominantBaseline="middle">S</text>
+              </g>
+            )}
+
+            {simMode === 'interaction' && activeTab === 'horseshoe' && (
+              <g>
+                {/* Left Horseshoe */}
+                <HorseshoeShape transform={`translate(${250 - magnetDistance / 2 - 75}, 250) rotate(-90) scale(0.5)`} flipPoles={true} hasCoil={false} />
+                <text x={250 - magnetDistance / 2 - 20} y="210" fill="white" fontSize="20" fontWeight="900" textAnchor="middle" dominantBaseline="middle">N</text>
+                <text x={250 - magnetDistance / 2 - 20} y="290" fill="white" fontSize="20" fontWeight="900" textAnchor="middle" dominantBaseline="middle">S</text>
+
+                {/* Right Horseshoe */}
+                <HorseshoeShape transform={`translate(${250 + magnetDistance / 2 + 75}, 250) rotate(90) scale(0.5)`} flipPoles={interactionPoles === 'opposite'} hasCoil={false} />
+                {interactionPoles === 'opposite' ? (
+                  <>
+                    <text x={250 + magnetDistance / 2 + 20} y="210" fill="white" fontSize="20" fontWeight="900" textAnchor="middle" dominantBaseline="middle">S</text>
+                    <text x={250 + magnetDistance / 2 + 20} y="290" fill="white" fontSize="20" fontWeight="900" textAnchor="middle" dominantBaseline="middle">N</text>
+                  </>
+                ) : (
+                  <>
+                    <text x={250 + magnetDistance / 2 + 20} y="210" fill="white" fontSize="20" fontWeight="900" textAnchor="middle" dominantBaseline="middle">N</text>
+                    <text x={250 + magnetDistance / 2 + 20} y="290" fill="white" fontSize="20" fontWeight="900" textAnchor="middle" dominantBaseline="middle">S</text>
+                  </>
+                )}
+              </g>
+            )}
+
+            {simMode === 'interaction' && interactionPoles === 'like' && (
+              <g className="animate-pulse">
+                {activeTab === 'bar' && (
+                  <g transform="translate(250, 250)">
+                    <circle cx="0" cy="0" r="10" fill="none" stroke="#fcd34d" strokeWidth="2" strokeDasharray="3,2" />
+                    <text x="0" y="-18" fill="#fcd34d" fontSize="10" fontWeight="bold" textAnchor="middle">Neutral Node</text>
+                  </g>
+                )}
+                {activeTab === 'horseshoe' && (
+                  <>
+                    <g transform="translate(250, 210)">
+                      <circle cx="0" cy="0" r="10" fill="none" stroke="#fcd34d" strokeWidth="2" strokeDasharray="3,2" />
+                      <text x="0" y="-18" fill="#fcd34d" fontSize="10" fontWeight="bold" textAnchor="middle">Neutral Node</text>
+                    </g>
+                    <g transform="translate(250, 290)">
+                      <circle cx="0" cy="0" r="10" fill="none" stroke="#fcd34d" strokeWidth="2" strokeDasharray="3,2" />
+                      <text x="0" y="22" fill="#fcd34d" fontSize="10" fontWeight="bold" textAnchor="middle">Neutral Node</text>
+                    </g>
+                  </>
+                )}
               </g>
             )}
 
@@ -371,6 +641,9 @@ const MagneticFieldsCard: React.FC<MagneticFieldsCardProps> = ({ chineseType }) 
             </button>
             <button onClick={()=>setSimMode('strength')} className={`flex-1 min-w-[100px] py-3 px-2 text-[10px] sm:text-xs font-black uppercase tracking-widest rounded-[1.2rem] transition-all ${simMode === 'strength' ? 'bg-white shadow-sm text-purple-600' : 'text-slate-400 hover:text-slate-700'}`}>
               {t('Strength', '强度', '強度')}
+            </button>
+            <button onClick={()=>setSimMode('interaction')} className={`flex-1 min-w-[100px] py-3 px-2 text-[10px] sm:text-xs font-black uppercase tracking-widest rounded-[1.2rem] transition-all ${simMode === 'interaction' ? 'bg-white shadow-sm text-pink-600' : 'text-slate-400 hover:text-slate-700'}`}>
+              {t('Interaction', '磁极相互作用', '磁極相互作用')}
             </button>
           </div>
 
@@ -476,6 +749,55 @@ const MagneticFieldsCard: React.FC<MagneticFieldsCardProps> = ({ chineseType }) 
                     'Increasing the electrical current inside the electromagnet makes the surrounding magnetic field stronger. A visibly stronger magnetic field is represented by field lines that are drawn denser and closer together.',
                     '增加电磁铁内的电流会使周围的磁场更强。更强的磁场由绘制得更加密集、更加靠近的磁力线表示。',
                     '增加電磁鐵內的電流會使周圍的磁場更強。更強的磁場由繪製得更加密集、更加靠近的磁力線表示。'
+                  )}
+                </div>
+              </motion.div>
+            )}
+
+            {simMode === 'interaction' && (
+              <motion.div initial={{opacity: 0, y: 10}} animate={{opacity: 1, y: 0}}>
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-pink-100 text-pink-600 rounded-2xl shadow-sm">
+                    <Magnet size={24} />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-black text-slate-800 uppercase tracking-widest">{t('Magnetic Interaction', '磁极相互作用', '磁極相互作用')}</h4>
+                    <p className="text-xs font-bold text-slate-500">{t('Like & Opposite Poles', '同性与异性磁极', '同性與異性磁極')}</p>
+                  </div>
+                </div>
+
+                <div className="mt-6 flex gap-2">
+                  <button onClick={()=>setInteractionPoles('opposite')} className={`flex-1 py-3 px-2 text-[10px] sm:text-xs font-black uppercase tracking-widest rounded-xl transition-all ${interactionPoles === 'opposite' ? 'bg-pink-500 shadow-sm text-white' : 'bg-white text-slate-500 border border-slate-200'}`}>
+                    {t('Opposite Poles', '异名磁极 (N-S)', '異名磁極 (N-S)')}
+                  </button>
+                  <button onClick={()=>setInteractionPoles('like')} className={`flex-1 py-3 px-2 text-[10px] sm:text-xs font-black uppercase tracking-widest rounded-xl transition-all ${interactionPoles === 'like' ? 'bg-pink-500 shadow-sm text-white' : 'bg-white text-slate-500 border border-slate-200'}`}>
+                    {t('Like Poles', '同名磁极 (N-N)', '同名磁極 (N-N)')}
+                  </button>
+                </div>
+
+                <div className="mt-4 bg-white p-6 rounded-[1.5rem] shadow-sm border border-pink-100">
+                  <div className="flex justify-between items-center mb-4">
+                    <span className="text-xs font-black text-slate-500 uppercase tracking-widest">{t('Distance', '距离', '距離')}</span>
+                  </div>
+                  <input 
+                    type="range" 
+                    min="50" 
+                    max="200" 
+                    value={magnetDistance} 
+                    onChange={(e) => setMagnetDistance(parseInt(e.target.value))}
+                    className="w-full h-3 bg-pink-100 rounded-lg appearance-none cursor-pointer accent-pink-600"
+                  />
+                  <div className="flex justify-between mt-2 text-[10px] font-black text-slate-400 uppercase">
+                    <span>{t('Close', '近', '近')}</span>
+                    <span>{t('Far', '远', '遠')}</span>
+                  </div>
+                </div>
+                
+                <div className="text-sm font-bold text-slate-600 leading-loose mt-6">
+                  {t(
+                    'Opposite magnetic poles attract each other, causing field lines to connect across the gap. Like poles repel each other, causing the field lines to bend away and never cross.',
+                    '异名磁极相互吸引，磁力线将穿过间隙连接两端。同名磁极相互排斥，导致磁力线向外弯曲且永远不会相交。',
+                    '異名磁極相互吸引，磁力線將穿過間隙連接兩端。同名磁極相互排斥，導致磁力線向外彎曲且永遠不會相交。'
                   )}
                 </div>
               </motion.div>

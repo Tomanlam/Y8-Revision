@@ -50,19 +50,19 @@ const Sketchpad: React.FC<SketchpadProps> = ({ onClose, onSave }) => {
     
     const saveHistory = () => {
       // Avoid saving history when we are undoing/redoing
-      if (canvas.historyProcessing) return;
+      if ((canvas as any).historyProcessing) return;
       
       setHistory(prev => {
-        const newHistory = prev.slice(0, (canvas.historyIndexRef as number) + 1);
+        const newHistory = prev.slice(0, ((canvas as any).historyIndexRef as number) + 1);
         newHistory.push(JSON.stringify(canvas.toJSON()));
-        canvas.historyIndexRef = newHistory.length - 1;
+        (canvas as any).historyIndexRef = newHistory.length - 1;
         setHistoryIndex(newHistory.length - 1);
         return newHistory;
       });
     };
 
-    canvas.historyProcessing = false;
-    canvas.historyIndexRef = 0;
+    (canvas as any).historyProcessing = false;
+    (canvas as any).historyIndexRef = 0;
 
     // History Tracking
     canvas.on('object:added', () => saveHistory());

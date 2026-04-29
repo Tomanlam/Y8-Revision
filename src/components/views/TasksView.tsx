@@ -252,7 +252,7 @@ JSON OUTPUT: { "questions": [{ "id": "string", "score": "X of X", "feedback": "s
   const [passcodeError, setPasscodeError] = React.useState(false);
   const [showPasscode, setShowPasscode] = React.useState(false);
 
-  const [activeTab, setActiveTab] = React.useState<'tasks' | 'submissions' | 'analytics'>('tasks');
+  const [activeTab, setActiveTab] = React.useState<'tasks' | 'submissions' | 'analytics'>(isAdmin ? 'analytics' : 'tasks');
   const [submissionFilter, setSubmissionFilter] = React.useState('');
   const [nukeLevel, setNukeLevel] = React.useState(0);
   const [showAnalyticsMap, setShowAnalyticsMap] = React.useState<Record<string, boolean>>({});
@@ -827,8 +827,8 @@ Sample PERFECT Markscheme JSON for MCQ, SHORT-RESPONSE, TICK-CROSS, TABLE, REORD
                 console.error("Failed to parse image props for height padding", e);
               }
             });
-            if (data.row.minCellHeight < heightNeeded) {
-              data.row.minCellHeight = heightNeeded;
+            if ((data.row as any).minCellHeight < heightNeeded) {
+              (data.row as any).minCellHeight = heightNeeded;
             }
           }
         }
@@ -1009,7 +1009,7 @@ Sample PERFECT Markscheme JSON for MCQ, SHORT-RESPONSE, TICK-CROSS, TABLE, REORD
 
 
       {/* Admin Quick Stats Bar */}
-      {isAdmin && (
+      {isAdmin && activeTab === 'tasks' && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
           <div className="bg-white/40 backdrop-blur-3xl p-8 rounded-[2.5rem] border border-white/20 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-xl transition-all duration-500 group">
             <div className="flex justify-between items-start mb-6">
@@ -1066,7 +1066,7 @@ Sample PERFECT Markscheme JSON for MCQ, SHORT-RESPONSE, TICK-CROSS, TABLE, REORD
         </div>
       )}
 
-      {isAdmin && (
+      {isAdmin && activeTab === 'tasks' && (
         <div className="flex flex-wrap items-center gap-4">
           <button 
             onClick={() => {

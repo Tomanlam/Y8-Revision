@@ -1,8 +1,9 @@
-import React from 'react';
-import { motion } from 'motion/react';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Trophy, Target, Clock, TrendingUp, Award, Calendar, CheckCircle2, AlertCircle, PieChart as PieChartIcon, BarChart3, Sparkles, Star, Users, LayoutGrid, Activity, Database } from 'lucide-react';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { Task, TaskSubmission, UserProfile } from '../../types';
+import StudentRegistry from './StudentRegistry';
 
 interface AchievementViewProps {
   user: UserProfile | null;
@@ -13,8 +14,9 @@ interface AchievementViewProps {
 }
 
 const AchievementView: React.FC<AchievementViewProps> = ({ user, tasks, submissions = [], isAdmin, allUsers = [] }) => {
-  const [filterType, setFilterType] = React.useState<'all' | 'task' | 'test'>('all');
-  const [filterTime, setFilterTime] = React.useState<'day' | 'month'>('day');
+  const [filterType, setFilterType] = useState<'all' | 'task' | 'test'>('all');
+  const [filterTime, setFilterTime] = useState<'day' | 'month'>('day');
+  const [isStudentRegistryOpen, setIsStudentRegistryOpen] = useState(false);
 
   // Use a more robust filtering for my own submissions
   const mySubmissions = React.useMemo(() => {
@@ -206,10 +208,11 @@ const AchievementView: React.FC<AchievementViewProps> = ({ user, tasks, submissi
       {isAdmin && adminStats && (
         <div className="space-y-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <motion.div 
+            <motion.button 
+               onClick={() => setIsStudentRegistryOpen(true)}
                initial={{ opacity: 0, scale: 0.95 }}
                animate={{ opacity: 1, scale: 1 }}
-               className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-[2.5rem] p-8 text-white shadow-xl flex flex-col justify-between"
+               className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-[2.5rem] p-8 text-white shadow-xl flex flex-col justify-between hover:shadow-2xl hover:scale-[1.02] transition-transform cursor-pointer text-left focus:outline-none"
             >
               <Users size={32} className="mb-4 opacity-70" />
               <div>
@@ -219,7 +222,7 @@ const AchievementView: React.FC<AchievementViewProps> = ({ user, tasks, submissi
                   <p className="text-sm opacity-50">of {adminStats.totalUsers} registered</p>
                 </div>
               </div>
-            </motion.div>
+            </motion.button>
 
             <motion.div 
                initial={{ opacity: 0, scale: 0.95 }}
@@ -510,6 +513,16 @@ const AchievementView: React.FC<AchievementViewProps> = ({ user, tasks, submissi
           </div>
         </div>
       </div>
+      <AnimatePresence>
+        {isStudentRegistryOpen && (
+          <StudentRegistry 
+            onClose={() => setIsStudentRegistryOpen(false)}
+            allUsers={allUsers}
+            submissions={isAdmin ? submissions : mySubmissions}
+            tasks={tasks}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };
