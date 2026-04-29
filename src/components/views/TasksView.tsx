@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Target, ListChecks, FileText, Download, Clock, Star, ArrowRight, User, Info, CheckCircle2, Eye, ShieldCheck } from 'lucide-react';
+import { Target, ListChecks, FileText, Download, Clock, Star, ArrowRight, User, Info, CheckCircle2, Eye, ShieldCheck, Archive, RefreshCw, BookOpen } from 'lucide-react';
 import { format } from 'date-fns';
 import { Task, TaskSubmission, Unit, AppMode } from '../../types';
 
@@ -20,6 +20,344 @@ interface TasksViewProps {
   onStartTask: (task: Task) => void;
 }
 
+import JSZip from 'jszip';
+
+interface DownloadsTabProps {
+  tasks: Task[];
+  submissions: TaskSubmission[];
+  units: Unit[];
+  exportReportPDF: (sub: TaskSubmission, task: Task, isRaw: boolean, returnBlob?: boolean) => Promise<Blob | void>;
+}
+
+const ReportsTab = ({ tasks, submissions, exportReportPDF }: { tasks: Task[]; submissions: TaskSubmission[]; exportReportPDF: any }) => {
+  const gradedSubmissions = tasks
+    .filter(task => submissions.some(sub => sub.taskId === task.id && sub.results))
+    .map(task => ({ task, submission: submissions.find(sub => sub.taskId === task.id)! }));
+
+  if (gradedSubmissions.length === 0) {
+    return (
+      <div className="bg-white/40 backdrop-blur-3xl p-8 rounded-[2.5rem] border border-white/20 shadow-xl min-h-[400px] flex flex-col items-center justify-center text-center">
+        <div className="p-6 bg-slate-100 rounded-3xl text-slate-400 mb-6 font-black">
+          <FileText size={48} />
+        </div>
+        <h3 className="text-2xl font-black text-slate-800 uppercase tracking-tight mb-2">Reports</h3>
+        <p className="text-slate-400 font-bold text-xs max-w-sm">
+          Your detailed graded response reports and feedback will appear here once they are completed and analyzed.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {gradedSubmissions.map(({ task, submission }) => (
+        <motion.div
+          key={task.id}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white/40 backdrop-blur-3xl p-8 rounded-[2.5rem] border border-white/20 shadow-xl group hover:shadow-2xl transition-all duration-500 flex flex-col justify-between"
+        >
+          <div>
+            <div className="flex justify-between items-start mb-6">
+              <div className={`p-4 rounded-2xl ${task.type === 'test' ? 'bg-rose-500/10 text-rose-600' : 'bg-emerald-500/10 text-emerald-600'}`}>
+                {task.type === 'test' ? <CheckCircle2 size={32} /> : <Target size={32} />}
+              </div>
+              <div className="flex flex-col items-end gap-1.5">
+                <div className="px-3 py-1 bg-emerald-500 text-white rounded-full text-[8px] font-black uppercase tracking-widest flex items-center gap-1.5 shadow-lg shadow-emerald-500/20">
+                  <CheckCircle2 size={10} />
+                  Graded
+                </div>
+              </div>
+            </div>
+            
+            <h3 className="text-2xl font-black text-slate-800 uppercase tracking-tight mb-2 leading-tight">
+              {task.title}
+            </h3>
+            <div className="flex items-center gap-3 mb-6">
+              <p className="text-slate-500 font-bold text-[10px] uppercase tracking-widest opacity-60">
+                {task.type === 'test' ? 'Secure Assessment' : 'Standard Assignment'}
+              </p>
+              <div className="w-1 h-1 rounded-full bg-slate-300" />
+              <p className="text-slate-500 font-bold text-[10px] uppercase tracking-widest opacity-60">
+                Unit {(task.units && task.units.length > 0) ? task.units[0] : 'N/A'}
+              </p>
+            </div>
+          </div>
+
+          <div className="p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100 flex flex-col gap-3">
+            <button
+              onClick={() => exportReportPDF(submission, task, true)}
+              className="w-full py-3 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-[8px] hover:bg-slate-800 transition-all flex items-center justify-center gap-2"
+            >
+              <Download size={14} />
+              Raw PDF
+            </button>
+            <button
+              onClick={() => exportReportPDF(submission, task, false)}
+              className="w-full py-3 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest text-[8px] hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/10"
+            >
+              <FileText size={14} />
+              Report PDF
+            </button>
+          </div>
+        </motion.div>
+      ))}
+    </div>
+  );
+};
+
+const DownloadsTab = ({ tasks, submissions, units, exportReportPDF }: DownloadsTabProps) => {
+  const [zippingUnitId, setZippingUnitId] = React.useState<number | null>(null);
+
+  const downloadFile = (url: string, filename: string) => {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleZipDownload = async (unit: Unit) => {
+    setZippingUnitId(unit.id);
+    try {
+      const zip = new JSZip();
+      const unitFolder = zip.folder(unit.title) || zip;
+      
+      // 1. Notes
+      if (unit.pdfUrl) {
+        try {
+          const resp = await fetch(unit.pdfUrl);
+          const blob = await resp.blob();
+          unitFolder.file(`${unit.title}_Notes.pdf`, blob);
+        } catch (e) {
+          console.error("Failed to fetch notes PDF for zip", e);
+        }
+      }
+
+      // 2. Graded Tasks (Worksheets and Tests)
+      const unitTasks = tasks.filter(t => t.units.includes(unit.id));
+      for (const task of unitTasks) {
+        const sub = submissions.find(s => s.taskId === task.id);
+        if (sub && sub.results) {
+          // Task PDF (Raw)
+          if (task.pdfUrl) {
+            try {
+              const resp = await fetch(task.pdfUrl);
+              const blob = await resp.blob();
+              unitFolder.file(`${task.title}_Source.pdf`, blob);
+            } catch (e) {
+              console.error(`Failed to fetch source PDF for ${task.title}`, e);
+            }
+          }
+
+          // Report PDF (Graded)
+          try {
+            const reportBlob = await exportReportPDF(sub, task, false, true);
+            if (reportBlob instanceof Blob) {
+              unitFolder.file(`${task.title}_Report.pdf`, reportBlob);
+            }
+          } catch (e) {
+            console.error(`Failed to generate report PDF for ${task.title}`, e);
+          }
+          
+          // Raw Report PDF
+          try {
+            const rawBlob = await exportReportPDF(sub, task, true, true);
+            if (rawBlob instanceof Blob) {
+              unitFolder.file(`${task.title}_Raw_Capture.pdf`, rawBlob);
+            }
+          } catch (e) {
+            console.error(`Failed to generate raw report PDF for ${task.title}`, e);
+          }
+        }
+      }
+
+      const content = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(content);
+      downloadFile(url, `${unit.title}_Assets.zip`);
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error("Failed to create zip", e);
+      alert("Failed to create zip file.");
+    } finally {
+      setZippingUnitId(null);
+    }
+  };
+
+  const worksheets = tasks.filter(t => t.type === 'worksheet');
+  const tests = tasks.filter(t => t.type === 'test');
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
+      {/* Worksheets Column */}
+      <div className="space-y-6">
+        <div className="flex items-center gap-3 mb-2 bg-emerald-50/50 p-4 rounded-3xl border border-emerald-100">
+          <div className="p-2.5 bg-emerald-500 text-white rounded-xl shadow-lg shadow-emerald-500/20">
+            <Target size={20} />
+          </div>
+          <div>
+            <h4 className="text-sm font-black text-slate-800 uppercase tracking-tight leading-none">Worksheets</h4>
+            <p className="text-[7px] font-black text-emerald-600 uppercase tracking-widest mt-1">Resource Cards</p>
+          </div>
+        </div>
+        {worksheets.map(task => (
+           <AssetCard key={task.id} task={task} type="Worksheet" submissions={submissions} />
+        ))}
+      </div>
+
+      {/* Tests Column */}
+      <div className="space-y-6">
+        <div className="flex items-center gap-3 mb-2 bg-rose-50/50 p-4 rounded-3xl border border-rose-100">
+          <div className="p-2.5 bg-rose-500 text-white rounded-xl shadow-lg shadow-rose-500/20">
+            <CheckCircle2 size={20} />
+          </div>
+          <div>
+            <h4 className="text-sm font-black text-slate-800 uppercase tracking-tight leading-none">Tests</h4>
+            <p className="text-[7px] font-black text-rose-600 uppercase tracking-widest mt-1">Assessment Cards</p>
+          </div>
+        </div>
+        {tests.map(task => (
+           <AssetCard key={task.id} task={task} type="Test" submissions={submissions} />
+        ))}
+      </div>
+
+      {/* Notes Column */}
+      <div className="space-y-6">
+        <div className="flex items-center gap-3 mb-2 bg-indigo-50/50 p-4 rounded-3xl border border-indigo-100">
+          <div className="p-2.5 bg-indigo-500 text-white rounded-xl shadow-lg shadow-indigo-500/20">
+            <FileText size={20} />
+          </div>
+          <div>
+            <h4 className="text-sm font-black text-slate-800 uppercase tracking-tight leading-none">Notes</h4>
+            <p className="text-[7px] font-black text-indigo-600 uppercase tracking-widest mt-1">Study Materials</p>
+          </div>
+        </div>
+        {units.map(unit => (
+          <div key={unit.id} className="bg-white/40 backdrop-blur-3xl p-6 rounded-[2.5rem] border border-white/20 shadow-lg group hover:shadow-xl transition-all duration-300">
+            <div className="flex items-center gap-4 mb-5">
+              <div className={`w-12 h-12 ${unit.color} rounded-2xl flex items-center justify-center text-white shadow-xl group-hover:scale-110 transition-transform duration-300`}>
+                <BookOpen size={24} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h5 className="font-black text-slate-800 uppercase tracking-tight truncate leading-tight">Unit {unit.id}</h5>
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] truncate mt-1">{unit.title}</p>
+              </div>
+            </div>
+            <button
+              onClick={() => unit.pdfUrl && downloadFile(unit.pdfUrl, `${unit.title}_Notes.pdf`)}
+              disabled={!unit.pdfUrl}
+              className={`w-full py-3.5 rounded-2xl font-black uppercase tracking-widest text-[9px] transition-all flex items-center justify-center gap-2 ${
+                unit.pdfUrl 
+                  ? 'bg-slate-900 text-white hover:bg-slate-800 active:scale-95' 
+                  : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+              }`}
+            >
+              <Download size={14} />
+              Download Notes
+            </button>
+          </div>
+        ))}
+      </div>
+
+      {/* Units Column (Zip) */}
+      <div className="space-y-6">
+        <div className="flex items-center gap-3 mb-2 bg-amber-50/50 p-4 rounded-3xl border border-amber-100">
+          <div className="p-2.5 bg-amber-500 text-white rounded-xl shadow-lg shadow-amber-500/20">
+            <Archive size={20} />
+          </div>
+          <div>
+            <h4 className="text-sm font-black text-slate-800 uppercase tracking-tight leading-none">Units</h4>
+            <p className="text-[7px] font-black text-amber-600 uppercase tracking-widest mt-1">Bulk Zip Download</p>
+          </div>
+        </div>
+        {units.map(unit => (
+          <div key={unit.id} className="bg-white/40 backdrop-blur-3xl p-6 rounded-[2.5rem] border border-white/20 shadow-lg relative overflow-hidden group hover:shadow-xl transition-all duration-300">
+            {zippingUnitId === unit.id && (
+              <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-10 flex items-center justify-center">
+                <div className="flex flex-col items-center gap-3">
+                  <RefreshCw size={32} className="text-amber-600 animate-spin" />
+                  <span className="text-[8px] font-black text-amber-600 uppercase tracking-[0.2em]">Packing Zip...</span>
+                </div>
+              </div>
+            )}
+            <div className="flex items-center gap-4 mb-5">
+              <div className="w-12 h-12 bg-amber-500 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-amber-500/20 group-hover:scale-110 transition-transform duration-300">
+                <Download size={24} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h5 className="font-black text-slate-800 uppercase tracking-tight truncate leading-tight">{unit.title}</h5>
+                <p className="text-[9px] font-black text-amber-600/60 uppercase tracking-[0.2em] truncate mt-1">Master Bundle</p>
+              </div>
+            </div>
+            <button
+              onClick={() => handleZipDownload(unit)}
+              className="w-full py-3.5 bg-amber-500 text-white rounded-2xl font-black uppercase tracking-widest text-[9px] hover:bg-amber-600 transition-all flex items-center justify-center gap-2 shadow-lg shadow-amber-500/10 active:scale-95"
+            >
+              <Download size={14} />
+              Download ZIP
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const AssetCard = ({ task, type, submissions }: { task: Task; type: string; submissions: TaskSubmission[]; key?: string }) => {
+  const submission = submissions.find(s => s.taskId === task.id);
+  const isCompleted = !!submission;
+  
+  return (
+    <div className="bg-white/40 backdrop-blur-3xl p-6 rounded-[2.5rem] border border-white/20 shadow-lg group hover:shadow-xl transition-all duration-300">
+      <div className="flex justify-between items-start mb-4">
+        <div className={`p-3 rounded-xl ${task.type === 'test' ? 'bg-rose-500/10 text-rose-600' : 'bg-emerald-500/10 text-emerald-600'}`}>
+          {task.type === 'test' ? <CheckCircle2 size={24} /> : <Target size={24} />}
+        </div>
+        {isCompleted && (
+          <div className="px-2 py-0.5 bg-emerald-500 text-white rounded-full text-[6px] font-black uppercase tracking-widest">
+            Completed
+          </div>
+        )}
+      </div>
+
+      <h5 className="font-black text-slate-800 uppercase tracking-tight mb-1 text-sm leading-tight">{task.title}</h5>
+      <div className="flex items-center gap-2 mb-4">
+        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">
+          {isCompleted ? 'Completed:' : 'Due:'}
+        </p>
+        <p className="text-[8px] font-black text-slate-600 uppercase tracking-widest">
+          {isCompleted 
+            ? format(new Date(submission.completedAt || Date.now()), 'MMM dd')
+            : (task.dueDate ? format(new Date(task.dueDate), 'MMM dd') : 'Soon')}
+        </p>
+      </div>
+
+      <button
+        onClick={() => {
+          if (task.pdfUrl) {
+            const link = document.createElement('a');
+            link.href = task.pdfUrl;
+            link.download = `${task.title}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          }
+        }}
+        disabled={!task.pdfUrl}
+        className={`w-full py-3.5 rounded-2xl font-black uppercase tracking-widest text-[9px] transition-all flex items-center justify-center gap-2 ${
+          task.pdfUrl 
+            ? 'bg-slate-900 text-white hover:bg-slate-800 active:scale-95' 
+            : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+        }`}
+      >
+        <Download size={14} />
+        {type} PDF
+      </button>
+    </div>
+  );
+};
+
 const TasksView = ({ 
   mode,
   showEasterNotice,
@@ -30,6 +368,7 @@ const TasksView = ({
   tasks,
   mySubmissions,
   userProfile,
+  units,
   onStartTask
 }: TasksViewProps) => {
   const [activeTab, setActiveTab] = React.useState<'tasks' | 'reports' | 'downloads'>('tasks');
@@ -56,7 +395,7 @@ const TasksView = ({
     }
   };
 
-  const exportReportPDF = async (sub: TaskSubmission, task: Task, isRaw = false) => {
+  const exportReportPDF = async (sub: TaskSubmission, task: Task, isRaw = false, returnBlob = false) => {
     const { jsPDF } = await import('jspdf');
     const autoTable = (await import('jspdf-autotable')).default;
     
@@ -392,8 +731,11 @@ const TasksView = ({
       }
     });
 
-    doc.save(`${isRaw ? 'Raw_Capture' : 'Performance_Report'}_${sub.studentName}.pdf`);
+    if (returnBlob) {
+      return doc.output('blob');
+    }
 
+    doc.save(`${isRaw ? 'Raw_Capture' : 'Performance_Report'}_${sub.studentName}.pdf`);
   };
 
   // Filter tasks
@@ -555,7 +897,7 @@ const TasksView = ({
                         : 'bg-slate-900 border-black text-white hover:bg-emerald-600 hover:border-emerald-400 shadow-lg active:scale-95'
                     }`}
                   >
-                    {userProfile?.isParent ? 'Not Started' : 'Engage Mission'}
+                    {userProfile?.isParent ? 'Not Started' : 'Start'}
                     {!userProfile?.isParent && <ArrowRight size={16} />}
                   </button>
                 )}
@@ -564,25 +906,14 @@ const TasksView = ({
           })}
         </div>
       ) : activeTab === 'reports' ? (
-        <div className="bg-white/40 backdrop-blur-3xl p-8 rounded-[2.5rem] border border-white/20 shadow-xl min-h-[400px] flex flex-col items-center justify-center text-center">
-            <div className="p-6 bg-slate-100 rounded-3xl text-slate-400 mb-6">
-              <FileText size={48} />
-            </div>
-            <h3 className="text-2xl font-black text-slate-800 uppercase tracking-tight mb-2">Post-Mission Reports</h3>
-            <p className="text-slate-400 font-bold text-xs max-w-sm">
-              Your detailed performance reports and feedback will appear here once missions are completed and analyzed.
-            </p>
-        </div>
+        <ReportsTab tasks={activeTasks} submissions={mySubmissions} exportReportPDF={exportReportPDF} />
       ) : (
-        <div className="bg-white/40 backdrop-blur-3xl p-8 rounded-[2.5rem] border border-white/20 shadow-xl min-h-[400px] flex flex-col items-center justify-center text-center">
-            <div className="p-6 bg-slate-100 rounded-3xl text-slate-400 mb-6">
-              <Download size={48} />
-            </div>
-            <h3 className="text-2xl font-black text-slate-800 uppercase tracking-tight mb-2">Asset Downloads</h3>
-            <p className="text-slate-400 font-bold text-xs max-w-sm">
-              Static study materials and worksheets will be available for download here.
-            </p>
-        </div>
+        <DownloadsTab 
+          tasks={activeTasks}
+          submissions={mySubmissions}
+          units={units}
+          exportReportPDF={exportReportPDF}
+        />
       )}
 
       {/* Passcode Modal */}
