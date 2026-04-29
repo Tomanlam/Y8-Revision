@@ -26,6 +26,7 @@ interface TaskTestViewProps {
   initialResponses?: Record<string, any>;
   initialFeedback?: Record<string, { score: string, feedback: string }>;
   initialGeneralFeedback?: string;
+  initialCheatLogs?: Record<string, number>;
   readOnly?: boolean;
   isAdmin?: boolean;
   showCalculator: boolean;
@@ -90,7 +91,7 @@ const QuestionTextWithCommandTerms = ({ text, className }: { text: string, class
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY as string });
 
 const TaskTestView: React.FC<TaskTestViewProps> = ({ 
-  task, onBack, onComplete, onProgress, initialResponses, initialFeedback, initialGeneralFeedback, readOnly, isAdmin, showCalculator, setShowCalculator, studentName
+  task, onBack, onComplete, onProgress, initialResponses, initialFeedback, initialGeneralFeedback, initialCheatLogs, readOnly, isAdmin, showCalculator, setShowCalculator, studentName
 }) => {
   const [numPages, setNumPages] = useState<number | null>(null);
   const [activePage, setActivePage] = useState(1);
@@ -160,7 +161,7 @@ const TaskTestView: React.FC<TaskTestViewProps> = ({
 
   // Anti-Cheat State
   const [tabSwitchesCount, setTabSwitchesCount] = useState(0);
-  const [cheatLogs, setCheatLogs] = useState<Record<string, number>>({
+  const [cheatLogs, setCheatLogs] = useState<Record<string, number>>(initialCheatLogs || {
     tabSwitches: 0,
     blur: 0,
     copyPaste: 0,
@@ -1561,7 +1562,42 @@ OUTPUT: Plain text paragraph.`;
               </motion.div>
             )}
 
-
+            {(submitted || readOnly) && cheatLogs && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-gray-900 border-2 border-gray-800 rounded-[3rem] p-12 space-y-8 shadow-2xl relative overflow-hidden"
+              >
+                <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/5 rounded-full blur-[100px] -mr-32 -mt-32" />
+                <div className="flex items-center gap-4 relative z-10">
+                  <div className={`text-white p-3 rounded-2xl shadow-xl ${(Object.values(cheatLogs) as number[]).some(v => v > 0) ? 'bg-rose-600 shadow-rose-600/20' : 'bg-emerald-600 shadow-emerald-600/20'}`}>
+                    <ShieldCheck size={24} />
+                  </div>
+                  <div>
+                    <h4 className="text-xl font-black text-white uppercase tracking-tight">Security Audit Log</h4>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">
+                       {(Object.values(cheatLogs) as number[]).some(v => v > 0) ? 'Violations Detected During Exam' : 'No Critical Violations Detected'}
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 relative z-10">
+                   {[
+                     { label: 'Tab Switches', value: cheatLogs.tabSwitches },
+                     { label: 'Window Blurs', value: cheatLogs.blur },
+                     { label: 'Copy / Paste', value: cheatLogs.copyPaste },
+                     { label: 'Shortcuts', value: cheatLogs.shortcutAttempts },
+                     { label: 'Print Attempts', value: cheatLogs.printAttempts },
+                     { label: 'Tab Opens', value: cheatLogs.tabOpenAttempts },
+                   ].map((log, i) => (
+                     <div key={i} className={`p-6 rounded-2xl border ${log.value > 0 ? 'bg-rose-500/10 border-rose-500/20' : 'bg-emerald-500/5 border-emerald-500/10'}`}>
+                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">{log.label}</div>
+                        <div className={`text-3xl font-black tracking-tighter ${log.value > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>{log.value || 0}</div>
+                     </div>
+                   ))}
+                </div>
+              </motion.div>
+            )}
 
           </div>
         </div>
@@ -1645,10 +1681,8 @@ OUTPUT: Plain text paragraph.`;
                       )}
                     </div>
                     
-                    <div className="bg-gray-50 rounded-2xl p-5 border border-gray-100">
-                       <p className="text-xs font-bold text-gray-700 leading-relaxed italic">
-                          {extractedRubrics[q.id] ? (extractedRubrics[q.id]) : "Initializing criteria..."}
-                       </p>
+                    <div className="w-full bg-slate-900 text-emerald-400 p-6 rounded-[2rem] font-mono text-sm leading-relaxed border-2 border-slate-800 transition-all shadow-inner whitespace-pre-wrap">
+                       {extractedRubrics[q.id] ? (extractedRubrics[q.id]) : "Initializing criteria..."}
                     </div>
                   </div>
                  </motion.div>

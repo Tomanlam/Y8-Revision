@@ -1128,6 +1128,7 @@ function AppContent() {
               initialResponses={viewedSubmission ? viewedSubmission.responses : mySubmissions.find(s => s.taskId === activeTask.id)?.responses}
               initialFeedback={viewedSubmission ? viewedSubmission.feedback : mySubmissions.find(s => s.taskId === activeTask.id)?.feedback}
               initialGeneralFeedback={viewedSubmission ? viewedSubmission.generalFeedback : mySubmissions.find(s => s.taskId === activeTask.id)?.generalFeedback}
+              initialCheatLogs={viewedSubmission ? viewedSubmission.results?.cheatLogs : mySubmissions.find(s => s.taskId === activeTask.id)?.results?.cheatLogs}
               readOnly={!!viewedSubmission || (!isAdminLoggedIn && mySubmissions.some(s => s.taskId === activeTask.id)) || !!userProfile?.isParent}
               isAdmin={isAdminLoggedIn}
               showCalculator={showCalculator}

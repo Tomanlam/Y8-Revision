@@ -1606,10 +1606,8 @@ OUTPUT: Plain text paragraph.`;
                         )}
                       </div>
                       
-                      <div className="bg-gray-50 rounded-2xl p-5 border border-gray-100">
-                         <p className="text-xs font-bold text-gray-700 leading-relaxed italic">
-                            {extractedRubrics[q.id] ? (extractedRubrics[q.id]) : "Initializing criteria..."}
-                         </p>
+                      <div className="w-full bg-slate-900 text-emerald-400 p-6 rounded-[2rem] font-mono text-sm leading-relaxed border-2 border-slate-800 transition-all shadow-inner whitespace-pre-wrap">
+                         {extractedRubrics[q.id] ? (extractedRubrics[q.id]) : "Initializing criteria..."}
                       </div>
                     </div>
                   </motion.div>
