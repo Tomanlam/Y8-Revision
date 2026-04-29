@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Star, CheckCircle2, ListChecks, Users, Clock, Plus, Trash2, Layout, Calendar as CalendarIcon, ChevronLeft, ChevronRight as ChevronRightIcon, Target, List, FileText, Eye, ArrowRight, User, Download, Info, Copy, Sparkles, ShieldCheck, Lock, Timer, Send, RefreshCw, X, Edit, Inbox, Link2 } from 'lucide-react';
+import { Star, CheckCircle2, ListChecks, Users, Clock, Plus, Trash2, Layout, Calendar as CalendarIcon, ChevronLeft, ChevronRight as ChevronRightIcon, Target, List, FileText, Eye, ArrowRight, User, Download, Info, Copy, Sparkles, ShieldCheck, Lock, Timer, Send, RefreshCw, X, Edit, Inbox, Link2, BarChart3 } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, parseISO, startOfDay } from 'date-fns';
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -11,6 +11,7 @@ import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { Task, TaskSubmission, Unit } from '../../types';
 import { GoogleGenAI, Type } from "@google/genai";
 import { GOLDEN_STANDARD_WORKSHEET, GOLDEN_STANDARD_TEST } from '../../constants/goldenStandard';
+import Analytics from './Analytics';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY as string });
 
@@ -251,7 +252,7 @@ JSON OUTPUT: { "questions": [{ "id": "string", "score": "X of X", "feedback": "s
   const [passcodeError, setPasscodeError] = React.useState(false);
   const [showPasscode, setShowPasscode] = React.useState(false);
 
-  const [activeTab, setActiveTab] = React.useState<'tasks' | 'submissions'>('tasks');
+  const [activeTab, setActiveTab] = React.useState<'tasks' | 'submissions' | 'analytics'>('tasks');
   const [submissionFilter, setSubmissionFilter] = React.useState('');
   const [nukeLevel, setNukeLevel] = React.useState(0);
   const [showAnalyticsMap, setShowAnalyticsMap] = React.useState<Record<string, boolean>>({});
@@ -939,6 +940,17 @@ Sample PERFECT Markscheme JSON for MCQ, SHORT-RESPONSE, TICK-CROSS, TABLE, REORD
           
           <div className="flex items-center relative z-10 shrink-0">
             <div className="bg-white/5 backdrop-blur-3xl p-1.5 rounded-[2rem] flex items-center border border-white/10 shadow-2xl shadow-black/20">
+              <button 
+                onClick={() => setActiveTab('analytics')}
+                className={`px-6 py-3 rounded-[1.25rem] font-black uppercase tracking-widest transition-all duration-500 flex items-center gap-3 text-[9px] ${
+                  activeTab === 'analytics' 
+                    ? 'bg-white text-slate-900 shadow-xl scale-105' 
+                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <BarChart3 size={16} className={activeTab === 'analytics' ? 'text-indigo-500' : ''} />
+                Analytics
+              </button>
               <button 
                 onClick={() => setActiveTab('tasks')}
                 className={`px-6 py-3 rounded-[1.25rem] font-black uppercase tracking-widest transition-all duration-500 flex items-center gap-3 text-[9px] ${
@@ -2286,7 +2298,9 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
         </div>
       )}
       
-      {activeTab === 'submissions' && isAdmin ? (
+      {activeTab === 'analytics' && isAdmin ? (
+        <Analytics tasks={tasks} allSubmissions={allSubmissions} />
+      ) : activeTab === 'submissions' && isAdmin ? (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div className="flex flex-col md:flex-row items-start md:items-center gap-6 bg-slate-950/80 backdrop-blur-3xl p-6 rounded-[2.5rem] border border-white/10 shadow-2xl relative overflow-hidden group">
               <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/10 via-transparent to-emerald-500/10 opacity-50 group-hover:opacity-80 transition-opacity duration-1000" />
