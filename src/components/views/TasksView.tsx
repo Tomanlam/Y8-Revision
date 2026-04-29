@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Target, ListChecks, FileText, Download, Clock, Star, ArrowRight, User, Info, CheckCircle2, Eye } from 'lucide-react';
+import { Target, ListChecks, FileText, Download, Clock, Star, ArrowRight, User, Info, CheckCircle2, Eye, ShieldCheck } from 'lucide-react';
 import { format } from 'date-fns';
 import { Task, TaskSubmission, Unit, AppMode } from '../../types';
 
@@ -33,6 +33,92 @@ const TasksView = ({
   onStartTask
 }: TasksViewProps) => {
   const [activeTab, setActiveTab] = React.useState<'tasks' | 'reports' | 'downloads'>('tasks');
+  const [passcodeAttempt, setPasscodeAttempt] = React.useState('');
+  const [passcodeError, setPasscodeError] = React.useState(false);
+  const [pendingTask, setPendingTask] = React.useState<Task | null>(null);
+
+  const handleStartTask = (task: Task) => {
+    if (task.type === 'test' && task.passcode && !userProfile?.isAdmin) {
+      setPendingTask(task);
+      setPasscodeAttempt('');
+      setPasscodeError(false);
+    } else {
+      onStartTask(task);
+    }
+  };
+
+  const verifyPasscode = () => {
+    if (pendingTask && pendingTask.passcode === passcodeAttempt) {
+      onStartTask(pendingTask);
+      setPendingTask(null);
+    } else {
+      setPasscodeError(true);
+    }
+  };
+
+  const exportReportPDF = (sub: TaskSubmission, task: Task) => {
+    import('jspdf').then(({ jsPDF }) => {
+      const doc = new jsPDF();
+      const margin = 20;
+      let y = 20;
+
+      doc.setFontSize(22);
+      doc.text("Official Mission Progress Report", margin, y);
+      y += 10;
+      doc.setFontSize(10);
+      doc.text(`Candidate: ${sub.studentName}`, margin, y);
+      doc.text(`Objective: ${task.title}`, doc.internal.pageSize.width - margin - 60, y);
+      y += 15;
+
+      doc.setDrawColor(200);
+      doc.line(margin, y, doc.internal.pageSize.width - margin, y);
+      y += 10;
+
+      doc.setFontSize(14);
+      doc.text("Achievement Metrics", margin, y);
+      y += 8;
+      doc.setFontSize(10);
+      doc.text(`Score: ${sub.results?.score} / ${sub.results?.total}`, margin, y);
+      doc.text(`Completion: ${Math.round((sub.results?.score || 0) / (sub.results?.total || 1) * 100)}%`, margin + 60, y);
+      y += 15;
+
+      doc.setFontSize(14);
+      doc.text("Operational Feedback", margin, y);
+      y += 8;
+      doc.setFontSize(10);
+      const splitGeneral = doc.splitTextToSize(sub.results?.generalFeedback || "No general feedback.", doc.internal.pageSize.width - margin * 2);
+      doc.text(splitGeneral, margin, y);
+      y += splitGeneral.length * 5 + 10;
+
+      doc.setFontSize(14);
+      doc.text("Mission Analysis", margin, y);
+      y += 8;
+
+      (task.worksheetQuestions || []).forEach((q: any, idx: number) => {
+        if (y > 250) {
+          doc.addPage();
+          y = 20;
+        }
+        const f = sub.results?.feedback?.[q.id];
+        doc.setFont("Helvetica", "bold");
+        doc.text(`${idx + 1}. ${q.question || q.id}`, margin, y);
+        y += 6;
+        doc.setFont("Helvetica", "normal");
+        doc.text(`Logged: ${JSON.stringify(sub.responses?.[q.id] || "N/A")}`, margin + 5, y);
+        y += 6;
+        doc.setTextColor(0, 150, 0);
+        doc.text(`Rating: ${f?.score || "N/A"}`, margin + 5, y);
+        y += 6;
+        doc.setTextColor(100);
+        const splitFeedback = doc.splitTextToSize(`Insight: ${f?.feedback || "N/A"}`, doc.internal.pageSize.width - margin * 2 - 10);
+        doc.text(splitFeedback, margin + 5, y);
+        y += splitFeedback.length * 5 + 10;
+        doc.setTextColor(0);
+      });
+
+      doc.save(`Mission_Report_${sub.studentName}.pdf`);
+    });
+  };
 
   // Filter tasks
   const activeTasks = tasks;
@@ -153,24 +239,26 @@ const TasksView = ({
                       <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Attainment</span>
                       <span className="text-sm font-black text-emerald-700">{submission?.results?.score || 0} of {submission?.results?.total || 0}</span>
                     </div>
-                    <div className="w-full h-1.5 bg-emerald-100 rounded-full overflow-hidden mb-4">
-                      <motion.div 
-                        initial={{ width: 0 }}
-                        animate={{ width: `${((submission?.results?.score || 0) / (submission?.results?.total || 1)) * 100}%` }}
-                        className="h-full bg-emerald-500" 
-                      />
+                    <div className="grid grid-cols-2 gap-3 mt-4">
+                      <button
+                        onClick={() => onStartTask(task)}
+                        className="flex-1 py-3 bg-white border border-emerald-200 text-emerald-600 rounded-2xl font-black uppercase tracking-widest text-[8px] hover:bg-emerald-50 transition-all flex items-center justify-center gap-2"
+                      >
+                        <Eye size={14} />
+                        View
+                      </button>
+                      <button
+                        onClick={() => exportReportPDF(submission!, task)}
+                        className="flex-1 py-3 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest text-[8px] hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/10"
+                      >
+                        <Download size={14} />
+                        Export
+                      </button>
                     </div>
-                    <button
-                      onClick={() => onStartTask(task)}
-                      className="w-full py-2 bg-white border border-emerald-200 text-emerald-600 rounded-xl font-black uppercase tracking-widest text-[8px] hover:bg-emerald-50 transition-all flex items-center justify-center gap-2"
-                    >
-                      <Eye size={12} />
-                      View Record
-                    </button>
                   </div>
                 ) : (
                   <button
-                    onClick={() => !userProfile?.isParent && onStartTask(task)}
+                    onClick={() => !userProfile?.isParent && handleStartTask(task)}
                     disabled={!!userProfile?.isParent}
                     className={`w-full py-4 border-2 rounded-2xl font-black uppercase tracking-widest text-xs transition-all flex items-center justify-center gap-2 ${
                       userProfile?.isParent 
@@ -207,6 +295,42 @@ const TasksView = ({
             </p>
         </div>
       )}
+
+      {/* Passcode Modal */}
+      <AnimatePresence>
+        {pendingTask && (
+          <div className="fixed inset-0 z-[300] flex items-center justify-center p-6">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setPendingTask(null)} className="absolute inset-0 bg-slate-950/90 backdrop-blur-3xl" />
+            <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="relative bg-white w-full max-w-md rounded-[3rem] p-10 shadow-3xl text-center border border-white/20">
+               <div className="w-20 h-20 bg-rose-500/10 text-rose-600 rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-inner">
+                 <ShieldCheck size={40} />
+               </div>
+               <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tight mb-2">Alpha Secure</h2>
+               <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest mb-8">Access code required for engagement</p>
+               
+               <div className="space-y-4">
+                 <input 
+                   type="password" 
+                   value={passcodeAttempt}
+                   onChange={e => { setPasscodeAttempt(e.target.value); setPasscodeError(false); }}
+                   placeholder="ENTER PASSCODE"
+                   className={`w-full bg-slate-50 border-2 p-6 rounded-2xl text-center font-black tracking-[0.3em] text-xl transition-all ${passcodeError ? 'border-rose-500 bg-rose-50' : 'border-slate-100 focus:border-emerald-500'}`}
+                   onKeyDown={e => e.key === 'Enter' && verifyPasscode()}
+                 />
+                 {passcodeError && (
+                   <p className="text-rose-600 font-black text-[9px] uppercase tracking-widest animate-bounce">Access Denied: Invalid Code</p>
+                 )}
+                 <button onClick={verifyPasscode} className="w-full py-5 bg-slate-900 border-2 border-black text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-emerald-600 hover:border-emerald-400 transition-all active:scale-95 shadow-xl">
+                   Authenticate
+                 </button>
+                 <button onClick={() => setPendingTask(null)} className="w-full py-4 text-slate-400 font-black uppercase tracking-widest text-[9px]">
+                   Abort Mission
+                 </button>
+               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Easter Notice Modal */}
       <AnimatePresence>

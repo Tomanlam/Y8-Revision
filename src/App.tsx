@@ -412,8 +412,8 @@ function AppContent() {
               photoURL: user.photoURL || data.photoURL || null,
               isAdmin: isAdmin,
               isParent: isParent,
-              childName: childInfo?.name,
-              childEmails: childInfo?.emails,
+              childName: childInfo?.name || null,
+              childEmails: childInfo?.emails || null,
               isGuest: false
             };
             setUserProfile(updatedProfile);
@@ -431,8 +431,8 @@ function AppContent() {
               lastSeen: new Date().toISOString(),
               isAdmin: isAdmin,
               isParent: isParent,
-              childName: childInfo?.name,
-              childEmails: childInfo?.emails,
+              childName: childInfo?.name || null,
+              childEmails: childInfo?.emails || null,
               isGuest: false
             };
             await setDoc(userRef, newProfile);
@@ -451,8 +451,8 @@ function AppContent() {
             lastSeen: new Date().toISOString(),
             isAdmin: isAdmin,
             isParent: isParent,
-            childName: childInfo?.name,
-            childEmails: childInfo?.emails,
+            childName: childInfo?.name || null,
+            childEmails: childInfo?.emails || null,
             isGuest: false
           });
         }

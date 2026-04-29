@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ListChecks, Users, Plus, Trash2, ShieldCheck, Clock, Sparkles, Send, X, Edit, Eye, ArrowRight, BarChart3, List, FileText, Download, Copy, RefreshCw, Layers } from 'lucide-react';
+import { ListChecks, Users, Plus, Trash2, ShieldCheck, Clock, Sparkles, Send, X, Edit, Eye, ArrowRight, BarChart3, List, FileText, Download, Copy, RefreshCw, Layers, CheckCircle2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { db } from '../../firebase';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
@@ -46,6 +46,8 @@ const CommandCenterView = ({
   const [worksheetQuestionsJson, setWorksheetQuestionsJson] = React.useState('');
   const [markschemeContent, setMarkschemeContent] = React.useState('');
   const [seedingStatus, setSeedingStatus] = React.useState<'idle' | 'seeding' | 'success'>('idle');
+  const [deleteConfirmId, setDeleteConfirmId] = React.useState<string | null>(null);
+  const [wipeConfirmStep, setWipeConfirmStep] = React.useState(0);
   
   const [newTask, setNewTask] = React.useState<Partial<Task>>({
     title: '',
@@ -283,7 +285,7 @@ JSON OUTPUT: { "questions": [{ "id": "string", "score": "X of X", "feedback": "s
 
     const taskToCreate = {
       ...newTask,
-      type: newTask.type === 'test' ? 'test' : ((newTask.pdfUrl || parsedQuestions) ? ('worksheet' as const) : undefined),
+      type: newTask.type === 'test' || isTestCreatorOpen ? 'test' : ((newTask.pdfUrl || parsedQuestions) ? ('worksheet' as const) : undefined),
       worksheetQuestions: parsedQuestions,
       markschemeContent: finalMarkscheme
     };
@@ -361,6 +363,79 @@ JSON OUTPUT: { "questions": [{ "id": "string", "score": "X of X", "feedback": "s
     setEditingTask(null);
     setWorksheetQuestionsJson('');
     setMarkschemeContent('');
+  };
+
+  const handleWipe = () => {
+    if (wipeConfirmStep < 2) {
+      setWipeConfirmStep(prev => prev + 1);
+      return;
+    }
+    onWipeCleanSlate();
+    setWipeConfirmStep(0);
+  };
+
+  const exportReportPDF = (sub: TaskSubmission, task: Task) => {
+    import('jspdf').then(({ jsPDF }) => {
+      const doc = new jsPDF();
+      const margin = 20;
+      let y = 20;
+
+      doc.setFontSize(22);
+      doc.text("Operational Mission Report", margin, y);
+      y += 10;
+      doc.setFontSize(10);
+      doc.text(`Student: ${sub.studentName}`, margin, y);
+      doc.text(`Task: ${task.title}`, doc.internal.pageSize.width - margin - 60, y);
+      y += 15;
+
+      doc.setDrawColor(200);
+      doc.line(margin, y, doc.internal.pageSize.width - margin, y);
+      y += 10;
+
+      doc.setFontSize(14);
+      doc.text("Score Overview", margin, y);
+      y += 8;
+      doc.setFontSize(10);
+      doc.text(`Total Score: ${sub.results?.score} / ${sub.results?.total}`, margin, y);
+      doc.text(`Percentage: ${Math.round((sub.results?.score || 0) / (sub.results?.total || 1) * 100)}%`, margin + 60, y);
+      y += 15;
+
+      doc.setFontSize(14);
+      doc.text("Instructor Feedback", margin, y);
+      y += 8;
+      doc.setFontSize(10);
+      const splitGeneral = doc.splitTextToSize(sub.results?.generalFeedback || "No general feedback.", doc.internal.pageSize.width - margin * 2);
+      doc.text(splitGeneral, margin, y);
+      y += splitGeneral.length * 5 + 10;
+
+      doc.setFontSize(14);
+      doc.text("Detailed Question Log", margin, y);
+      y += 8;
+
+      (task.worksheetQuestions || []).forEach((q: any, idx: number) => {
+        if (y > 250) {
+          doc.addPage();
+          y = 20;
+        }
+        const f = sub.results?.feedback?.[q.id];
+        doc.setFont("Helvetica", "bold");
+        doc.text(`${idx + 1}. Question: ${q.question || q.id}`, margin, y);
+        y += 6;
+        doc.setFont("Helvetica", "normal");
+        doc.text(`Response: ${JSON.stringify(sub.responses?.[q.id] || "No response")}`, margin + 5, y);
+        y += 6;
+        doc.setTextColor(0, 150, 0);
+        doc.text(`Result: ${f?.score || "N/A"}`, margin + 5, y);
+        y += 6;
+        doc.setTextColor(100);
+        const splitFeedback = doc.splitTextToSize(`Feedback: ${f?.feedback || "N/A"}`, doc.internal.pageSize.width - margin * 2 - 10);
+        doc.text(splitFeedback, margin + 5, y);
+        y += splitFeedback.length * 5 + 10;
+        doc.setTextColor(0);
+      });
+
+      doc.save(`Report_${sub.studentName}_${task.title}.pdf`);
+    });
   };
 
   return (
@@ -538,13 +613,25 @@ JSON OUTPUT: { "questions": [{ "id": "string", "score": "X of X", "feedback": "s
                              )}
                            </div>
 
-                           <button 
-                             onClick={() => onViewSubmission(sub, task)}
-                             className="w-full py-3 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-[9px] hover:bg-indigo-600 transition-all flex items-center justify-center gap-2 group-hover:scale-105"
-                           >
-                             <Eye size={14} />
-                             Review Submission
-                           </button>
+                           <div className="grid grid-cols-2 gap-2 mt-auto">
+                             <button 
+                               onClick={() => onViewSubmission(sub, task)}
+                               className="w-full py-3 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-[8px] hover:bg-slate-700 transition-all flex items-center justify-center gap-2 group-hover:scale-105"
+                             >
+                               <Eye size={12} />
+                               Review
+                             </button>
+                             <button 
+                               disabled={!sub.results}
+                               onClick={() => exportReportPDF(sub, task)}
+                               className={`w-full py-3 rounded-2xl font-black uppercase tracking-widest text-[8px] transition-all flex items-center justify-center gap-2 group-hover:scale-105 ${
+                                 sub.results ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-slate-100 text-slate-300 cursor-not-allowed'
+                               }`}
+                             >
+                               <Download size={12} />
+                               PDF Export
+                             </button>
+                           </div>
                         </div>
                       ))}
                     </div>
@@ -572,8 +659,14 @@ JSON OUTPUT: { "questions": [{ "id": "string", "score": "X of X", "feedback": "s
             <button onClick={() => setIsTestCreatorOpen(true)} className="px-6 py-4 bg-rose-500 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] flex items-center gap-2">
               <ShieldCheck size={18} /> New Secure Test
             </button>
-            <button onClick={onWipeCleanSlate} className="px-6 py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] flex items-center gap-2 ml-auto">
-              <Trash2 size={18} /> Wipe Submissions
+            <button 
+              onClick={handleWipe} 
+              className={`px-6 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] flex items-center gap-2 ml-auto transition-all ${
+                wipeConfirmStep > 0 ? 'bg-rose-600 text-white animate-pulse shadow-xl shadow-rose-500/20' : 'bg-slate-900 text-white'
+              }`}
+            >
+              <Trash2 size={18} /> 
+              {wipeConfirmStep === 0 ? 'Wipe Submissions' : (wipeConfirmStep === 1 ? 'Confirm Wipe [1/2]' : 'DANGER: TRIPLE CONFIRM [2/2]')}
             </button>
           </div>
 
@@ -592,9 +685,28 @@ JSON OUTPUT: { "questions": [{ "id": "string", "score": "X of X", "feedback": "s
                       }} className="p-2 text-slate-400 hover:text-indigo-500 rounded-xl hover:bg-indigo-50 transition-all">
                         <Edit size={16} />
                       </button>
-                      <button onClick={() => onDeleteTask(task.id)} className="p-2 text-slate-400 hover:text-rose-500 rounded-xl hover:bg-rose-50 transition-all">
-                        <Trash2 size={16} />
+                      <button 
+                        onClick={() => setDeleteConfirmId(task.id)} 
+                        className={`p-2 rounded-xl transition-all ${deleteConfirmId === task.id ? 'bg-rose-500 text-white' : 'text-slate-400 hover:text-rose-500 hover:bg-rose-50'}`}
+                      >
+                        {deleteConfirmId === task.id ? <CheckCircle2 size={16} /> : <Trash2 size={16} />}
                       </button>
+                      {deleteConfirmId === task.id && (
+                        <button 
+                          onClick={() => { onDeleteTask(task.id); setDeleteConfirmId(null); }}
+                          className="bg-rose-600 text-white px-3 py-1 rounded-lg text-[8px] font-black uppercase animate-in fade-in"
+                        >
+                          Confirm Delete
+                        </button>
+                      )}
+                      {deleteConfirmId === task.id && (
+                        <button 
+                          onClick={() => setDeleteConfirmId(null)}
+                          className="text-slate-400 hover:text-slate-600 p-1"
+                        >
+                          <X size={14} />
+                        </button>
+                      )}
                     </div>
                  </div>
                  <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight mb-2 line-clamp-1">{task.title}</h3>
@@ -650,6 +762,19 @@ JSON OUTPUT: { "questions": [{ "id": "string", "score": "X of X", "feedback": "s
                          </select>
                        </div>
                      </div>
+                     {(isTestCreatorOpen || (editingTask && editingTask.type === 'test')) && (
+                       <div className="md:col-span-2 space-y-2">
+                         <label className="text-[10px] font-black text-rose-500 uppercase tracking-widest block ml-2">Security Passcode (Required for students)</label>
+                         <input 
+                           type="text" 
+                           placeholder="Enter passcode to lock this test"
+                           value={editingTask ? (editingTask.passcode || '') : (newTask.passcode || '')} 
+                           onChange={e => editingTask ? setEditingTask({ ...editingTask, passcode: e.target.value }) : setNewTask({ ...newTask, passcode: e.target.value })} 
+                           className="w-full bg-rose-50 border-2 border-rose-100 p-4 rounded-2xl font-mono focus:ring-4 focus:ring-rose-500/10 focus:border-rose-500 transition-all font-bold text-rose-900" 
+                           required 
+                         />
+                       </div>
+                     )}
                    </div>
 
                    <div className="space-y-4">
@@ -705,7 +830,7 @@ JSON OUTPUT: { "questions": [{ "id": "string", "score": "X of X", "feedback": "s
                        <RefreshCw size={32} className="text-indigo-500 animate-spin" />
                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Decrypting processed rubric...</p>
                      </div>
-                   ) : rubricData?.rubrics ? (
+                   ) : Array.isArray(rubricData?.rubrics) ? (
                      rubricData.rubrics.map((r: any, idx: number) => (
                        <div key={idx} className="p-5 bg-slate-50 rounded-2xl border border-slate-100">
                          <p className="text-[9px] font-black text-indigo-500 uppercase tracking-widest mb-2">Question {idx + 1}</p>
