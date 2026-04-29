@@ -29,6 +29,9 @@ interface TaskTestViewProps {
   initialCheatLogs?: Record<string, number>;
   readOnly?: boolean;
   isAdmin?: boolean;
+  isBatchMode?: boolean;
+  batchQueue?: { id: string, studentName: string }[];
+  currentBatchIndex?: number;
   showCalculator: boolean;
   setShowCalculator: (v: boolean) => void;
   studentName?: string;
@@ -91,8 +94,19 @@ const QuestionTextWithCommandTerms = ({ text, className }: { text: string, class
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY as string });
 
 const TaskTestView: React.FC<TaskTestViewProps> = ({ 
-  task, onBack, onComplete, onProgress, initialResponses, initialFeedback, initialGeneralFeedback, initialCheatLogs, readOnly, isAdmin, showCalculator, setShowCalculator, studentName
+  task, onBack, onComplete, onProgress, initialResponses, initialFeedback, initialGeneralFeedback, initialCheatLogs, readOnly, isAdmin, isBatchMode, batchQueue, currentBatchIndex, showCalculator, setShowCalculator, studentName
 }) => {
+  const studentCardRefs = useRef<Record<number, HTMLDivElement | null>>({});
+
+  useEffect(() => {
+    if (isBatchMode && currentBatchIndex !== undefined && studentCardRefs.current[currentBatchIndex]) {
+      studentCardRefs.current[currentBatchIndex]?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center'
+      });
+    }
+  }, [isBatchMode, currentBatchIndex]);
+
   const [numPages, setNumPages] = useState<number | null>(null);
   const [activePage, setActivePage] = useState(1);
   const [responses, setResponses] = useState<Record<string, any>>(initialResponses || {});
@@ -331,6 +345,20 @@ const TaskTestView: React.FC<TaskTestViewProps> = ({
     if (initialFeedback) setValidationFeedback(initialFeedback);
     if (initialGeneralFeedback) setGeneralFeedback(initialGeneralFeedback);
   }, [initialFeedback, initialGeneralFeedback]);
+
+  useEffect(() => {
+    if (isBatchMode && isAdmin && !gradingComplete && gradingPhase === 'idle' && !isGradingWorkflow) {
+      setIsGradingWorkflow(true);
+      setIsGradingConsoleExpanded(true);
+      startGradingWorkflow();
+    }
+  }, [isBatchMode, isAdmin, gradingPhase, gradingComplete, isGradingWorkflow]);
+
+  useEffect(() => {
+    if (isBatchMode && isAdmin && gradingPhase === 'ready_to_grade') {
+      gradeAgainstRubric();
+    }
+  }, [isBatchMode, isAdmin, gradingPhase]);
 
   const [showConfirm, setShowConfirm] = useState(false);
   const taskKeyRaw = task.title.replace(/y8\s+/i, '').trim();
@@ -1082,7 +1110,88 @@ OUTPUT: Plain text paragraph.`;
       </AnimatePresence>
 
       <main className="flex-1 flex overflow-hidden bg-gray-50">
-        <div ref={pdfContainerRef} className={`${isGradingWorkflow ? (isGradingConsoleExpanded ? 'w-0 opacity-0 pointer-events-none p-0 overflow-hidden' : 'w-[20%]') : 'w-[50%]'} overflow-y-auto custom-scrollbar p-8 flex flex-col items-center bg-gray-100 transition-all duration-500 relative`}>
+        {/* Left Side: PDF Viewer OR Grading Queue */}
+        <div ref={pdfContainerRef} className={`${isGradingWorkflow ? (isGradingConsoleExpanded ? 'w-0 opacity-0 pointer-events-none p-0 overflow-hidden' : 'w-[20%]') : (isBatchMode ? 'w-[40%]' : 'w-[50%]')} overflow-y-auto custom-scrollbar p-10 flex flex-col items-center bg-gray-200/40 transition-all duration-700 ease-in-out relative`}>
+          {isBatchMode ? (
+            <div className="w-full h-full flex flex-col gap-8 max-w-2xl mx-auto">
+               <div className="flex items-center gap-4 mb-2">
+                  <div className="w-10 h-1 bg-rose-500 rounded-full" />
+                  <span className="text-[10px] font-black text-rose-500 uppercase tracking-[0.3em]">Assessment Queue</span>
+               </div>
+               <div className="space-y-4">
+                 {batchQueue?.map((student, idx) => {
+                    const isActive = idx === currentBatchIndex;
+                    const isGraded = idx < currentBatchIndex;
+                    const isPending = idx > currentBatchIndex;
+                    
+                    return (
+                      <motion.div
+                        key={student.id}
+                        ref={el => studentCardRefs.current[idx] = el}
+                        initial={false}
+                        animate={{
+                          scale: isActive ? 1.02 : 1,
+                          opacity: isGraded ? 0.8 : (isPending ? 0.6 : 1),
+                          y: isActive ? 0 : (isGraded ? -10 : 10)
+                        }}
+                        className={`p-8 rounded-[2rem] border-2 transition-all duration-500 relative overflow-hidden ${
+                          isActive 
+                            ? 'bg-white border-rose-500 shadow-2xl shadow-rose-500/20' 
+                            : 'bg-white/50 border-gray-100'
+                        }`}
+                      >
+                        {isActive && (
+                          <motion.div 
+                            className="absolute inset-0 bg-gradient-to-r from-transparent via-rose-400/20 to-transparent"
+                            animate={{
+                              x: ['-100%', '100%']
+                            }}
+                            transition={{
+                              duration: 2,
+                              repeat: Infinity,
+                              ease: "linear"
+                            }}
+                            style={{ width: '100%' }}
+                          />
+                        )}
+                        <div className="flex items-center justify-between relative z-10">
+                          <div className="flex items-center gap-6">
+                             <div className={`w-14 h-14 rounded-2xl flex items-center justify-center font-black text-xl transition-all duration-500 ${
+                               isActive 
+                                ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/30' 
+                                : (isGraded ? 'bg-rose-50/50 text-rose-300' : 'bg-gray-100 text-gray-400')
+                             }`}>
+                               {idx + 1}
+                             </div>
+                             <div>
+                               <h4 className={`text-xl font-black uppercase tracking-tight transition-all duration-500 ${
+                                 isActive ? 'text-gray-900 translate-x-2' : (isGraded ? 'text-gray-400' : 'text-gray-500')
+                               }`}>
+                                 {student.studentName}
+                               </h4>
+                               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">
+                                 {isActive ? 'Active Processing...' : (isGraded ? 'Grading Successful' : 'Waiting in Queue')}
+                               </p>
+                             </div>
+                          </div>
+                          {isGraded && (
+                            <motion.div 
+                              initial={{ scale: 0, opacity: 0 }}
+                              animate={{ scale: 1, opacity: 1 }}
+                              className="flex items-center gap-2 px-4 py-1.5 bg-rose-50 text-rose-600 rounded-full border border-rose-100"
+                            >
+                               <CheckCircle2 size={12} className="fill-rose-600 text-white" />
+                               <span className="text-[10px] font-black uppercase tracking-widest">Graded</span>
+                            </motion.div>
+                          )}
+                        </div>
+                      </motion.div>
+                    );
+                 })}
+               </div>
+            </div>
+          ) : (
+            <>
           <div className="sticky top-0 z-30 mb-6 flex gap-2 bg-white/80 backdrop-blur-md p-2 rounded-2xl border border-gray-200 shadow-sm">
             <button 
               onClick={() => setPdfScale(prev => Math.max(0.5, prev - 0.1))}
@@ -1129,6 +1238,7 @@ OUTPUT: Plain text paragraph.`;
               ))}
             </Document>
           </div>
+          </>)}
         </div>
 
         <div ref={rightPaneRef} className={`${isGradingWorkflow ? (isGradingConsoleExpanded ? 'w-[40%]' : 'w-[40%]') : 'w-[50%]'} border-l border-red-50 bg-gray-50/50 overflow-y-auto custom-scrollbar p-10 transition-all duration-500`}>
@@ -1150,6 +1260,53 @@ OUTPUT: Plain text paragraph.`;
                 </p>
               </div>
             </div>
+
+            {(submitted || readOnly) && cheatLogs && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="bg-blue-600/[0.03] backdrop-blur-3xl border-2 border-blue-500/10 rounded-[3rem] p-12 space-y-8 shadow-2xl relative overflow-hidden"
+              >
+                <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/[0.07] rounded-full blur-[120px] -mr-48 -mt-48" />
+                <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-500/[0.05] rounded-full blur-[100px] -ml-32 -mb-32" />
+                
+                <div className="flex items-center gap-4 relative z-10">
+                  <div className={`p-3 rounded-2xl shadow-xl glass-morphism ${
+                    (Object.values(cheatLogs) as number[]).some(v => v > 0) 
+                      ? 'bg-rose-600/20 text-rose-600 border border-rose-500/30' 
+                      : 'bg-blue-600/20 text-blue-600 border border-blue-500/30'
+                  }`}>
+                    <ShieldCheck size={24} />
+                  </div>
+                  <div>
+                    <h4 className="text-xl font-black text-slate-800 uppercase tracking-tight">Security Audit Log</h4>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">
+                       {(Object.values(cheatLogs) as number[]).some(v => v > 0) ? 'Violations Detected During Exam' : 'No Critical Violations Detected'}
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 relative z-10">
+                   {[
+                     { label: 'Tab Switches', value: cheatLogs.tabSwitches },
+                     { label: 'Window Blurs', value: cheatLogs.blur },
+                     { label: 'Copy / Paste', value: cheatLogs.copyPaste },
+                     { label: 'Shortcuts', value: cheatLogs.shortcutAttempts },
+                     { label: 'Print Attempts', value: cheatLogs.printAttempts },
+                     { label: 'Tab Opens', value: cheatLogs.tabOpenAttempts },
+                   ].map((log, i) => (
+                     <div key={i} className={`p-6 rounded-2xl border backdrop-blur-md transition-all duration-300 ${
+                       log.value > 0 
+                         ? 'bg-rose-500/[0.05] border-rose-500/20 shadow-lg shadow-rose-500/5' 
+                         : 'bg-blue-500/[0.03] border-blue-500/10 shadow-lg shadow-blue-500/5'
+                     }`}>
+                        <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">{log.label}</div>
+                        <div className={`text-3xl font-black tracking-tighter ${log.value > 0 ? 'text-rose-600' : 'text-blue-600'}`}>{log.value || 0}</div>
+                     </div>
+                   ))}
+                </div>
+              </motion.div>
+            )}
 
             {Object.keys(questionsByPage).sort((a, b) => parseInt(a) - parseInt(b)).map(pageStr => {
               const pageNum = parseInt(pageStr);
@@ -1562,43 +1719,6 @@ OUTPUT: Plain text paragraph.`;
               </motion.div>
             )}
 
-            {(submitted || readOnly) && cheatLogs && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-gray-900 border-2 border-gray-800 rounded-[3rem] p-12 space-y-8 shadow-2xl relative overflow-hidden"
-              >
-                <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/5 rounded-full blur-[100px] -mr-32 -mt-32" />
-                <div className="flex items-center gap-4 relative z-10">
-                  <div className={`text-white p-3 rounded-2xl shadow-xl ${(Object.values(cheatLogs) as number[]).some(v => v > 0) ? 'bg-rose-600 shadow-rose-600/20' : 'bg-emerald-600 shadow-emerald-600/20'}`}>
-                    <ShieldCheck size={24} />
-                  </div>
-                  <div>
-                    <h4 className="text-xl font-black text-white uppercase tracking-tight">Security Audit Log</h4>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">
-                       {(Object.values(cheatLogs) as number[]).some(v => v > 0) ? 'Violations Detected During Exam' : 'No Critical Violations Detected'}
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 relative z-10">
-                   {[
-                     { label: 'Tab Switches', value: cheatLogs.tabSwitches },
-                     { label: 'Window Blurs', value: cheatLogs.blur },
-                     { label: 'Copy / Paste', value: cheatLogs.copyPaste },
-                     { label: 'Shortcuts', value: cheatLogs.shortcutAttempts },
-                     { label: 'Print Attempts', value: cheatLogs.printAttempts },
-                     { label: 'Tab Opens', value: cheatLogs.tabOpenAttempts },
-                   ].map((log, i) => (
-                     <div key={i} className={`p-6 rounded-2xl border ${log.value > 0 ? 'bg-rose-500/10 border-rose-500/20' : 'bg-emerald-500/5 border-emerald-500/10'}`}>
-                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">{log.label}</div>
-                        <div className={`text-3xl font-black tracking-tighter ${log.value > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>{log.value || 0}</div>
-                     </div>
-                   ))}
-                </div>
-              </motion.div>
-            )}
-
           </div>
         </div>
       
@@ -1772,7 +1892,7 @@ OUTPUT: Plain text paragraph.`;
       </AnimatePresence>
 
       <AnimatePresence>
-        {gradingComplete && (
+        {gradingComplete && !isBatchMode && (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

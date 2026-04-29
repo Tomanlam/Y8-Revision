@@ -28,6 +28,9 @@ interface TaskWorksheetViewProps {
   initialGeneralFeedback?: string;
   readOnly?: boolean;
   isAdmin?: boolean;
+  isBatchMode?: boolean;
+  batchQueue?: { id: string, studentName: string }[];
+  currentBatchIndex?: number;
   showCalculator: boolean;
   setShowCalculator: (v: boolean) => void;
   studentName?: string;
@@ -90,8 +93,19 @@ const QuestionTextWithCommandTerms = ({ text, className }: { text: string, class
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY as string });
 
 const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({ 
-  task, onBack, onComplete, onProgress, initialResponses, initialFeedback, initialGeneralFeedback, readOnly, isAdmin, showCalculator, setShowCalculator, studentName
+  task, onBack, onComplete, onProgress, initialResponses, initialFeedback, initialGeneralFeedback, readOnly, isAdmin, isBatchMode, batchQueue, currentBatchIndex, showCalculator, setShowCalculator, studentName
 }) => {
+  const studentCardRefs = useRef<Record<number, HTMLDivElement | null>>({});
+
+  useEffect(() => {
+    if (isBatchMode && currentBatchIndex !== undefined && studentCardRefs.current[currentBatchIndex]) {
+      studentCardRefs.current[currentBatchIndex]?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center'
+      });
+    }
+  }, [isBatchMode, currentBatchIndex]);
+
   const [numPages, setNumPages] = useState<number | null>(null);
   const [activePage, setActivePage] = useState(1);
   const [responses, setResponses] = useState<Record<string, any>>(initialResponses || {});
@@ -178,6 +192,20 @@ const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({
     if (initialFeedback) setValidationFeedback(initialFeedback);
     if (initialGeneralFeedback) setGeneralFeedback(initialGeneralFeedback);
   }, [initialFeedback, initialGeneralFeedback]);
+
+  useEffect(() => {
+    if (isBatchMode && isAdmin && !gradingComplete && gradingPhase === 'idle' && !isGradingWorkflow) {
+      setIsGradingWorkflow(true);
+      setIsGradingConsoleExpanded(true);
+      startGradingWorkflow();
+    }
+  }, [isBatchMode, isAdmin, gradingPhase, gradingComplete, isGradingWorkflow]);
+
+  useEffect(() => {
+    if (isBatchMode && isAdmin && gradingPhase === 'ready_to_grade') {
+      gradeAgainstRubric();
+    }
+  }, [isBatchMode, isAdmin, gradingPhase]);
 
   const [showConfirm, setShowConfirm] = useState(false);
   const [showMarkschemeEditor, setShowMarkschemeEditor] = useState(false);
@@ -965,8 +993,88 @@ OUTPUT: Plain text paragraph.`;
 
       {/* Main Split View */}
       <main className="flex-1 flex overflow-hidden bg-gray-50">
-        {/* Left Side: PDF Viewer */}
-        <div ref={pdfContainerRef} className={`${isGradingWorkflow ? (isGradingConsoleExpanded ? 'w-0 opacity-0 pointer-events-none p-0 overflow-hidden' : 'w-[20%]') : 'w-[50%]'}  overflow-y-auto custom-scrollbar p-10 flex flex-col items-center bg-gray-200/40 transition-all duration-700 ease-in-out relative`}>
+        {/* Left Side: PDF Viewer OR Grading Queue */}
+        <div ref={pdfContainerRef} className={`${isGradingWorkflow ? (isGradingConsoleExpanded ? 'w-0 opacity-0 pointer-events-none p-0 overflow-hidden' : 'w-[20%]') : (isBatchMode ? 'w-[40%]' : 'w-[50%]')}  overflow-y-auto custom-scrollbar p-10 flex flex-col items-center bg-gray-200/40 transition-all duration-700 ease-in-out relative`}>
+          {isBatchMode ? (
+            <div className="w-full h-full flex flex-col gap-8 max-w-2xl mx-auto">
+               <div className="flex items-center gap-4 mb-2">
+                  <div className="w-10 h-1 bg-emerald-500 rounded-full" />
+                  <span className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.3em]">Grading Queue</span>
+               </div>
+               <div className="space-y-4">
+                 {batchQueue?.map((student, idx) => {
+                    const isActive = idx === currentBatchIndex;
+                    const isGraded = idx < currentBatchIndex;
+                    const isPending = idx > currentBatchIndex;
+                    
+                    return (
+                      <motion.div
+                        key={student.id}
+                        ref={el => studentCardRefs.current[idx] = el}
+                        initial={false}
+                        animate={{
+                          scale: isActive ? 1.02 : 1,
+                          opacity: isGraded ? 0.8 : (isPending ? 0.6 : 1),
+                          y: isActive ? 0 : (isGraded ? -10 : 10)
+                        }}
+                        className={`p-8 rounded-[2rem] border-2 transition-all duration-500 relative overflow-hidden ${
+                          isActive 
+                            ? 'bg-white border-emerald-500 shadow-2xl shadow-emerald-500/20' 
+                            : 'bg-white/50 border-gray-100'
+                        }`}
+                      >
+                        {isActive && (
+                          <motion.div 
+                            className="absolute inset-0 bg-gradient-to-r from-transparent via-emerald-400/20 to-transparent"
+                            animate={{
+                              x: ['-100%', '100%']
+                            }}
+                            transition={{
+                              duration: 2,
+                              repeat: Infinity,
+                              ease: "linear"
+                            }}
+                            style={{ width: '100%' }}
+                          />
+                        )}
+                        <div className="flex items-center justify-between relative z-10">
+                          <div className="flex items-center gap-6">
+                             <div className={`w-14 h-14 rounded-2xl flex items-center justify-center font-black text-xl transition-all duration-500 ${
+                               isActive 
+                                ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30' 
+                                : (isGraded ? 'bg-emerald-50/50 text-emerald-300' : 'bg-gray-100 text-gray-400')
+                             }`}>
+                               {idx + 1}
+                             </div>
+                             <div>
+                               <h4 className={`text-xl font-black uppercase tracking-tight transition-all duration-500 ${
+                                 isActive ? 'text-gray-900 translate-x-2' : (isGraded ? 'text-gray-400' : 'text-gray-500')
+                               }`}>
+                                 {student.studentName}
+                               </h4>
+                               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">
+                                 {isActive ? 'Active Processing...' : (isGraded ? 'Grading Successful' : 'Waiting in Queue')}
+                               </p>
+                             </div>
+                          </div>
+                          {isGraded && (
+                            <motion.div 
+                              initial={{ scale: 0, opacity: 0 }}
+                              animate={{ scale: 1, opacity: 1 }}
+                              className="flex items-center gap-2 px-4 py-1.5 bg-emerald-50 text-emerald-600 rounded-full border border-emerald-100"
+                            >
+                               <CheckCircle2 size={12} className="fill-emerald-600 text-white" />
+                               <span className="text-[10px] font-black uppercase tracking-widest">Graded</span>
+                            </motion.div>
+                          )}
+                        </div>
+                      </motion.div>
+                    );
+                 })}
+               </div>
+            </div>
+          ) : (
+            <>
           <div className="sticky top-0 z-30 mb-6 flex gap-2 bg-white/80 backdrop-blur-md p-2 rounded-2xl border border-gray-200 shadow-sm">
             <button 
               onClick={() => setPdfScale(prev => Math.max(0.5, prev - 0.1))}
@@ -1040,6 +1148,7 @@ OUTPUT: Plain text paragraph.`;
               ))}
             </Document>
           </div>
+          </>)}
         </div>
 
         {/* Right Side: Interactive Worksheet */}
@@ -1053,14 +1162,12 @@ OUTPUT: Plain text paragraph.`;
                 </div>
                 <h3 className="text-4xl font-black text-gray-900 tracking-tighter uppercase leading-[0.9]">Worksheet Response</h3>
                 <div className="flex items-center gap-2 mt-4">
-                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Powered By</span>
-                  <span className="px-3 py-1 bg-gray-900 text-white rounded-lg text-[9px] font-black uppercase tracking-widest">{currentModel}</span>
                 </div>
               </div>
               <div className="bg-gray-50 p-6 rounded-[2.5rem] border-2 border-gray-100/80 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-3xl -mr-12 -mt-12 transition-transform group-hover:scale-150 duration-700" />
                 <p className="text-sm text-gray-600 font-bold leading-relaxed italic relative z-10">
-                  "Examine the source document provided on the left. Synthesize the information and formulate your responses in the designated interactive zones below."
+                  "carefully study the questions on the left and answer ALL the questions below"
                 </p>
               </div>
             </header>
@@ -1682,7 +1789,7 @@ OUTPUT: Plain text paragraph.`;
       </main>
 
       <AnimatePresence>
-        {gradingComplete && (
+        {gradingComplete && !isBatchMode && (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -1771,7 +1878,7 @@ OUTPUT: Plain text paragraph.`;
       </AnimatePresence>
 
       <AnimatePresence>
-        {submitted && !gradingComplete && (
+        {submitted && !gradingComplete && !isBatchMode && (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

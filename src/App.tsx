@@ -363,6 +363,10 @@ function AppContent() {
   const [chineseType, setChineseType] = useState<'traditional' | 'simplified'>('traditional');
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [viewedSubmission, setViewedSubmission] = useState<TaskSubmission | null>(null);
+  const [gradingQueue, setGradingQueue] = useState<{submission: TaskSubmission, task: Task}[]>([]);
+  const [batchStudents, setBatchStudents] = useState<any[]>([]);
+  const [currentBatchIndex, setCurrentBatchIndex] = useState(0);
+  const [isBatchGrading, setIsBatchGrading] = useState(false);
   const [showCalculator, setShowCalculator] = useState(false);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
 
@@ -1003,9 +1007,23 @@ function AppContent() {
             onUpdateTask={onUpdateTask}
             onDeleteTask={onDeleteTask}
             onViewSubmission={(sub, task) => {
-              setViewedSubmission(sub);
-              setActiveTask(task);
-              setMode(task.type === 'test' ? 'test' : 'worksheet');
+               setViewedSubmission(sub);
+               setActiveTask(task);
+               setGradingQueue([]); // Clear queue if manual navigation happens
+               setIsBatchGrading(false);
+               setMode(task.type === 'test' ? 'test' : 'worksheet');
+            }}
+            onStartBatchGrading={(subs, task) => {
+              if (subs.length === 0) return;
+              const mapped = subs.map(s => ({ submission: s, task }));
+              setBatchStudents(subs.map(s => ({ id: s.id, studentName: s.studentName || 'Unknown Student' })));
+              setCurrentBatchIndex(0);
+              const [first, ...rest] = mapped;
+              setGradingQueue(rest);
+              setIsBatchGrading(true);
+              setViewedSubmission(first.submission);
+              setActiveTask(first.task);
+              setMode(first.task.type === 'test' ? 'test' : 'worksheet');
             }}
             onDeleteSubmission={handleDeleteSubmission}
             onWipeCleanSlate={handleWipeCleanSlate}
@@ -1018,12 +1036,17 @@ function AppContent() {
                 setMode('tasks');
                 setActiveTask(null);
                 setViewedSubmission(null);
+                setIsBatchGrading(false);
+                setGradingQueue([]);
               }}
               initialResponses={viewedSubmission ? viewedSubmission.responses : mySubmissions.find(s => s.taskId === activeTask.id)?.responses}
               initialFeedback={viewedSubmission ? viewedSubmission.feedback : mySubmissions.find(s => s.taskId === activeTask.id)?.feedback}
               initialGeneralFeedback={viewedSubmission ? viewedSubmission.generalFeedback : mySubmissions.find(s => s.taskId === activeTask.id)?.generalFeedback}
               readOnly={!!viewedSubmission || (!isAdminLoggedIn && mySubmissions.some(s => s.taskId === activeTask.id)) || !!userProfile?.isParent}
               isAdmin={isAdminLoggedIn}
+              isBatchMode={isBatchGrading}
+              batchQueue={batchStudents}
+              currentBatchIndex={currentBatchIndex}
               showCalculator={showCalculator}
               setShowCalculator={setShowCalculator}
               
@@ -1067,7 +1090,19 @@ function AppContent() {
                     feedback: results?.feedback,
                     generalFeedback: results?.generalFeedback
                   });
-                  alert("Student responses graded successfully!");
+
+                  if (gradingQueue.length > 0) {
+                    const [next, ...rest] = gradingQueue;
+                    setGradingQueue(rest);
+                    setCurrentBatchIndex(prev => prev + 1);
+                    setViewedSubmission(next.submission);
+                    setActiveTask(next.task);
+                    setMode(next.task.type === 'test' ? 'test' : 'worksheet');
+                    return;
+                  }
+
+                  setIsBatchGrading(false);
+                  alert("Full batch grading complete!");
                   return;
                 }
 
@@ -1124,6 +1159,8 @@ function AppContent() {
                 setMode('tasks');
                 setActiveTask(null);
                 setViewedSubmission(null);
+                setIsBatchGrading(false);
+                setGradingQueue([]);
               }}
               initialResponses={viewedSubmission ? viewedSubmission.responses : mySubmissions.find(s => s.taskId === activeTask.id)?.responses}
               initialFeedback={viewedSubmission ? viewedSubmission.feedback : mySubmissions.find(s => s.taskId === activeTask.id)?.feedback}
@@ -1131,6 +1168,9 @@ function AppContent() {
               initialCheatLogs={viewedSubmission ? viewedSubmission.results?.cheatLogs : mySubmissions.find(s => s.taskId === activeTask.id)?.results?.cheatLogs}
               readOnly={!!viewedSubmission || (!isAdminLoggedIn && mySubmissions.some(s => s.taskId === activeTask.id)) || !!userProfile?.isParent}
               isAdmin={isAdminLoggedIn}
+              isBatchMode={isBatchGrading}
+              batchQueue={batchStudents}
+              currentBatchIndex={currentBatchIndex}
               showCalculator={showCalculator}
               setShowCalculator={setShowCalculator}
               
@@ -1174,7 +1214,19 @@ function AppContent() {
                     feedback: results?.feedback,
                     generalFeedback: results?.generalFeedback
                   });
-                  alert("Student responses graded successfully!");
+
+                  if (gradingQueue.length > 0) {
+                    const [next, ...rest] = gradingQueue;
+                    setGradingQueue(rest);
+                    setCurrentBatchIndex(prev => prev + 1);
+                    setViewedSubmission(next.submission);
+                    setActiveTask(next.task);
+                    setMode(next.task.type === 'test' ? 'test' : 'worksheet');
+                    return;
+                  }
+
+                  setIsBatchGrading(false);
+                  alert("Full batch grading complete!");
                   return;
                 }
 

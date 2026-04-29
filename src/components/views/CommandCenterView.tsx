@@ -19,6 +19,7 @@ interface CommandCenterViewProps {
   onUpdateTask?: (id: string, updates: Partial<Task>) => void;
   onDeleteTask: (id: string) => void;
   onViewSubmission: (sub: TaskSubmission, task: Task) => void;
+  onStartBatchGrading: (subs: TaskSubmission[], task: Task) => void;
   onDeleteSubmission: (id: string) => void;
   onWipeCleanSlate: () => void;
 }
@@ -31,11 +32,11 @@ const CommandCenterView = ({
   onUpdateTask,
   onDeleteTask,
   onViewSubmission,
+  onStartBatchGrading,
   onDeleteSubmission,
   onWipeCleanSlate
 }: CommandCenterViewProps) => {
   const [activeTab, setActiveTab] = React.useState<'analytics' | 'tasks' | 'submissions'>('analytics');
-  const [batchGradingTask, setBatchGradingTask] = React.useState<string | null>(null);
   const [viewingRubricTask, setViewingRubricTask] = React.useState<Task | null>(null);
   const [rubricData, setRubricData] = React.useState<any>(null);
   const [isLoadingRubric, setIsLoadingRubric] = React.useState(false);
@@ -94,156 +95,19 @@ const CommandCenterView = ({
   };
 
   const doBatchGrade = async (task: Task, submissions: TaskSubmission[]) => {
-    setBatchGradingTask(task.id);
     const ungraded = submissions.filter(s => !s.feedback);
     
-    for (let i = 0; i < ungraded.length; i++) {
-      const sub = ungraded[i];
-      try {
-        let cachedRubric = null;
-        try {
-          const docRef = doc(db, 'processedRubrics', task.id);
-          const docSnap = await getDoc(docRef);
-          if (docSnap.exists()) {
-            cachedRubric = docSnap.data().rubrics;
-          }
-        } catch (err) {
-          console.log("Cache check failed, using raw markscheme.");
-        }
-
-        const markscheme = cachedRubric ? JSON.stringify(cachedRubric) : (task.markschemeContent || "No markscheme provided.");
-        const responses = sub.responses || {};
-        
-        const cleanQuestions = (task.worksheetQuestions || []).map((q: any) => {
-          const newQ = { ...q };
-          if (newQ.type === 'table' && newQ.tableData) {
-            newQ.tableData = newQ.tableData.map((r: any) => Array.isArray(r) ? r : (r.row || r));
-          }
-          return newQ;
-        });
-
-        const formattedResponses = cleanQuestions.map((q: any) => {
-          let req = responses[q.id];
-          let textReq = req;
-          if (typeof req === 'string' && req.trim() === '') textReq = "[NO RESPONSE PROVIDED]";
-          else if (req === undefined || req === null) textReq = "[NO RESPONSE PROVIDED]";
-          else if (Array.isArray(req) && req.length === 0) textReq = "[NO RESPONSE PROVIDED]";
-          else if (typeof req === 'object' && !Array.isArray(req) && Object.keys(req).length === 0) textReq = "[NO RESPONSE PROVIDED]";
-          else if (q.type === 'table' && q.tableData && typeof req === 'object') {
-            const tableMap: Record<string, string> = {};
-            for (const [key, val] of Object.entries(req)) {
-              const [rStr, cStr] = key.split('_');
-              const r = parseInt(rStr, 10);
-              const c = parseInt(cStr, 10);
-              if (!isNaN(r) && !isNaN(c) && q.tableData[r] && q.tableData[0]) {
-                 tableMap[`${q.tableData[0][c]} of ${q.tableData[r][0]}`] = String(val);
-              } else {
-                 tableMap[key] = String(val);
-              }
-            }
-            textReq = JSON.stringify(tableMap);
-          }
-          else if (typeof req === 'object') textReq = JSON.stringify(req);
-          return `Question ID "${q.id}": ${textReq}`;
-        }).join('\n');
-
-        const prompt = `Perform 1-to-1 check of student response against rubric for ALL questions.
-shorthand logic:
-- [NO RESPONSE PROVIDED]/empty -> "No response." + ref answer | 0 marks
-- Incorrect -> "Incorrect." + ref answer + reason
-- Correct -> "Correct." + reason
----
-RUBRIC: ${markscheme}
-RESPONSES: ${formattedResponses}
----
-JSON OUTPUT: { "questions": [{ "id": "string", "score": "X of X", "feedback": "string" }], "generalFeedback": "string" }`;
-
-        const response = await ai.models.generateContent({
-          model: "gemini-3.1-flash-lite-preview",
-          contents: prompt,
-          config: {
-            responseMimeType: "application/json",
-            responseSchema: {
-              type: Type.OBJECT,
-              properties: {
-                questions: {
-                  type: Type.ARRAY,
-                  items: {
-                    type: Type.OBJECT,
-                    properties: {
-                      id: { type: Type.STRING },
-                      score: { type: Type.STRING },
-                      feedback: { type: Type.STRING }
-                    }
-                  }
-                },
-                generalFeedback: { type: Type.STRING }
-              }
-            }
-          }
-        });
-
-        if (!response.text) throw new Error("AI returned an empty response.");
-
-        let cleanText = response.text.replace(/\x60\x60\x60json/gi, '').replace(/\x60\x60\x60/g, '').trim();
-        const parsed = JSON.parse(cleanText);
-        const rawFeedbackArray = Array.isArray(parsed.questions) ? parsed.questions : [];
-        const generalResult = parsed.generalFeedback || "";
-        
-        const feedbackResult: Record<string, { score: string, feedback: string }> = {};
-        task.worksheetQuestions?.forEach(q => {
-          const targetId = q.id.trim();
-          const targetIdLower = targetId.toLowerCase();
-          
-          let aiFeedback = rawFeedbackArray.find(f => {
-            if (!f.id) return false;
-            const fIdOrig = String(f.id).trim();
-            const fIdLower = fIdOrig.toLowerCase();
-            return fIdLower === targetIdLower || fIdOrig === targetId || fIdOrig.includes(targetId) || targetId.includes(fIdOrig);
-          });
-          
-          if (!aiFeedback) aiFeedback = { score: "0 of 1", feedback: "Could not evaluate response against markscheme." };
-          feedbackResult[targetId] = { 
-            score: String(aiFeedback.score), 
-            feedback: String(aiFeedback.feedback)
-              .replace(/\*\*/g, '')
-              .replace(/Student Response: /gi, '')
-              .replace(/Correct Response: /gi, '')
-          };
-        });
-
-        let earned = 0; let total = 0;
-        Object.values(feedbackResult).forEach(f => {
-          const match = String(f.score).match(/(\d+(?:\.\d+)?)\s*(?:\/|of)\s*(\d+(?:\.\d+)?)/);
-          if (match) { earned += parseFloat(match[1]); total += parseFloat(match[2]); }
-        });
-        
-        const results = {
-          score: earned,
-          total: total || task.worksheetQuestions?.length || 0,
-          feedback: feedbackResult,
-          generalFeedback: generalResult,
-          cheatLogs: sub.results?.cheatLogs,
-        };
-        
-        const payload = { ...sub, feedback: "Graded", completedAt: sub.completedAt || new Date().toISOString(), results };
-        
-        try {
-           const subRef = doc(db, 'submissions', sub.id);
-           await setDoc(subRef, payload, { merge: true });
-        } catch(e) {
-           console.error("Firebase update failed", e);
-        }
-        sub.feedback = "Graded";
-        sub.results = results;
-        
-      } catch (err) {
-        console.error("Batch grading failed for ", sub.id, err);
+    if (ungraded.length === 0) {
+      if (submissions.length === 0) {
+        alert("No submissions found for this task.");
+        return;
       }
+      const confirmRegrade = window.confirm("All students in this task are already graded. Re-grade all submissions?");
+      if (!confirmRegrade) return;
+      onStartBatchGrading(submissions, task);
+    } else {
+      onStartBatchGrading(ungraded, task);
     }
-    
-    setBatchGradingTask(null);
-    alert('Batch grading complete for: ' + task.title);
   };
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -812,16 +676,12 @@ JSON OUTPUT: { "questions": [{ "id": "string", "score": "X of X", "feedback": "s
                           Review Rubric
                         </button>
                         <button 
-                          disabled={batchGradingTask === task.id || ungraded.length === 0}
+                          disabled={subs.length === 0}
                           onClick={() => doBatchGrade(task, subs)}
-                          className={`px-6 py-3 rounded-2xl font-black uppercase tracking-widest text-[9px] transition-all flex items-center gap-2 shadow-lg ${
-                            batchGradingTask === task.id 
-                            ? 'bg-slate-200 text-slate-400' 
-                            : 'bg-emerald-500 text-white hover:bg-emerald-600 shadow-emerald-500/20'
-                          }`}
+                          className="px-6 py-3 rounded-2xl font-black uppercase tracking-widest text-[9px] transition-all flex items-center gap-2 shadow-lg bg-emerald-500 text-white hover:bg-emerald-600 shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          {batchGradingTask === task.id ? <RefreshCw size={16} className="animate-spin" /> : <Sparkles size={16} />}
-                          {batchGradingTask === task.id ? 'Grading...' : 'Batch Grade'}
+                          <Sparkles size={16} />
+                          Batch Grade
                         </button>
                       </div>
                     </div>
