@@ -39,6 +39,7 @@ import UserStatsView from './components/views/UserStatsView';
 import AboutView from './components/views/AboutView';
 import QuickFacts from './QuickFacts';
 import TasksView from './components/views/TasksView';
+import CommandCenterView from './components/views/CommandCenterView';
 import AchievementView from './components/views/AchievementView';
 import TaskWorksheetView from './components/views/TaskWorksheetView';
 import TaskTestView from './components/views/TaskTestView';
@@ -940,7 +941,7 @@ function AppContent() {
             />
           )}
 
-          {(mode === 'tasks' || (mode === 'command-center' && isAdminLoggedIn)) && <TasksView 
+          {mode === 'tasks' && <TasksView 
             key="tasks"
             mode={mode}
             showEasterNotice={showEasterNotice}
@@ -948,17 +949,21 @@ function AppContent() {
             easterNoticeAgreed={easterNoticeAgreed}
             setEasterNoticeAgreed={setEasterNoticeAgreed}
             proceedToEasterAssignment={startEasterAssignment}
-            isAdmin={isAdminLoggedIn}
             tasks={tasks}
             mySubmissions={mySubmissions}
-            allSubmissions={allSubmissions}
             currentUser={currentUser}
             userProfile={userProfile}
+            units={units}
+            onStartTask={onStartTask}
+          />}
+
+          {mode === 'command-center' && isAdminLoggedIn && <CommandCenterView 
+            tasks={tasks}
+            allSubmissions={allSubmissions}
             units={units}
             onCreateTask={onCreateTask}
             onUpdateTask={onUpdateTask}
             onDeleteTask={onDeleteTask}
-            onStartTask={onStartTask}
             onViewSubmission={(sub, task) => {
               setViewedSubmission(sub);
               setActiveTask(task);
@@ -979,7 +984,7 @@ function AppContent() {
               initialResponses={viewedSubmission ? viewedSubmission.responses : mySubmissions.find(s => s.taskId === activeTask.id)?.responses}
               initialFeedback={viewedSubmission ? viewedSubmission.feedback : mySubmissions.find(s => s.taskId === activeTask.id)?.feedback}
               initialGeneralFeedback={viewedSubmission ? viewedSubmission.generalFeedback : mySubmissions.find(s => s.taskId === activeTask.id)?.generalFeedback}
-              readOnly={!!viewedSubmission || (!isAdminLoggedIn && mySubmissions.some(s => s.taskId === activeTask.id))}
+              readOnly={!!viewedSubmission || (!isAdminLoggedIn && mySubmissions.some(s => s.taskId === activeTask.id)) || !!userProfile?.isParent}
               isAdmin={isAdminLoggedIn}
               showCalculator={showCalculator}
               setShowCalculator={setShowCalculator}
@@ -1085,7 +1090,7 @@ function AppContent() {
               initialResponses={viewedSubmission ? viewedSubmission.responses : mySubmissions.find(s => s.taskId === activeTask.id)?.responses}
               initialFeedback={viewedSubmission ? viewedSubmission.feedback : mySubmissions.find(s => s.taskId === activeTask.id)?.feedback}
               initialGeneralFeedback={viewedSubmission ? viewedSubmission.generalFeedback : mySubmissions.find(s => s.taskId === activeTask.id)?.generalFeedback}
-              readOnly={!!viewedSubmission || (!isAdminLoggedIn && mySubmissions.some(s => s.taskId === activeTask.id))}
+              readOnly={!!viewedSubmission || (!isAdminLoggedIn && mySubmissions.some(s => s.taskId === activeTask.id)) || !!userProfile?.isParent}
               isAdmin={isAdminLoggedIn}
               showCalculator={showCalculator}
               setShowCalculator={setShowCalculator}
