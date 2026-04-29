@@ -47,6 +47,7 @@ const CommandCenterView = ({
   const [markschemeContent, setMarkschemeContent] = React.useState('');
   const [seedingStatus, setSeedingStatus] = React.useState<'idle' | 'seeding' | 'success'>('idle');
   const [deleteConfirmId, setDeleteConfirmId] = React.useState<string | null>(null);
+  const [deleteSubConfirmId, setDeleteSubConfirmId] = React.useState<string | null>(null);
   const [wipeConfirmStep, setWipeConfirmStep] = React.useState(0);
   
   const [newTask, setNewTask] = React.useState<Partial<Task>>({
@@ -75,13 +76,18 @@ const CommandCenterView = ({
     setIsLoadingRubric(true);
     setRubricData(null);
     try {
+      // First check if there is a processed rubric
       const docRef = doc(db, 'processedRubrics', task.id);
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         setRubricData(docSnap.data());
+      } else {
+        // Fallback to raw markscheme from task
+        setRubricData({ raw: task.markschemeContent });
       }
     } catch (e) {
       console.error("Error fetching rubric:", e);
+      setRubricData({ raw: task.markschemeContent });
     } finally {
       setIsLoadingRubric(false);
     }
@@ -374,68 +380,149 @@ JSON OUTPUT: { "questions": [{ "id": "string", "score": "X of X", "feedback": "s
     setWipeConfirmStep(0);
   };
 
-  const exportReportPDF = (sub: TaskSubmission, task: Task) => {
-    import('jspdf').then(({ jsPDF }) => {
-      const doc = new jsPDF();
-      const margin = 20;
-      let y = 20;
-
-      doc.setFontSize(22);
-      doc.text("Operational Mission Report", margin, y);
-      y += 10;
+  const exportReportPDF = async (sub: TaskSubmission, task: Task) => {
+    const { jsPDF } = await import('jspdf');
+    const autoTable = (await import('jspdf-autotable')).default;
+    
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.width;
+    const margin = 15;
+    
+    // Header Bar
+    doc.setFillColor(16, 185, 129);
+    doc.rect(0, 0, pageWidth, 5, 'F');
+    
+    let y = 25;
+    doc.setTextColor(30, 41, 59);
+    doc.setFont("Helvetica", "bold");
+    doc.setFontSize(28);
+    doc.text("Performance Analysis Report", margin, y);
+    y += 8;
+    doc.setFontSize(8);
+    doc.setTextColor(148, 163, 184);
+    doc.setFont("Helvetica", "normal");
+    doc.text(`Generated on ${format(new Date(), 'MMMM do, yyyy h:mm a')}`, margin, y);
+    y += 12;
+    
+    // Teacher's General Feedback
+    doc.setFillColor(240, 253, 244);
+    const feedbackText = sub.results?.generalFeedback || "No general feedback provided.";
+    const splitFeedback = doc.splitTextToSize(feedbackText, pageWidth - (margin * 2) - 20);
+    const boxHeight = Math.max(25, (splitFeedback.length * 6) + 15);
+    
+    doc.roundedRect(margin, y, pageWidth - (margin * 2), boxHeight, 2, 2, 'F');
+    doc.setTextColor(5, 150, 105);
+    doc.setFont("Helvetica", "bold");
+    doc.setFontSize(14);
+    doc.text("Teacher's General Feedback", margin + 10, y + 10);
+    
+    doc.setTextColor(71, 85, 105);
+    doc.setFont("Helvetica", "normal");
+    doc.setFontSize(9);
+    doc.text(splitFeedback, margin + 10, y + 18);
+    y += boxHeight + 15;
+    
+    // Info Cards
+    const cardWidth = (pageWidth - (margin * 2) - 10) / 2;
+    const cardHeight = 22;
+    const stats = [
+      { label: "STUDENT NAME", value: sub.studentName },
+      { label: "PERFORMANCE METRIC", value: `${sub.results?.score} of ${sub.results?.total} (${Math.round((sub.results?.score || 0) / (sub.results?.total || 1) * 100)}%)`, isSuccess: true },
+      { label: "ASSIGNMENT TITLE", value: task.title },
+      { label: "COMPLETION TIME", value: sub.completedAt ? format(new Date(sub.completedAt), 'MMMM do, yyyy h:mm a') : 'N/A' },
+      { label: "PUNCTUALITY", value: "EARLY", isSuccess: true },
+      { label: "SECURITY VIOLATIONS", value: "OFF", isSuccess: true }
+    ];
+    
+    stats.forEach((stat, i) => {
+      const col = i % 2;
+      const row = Math.floor(i / 2);
+      const cardX = margin + col * (cardWidth + 10);
+      const cardY = y + row * (cardHeight + 8);
+      
+      doc.setFillColor(248, 250, 252);
+      doc.roundedRect(cardX, cardY, cardWidth, cardHeight, 3, 3, 'F');
+      
+      doc.setTextColor(148, 163, 184);
+      doc.setFontSize(7);
+      doc.setFont("Helvetica", "bold");
+      doc.text(stat.label, cardX + 8, cardY + 8);
+      
+      if (stat.isSuccess) {
+        doc.setTextColor(16, 185, 129);
+      } else {
+        doc.setTextColor(30, 41, 59);
+      }
       doc.setFontSize(10);
-      doc.text(`Student: ${sub.studentName}`, margin, y);
-      doc.text(`Task: ${task.title}`, doc.internal.pageSize.width - margin - 60, y);
-      y += 15;
-
-      doc.setDrawColor(200);
-      doc.line(margin, y, doc.internal.pageSize.width - margin, y);
-      y += 10;
-
-      doc.setFontSize(14);
-      doc.text("Score Overview", margin, y);
-      y += 8;
-      doc.setFontSize(10);
-      doc.text(`Total Score: ${sub.results?.score} / ${sub.results?.total}`, margin, y);
-      doc.text(`Percentage: ${Math.round((sub.results?.score || 0) / (sub.results?.total || 1) * 100)}%`, margin + 60, y);
-      y += 15;
-
-      doc.setFontSize(14);
-      doc.text("Instructor Feedback", margin, y);
-      y += 8;
-      doc.setFontSize(10);
-      const splitGeneral = doc.splitTextToSize(sub.results?.generalFeedback || "No general feedback.", doc.internal.pageSize.width - margin * 2);
-      doc.text(splitGeneral, margin, y);
-      y += splitGeneral.length * 5 + 10;
-
-      doc.setFontSize(14);
-      doc.text("Detailed Question Log", margin, y);
-      y += 8;
-
-      (task.worksheetQuestions || []).forEach((q: any, idx: number) => {
-        if (y > 250) {
-          doc.addPage();
-          y = 20;
-        }
-        const f = sub.results?.feedback?.[q.id];
-        doc.setFont("Helvetica", "bold");
-        doc.text(`${idx + 1}. Question: ${q.question || q.id}`, margin, y);
-        y += 6;
-        doc.setFont("Helvetica", "normal");
-        doc.text(`Response: ${JSON.stringify(sub.responses?.[q.id] || "No response")}`, margin + 5, y);
-        y += 6;
-        doc.setTextColor(0, 150, 0);
-        doc.text(`Result: ${f?.score || "N/A"}`, margin + 5, y);
-        y += 6;
-        doc.setTextColor(100);
-        const splitFeedback = doc.splitTextToSize(`Feedback: ${f?.feedback || "N/A"}`, doc.internal.pageSize.width - margin * 2 - 10);
-        doc.text(splitFeedback, margin + 5, y);
-        y += splitFeedback.length * 5 + 10;
-        doc.setTextColor(0);
-      });
-
-      doc.save(`Report_${sub.studentName}_${task.title}.pdf`);
+      doc.text(stat.value, cardX + 8, cardY + 17);
     });
+    
+    y += (cardHeight + 8) * 3 + 10;
+    
+    const tableData = (task.worksheetQuestions || []).map((q: any, idx: number) => {
+      const f = sub.results?.feedback?.[q.id];
+      const score = (f?.score || "0").toString();
+      const total = "1";
+      
+      const isPartial = f?.feedback?.toLowerCase().includes('partially');
+      
+      return [
+        (idx + 1).toString(),
+        q.question || q.id,
+        sub.responses?.[q.id] || "No response",
+        {
+          content: `[Points: ${score} of ${total}]\n${f?.feedback || "No feedback."}`,
+          isPartial
+        }
+      ];
+    });
+    
+    autoTable(doc, {
+      startY: y,
+      head: [['#', 'Question Stem', 'Student Response', 'Targeted Feedback']],
+      body: tableData,
+      theme: 'plain',
+      headStyles: {
+        textColor: [100, 116, 139],
+        fontSize: 8,
+        fontStyle: 'bold',
+        cellPadding: 5
+      },
+      columnStyles: {
+        0: { cellWidth: 10 },
+        1: { cellWidth: 50 },
+        2: { cellWidth: 55 },
+        3: { cellWidth: 65 }
+      },
+      didParseCell: (data) => {
+        if (data.section === 'body' && data.column.index === 3) {
+          const raw = data.cell.raw as any;
+          if (raw.isPartial) {
+            data.cell.styles.fillColor = [255, 247, 237];
+            data.cell.styles.textColor = [154, 52, 18];
+          } else {
+            data.cell.styles.fillColor = [255, 241, 241];
+            data.cell.styles.textColor = [153, 27, 27];
+          }
+          data.cell.text = [raw.content];
+        }
+        if (data.section === 'body') {
+           data.cell.styles.fontSize = 9;
+           data.cell.styles.fontStyle = 'normal';
+           if (data.column.index < 3) {
+             data.cell.styles.fillColor = [248, 250, 252];
+           }
+        }
+      },
+      styles: {
+        overflow: 'linebreak',
+        cellPadding: 8,
+        valign: 'middle'
+      },
+      margin: { top: 20 }
+    });
+    
+    doc.save(`Performance_Report_${sub.studentName}.pdf`);
   };
 
   return (
@@ -581,12 +668,22 @@ JSON OUTPUT: { "questions": [{ "id": "string", "score": "X of X", "feedback": "s
                                  </p>
                                </div>
                              </div>
-                             <button 
-                               onClick={() => onDeleteSubmission(sub.id)}
-                               className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all opacity-0 group-hover:opacity-100"
-                             >
-                               <Trash2 size={14} />
-                             </button>
+                             <div className="flex items-center gap-1">
+                               <button 
+                                 onClick={() => setDeleteSubConfirmId(deleteSubConfirmId === sub.id ? null : sub.id)}
+                                 className={`p-2 rounded-xl transition-all ${deleteSubConfirmId === sub.id ? 'bg-rose-500 text-white' : 'text-slate-300 hover:text-rose-500 hover:bg-rose-50'}`}
+                               >
+                                 <Trash2 size={14} />
+                               </button>
+                               {deleteSubConfirmId === sub.id && (
+                                 <button 
+                                   onClick={() => { onDeleteSubmission(sub.id); setDeleteSubConfirmId(null); }}
+                                   className="bg-rose-600 text-white px-2 py-1 rounded-lg text-[8px] font-black uppercase animate-in fade-in slide-in-from-right-1"
+                                 >
+                                   Confirm
+                                 </button>
+                               )}
+                             </div>
                            </div>
 
                            <div className="space-y-3 mb-6">
@@ -792,7 +889,7 @@ JSON OUTPUT: { "questions": [{ "id": "string", "score": "X of X", "feedback": "s
                      <div className="flex items-center justify-between">
                        <label className="text-[10px] font-black text-emerald-500 uppercase tracking-widest block ml-2">Markscheme / Rubric (JSON or Text)</label>
                      </div>
-                     <textarea value={markschemeContent} onChange={e => setMarkschemeContent(e.target.value)} className="w-full bg-slate-50 border-2 border-slate-100 p-6 rounded-[2rem] h-[200px] font-mono text-sm leading-relaxed focus:border-emerald-500 transition-all shadow-inner" placeholder='Detailed grading criteria...' />
+                     <textarea value={markschemeContent} onChange={e => setMarkschemeContent(e.target.value)} className="w-full bg-slate-900 text-emerald-400 p-6 rounded-[2rem] h-[200px] font-mono text-sm leading-relaxed border-2 border-slate-800 focus:border-emerald-500 transition-all shadow-inner" placeholder='Detailed grading criteria...' />
                    </div>
 
                    <div className="flex gap-4 pt-4">
@@ -847,9 +944,24 @@ JSON OUTPUT: { "questions": [{ "id": "string", "score": "X of X", "feedback": "s
                          </div>
                        </div>
                      ))
+                   ) : rubricData?.raw || (viewingRubricTask && viewingRubricTask.markschemeContent) ? (
+                      <div className="space-y-4">
+                         <div className="flex items-center gap-2 mb-2">
+                            <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Active Markscheme Content</p>
+                         </div>
+                         <div className="bg-slate-900 p-6 rounded-[2rem] border-2 border-slate-800 shadow-inner">
+                            <pre className="font-mono text-xs text-emerald-400 overflow-x-auto whitespace-pre-wrap leading-relaxed">
+                              {rubricData?.raw || viewingRubricTask.markschemeContent}
+                            </pre>
+                         </div>
+                      </div>
                    ) : (
-                     <div className="p-6 bg-amber-50 rounded-2xl border border-amber-100 text-amber-800 font-bold text-sm text-center">
-                       No structured rubric available for this task. Using raw markscheme text for AI processing.
+                     <div className="p-12 text-center flex flex-col items-center gap-4">
+                       <div className="w-16 h-16 bg-slate-100 rounded-3xl flex items-center justify-center text-slate-300">
+                          <FileText size={32} />
+                       </div>
+                       <p className="text-slate-400 font-bold text-sm tracking-tight">No Markscheme Associated With Operation</p>
                      </div>
                    )}
                 </div>

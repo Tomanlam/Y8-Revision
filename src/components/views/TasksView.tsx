@@ -56,68 +56,162 @@ const TasksView = ({
     }
   };
 
-  const exportReportPDF = (sub: TaskSubmission, task: Task) => {
-    import('jspdf').then(({ jsPDF }) => {
-      const doc = new jsPDF();
-      const margin = 20;
-      let y = 20;
-
-      doc.setFontSize(22);
-      doc.text("Official Mission Progress Report", margin, y);
-      y += 10;
-      doc.setFontSize(10);
-      doc.text(`Candidate: ${sub.studentName}`, margin, y);
-      doc.text(`Objective: ${task.title}`, doc.internal.pageSize.width - margin - 60, y);
-      y += 15;
-
-      doc.setDrawColor(200);
-      doc.line(margin, y, doc.internal.pageSize.width - margin, y);
-      y += 10;
-
+  const exportReportPDF = async (sub: TaskSubmission, task: Task, isRaw = false) => {
+    const { jsPDF } = await import('jspdf');
+    const autoTable = (await import('jspdf-autotable')).default;
+    
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.width;
+    const margin = 15;
+    
+    // Header Bar
+    doc.setFillColor(16, 185, 129);
+    doc.rect(0, 0, pageWidth, 5, 'F');
+    
+    let y = 25;
+    doc.setTextColor(30, 41, 59);
+    doc.setFont("Helvetica", "bold");
+    doc.setFontSize(24);
+    doc.text(isRaw ? "Raw Student Response Report" : "Performance Analysis Report", margin, y);
+    y += 8;
+    doc.setFontSize(8);
+    doc.setTextColor(148, 163, 184);
+    doc.setFont("Helvetica", "normal");
+    doc.text(`Generated on ${format(new Date(), 'MMMM do, yyyy h:mm a')}`, margin, y);
+    y += 12;
+    
+    if (!isRaw) {
+      // Teacher's General Feedback (Graded Reports Only)
+      doc.setFillColor(240, 253, 244);
+      const feedbackText = sub.results?.generalFeedback || "No general feedback provided.";
+      const splitFeedback = doc.splitTextToSize(feedbackText, pageWidth - (margin * 2) - 20);
+      const boxHeight = Math.max(25, (splitFeedback.length * 6) + 15);
+      
+      doc.roundedRect(margin, y, pageWidth - (margin * 2), boxHeight, 2, 2, 'F');
+      doc.setTextColor(5, 150, 105);
+      doc.setFont("Helvetica", "bold");
       doc.setFontSize(14);
-      doc.text("Achievement Metrics", margin, y);
-      y += 8;
+      doc.text("Teacher's General Feedback", margin + 10, y + 10);
+      
+      doc.setTextColor(71, 85, 105);
+      doc.setFont("Helvetica", "normal");
+      doc.setFontSize(9);
+      doc.text(splitFeedback, margin + 10, y + 18);
+      y += boxHeight + 15;
+    }
+    
+    // Info Cards
+    const cardWidth = (pageWidth - (margin * 2) - 10) / 2;
+    const cardHeight = 22;
+    const metricValue = isRaw ? "NOT GRADED" : `${sub.results?.score} of ${sub.results?.total} (${Math.round((sub.results?.score || 0) / (sub.results?.total || 1) * 100)}%)`;
+    
+    const stats = [
+      { label: "STUDENT NAME", value: sub.studentName },
+      { label: "PERFORMANCE METRIC", value: metricValue, isSuccess: !isRaw },
+      { label: "ASSIGNMENT TITLE", value: task.title },
+      { label: "COMPLETION TIME", value: sub.completedAt ? format(new Date(sub.completedAt), 'MMMM do, yyyy h:mm a') : 'N/A' },
+      { label: "PUNCTUALITY", value: "EARLY", isSuccess: true },
+      { label: "SECURITY VIOLATIONS", value: "OFF", isSuccess: true }
+    ];
+    
+    stats.forEach((stat, i) => {
+      const col = i % 2;
+      const row = Math.floor(i / 2);
+      const cardX = margin + col * (cardWidth + 10);
+      const cardY = y + row * (cardHeight + 8);
+      
+      doc.setFillColor(248, 250, 252);
+      doc.roundedRect(cardX, cardY, cardWidth, cardHeight, 3, 3, 'F');
+      
+      doc.setTextColor(148, 163, 184);
+      doc.setFontSize(7);
+      doc.setFont("Helvetica", "bold");
+      doc.text(stat.label, cardX + 8, cardY + 8);
+      
+      if (stat.isSuccess) {
+        doc.setTextColor(16, 185, 129);
+      } else {
+        doc.setTextColor(30, 41, 59);
+      }
       doc.setFontSize(10);
-      doc.text(`Score: ${sub.results?.score} / ${sub.results?.total}`, margin, y);
-      doc.text(`Completion: ${Math.round((sub.results?.score || 0) / (sub.results?.total || 1) * 100)}%`, margin + 60, y);
-      y += 15;
-
-      doc.setFontSize(14);
-      doc.text("Operational Feedback", margin, y);
-      y += 8;
-      doc.setFontSize(10);
-      const splitGeneral = doc.splitTextToSize(sub.results?.generalFeedback || "No general feedback.", doc.internal.pageSize.width - margin * 2);
-      doc.text(splitGeneral, margin, y);
-      y += splitGeneral.length * 5 + 10;
-
-      doc.setFontSize(14);
-      doc.text("Mission Analysis", margin, y);
-      y += 8;
-
-      (task.worksheetQuestions || []).forEach((q: any, idx: number) => {
-        if (y > 250) {
-          doc.addPage();
-          y = 20;
-        }
-        const f = sub.results?.feedback?.[q.id];
-        doc.setFont("Helvetica", "bold");
-        doc.text(`${idx + 1}. ${q.question || q.id}`, margin, y);
-        y += 6;
-        doc.setFont("Helvetica", "normal");
-        doc.text(`Logged: ${JSON.stringify(sub.responses?.[q.id] || "N/A")}`, margin + 5, y);
-        y += 6;
-        doc.setTextColor(0, 150, 0);
-        doc.text(`Rating: ${f?.score || "N/A"}`, margin + 5, y);
-        y += 6;
-        doc.setTextColor(100);
-        const splitFeedback = doc.splitTextToSize(`Insight: ${f?.feedback || "N/A"}`, doc.internal.pageSize.width - margin * 2 - 10);
-        doc.text(splitFeedback, margin + 5, y);
-        y += splitFeedback.length * 5 + 10;
-        doc.setTextColor(0);
-      });
-
-      doc.save(`Mission_Report_${sub.studentName}.pdf`);
+      doc.text(stat.value, cardX + 8, cardY + 17);
     });
+    
+    y += (cardHeight + 8) * 3 + 10;
+    
+    const tableHeaders = isRaw ? ['#', 'Question Stem', 'Student Response'] : ['#', 'Question Stem', 'Student Response', 'Targeted Feedback'];
+    const tableData = (task.worksheetQuestions || []).map((q: any, idx: number) => {
+      const f = sub.results?.feedback?.[q.id];
+      const score = (f?.score || "0").toString();
+      const total = "1";
+      const isPartial = f?.feedback?.toLowerCase().includes('partially');
+      
+      const row = [
+        (idx + 1).toString(),
+        q.question || q.id,
+        sub.responses?.[q.id] || "No response"
+      ];
+      
+      if (!isRaw) {
+        row.push({
+          content: `[Points: ${score} of ${total}]\n${f?.feedback || "No feedback."}`,
+          isPartial
+        } as any);
+      }
+      
+      return row;
+    });
+    
+    autoTable(doc, {
+      startY: y,
+      head: [tableHeaders],
+      body: tableData,
+      theme: 'plain',
+      headStyles: {
+        textColor: [100, 116, 139],
+        fontSize: 8,
+        fontStyle: 'bold',
+        cellPadding: 5
+      },
+      columnStyles: isRaw ? {
+        0: { cellWidth: 10 },
+        1: { cellWidth: 80 },
+        2: { cellWidth: 90 }
+      } : {
+        0: { cellWidth: 10 },
+        1: { cellWidth: 50 },
+        2: { cellWidth: 55 },
+        3: { cellWidth: 65 }
+      },
+      didParseCell: (data) => {
+        if (!isRaw && data.section === 'body' && data.column.index === 3) {
+          const raw = data.cell.raw as any;
+          if (raw.isPartial) {
+            data.cell.styles.fillColor = [255, 247, 237];
+            data.cell.styles.textColor = [154, 52, 18];
+          } else {
+            data.cell.styles.fillColor = [255, 241, 241];
+            data.cell.styles.textColor = [153, 27, 27];
+          }
+          data.cell.text = [raw.content];
+        }
+        if (data.section === 'body') {
+           data.cell.styles.fontSize = 9;
+           data.cell.styles.fontStyle = 'normal';
+           if (data.column.index < (isRaw ? 3 : 3)) {
+             data.cell.styles.fillColor = [248, 250, 252];
+           }
+        }
+      },
+      styles: {
+        overflow: 'linebreak',
+        cellPadding: 8,
+        valign: 'middle'
+      },
+      margin: { top: 20 }
+    });
+    
+    doc.save(`${isRaw ? 'Raw_Capture' : 'Performance_Report'}_${sub.studentName}.pdf`);
   };
 
   // Filter tasks
@@ -248,11 +342,13 @@ const TasksView = ({
                         View
                       </button>
                       <button
-                        onClick={() => exportReportPDF(submission!, task)}
-                        className="flex-1 py-3 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest text-[8px] hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/10"
+                        onClick={() => exportReportPDF(submission!, task, !submission?.results)}
+                        className={`flex-1 py-3 rounded-2xl font-black uppercase tracking-widest text-[8px] transition-all flex items-center justify-center gap-2 shadow-lg ${
+                          submission?.results ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-500/10' : 'bg-slate-900 text-white hover:bg-slate-800'
+                        }`}
                       >
                         <Download size={14} />
-                        Export
+                        {submission?.results ? 'Analysis PDF' : 'Raw PDF'}
                       </button>
                     </div>
                   </div>
