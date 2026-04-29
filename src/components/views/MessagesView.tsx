@@ -86,6 +86,7 @@ const MessagesView: React.FC<MessagesViewProps> = ({ currentUser, allUsers, isAd
         orderBy('timestamp', 'desc')
       );
     } else {
+      if (!currentUser?.userId) return;
       q = query(
         collection(db, 'messages'),
         where('participants', 'array-contains', currentUser.userId),

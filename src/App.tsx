@@ -558,20 +558,21 @@ function AppContent() {
     if (isAdminLoggedIn) {
       q = query(collection(db, 'messages'));
     } else {
-      q = query(collection(db, 'messages'), where('participants', 'array-contains', currentUser.userId));
+      if (!currentUser?.uid) return;
+      q = query(collection(db, 'messages'), where('participants', 'array-contains', currentUser.uid));
     }
 
     return onSnapshot(q, (snap) => {
       const msgs = snap.docs.map(d => ({ id: d.id, ...d.data() } as Message));
       const myMsgs = msgs.filter(m => 
-        (m.receiverIds.includes(currentUser.userId) || m.type === 'announcement') &&
-        !m.isRead[currentUser.userId]
+        (m.receiverIds.includes(currentUser.uid) || m.type === 'announcement') &&
+        !m.isRead[currentUser.uid]
       );
       setUnreadMessagesCount(myMsgs.length);
     }, (error) => {
       console.error("Messages unread count listener error:", error);
     });
-  }, [currentUser]);
+  }, [currentUser, isAdminLoggedIn]);
 
   useEffect(() => {
     if (userProfile?.isParent && allUsers.length > 0 && allSubmissions.length > 0) {
