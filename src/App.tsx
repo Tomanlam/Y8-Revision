@@ -1014,7 +1014,11 @@ function AppContent() {
                setMode(task.type === 'test' ? 'test' : 'worksheet');
             }}
             onStartBatchGrading={(subs, task) => {
-              if (subs.length === 0) return;
+              console.log("App.onStartBatchGrading called with", subs.length, "submissions");
+              if (subs.length === 0) {
+                console.log("Empty submissions array, returning.");
+                return;
+              }
               const mapped = subs.map(s => ({ submission: s, task }));
               setBatchStudents(subs.map(s => ({ id: s.id, studentName: s.studentName || 'Unknown Student' })));
               setCurrentBatchIndex(0);
@@ -1023,7 +1027,9 @@ function AppContent() {
               setIsBatchGrading(true);
               setViewedSubmission(first.submission);
               setActiveTask(first.task);
-              setMode(first.task.type === 'test' ? 'test' : 'worksheet');
+              const nextMode = first.task.type === 'test' ? 'test' : 'worksheet';
+              console.log("Setting mode to:", nextMode);
+              setMode(nextMode);
             }}
             onDeleteSubmission={handleDeleteSubmission}
             onWipeCleanSlate={handleWipeCleanSlate}

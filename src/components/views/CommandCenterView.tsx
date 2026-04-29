@@ -95,17 +95,23 @@ const CommandCenterView = ({
   };
 
   const doBatchGrade = async (task: Task, submissions: TaskSubmission[]) => {
+    console.log("doBatchGrade triggered for task:", task.id, "submissions count:", submissions.length);
     const ungraded = submissions.filter(s => !s.feedback);
+    console.log("Ungraded count:", ungraded.length);
     
     if (ungraded.length === 0) {
       if (submissions.length === 0) {
         alert("No submissions found for this task.");
         return;
       }
-      const confirmRegrade = window.confirm("All students in this task are already graded. Re-grade all submissions?");
+      // Re-add confirmation but use global confirm
+      const confirmRegrade = confirm("All students in this task are already graded. Re-grade all submissions?");
       if (!confirmRegrade) return;
+      
+      console.log("All graded, confirmed regrouping all for re-grade.");
       onStartBatchGrading(submissions, task);
     } else {
+      console.log("Starting batch grading for ungraded submissions.");
       onStartBatchGrading(ungraded, task);
     }
   };
@@ -676,9 +682,13 @@ const CommandCenterView = ({
                           Review Rubric
                         </button>
                         <button 
+                          type="button"
                           disabled={subs.length === 0}
-                          onClick={() => doBatchGrade(task, subs)}
-                          className="px-6 py-3 rounded-2xl font-black uppercase tracking-widest text-[9px] transition-all flex items-center gap-2 shadow-lg bg-emerald-500 text-white hover:bg-emerald-600 shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            doBatchGrade(task, subs);
+                          }}
+                          className="px-6 py-3 rounded-2xl font-black uppercase tracking-widest text-[9px] transition-all flex items-center gap-2 shadow-lg bg-emerald-500 text-white hover:bg-emerald-600 shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed relative z-20"
                         >
                           <Sparkles size={16} />
                           Batch Grade
