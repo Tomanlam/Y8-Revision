@@ -391,37 +391,60 @@ function AppContent() {
       setIsAuthReady(true);
       
       if (user) {
-        // Sync/Fetch user profile
-        const userRef = doc(db, 'users', user.uid);
-        const userSnap = await getDoc(userRef);
-        
         const userEmail = user.email ? user.email.trim().toLowerCase() : '';
         const isParent = !!PARENT_STUDENT_MAP[userEmail];
         const childInfo = isParent ? PARENT_STUDENT_MAP[userEmail] : undefined;
         const isAdmin = userEmail === ADMIN_EMAIL.toLowerCase();
 
-        if (userSnap.exists()) {
-          const data = userSnap.data() as UserProfile;
-          const updatedProfile = {
-            ...data,
-            lastSeen: new Date().toISOString(),
-            photoURL: user.photoURL || data.photoURL || null,
-            isAdmin: isAdmin,
-            isParent: isParent,
-            childName: childInfo?.name,
-            childEmails: childInfo?.emails,
-            isGuest: false
-          };
-          setUserProfile(updatedProfile);
-          setSessionStats(data.progress || {});
+        setIsAdminLoggedIn(isAdmin);
+
+        try {
+          // Sync/Fetch user profile
+          const userRef = doc(db, 'users', user.uid);
+          const userSnap = await getDoc(userRef);
           
-          await updateDoc(userRef, updatedProfile);
-        } else {
-          // Initialize profile
-          const newProfile: UserProfile = {
+          if (userSnap.exists()) {
+            const data = userSnap.data() as UserProfile;
+            const updatedProfile = {
+              ...data,
+              lastSeen: new Date().toISOString(),
+              photoURL: user.photoURL || data.photoURL || null,
+              isAdmin: isAdmin,
+              isParent: isParent,
+              childName: childInfo?.name,
+              childEmails: childInfo?.emails,
+              isGuest: false
+            };
+            setUserProfile(updatedProfile);
+            setSessionStats(data.progress || {});
+            
+            await updateDoc(userRef, updatedProfile);
+          } else {
+            // Initialize profile
+            const newProfile: UserProfile = {
+              userId: user.uid,
+              email: user.email || '',
+              displayName: user.displayName || (isParent ? 'Parent' : 'Student'),
+              photoURL: user.photoURL || null,
+              progress: {},
+              lastSeen: new Date().toISOString(),
+              isAdmin: isAdmin,
+              isParent: isParent,
+              childName: childInfo?.name,
+              childEmails: childInfo?.emails,
+              isGuest: false
+            };
+            await setDoc(userRef, newProfile);
+            setUserProfile(newProfile);
+            setSessionStats({});
+          }
+        } catch (error) {
+          console.error("Error setting up user profile: ", error);
+          // Fallback user profile so UI still works
+          setUserProfile({
             userId: user.uid,
-            email: user.email || '',
-            displayName: user.displayName || (isParent ? 'Parent' : 'Student'),
+            email: userEmail,
+            displayName: user.displayName || 'Unknown',
             photoURL: user.photoURL || null,
             progress: {},
             lastSeen: new Date().toISOString(),
@@ -430,16 +453,7 @@ function AppContent() {
             childName: childInfo?.name,
             childEmails: childInfo?.emails,
             isGuest: false
-          };
-          await setDoc(userRef, newProfile);
-          setUserProfile(newProfile);
-          setSessionStats({});
-        }
-        
-        if (isAdmin) {
-          setIsAdminLoggedIn(true);
-        } else {
-          setIsAdminLoggedIn(false);
+          });
         }
       } else {
         setUserProfile(null);

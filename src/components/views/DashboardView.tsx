@@ -479,15 +479,20 @@ const DashboardView: React.FC<DashboardViewProps> = (props) => {
                             <User size={10} />
                             <span className="text-[8px] font-black uppercase tracking-widest">Guest Account</span>
                           </div>
+                        ) : isAdminLoggedIn ? (
+                          <div className={`px-2 py-0.5 rounded-full flex items-center gap-1 scale-[1.1] origin-left border shadow-sm bg-amber-500/20 text-amber-50 border-amber-500/30`}>
+                            <ShieldCheck size={10} />
+                            <span className="text-[8px] font-black uppercase tracking-widest">Admin Account</span>
+                          </div>
                         ) : props.userProfile?.isParent ? (
                           <div className={`px-2 py-0.5 rounded-full flex items-center gap-1 scale-[1.1] origin-left border shadow-sm bg-purple-500/30 text-white border-purple-500/40`}>
                             <Users size={10} />
                             <span className="text-[8px] font-black uppercase tracking-widest">Parent Account</span>
                           </div>
                         ) : (
-                          <div className={`px-2 py-0.5 rounded-full flex items-center gap-1 scale-[1.1] origin-left border shadow-sm ${isAdminLoggedIn ? 'bg-amber-500/20 text-amber-50 border-amber-500/30' : 'bg-emerald-500/30 text-white border-emerald-500/40'}`}>
-                            {isAdminLoggedIn ? <ShieldCheck size={10} /> : <GraduationCap size={10} />}
-                            <span className="text-[8px] font-black uppercase tracking-widest">{isAdminLoggedIn ? 'Admin Account' : 'Student Account'}</span>
+                          <div className={`px-2 py-0.5 rounded-full flex items-center gap-1 scale-[1.1] origin-left border shadow-sm bg-emerald-500/30 text-white border-emerald-500/40`}>
+                            <GraduationCap size={10} />
+                            <span className="text-[8px] font-black uppercase tracking-widest">Student Account</span>
                           </div>
                         )}
                       </div>
