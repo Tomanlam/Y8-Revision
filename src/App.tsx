@@ -117,12 +117,20 @@ class AppErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundary
   }
 }
 
-const APP_NAV_ITEMS: NavItem[] = [
-  { mode: 'dashboard', icon: LayoutGrid, label: 'Hub' },
-  { mode: 'tasks', icon: Target, label: 'Tasks' },
-  { mode: 'quick-facts', icon: Lightbulb, label: 'Facts' },
-  { mode: 'about', icon: Info, label: 'About' }
-];
+const getAppNavItems = (isAdmin: boolean): NavItem[] => {
+  const items: NavItem[] = [
+    { mode: 'dashboard', icon: LayoutGrid, label: 'Hub' },
+    { mode: 'tasks', icon: Target, label: 'Tasks' },
+  ];
+  if (isAdmin) {
+    items.push({ mode: 'command-center' as AppMode, icon: ShieldCheck, label: 'Command Center' });
+  }
+  items.push(
+    { mode: 'quick-facts', icon: Lightbulb, label: 'Facts' },
+    { mode: 'about', icon: Info, label: 'About' }
+  );
+  return items;
+};
 
 const Sidebar = ({ currentMode, setMode, onQRClick, hasOutstandingTasks, user, isAdmin }: { currentMode: AppMode, setMode: (m: AppMode) => void, onQRClick: () => void, hasOutstandingTasks?: boolean, user: UserProfile | null, isAdmin: boolean }) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -182,7 +190,7 @@ const Sidebar = ({ currentMode, setMode, onQRClick, hasOutstandingTasks, user, i
       </div>
 
       <div className="flex-1 px-4 space-y-3">
-        {APP_NAV_ITEMS.map((item) => {
+        {getAppNavItems(isAdmin).map((item) => {
           const Icon = item.icon;
           const isActive = currentMode === item.mode;
           const isTasks = item.mode === 'tasks';
@@ -825,7 +833,7 @@ function AppContent() {
 
   return (
     <div className="font-sans selection:bg-emerald-200 min-h-screen bg-gray-50 flex">
-      {['dashboard', 'user-stats', 'about', 'quick-facts', 'tasks', 'achievement'].includes(mode) && (
+      {['dashboard', 'user-stats', 'about', 'quick-facts', 'tasks', 'achievement', 'command-center'].includes(mode) && (
         <Sidebar 
           currentMode={mode} 
           setMode={setMode} 
@@ -836,7 +844,7 @@ function AppContent() {
         />
       )}
 
-      <div className={`flex-1 transition-all duration-300 ${['dashboard', 'user-stats', 'about', 'quick-facts', 'tasks', 'achievement'].includes(mode) ? 'md:pl-[80px]' : ''}`}>
+      <div className={`flex-1 transition-all duration-300 ${['dashboard', 'user-stats', 'about', 'quick-facts', 'tasks', 'achievement', 'command-center'].includes(mode) ? 'md:pl-[80px]' : ''}`}>
         <AnimatePresence mode="wait">
           {mode === 'dashboard' && (
             <DashboardView 
@@ -916,8 +924,9 @@ function AppContent() {
             />
           )}
 
-          {mode === 'tasks' && <TasksView 
+          {(mode === 'tasks' || (mode === 'command-center' && isAdminLoggedIn)) && <TasksView 
             key="tasks"
+            mode={mode}
             showEasterNotice={showEasterNotice}
             setShowEasterNotice={setShowEasterNotice} 
             easterNoticeAgreed={easterNoticeAgreed}
@@ -1373,10 +1382,10 @@ function AppContent() {
       </AnimatePresence>
 
       {/* Mobile Nav */}
-      {['dashboard', 'user-stats', 'about', 'quick-facts', 'tasks', 'achievement'].includes(mode) && (
+      {['dashboard', 'user-stats', 'about', 'quick-facts', 'tasks', 'achievement', 'command-center'].includes(mode) && (
         <nav className="fixed bottom-6 left-4 right-4 bg-white/5 backdrop-blur-md border border-white/10 p-2 z-[150] md:hidden rounded-[2rem] shadow-[0_20px_50px_-15px_rgba(0,0,0,0.15)]">
-          <div className="grid grid-cols-5 gap-1.5">
-            {APP_NAV_ITEMS.map((item) => {
+          <div className={`grid gap-1.5 ${isAdminLoggedIn ? 'grid-cols-6' : 'grid-cols-4'}`}>
+            {getAppNavItems(isAdminLoggedIn).map((item) => {
               const Icon = item.icon;
               const isActive = mode === item.mode;
               return (

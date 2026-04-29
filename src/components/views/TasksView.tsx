@@ -8,7 +8,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, Cartes
 import { db } from '../../firebase';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 
-import { Task, TaskSubmission, Unit } from '../../types';
+import { Task, TaskSubmission, Unit, AppMode } from '../../types';
 import { GoogleGenAI, Type } from "@google/genai";
 import { GOLDEN_STANDARD_WORKSHEET, GOLDEN_STANDARD_TEST } from '../../constants/goldenStandard';
 import Analytics from './Analytics';
@@ -17,6 +17,7 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY as string });
 
 interface TasksViewProps {
   key?: string;
+  mode?: AppMode;
   showEasterNotice: boolean;
   setShowEasterNotice: (val: boolean) => void;
   easterNoticeAgreed: boolean;
@@ -38,6 +39,7 @@ interface TasksViewProps {
   onWipeCleanSlate?: () => void;
 }
 const TasksView = ({ 
+  mode,
   showEasterNotice,
   setShowEasterNotice,
   easterNoticeAgreed,
@@ -254,7 +256,21 @@ JSON OUTPUT: { "questions": [{ "id": "string", "score": "X of X", "feedback": "s
   const [passcodeError, setPasscodeError] = React.useState(false);
   const [showPasscode, setShowPasscode] = React.useState(false);
 
-  const [activeTab, setActiveTab] = React.useState<'dashboard'| 'tasks' | 'submissions' | 'analytics' | 'reports' | 'downloads'>(isAdmin ? 'analytics' : (userProfile?.isParent ? 'dashboard' : 'tasks'));
+  const [activeTab, setActiveTab] = React.useState<'dashboard'| 'tasks' | 'submissions' | 'analytics' | 'reports' | 'downloads'>(
+    mode === 'command-center' && isAdmin ? 'analytics' : (userProfile?.isParent ? 'dashboard' : 'tasks')
+  );
+
+  React.useEffect(() => {
+    if (mode === 'command-center' && isAdmin) {
+      if (['analytics', 'tasks', 'submissions'].indexOf(activeTab) === -1) {
+        setActiveTab('analytics');
+      }
+    } else {
+      if (['dashboard', 'tasks', 'reports', 'downloads'].indexOf(activeTab) === -1) {
+        setActiveTab(userProfile?.isParent ? 'dashboard' : 'tasks');
+      }
+    }
+  }, [mode, isAdmin, userProfile?.isParent]);
   const [submissionFilter, setSubmissionFilter] = React.useState('');
   const [nukeLevel, setNukeLevel] = React.useState(0);
   const [showAnalyticsMap, setShowAnalyticsMap] = React.useState<Record<string, boolean>>({});
@@ -1163,7 +1179,7 @@ Sample PERFECT Markscheme JSON for MCQ, SHORT-RESPONSE, TICK-CROSS, TABLE, REORD
           </div>
         )}
       </AnimatePresence>
-      {isAdmin && (
+      {isAdmin && mode === 'command-center' && (
         <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-slate-900 px-8 py-5 rounded-[2.5rem] text-white shadow-[0_20px_50px_-10px_rgba(0,0,0,0.4)] relative overflow-hidden ring-1 ring-white/10 mb-8">
           <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-emerald-500/10 rounded-full blur-[120px] -mr-80 -mt-80" />
           <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-[100px] -ml-64 -mb-64" />
@@ -1222,6 +1238,7 @@ Sample PERFECT Markscheme JSON for MCQ, SHORT-RESPONSE, TICK-CROSS, TABLE, REORD
         </header>
       )}
 
+      {mode !== 'command-center' && (
       <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-emerald-900 px-8 py-5 rounded-[2.5rem] text-white shadow-[0_20px_50px_-10px_rgba(0,0,0,0.4)] relative overflow-hidden ring-1 ring-white/10">
         <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-emerald-500/20 rounded-full blur-[120px] -mr-80 -mt-80" />
         <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-teal-500/10 rounded-full blur-[100px] -ml-64 -mb-64" />
@@ -1301,9 +1318,10 @@ Sample PERFECT Markscheme JSON for MCQ, SHORT-RESPONSE, TICK-CROSS, TABLE, REORD
             </div>
           </div>
         </header>
+      )}
 
       {/* Admin Quick Stats Bar */}
-      {isAdmin && activeTab === 'tasks' && (
+      {isAdmin && mode === 'command-center' && activeTab === 'tasks' && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
           <div className="bg-white/40 backdrop-blur-3xl p-8 rounded-[2.5rem] border border-white/20 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-xl transition-all duration-500 group">
             <div className="flex justify-between items-start mb-6">
@@ -1360,7 +1378,7 @@ Sample PERFECT Markscheme JSON for MCQ, SHORT-RESPONSE, TICK-CROSS, TABLE, REORD
         </div>
       )}
 
-      {isAdmin && activeTab === 'tasks' && (
+      {isAdmin && mode === 'command-center' && activeTab === 'tasks' && (
         <div className="flex flex-wrap items-center gap-4">
           <button 
             onClick={() => {

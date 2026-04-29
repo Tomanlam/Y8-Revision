@@ -5,7 +5,7 @@ import {
   Heart, BookOpen, GraduationCap, Languages, ChevronLeft, 
   CheckCircle2, XCircle, Trophy, Trash2, Lock, FileText, 
   Download, Star, Zap, Chrome, LayoutGrid, Info, ArrowRight, RefreshCw,
-  QrCode, Edit, Database, LogOut, User, Calendar as CalendarIcon, ChevronRight as ChevronRightIcon, Target,
+  QrCode, Edit, Database, LogOut, User, Users, Calendar as CalendarIcon, ChevronRight as ChevronRightIcon, Target,
   Crown, Calculator, Clock, Flame, Sparkles, ShieldCheck
 } from 'lucide-react';
 import { Unit, ChallengeRecord, ChallengeResponse, Question, UserProfile, Task, TaskSubmission } from '../../types';

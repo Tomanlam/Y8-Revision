@@ -1,6 +1,6 @@
 import { LucideIcon } from 'lucide-react';
 
-export type AppMode = 'splash' | 'dashboard' | 'revision' | 'quiz' | 'vocab' | 'user-stats' | 'about' | 'playground' | 'quick-facts' | 'tasks' | 'worksheet' | 'test' | 'achievement';
+export type AppMode = 'splash' | 'dashboard' | 'revision' | 'quiz' | 'vocab' | 'user-stats' | 'about' | 'playground' | 'quick-facts' | 'tasks' | 'worksheet' | 'test' | 'achievement' | 'command-center';
 
 export interface QuizSubMode {
   id: string;
