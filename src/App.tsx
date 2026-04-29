@@ -281,6 +281,29 @@ export default function App() {
 
 const ADMIN_EMAIL = 'tomanlam@gmail.com';
 
+const PARENT_STUDENT_MAP: Record<string, {name: string, emails: string[]}> = {
+  "p.fe@hanacademy.edu.hk": { name: "Y8 FU EDITH", emails: ["fe@hanacademy.edu.hk"] },
+  "p.wxzx@hanacademy.edu.hk": { name: "Y8 WU XIZIXUAN", emails: ["wxzx@hanacademy.edu.hk"] },
+  "p.ydyh@hanacademy.edu.hk": { name: "Y8 YOE HANSON & YOE DICKSON", emails: ["yh@hanacademy.edu.hk", "yd@hanacademy.edu.hk"] },
+  "p.cy@hanacademy.edu.hk": { name: "Y8 CHANG YE", emails: ["cy@hanacademy.edu.hk"] },
+  "p.zky@hanacademy.edu.hk": { name: "Y8 ZHU KEYU", emails: ["zky@hanacademy.edu.hk"] },
+  "p.dhy1@hanacademy.edu.hk": { name: "Y8 DU HAOYANG", emails: ["dhy1@hanacademy.edu.hk"] },
+  "p.ycw@hanacademy.edu.hk": { name: "Y8 YEUNG CHIN WA", emails: ["ycw@hanacademy.edu.hk"] },
+  "p.lkl@hanacademy.edu.hk": { name: "Y8 LIM KA LOK", emails: ["lkl@hanacademy.edu.hk"] },
+  "p.basr@hanacademy.edu.hk": { name: "Y8 BI ALEX SHANRUI", emails: ["basr@hanacademy.edu.hk"] },
+  "p.hkys@hanacademy.edu.hk": { name: "Y8 HUNG KA YUI SILVIO", emails: ["hkys@hanacademy.edu.hk"] },
+  "p.wzx@hanacademy.edu.hk": { name: "Y8 WANG ZEXUAN", emails: ["wzx@hanacademy.edu.hk"] },
+  "p.yks@hanacademy.edu.hk": { name: "Y8 YAN KA SUEN", emails: ["yks@hanacademy.edu.hk"] },
+  "p.xln@hanacademy.edu.hk": { name: "Y8 XIAO LONGNYU", emails: ["xln@hanacademy.edu.hk"] },
+  "p.by@hanacademy.edu.hk": { name: "Y8 YAU BILLY", emails: ["by@hanacademy.edu.hk"] },
+  "p.ckhs@hanacademy.edu.hk": { name: "Y8 CHENG KOK HANG SAMUEL", emails: ["ckhs@hanacademy.edu.hk"] },
+  "p.zly@hanacademy.edu.hk": { name: "Y8 ZHENG LUYANG LAWRENCE", emails: ["zly@hanacademy.edu.hk"] },
+  "p.lyy@hanacademy.edu.hk": { name: "Y8 LU YUANYAO", emails: ["lyy@hanacademy.edu.hk"] },
+  "p.cc@hanacademy.edu.hk": { name: "Y8 CHAN CHANDLER", emails: ["cc@hanacademy.edu.hk"] },
+  "p.wwp@hanacademy.edu.hk": { name: "Y8 WONG YAU YAT & WONG WO PING", emails: ["wyy@hanacademy.edu.hk", "wwp@hanacademy.edu.hk"] },
+  "p.whh@hanacademy.edu.hk": { name: "Y8 WONG HIN HO", emails: ["whh@hanacademy.edu.hk"] }
+};
+
 function AppContent() {
 
   const [mode, setMode] = useState<AppMode>('dashboard');
@@ -364,26 +387,39 @@ function AppContent() {
         const userRef = doc(db, 'users', user.uid);
         const userSnap = await getDoc(userRef);
         
+        const isParent = !!PARENT_STUDENT_MAP[user.email || ''];
+        const childInfo = isParent ? PARENT_STUDENT_MAP[user.email || ''] : undefined;
+
         if (userSnap.exists()) {
           const data = userSnap.data() as UserProfile;
-          setUserProfile(data);
+          const updatedProfile = {
+            ...data,
+            lastSeen: new Date().toISOString(),
+            photoURL: user.photoURL || data.photoURL || null,
+            isAdmin: user.email === ADMIN_EMAIL,
+            isParent: isParent,
+            childName: childInfo?.name,
+            childEmails: childInfo?.emails,
+            isGuest: false
+          };
+          setUserProfile(updatedProfile);
           setSessionStats(data.progress || {});
           
-          // Update last seen and photoURL
-          await updateDoc(userRef, { 
-            lastSeen: new Date().toISOString(),
-            photoURL: user.photoURL || data.photoURL || null
-          });
+          await updateDoc(userRef, updatedProfile);
         } else {
           // Initialize profile
           const newProfile: UserProfile = {
             userId: user.uid,
             email: user.email || '',
-            displayName: user.displayName || 'Student',
+            displayName: user.displayName || (isParent ? 'Parent' : 'Student'),
             photoURL: user.photoURL || null,
             progress: {},
             lastSeen: new Date().toISOString(),
-            isAdmin: user.email === ADMIN_EMAIL
+            isAdmin: user.email === ADMIN_EMAIL,
+            isParent: isParent,
+            childName: childInfo?.name,
+            childEmails: childInfo?.emails,
+            isGuest: false
           };
           await setDoc(userRef, newProfile);
           setUserProfile(newProfile);
@@ -419,14 +455,14 @@ function AppContent() {
     return () => clearTimeout(syncTimer);
   }, [sessionStats, currentUser, userProfile]);
 
-  // Fetch all users for Admin
+  // Fetch all users for Admin and Parents
   useEffect(() => {
-    if (!isAdminLoggedIn) return;
+    if (!isAdminLoggedIn && !userProfile?.isParent) return;
     const q = query(collection(db, 'users'), orderBy('lastSeen', 'desc'));
     return onSnapshot(q, (snap) => {
       setAllUsers(snap.docs.map(d => d.data() as UserProfile));
     });
-  }, [isAdminLoggedIn]);
+  }, [isAdminLoggedIn, userProfile]);
 
   useEffect(() => {
     if (!isAdminLoggedIn) return;
@@ -465,7 +501,7 @@ function AppContent() {
 
   // Fetch Submissions for student
   useEffect(() => {
-    if (!currentUser || isAdminLoggedIn) return;
+    if (!currentUser || isAdminLoggedIn || userProfile?.isParent) return;
     const q = query(collection(db, 'submissions'), where('userId', '==', currentUser.uid));
     return onSnapshot(q, (snap) => {
       const subs = snap.docs.map(d => ({ id: d.id, ...d.data() } as TaskSubmission));
@@ -478,7 +514,23 @@ function AppContent() {
       });
       setMySubmissions(fixedSubs);
     });
-  }, [currentUser, isAdminLoggedIn, tasks]);
+  }, [currentUser, isAdminLoggedIn, tasks, userProfile]);
+
+  useEffect(() => {
+    if (userProfile?.isParent && allUsers.length > 0 && allSubmissions.length > 0) {
+      const childEmails = userProfile.childEmails || [];
+      const childNames = userProfile.childName?.split(' & ') || [];
+      
+      const childUserIds = allUsers.filter(u => childEmails.includes(u.email)).map(u => u.userId);
+      
+      setMySubmissions(allSubmissions.filter(s => {
+        if (childUserIds.includes(s.userId)) return true;
+        // Fallback to name matching if id isn't bound properly
+        const submissionName = (s.studentName || '').toLowerCase();
+        return childNames.some(name => submissionName.includes(name.toLowerCase().replace('y8 ', '')));
+      }));
+    }
+  }, [userProfile, allSubmissions, allUsers]);
 
   // Fetch all Submissions (Enabled for all to support class rank)
   useEffect(() => {
@@ -813,7 +865,7 @@ function AppContent() {
               currentEventMessageIndex={currentEventMessageIndex} eventMessages={eventMessages}
               randomConcept={randomConcept} refreshConcept={refreshConcept}
               startQuiz={startQuiz} startRevision={startRevision} startVocab={startVocab}
-              currentUser={currentUser} loginWithGoogle={loginWithGoogle} logout={logout}
+              currentUser={currentUser} userProfile={userProfile} loginWithGoogle={loginWithGoogle} logout={logout}
               allUsers={allUsers} selectedStudent={selectedStudent} setSelectedStudent={setSelectedStudent}
               tasks={tasks} onCreateTask={onCreateTask} onDeleteTask={onDeleteTask} onStartTask={onStartTask}
               setMode={setMode}
@@ -876,6 +928,7 @@ function AppContent() {
             mySubmissions={mySubmissions}
             allSubmissions={allSubmissions}
             currentUser={currentUser}
+            userProfile={userProfile}
             units={units}
             onCreateTask={onCreateTask}
             onUpdateTask={onUpdateTask}

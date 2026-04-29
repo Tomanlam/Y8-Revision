@@ -62,6 +62,7 @@ interface DashboardViewProps {
   startRevision: (unit: Unit) => void;
   startVocab: (unit: Unit) => void;
   currentUser: FirebaseUser | null;
+  userProfile: UserProfile | null;
   loginWithGoogle: () => void;
   logout: () => void;
   allUsers: UserProfile[];
@@ -460,14 +461,30 @@ const DashboardView: React.FC<DashboardViewProps> = (props) => {
                   <div className="flex flex-col justify-between h-full relative z-10">
                     <div className="mb-6">
                       <h2 className="text-xl font-black tracking-tight mb-0.5">
-                        {currentUser ? `Welcome Back, ${currentUser.displayName?.split(' ')[0]}` : 'Welcome Back'}
+                        {currentUser 
+                          ? (props.userProfile?.isParent 
+                            ? `Welcome Back, Parent of ${props.userProfile.childName}` 
+                            : `Welcome Back, ${currentUser.displayName?.split(' ')[0]}`) 
+                          : 'Welcome Back'}
                       </h2>
                       <p className="text-emerald-100 font-bold text-[9px] uppercase tracking-widest opacity-80 mb-2">{format(new Date(), 'EEEE, MMMM do yyyy')}</p>
                       <div className="flex items-center">
-                        <div className={`px-2 py-0.5 rounded-full flex items-center gap-1 scale-[1.1] origin-left border shadow-sm ${isAdminLoggedIn ? 'bg-amber-500/20 text-amber-50 border-amber-500/30' : 'bg-emerald-500/30 text-white border-emerald-500/40'}`}>
-                          {isAdminLoggedIn ? <ShieldCheck size={10} /> : <GraduationCap size={10} />}
-                          <span className="text-[8px] font-black uppercase tracking-widest">{isAdminLoggedIn ? 'Admin Mode' : 'Student Mode'}</span>
-                        </div>
+                        {!currentUser ? (
+                          <div className={`px-2 py-0.5 rounded-full flex items-center gap-1 scale-[1.1] origin-left border shadow-sm bg-slate-500/30 text-white border-slate-500/40`}>
+                            <User size={10} />
+                            <span className="text-[8px] font-black uppercase tracking-widest">Guest Account</span>
+                          </div>
+                        ) : props.userProfile?.isParent ? (
+                          <div className={`px-2 py-0.5 rounded-full flex items-center gap-1 scale-[1.1] origin-left border shadow-sm bg-purple-500/30 text-white border-purple-500/40`}>
+                            <Users size={10} />
+                            <span className="text-[8px] font-black uppercase tracking-widest">Parent Account</span>
+                          </div>
+                        ) : (
+                          <div className={`px-2 py-0.5 rounded-full flex items-center gap-1 scale-[1.1] origin-left border shadow-sm ${isAdminLoggedIn ? 'bg-amber-500/20 text-amber-50 border-amber-500/30' : 'bg-emerald-500/30 text-white border-emerald-500/40'}`}>
+                            {isAdminLoggedIn ? <ShieldCheck size={10} /> : <GraduationCap size={10} />}
+                            <span className="text-[8px] font-black uppercase tracking-widest">{isAdminLoggedIn ? 'Admin Account' : 'Student Account'}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                     

@@ -24,6 +24,10 @@ export interface UserProfile {
   progress: SessionStats;
   lastSeen: string;
   isAdmin?: boolean;
+  isParent?: boolean;
+  childName?: string;
+  childEmails?: string[];
+  isGuest?: boolean;
 }
 
 export interface ChallengeResponse {

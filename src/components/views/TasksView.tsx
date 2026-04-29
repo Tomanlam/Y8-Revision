@@ -4,7 +4,7 @@ import { Star, CheckCircle2, ListChecks, Users, Clock, Plus, Trash2, Layout, Cal
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, parseISO, startOfDay } from 'date-fns';
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid, LineChart, Line, AreaChart, Area } from 'recharts';
 import { db } from '../../firebase';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 
@@ -27,6 +27,7 @@ interface TasksViewProps {
   mySubmissions: TaskSubmission[];
   allSubmissions: TaskSubmission[];
   currentUser: any;
+  userProfile?: any;
   units: Unit[];
   onCreateTask: (task: Partial<Task>) => void;
   onUpdateTask?: (id: string, updates: Partial<Task>) => void;
@@ -47,6 +48,7 @@ const TasksView = ({
   mySubmissions,
   allSubmissions,
   currentUser,
+  userProfile,
   units,
   onCreateTask,
   onUpdateTask,
@@ -252,7 +254,7 @@ JSON OUTPUT: { "questions": [{ "id": "string", "score": "X of X", "feedback": "s
   const [passcodeError, setPasscodeError] = React.useState(false);
   const [showPasscode, setShowPasscode] = React.useState(false);
 
-  const [activeTab, setActiveTab] = React.useState<'tasks' | 'submissions' | 'analytics' | 'reports' | 'downloads'>(isAdmin ? 'analytics' : 'tasks');
+  const [activeTab, setActiveTab] = React.useState<'dashboard'| 'tasks' | 'submissions' | 'analytics' | 'reports' | 'downloads'>(isAdmin ? 'analytics' : (userProfile?.isParent ? 'dashboard' : 'tasks'));
   const [submissionFilter, setSubmissionFilter] = React.useState('');
   const [nukeLevel, setNukeLevel] = React.useState(0);
   const [showAnalyticsMap, setShowAnalyticsMap] = React.useState<Record<string, boolean>>({});
@@ -1161,8 +1163,8 @@ Sample PERFECT Markscheme JSON for MCQ, SHORT-RESPONSE, TICK-CROSS, TABLE, REORD
           </div>
         )}
       </AnimatePresence>
-      {isAdmin ? (
-        <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-slate-900 px-8 py-5 rounded-[2.5rem] text-white shadow-[0_20px_50px_-10px_rgba(0,0,0,0.4)] relative overflow-hidden ring-1 ring-white/10">
+      {isAdmin && (
+        <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-slate-900 px-8 py-5 rounded-[2.5rem] text-white shadow-[0_20px_50px_-10px_rgba(0,0,0,0.4)] relative overflow-hidden ring-1 ring-white/10 mb-8">
           <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-emerald-500/10 rounded-full blur-[120px] -mr-80 -mt-80" />
           <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-[100px] -ml-64 -mb-64" />
           
@@ -1218,14 +1220,15 @@ Sample PERFECT Markscheme JSON for MCQ, SHORT-RESPONSE, TICK-CROSS, TABLE, REORD
             </div>
           </div>
         </header>
-      ) : (
-        <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-emerald-900 px-8 py-5 rounded-[2.5rem] text-white shadow-[0_20px_50px_-10px_rgba(0,0,0,0.4)] relative overflow-hidden ring-1 ring-white/10">
-          <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-emerald-500/20 rounded-full blur-[120px] -mr-80 -mt-80" />
-          <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-teal-500/10 rounded-full blur-[100px] -ml-64 -mb-64" />
-          
-          <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center gap-8">
-            <div className="flex flex-col gap-1">
-              <div className="flex items-center gap-3">
+      )}
+
+      <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-emerald-900 px-8 py-5 rounded-[2.5rem] text-white shadow-[0_20px_50px_-10px_rgba(0,0,0,0.4)] relative overflow-hidden ring-1 ring-white/10">
+        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-emerald-500/20 rounded-full blur-[120px] -mr-80 -mt-80" />
+        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-teal-500/10 rounded-full blur-[100px] -ml-64 -mb-64" />
+        
+        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center gap-8">
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-3">
                 <span className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.3em]">Core Mission</span>
                 <div className="w-1 h-1 rounded-full bg-emerald-400/50" />
                 <span className="text-[10px] font-black text-emerald-100/60 uppercase tracking-widest leading-none">Learning Path Alpha</span>
@@ -1238,6 +1241,19 @@ Sample PERFECT Markscheme JSON for MCQ, SHORT-RESPONSE, TICK-CROSS, TABLE, REORD
 
           <div className="relative z-10 flex flex-col md:flex-row items-center gap-6">
             <div className="bg-white/5 backdrop-blur-3xl p-1.5 rounded-[2rem] flex items-center border border-white/10 shadow-2xl shadow-black/20">
+              {userProfile?.isParent && (
+                <button 
+                  onClick={() => setActiveTab('dashboard')}
+                  className={`px-6 py-3 rounded-[1.25rem] font-black uppercase tracking-widest transition-all duration-500 flex items-center gap-2 text-[9px] ${
+                    activeTab === 'dashboard' 
+                      ? 'bg-white text-emerald-900 shadow-xl scale-105' 
+                      : 'text-emerald-100/60 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <BarChart3 size={16} />
+                  Dashboard
+                </button>
+              )}
               <button 
                 onClick={() => setActiveTab('tasks')}
                 className={`px-6 py-3 rounded-[1.25rem] font-black uppercase tracking-widest transition-all duration-500 flex items-center gap-2 text-[9px] ${
@@ -1285,8 +1301,6 @@ Sample PERFECT Markscheme JSON for MCQ, SHORT-RESPONSE, TICK-CROSS, TABLE, REORD
             </div>
           </div>
         </header>
-      )}
-
 
       {/* Admin Quick Stats Bar */}
       {isAdmin && activeTab === 'tasks' && (
@@ -2578,7 +2592,120 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
         </div>
       )}
       
-      {activeTab === 'analytics' && isAdmin ? (
+      {activeTab === 'dashboard' && userProfile?.isParent ? (() => {
+        const submissionRate = tasks.length > 0 ? Math.round((mySubmissions.length / tasks.length) * 100) : 0;
+        
+        const chartData = mySubmissions
+          .sort((a, b) => new Date(a.completedAt).getTime() - new Date(b.completedAt).getTime())
+          .map(sub => {
+            const t = tasks.find(tsk => tsk.id === sub.taskId);
+            const title = t?.title.substring(0, 15) + '...' || 'Task';
+            let score = 0;
+            if (sub.results && sub.results.total) {
+              score = (sub.results.score / sub.results.total) * 100;
+            } else if (sub.feedback && typeof sub.feedback === 'object') {
+              let total = 0, earned = 0;
+              Object.values(sub.feedback).forEach((f: any) => {
+                const match = f?.score?.match(/(\d+)\s*of\s*(\d+)/i) || f?.score?.match(/(\d+)\s*\/\s*(\d+)/i);
+                if (match) {
+                  earned += parseInt(match[1]||'0', 10);
+                  total += parseInt(match[2]||'0', 10);
+                }
+              });
+              if (total > 0) score = (earned / total) * 100;
+            }
+            return { name: title, score: Math.round(score), date: format(new Date(sub.completedAt), 'MMM dd') };
+          });
+          
+        const validScores = chartData.filter(d => d.score > 0);
+        const avgScore = validScores.length > 0 ? Math.round(validScores.reduce((acc, curr) => acc + curr.score, 0) / validScores.length) : 0;
+
+        return (
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-white/40 backdrop-blur-3xl p-8 rounded-[2.5rem] border border-white/20 shadow-xl flex flex-col justify-center items-center text-center group">
+                 <div className="flex items-center gap-2 mb-2 text-indigo-500">
+                   <Target size={24} className="group-hover:scale-110 transition-transform" />
+                   <h3 className="font-black uppercase tracking-widest text-[11px]">Submission Rate</h3>
+                 </div>
+                 <p className="text-5xl font-black text-slate-800 tracking-tighter mb-2">{submissionRate}%</p>
+                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                   {mySubmissions.length} of {tasks.length} Tasks
+                 </p>
+              </div>
+
+              <div className="bg-white/40 backdrop-blur-3xl p-8 rounded-[2.5rem] border border-white/20 shadow-xl flex flex-col justify-center items-center text-center group">
+                 <div className="flex items-center gap-2 mb-2 text-emerald-500">
+                   <Sparkles size={24} className="group-hover:scale-110 transition-transform" />
+                   <h3 className="font-black uppercase tracking-widest text-[11px]">Average Attainment</h3>
+                 </div>
+                 <p className="text-5xl font-black text-slate-800 tracking-tighter mb-2">{avgScore}%</p>
+                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                   Across recent graded tasks
+                 </p>
+              </div>
+              
+              <div className="bg-white/40 backdrop-blur-3xl p-8 rounded-[2.5rem] border border-white/20 shadow-xl flex flex-col justify-center items-center text-center group">
+                 <div className="flex items-center gap-2 mb-2 text-amber-500">
+                   <Clock size={24} className="group-hover:scale-110 transition-transform" />
+                   <h3 className="font-black uppercase tracking-widest text-[11px]">Punctuality</h3>
+                 </div>
+                 <p className="text-5xl font-black text-slate-800 tracking-tighter mb-2">High</p>
+                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                   Based on due dates
+                 </p>
+              </div>
+            </div>
+
+            <div className="bg-white/40 backdrop-blur-3xl p-8 rounded-[2.5rem] border border-white/20 shadow-xl">
+              <div className="flex items-center gap-3 mb-8">
+                <BarChart3 className="text-purple-500" size={24} />
+                <h3 className="text-2xl font-black text-slate-800 uppercase tracking-tight">Performance Trend</h3>
+              </div>
+              
+              <div className="h-[300px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                    <XAxis 
+                      dataKey="date" 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 800 }}
+                      dy={10}
+                    />
+                    <YAxis 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 800 }}
+                    />
+                    <Tooltip 
+                      contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 25px -5px rgb(0 0 0 / 0.1)' }}
+                      itemStyle={{ color: '#0f172a', fontWeight: 900, fontSize: '14px' }}
+                      labelStyle={{ color: '#64748b', fontWeight: 800, fontSize: '10px', textTransform: 'uppercase' }}
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey="score" 
+                      stroke="#8b5cf6" 
+                      strokeWidth={4}
+                      fillOpacity={1} 
+                      fill="url(#colorScore)" 
+                      activeDot={{ r: 6, strokeWidth: 0, fill: '#8b5cf6' }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+        );
+      })() : activeTab === 'analytics' && isAdmin ? (
         <Analytics tasks={tasks} allSubmissions={allSubmissions} />
       ) : activeTab === 'submissions' && isAdmin ? (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -3143,7 +3270,7 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
             </div>
           </div>
         </div>
-      ) : activeTab === 'reports' && !isAdmin ? (
+      ) : activeTab === 'reports' ? (
         <div className="flex flex-col gap-6">
           <div className="bg-white/40 backdrop-blur-3xl p-8 rounded-[2.5rem] border border-white/20 shadow-xl">
             <h2 className="text-2xl font-black text-slate-800 uppercase tracking-tight mb-6">Completed Reports</h2>
@@ -3201,7 +3328,7 @@ Example Key: "${(newTask.title || 'task').toLowerCase().replace(/\s+/g, '_').rep
             </div>
           </div>
         </div>
-      ) : activeTab === 'downloads' && !isAdmin ? (
+      ) : activeTab === 'downloads' ? (
         <div className="flex flex-col gap-6">
           <div className="bg-white/40 backdrop-blur-3xl p-8 rounded-[2.5rem] border border-white/20 shadow-xl">
             <h2 className="text-2xl font-black text-slate-800 uppercase tracking-tight mb-6">Task Downloads</h2>
