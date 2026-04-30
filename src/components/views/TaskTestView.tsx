@@ -91,6 +91,42 @@ const QuestionTextWithCommandTerms = ({ text, className }: { text: string, class
   );
 };
 
+const TypewriterRubric = ({ text, isActive, isPast }: { text: string, isActive: boolean, isPast: boolean }) => {
+  const [displayedText, setDisplayedText] = useState("");
+
+  useEffect(() => {
+    if (isPast) {
+      setDisplayedText(text);
+      return;
+    }
+    if (isActive) {
+      let currentString = "";
+      let i = 0;
+      const interval = setInterval(() => {
+        if (i < text.length) {
+          currentString += text[i];
+          setDisplayedText(currentString);
+          i++;
+        } else {
+          clearInterval(interval);
+        }
+      }, 8);
+      return () => clearInterval(interval);
+    } else {
+      setDisplayedText(""); 
+    }
+  }, [text, isActive, isPast]);
+
+  if (!isActive && !isPast) return <span className="text-slate-600">Waiting for processing...</span>;
+
+  return (
+    <span className={`${isActive ? 'text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.8)]' : 'text-emerald-500'}`}>
+      {displayedText}
+      {isActive && displayedText.length < text.length && <span className="animate-pulse">_</span>}
+    </span>
+  );
+};
+
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY as string });
 
 const TaskTestView: React.FC<TaskTestViewProps> = ({ 
@@ -349,7 +385,7 @@ const TaskTestView: React.FC<TaskTestViewProps> = ({
   useEffect(() => {
     if (isBatchMode && isAdmin && !gradingComplete && gradingPhase === 'idle' && !isGradingWorkflow) {
       setIsGradingWorkflow(true);
-      setIsGradingConsoleExpanded(true);
+      setIsGradingConsoleExpanded(false);
       startGradingWorkflow();
     }
   }, [isBatchMode, isAdmin, gradingPhase, gradingComplete, isGradingWorkflow]);
@@ -741,13 +777,18 @@ JSON OUTPUT: { "earned_marks": float, "total_marks": float, "feedback": "string"
             }
          }
 
-         const response = await ai.models.generateContent({
+         const typingDurationMs = (extractedRubrics[q.id]?.length || 0) * 8;
+         const typingPromise = new Promise(r => setTimeout(r, typingDurationMs + 500));
+
+         const responsePromise = ai.models.generateContent({
             model: "gemini-3.1-flash-lite-preview",
             contents: { role: 'user', parts },
             config: {
               responseMimeType: "application/json",
             }
          });
+         
+         const [response] = await Promise.all([responsePromise, typingPromise]);
          
          const rawText = response.text || "";
          addLog(`Received response for ${q.id}.`);
@@ -1801,8 +1842,14 @@ OUTPUT: Plain text paragraph.`;
                       )}
                     </div>
                     
-                    <div className="w-full bg-slate-900 text-emerald-400 p-6 rounded-[2rem] font-mono text-sm leading-relaxed border-2 border-slate-800 transition-all shadow-inner whitespace-pre-wrap">
-                       {extractedRubrics[q.id] ? (extractedRubrics[q.id]) : "Initializing criteria..."}
+                    <div className="w-full bg-slate-900 p-6 rounded-[2rem] font-mono text-sm leading-relaxed border-2 border-slate-800 transition-all shadow-inner whitespace-pre-wrap">
+                       {extractedRubrics[q.id] ? (
+                         <TypewriterRubric 
+                           text={extractedRubrics[q.id]} 
+                           isActive={currentlyProcessingId === q.id} 
+                           isPast={gradingComplete || (currentlyProcessingIndex !== null && idx < currentlyProcessingIndex)} 
+                         />
+                       ) : "Initializing criteria..."}
                     </div>
                   </div>
                  </motion.div>
