@@ -20,6 +20,7 @@ interface CommandCenterViewProps {
   onDeleteTask: (id: string) => void;
   onViewSubmission: (sub: TaskSubmission, task: Task) => void;
   onStartBatchGrading: (subs: TaskSubmission[], task: Task) => void;
+  onPreviewTask: (task: Task) => void;
   onDeleteSubmission: (id: string) => void;
   onWipeCleanSlate: () => void;
 }
@@ -33,6 +34,7 @@ const CommandCenterView = ({
   onDeleteTask,
   onViewSubmission,
   onStartBatchGrading,
+  onPreviewTask,
   onDeleteSubmission,
   onWipeCleanSlate
 }: CommandCenterViewProps) => {
@@ -418,7 +420,10 @@ const CommandCenterView = ({
       }
       
       return [
-        q.question || q.id,
+        {
+          content: q.question || q.id,
+          attachment: task.attachments?.[q.id]
+        } as any,
         response,
         {
           content: `[Points: ${scoreStr}]\n${feedbackTextRaw}`,
@@ -461,6 +466,15 @@ const CommandCenterView = ({
       },
       didParseCell: (data) => {
         if (data.section === 'body') {
+          if (data.column.index === 0) {
+            const raw = data.cell.raw as any;
+            if (raw && raw.attachment) {
+               data.cell.text = [raw.content];
+               data.cell.styles.minCellHeight = 60;
+            } else if (raw) {
+               data.cell.text = [raw.content];
+            }
+          }
           if (data.column.index === 1) {
             const val = data.cell.raw as string;
             if (typeof val === 'string' && (val.startsWith('data:image') || val.match(/\.(jpeg|jpg|gif|png)$/) != null)) {
@@ -483,6 +497,20 @@ const CommandCenterView = ({
           if (data.column.index === 0) {
             fill = [239, 246, 255];
             textColor = [29, 78, 216];
+
+            const raw = cell.raw as any;
+            if (raw && raw.attachment) {
+              const padding = 6;
+              const imgW = Math.min(cell.width - padding * 2, 40);
+              const imgH = 30;
+              const posX = cell.x + (cell.width - imgW) / 2;
+              const posY = cell.y + cell.height - imgH - padding;
+              try {
+                doc.addImage(raw.attachment, 'PNG', posX, posY, imgW, imgH);
+              } catch (e) {
+                console.error("PDF Q Img err", e);
+              }
+            }
           } else if (data.column.index === 1) {
             fill = [255, 255, 255]; // White for response
             textColor = [30, 41, 59];
@@ -812,12 +840,16 @@ const CommandCenterView = ({
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {tasks.map(task => (
-              <div key={task.id} className="bg-white/40 backdrop-blur-3xl p-8 rounded-[2.5rem] border border-white/20 shadow-xl group hover:shadow-2xl transition-all duration-500">
+              <div 
+                key={task.id} 
+                onClick={() => onPreviewTask(task)}
+                className="bg-white/40 backdrop-blur-3xl p-8 rounded-[2.5rem] border border-white/20 shadow-xl group hover:shadow-2xl transition-all duration-500 cursor-pointer"
+              >
                  <div className="flex justify-between items-start mb-6">
                     <div className={`p-4 rounded-2xl ${task.type === 'test' ? 'bg-rose-500/10 text-rose-600' : 'bg-emerald-500/10 text-emerald-600'}`}>
                       {task.type === 'test' ? <ShieldCheck size={24} /> : <ListChecks size={24} />}
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                       <button onClick={() => {
                         setEditingTask(task);
                         setWorksheetQuestionsJson(JSON.stringify(task.worksheetQuestions || [], null, 2));

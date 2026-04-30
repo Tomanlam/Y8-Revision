@@ -581,7 +581,13 @@ const TasksView = ({
         response = response.replace(/→/g, '->').replace(/←/g, '<-').replace(/↑/g, '(up)').replace(/↓/g, '(down)');
       }
       
-      const row = [q.question || q.id, response];
+      const row = [
+        {
+          content: q.question || q.id,
+          attachment: task.attachments?.[q.id]
+        } as any,
+        response
+      ];
       
       if (!isRaw) {
         row.push({
@@ -630,6 +636,15 @@ const TasksView = ({
       },
       didParseCell: (data) => {
         if (data.section === 'body') {
+          if (data.column.index === 0) {
+            const raw = data.cell.raw as any;
+            if (raw && raw.attachment) {
+               data.cell.text = [raw.content];
+               data.cell.styles.minCellHeight = 60;
+            } else if (raw) {
+               data.cell.text = [raw.content];
+            }
+          }
           if (data.column.index === 1) {
             const val = data.cell.raw as string;
             if (typeof val === 'string' && (val.startsWith('data:image') || val.match(/\.(jpeg|jpg|gif|png)$/) != null)) {
@@ -652,6 +667,20 @@ const TasksView = ({
           if (data.column.index === 0) {
             fill = [239, 246, 255];
             textColor = [29, 78, 216];
+            
+            const raw = cell.raw as any;
+            if (raw && raw.attachment) {
+              const padding = 6;
+              const imgW = Math.min(cell.width - padding * 2, 40);
+              const imgH = 30;
+              const posX = cell.x + (cell.width - imgW) / 2;
+              const posY = cell.y + cell.height - imgH - padding;
+              try {
+                doc.addImage(raw.attachment, 'PNG', posX, posY, imgW, imgH);
+              } catch (e) {
+                console.error("PDF Q Img err", e);
+              }
+            }
           } else if (data.column.index === 1) {
             fill = [255, 255, 255]; // White for response
             textColor = [30, 41, 59];

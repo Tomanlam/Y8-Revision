@@ -1,6 +1,6 @@
 import { LucideIcon } from 'lucide-react';
 
-export type AppMode = 'splash' | 'dashboard' | 'revision' | 'quiz' | 'vocab' | 'user-stats' | 'about' | 'playground' | 'quick-facts' | 'tasks' | 'worksheet' | 'test' | 'achievement' | 'command-center' | 'messages';
+export type AppMode = 'splash' | 'dashboard' | 'revision' | 'quiz' | 'vocab' | 'user-stats' | 'about' | 'playground' | 'quick-facts' | 'tasks' | 'worksheet' | 'test' | 'achievement' | 'command-center' | 'messages' | 'diagnostics';
 
 export interface QuizSubMode {
   id: string;
@@ -62,6 +62,7 @@ export interface Task {
   timeLimit?: number; // in minutes
   isABVersion?: boolean;
   partnerTaskJson?: string; // For B version if applicable
+  attachments?: Record<string, string>; // questionId -> url
   worksheetQuestions?: (Question & { 
     page?: number; 
     section?: string; 

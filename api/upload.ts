@@ -19,9 +19,6 @@ export default async function upload(request: VercelRequest, response: VercelRes
           ],
         };
       },
-      onUploadCompleted: async ({ blob }) => {
-        console.log('blob upload completed', blob);
-      },
     });
 
     return response.status(200).json(jsonResponse);

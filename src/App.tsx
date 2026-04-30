@@ -45,6 +45,7 @@ import AchievementView from './components/views/AchievementView';
 import TaskWorksheetView from './components/views/TaskWorksheetView';
 import TaskTestView from './components/views/TaskTestView';
 import Calculator from './components/Calculator';
+import DiagnosticsView from './components/views/DiagnosticsView';
 
 // Icons
 import { 
@@ -53,7 +54,7 @@ import {
   Download, ChevronRight, X, Menu, Settings, LogOut, Plus, 
   Minus, Save, Edit, Trash, Search, Filter, ArrowLeft, Play, 
   Pause, RotateCcw, Clock, Award, Star, Thermometer, TestTube, 
-  Microscope, Magnet, Lightbulb, Sun, Moon, Cloud, Globe, Cpu,
+  Microscope, Magnet, Lightbulb, Sun, Moon, Cloud, Globe, Cpu, ShieldAlert,
   Activity, Zap, Chrome, BarChart3, Binary, LayoutGrid, Timer, 
   ShieldCheck, MessageSquare, Sparkles, Move, FlaskRound, Beaker,
   FlaskConical, Wind, Flame, Droplets, Atom, Info, ArrowRight, RefreshCw,
@@ -127,6 +128,7 @@ const getAppNavItems = (isAdmin: boolean): NavItem[] => {
   ];
   if (isAdmin) {
     items.push({ mode: 'command-center' as AppMode, icon: ShieldCheck, label: 'Command Center' });
+    items.push({ mode: 'diagnostics' as AppMode, icon: ShieldAlert, label: 'Diagnostics' });
   }
   items.push(
     { mode: 'quick-facts', icon: Lightbulb, label: 'Facts' },
@@ -135,7 +137,14 @@ const getAppNavItems = (isAdmin: boolean): NavItem[] => {
   return items;
 };
 
-const Sidebar = ({ currentMode, setMode, onQRClick, hasOutstandingTasks, unreadMessagesCount, user, isAdmin }: { currentMode: AppMode, setMode: (m: AppMode) => void, onQRClick: () => void, hasOutstandingTasks?: boolean, unreadMessagesCount: number, user: UserProfile | null, isAdmin: boolean }) => {
+const Sidebar = ({ 
+  currentMode, setMode, onQRClick, hasOutstandingTasks, unreadMessagesCount, user, isAdmin, 
+  diagnosticsTarget, onExitDiagnostics 
+}: { 
+  currentMode: AppMode, setMode: (m: AppMode) => void, onQRClick: () => void, 
+  hasOutstandingTasks?: boolean, unreadMessagesCount: number, user: UserProfile | null, 
+  isAdmin: boolean, diagnosticsTarget: UserProfile | null, onExitDiagnostics: () => void 
+}) => {
   const [isHovered, setIsHovered] = useState(false);
 
   return (
@@ -144,7 +153,7 @@ const Sidebar = ({ currentMode, setMode, onQRClick, hasOutstandingTasks, unreadM
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       animate={{ width: isHovered ? 280 : 88 }}
-      className="fixed left-0 top-0 bottom-0 bg-white/5 backdrop-blur-md border-r border-white/10 z-[150] hidden md:flex flex-col py-8 transition-all duration-500 ease-in-out shadow-[0_0_50px_-12px_rgba(0,0,0,0.08)]"
+      className={`fixed left-0 top-0 bottom-0 ${diagnosticsTarget ? 'bg-emerald-500/15' : 'bg-white/[0.03]'} backdrop-blur-sm border-r border-white/10 z-[150] hidden md:flex flex-col py-8 transition-all duration-500 ease-in-out shadow-[0_0_50px_-12px_rgba(0,0,0,0.08)]`}
     >
       <div className="px-4 mb-4 flex flex-col gap-3">
         <button 
@@ -182,7 +191,7 @@ const Sidebar = ({ currentMode, setMode, onQRClick, hasOutstandingTasks, unreadM
                   {user?.displayName || 'Student'}
                 </span>
                 <span className={`text-[8px] font-black uppercase tracking-[0.2em] mt-1.5 opacity-70 ${currentMode === 'achievement' ? 'text-emerald-50' : 'text-slate-400'}`}>
-                  {isAdmin ? 'System Administrator' : 'GUEST ACCOUNT'}
+                  {diagnosticsTarget ? 'DIAGNOSTIC SHADOWING' : (isAdmin ? 'System Administrator' : 'GUEST ACCOUNT')}
                 </span>
               </motion.div>
             )}
@@ -237,6 +246,30 @@ const Sidebar = ({ currentMode, setMode, onQRClick, hasOutstandingTasks, unreadM
 
 
       <div className="px-4 mt-auto space-y-2">
+        {diagnosticsTarget && (
+          <button
+            onClick={onExitDiagnostics}
+            className="w-full flex items-center h-12 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white transition-all group overflow-hidden shadow-lg shadow-amber-500/20"
+            title="Exit Diagnostics"
+          >
+            <div className="w-[56px] h-full flex justify-center items-center flex-shrink-0">
+              <LogOut size={18} className="group-hover:scale-110 transition-transform" />
+            </div>
+            <AnimatePresence>
+              {isHovered && (
+                <motion.span 
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                  className="text-[10px] font-black uppercase tracking-widest whitespace-nowrap"
+                >
+                  Diagnostic Logout
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </button>
+        )}
+
         <button
           onClick={() => (window as any).toggleY8?.()}
           className="w-full flex items-center h-12 rounded-2xl bg-slate-900/5 hover:bg-slate-900/10 text-slate-600 transition-all group overflow-hidden border border-slate-200/50"
@@ -369,6 +402,10 @@ function AppContent() {
   const [isBatchGrading, setIsBatchGrading] = useState(false);
   const [showCalculator, setShowCalculator] = useState(false);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
+  const [diagnosticsTarget, setDiagnosticsTarget] = useState<UserProfile | null>(null);
+
+  const effectiveProfile = useMemo(() => diagnosticsTarget || userProfile, [diagnosticsTarget, userProfile]);
+  const effectiveIsAdmin = useMemo(() => effectiveProfile?.isAdmin ?? false, [effectiveProfile]);
 
   // Expose Y8 toggle to global scope for Sidebar access
   useEffect(() => {
@@ -534,10 +571,19 @@ function AppContent() {
     });
   }, [currentUser]);
 
-  // Fetch Submissions for student
+  // Fetch Submissions for active view (Student or Shadowed User)
   useEffect(() => {
-    if (!currentUser || isAdminLoggedIn || userProfile?.isParent) return;
-    const q = query(collection(db, 'submissions'), where('userId', '==', currentUser.uid));
+    if (!currentUser) return;
+    
+    // Determine whose submissions we want in "mySubmissions"
+    const targetUserId = diagnosticsTarget?.userId || (!isAdminLoggedIn && !userProfile?.isParent ? currentUser.uid : null);
+    
+    if (!targetUserId) {
+      setMySubmissions([]);
+      return;
+    }
+
+    const q = query(collection(db, 'submissions'), where('userId', '==', targetUserId));
     return onSnapshot(q, (snap) => {
       const subs = snap.docs.map(d => ({ id: d.id, ...d.data() } as TaskSubmission));
       const fixedSubs = subs.map(sub => {
@@ -549,7 +595,7 @@ function AppContent() {
       });
       setMySubmissions(fixedSubs);
     });
-  }, [currentUser, isAdminLoggedIn, tasks, userProfile]);
+  }, [currentUser, isAdminLoggedIn, tasks, userProfile, diagnosticsTarget]);
 
   // Fetch Messages for unread count
   useEffect(() => {
@@ -891,23 +937,29 @@ function AppContent() {
 
   return (
     <div className="font-sans selection:bg-emerald-200 min-h-screen bg-gray-50 flex">
-      {['dashboard', 'user-stats', 'about', 'quick-facts', 'tasks', 'achievement', 'command-center', 'messages'].includes(mode) && (
+      {['dashboard', 'user-stats', 'about', 'quick-facts', 'tasks', 'achievement', 'command-center', 'messages', 'diagnostics'].includes(mode) && (
         <Sidebar 
           currentMode={mode} 
           setMode={setMode} 
           onQRClick={() => setIsQRModalOpen(true)} 
           hasOutstandingTasks={outstandingTasks.length > 0}
           unreadMessagesCount={unreadMessagesCount}
-          user={userProfile}
+          user={effectiveProfile}
           isAdmin={isAdminLoggedIn}
+          diagnosticsTarget={diagnosticsTarget}
+          onExitDiagnostics={() => {
+            setDiagnosticsTarget(null);
+            setMode('dashboard');
+          }}
         />
       )}
 
-      <div className={`flex-1 transition-all duration-300 ${['dashboard', 'user-stats', 'about', 'quick-facts', 'tasks', 'achievement', 'command-center', 'messages'].includes(mode) ? 'md:pl-[80px]' : ''}`}>
+      <div className={`flex-1 transition-all duration-300 ${['dashboard', 'user-stats', 'about', 'quick-facts', 'tasks', 'achievement', 'command-center', 'messages', 'diagnostics'].includes(mode) ? 'md:pl-[80px]' : ''}`}>
         <AnimatePresence mode="wait">
           {mode === 'dashboard' && (
             <DashboardView 
               key="dashboard"
+              isShadowing={!!diagnosticsTarget}
               showEasterNotice={showEasterNotice} setShowEasterNotice={setShowEasterNotice}
               easterNoticeAgreed={easterNoticeAgreed} setEasterNoticeAgreed={setEasterNoticeAgreed}
               proceedToEasterAssignment={startEasterAssignment}
@@ -922,7 +974,7 @@ function AppContent() {
               handleChallengeAnswer={handleChallengeAnswer} shortResponseInput={shortResponseInput}
               setShortResponseInput={setShortResponseInput}
               isAdminOpen={isAdminOpen} setIsAdminOpen={setIsAdminOpen}
-              isAdminLoggedIn={isAdminLoggedIn} setIsAdminLoggedIn={setIsAdminLoggedIn}
+              isAdminLoggedIn={effectiveIsAdmin} setIsAdminLoggedIn={setIsAdminLoggedIn}
               handleAdminLogin={handleAdminLogin} adminUsername={adminUsername}
               setAdminUsername={setAdminUsername} adminPassword={adminPassword}
               setAdminPassword={setAdminPassword} adminError={adminError}
@@ -932,7 +984,7 @@ function AppContent() {
               currentEventMessageIndex={currentEventMessageIndex} eventMessages={eventMessages}
               randomConcept={randomConcept} refreshConcept={refreshConcept}
               startQuiz={startQuiz} startRevision={startRevision} startVocab={startVocab}
-              currentUser={currentUser} userProfile={userProfile} loginWithGoogle={loginWithGoogle} logout={logout}
+              currentUser={currentUser} userProfile={effectiveProfile} loginWithGoogle={loginWithGoogle} logout={logout}
               allUsers={allUsers} selectedStudent={selectedStudent} setSelectedStudent={setSelectedStudent}
               tasks={tasks} onCreateTask={onCreateTask} onDeleteTask={onDeleteTask} onStartTask={onStartTask}
               setMode={setMode}
@@ -946,6 +998,7 @@ function AppContent() {
             <QuizView 
               key="quiz"
               unit={selectedUnit}
+              isShadowing={!!diagnosticsTarget}
               onBack={() => {
                 setMode(activeTask ? 'tasks' : 'dashboard');
                 setActiveTask(null);
@@ -966,10 +1019,11 @@ function AppContent() {
             <RevisionNotesView 
               key="revision"
               unit={selectedUnit}
+              isShadowing={!!diagnosticsTarget}
               onBack={() => setMode('dashboard')}
               charType={chineseType}
               setCharType={setChineseType}
-              isAdmin={isAdminLoggedIn}
+              isAdmin={effectiveIsAdmin}
             />
           )}
 
@@ -977,6 +1031,7 @@ function AppContent() {
             <VocabView 
               key="vocab"
               unit={selectedUnit}
+              isShadowing={!!diagnosticsTarget}
               onBack={() => setMode('dashboard')}
               sessionStats={sessionStats}
               setSessionStats={setSessionStats}
@@ -994,7 +1049,7 @@ function AppContent() {
             tasks={tasks}
             mySubmissions={mySubmissions}
             currentUser={currentUser}
-            userProfile={userProfile}
+            userProfile={effectiveProfile}
             units={units}
             onStartTask={onStartTask}
           />}
@@ -1031,6 +1086,11 @@ function AppContent() {
               console.log("Setting mode to:", nextMode);
               setMode(nextMode);
             }}
+            onPreviewTask={(task) => {
+              setActiveTask(task);
+              setViewedSubmission(null);
+              setMode(task.type === 'test' ? 'test' : 'worksheet');
+            }}
             onDeleteSubmission={handleDeleteSubmission}
             onWipeCleanSlate={handleWipeCleanSlate}
           />}
@@ -1038,6 +1098,7 @@ function AppContent() {
             <TaskWorksheetView 
               key={`worksheet_${activeTask.id}_${viewedSubmission?.id || 'submit'}`}
               task={activeTask}
+              isShadowing={!!diagnosticsTarget}
               onBack={() => {
                 setMode('tasks');
                 setActiveTask(null);
@@ -1048,8 +1109,8 @@ function AppContent() {
               initialResponses={viewedSubmission ? viewedSubmission.responses : mySubmissions.find(s => s.taskId === activeTask.id)?.responses}
               initialFeedback={viewedSubmission ? viewedSubmission.feedback : mySubmissions.find(s => s.taskId === activeTask.id)?.feedback}
               initialGeneralFeedback={viewedSubmission ? viewedSubmission.generalFeedback : mySubmissions.find(s => s.taskId === activeTask.id)?.generalFeedback}
-              readOnly={!!viewedSubmission || (!isAdminLoggedIn && mySubmissions.some(s => s.taskId === activeTask.id)) || !!userProfile?.isParent}
-              isAdmin={isAdminLoggedIn}
+              readOnly={!!viewedSubmission || (!effectiveIsAdmin && mySubmissions.some(s => s.taskId === activeTask.id)) || !!effectiveProfile?.isParent}
+              isAdmin={effectiveIsAdmin}
               isBatchMode={isBatchGrading}
               batchQueue={batchStudents}
               currentBatchIndex={currentBatchIndex}
@@ -1161,6 +1222,7 @@ function AppContent() {
             <TaskTestView 
               key={`test_${activeTask.id}_${viewedSubmission?.id || 'submit'}`}
               task={activeTask}
+              isShadowing={!!diagnosticsTarget}
               onBack={() => {
                 setMode('tasks');
                 setActiveTask(null);
@@ -1172,8 +1234,8 @@ function AppContent() {
               initialFeedback={viewedSubmission ? viewedSubmission.feedback : mySubmissions.find(s => s.taskId === activeTask.id)?.feedback}
               initialGeneralFeedback={viewedSubmission ? viewedSubmission.generalFeedback : mySubmissions.find(s => s.taskId === activeTask.id)?.generalFeedback}
               initialCheatLogs={viewedSubmission ? viewedSubmission.results?.cheatLogs : mySubmissions.find(s => s.taskId === activeTask.id)?.results?.cheatLogs}
-              readOnly={!!viewedSubmission || (!isAdminLoggedIn && mySubmissions.some(s => s.taskId === activeTask.id)) || !!userProfile?.isParent}
-              isAdmin={isAdminLoggedIn}
+              readOnly={!!viewedSubmission || (!effectiveIsAdmin && mySubmissions.some(s => s.taskId === activeTask.id)) || !!effectiveProfile?.isParent}
+              isAdmin={effectiveIsAdmin}
               isBatchMode={isBatchGrading}
               batchQueue={batchStudents}
               currentBatchIndex={currentBatchIndex}
@@ -1300,11 +1362,23 @@ function AppContent() {
           {mode === 'achievement' && (
             <AchievementView 
               key="achievement"
-              user={userProfile}
+              user={effectiveProfile}
               tasks={tasks}
-              submissions={isAdminLoggedIn ? allSubmissions : mySubmissions}
-              isAdmin={isAdminLoggedIn}
+              submissions={effectiveIsAdmin ? allSubmissions : mySubmissions}
+              isAdmin={effectiveIsAdmin}
               allUsers={allUsers}
+            />
+          )}
+
+          {mode === 'diagnostics' && isAdminLoggedIn && (
+            <DiagnosticsView 
+              key="diagnostics"
+              allUsers={allUsers}
+              onSelectTarget={(user) => {
+                setDiagnosticsTarget(user);
+                setMode('dashboard');
+              }}
+              onClose={() => setMode('dashboard')}
             />
           )}
 
@@ -1315,9 +1389,9 @@ function AppContent() {
           {mode === 'messages' && (
             <MessagesView 
               key="messages"
-              currentUser={userProfile}
+              currentUser={effectiveProfile}
               allUsers={allUsers}
-              isAdmin={isAdminLoggedIn}
+              isAdmin={effectiveIsAdmin}
             />
           )}
         </AnimatePresence>
@@ -1509,8 +1583,8 @@ function AppContent() {
       </AnimatePresence>
 
       {/* Mobile Nav */}
-      {['dashboard', 'user-stats', 'about', 'quick-facts', 'tasks', 'achievement', 'command-center', 'messages'].includes(mode) && (
-        <nav className="fixed bottom-6 left-4 right-4 bg-white/5 backdrop-blur-md border border-white/10 p-2 z-[150] md:hidden rounded-[2rem] shadow-[0_20px_50px_-15px_rgba(0,0,0,0.15)]">
+      {['dashboard', 'user-stats', 'about', 'quick-facts', 'tasks', 'achievement', 'command-center', 'messages', 'diagnostics'].includes(mode) && (
+        <nav className={`fixed bottom-6 left-4 right-4 ${diagnosticsTarget ? 'bg-emerald-500/15' : 'bg-white/[0.03]'} backdrop-blur-sm border border-white/10 p-2 z-[150] md:hidden rounded-[2rem] shadow-[0_20px_50px_-15px_rgba(0,0,0,0.15)]`}>
           <div className={`grid gap-1.5 ${isAdminLoggedIn ? 'grid-cols-7' : 'grid-cols-5'}`}>
             {getAppNavItems(isAdminLoggedIn).map((item) => {
               const Icon = item.icon;

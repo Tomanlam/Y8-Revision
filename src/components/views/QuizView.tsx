@@ -12,9 +12,10 @@ interface QuizViewProps {
   sessionStats: any;
   setSessionStats: (stats: any | ((prev: any) => any)) => void;
   onComplete?: (score: number, total: number) => void;
+  isShadowing?: boolean;
 }
 
-const QuizView: React.FC<QuizViewProps> = ({ unit, onBack, sessionStats, setSessionStats, onComplete }) => {
+const QuizView: React.FC<QuizViewProps> = ({ unit, onBack, sessionStats, setSessionStats, onComplete, isShadowing }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [status, setStatus] = useState<'idle' | 'selected' | 'checked'>('idle');
@@ -97,7 +98,7 @@ const QuizView: React.FC<QuizViewProps> = ({ unit, onBack, sessionStats, setSess
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 font-sans selection:bg-teal-100">
       {!showResults && (
-        <header className="flex items-center justify-between px-4 py-4 md:px-8 max-w-5xl mx-auto w-full gap-4 sticky top-0 z-10 bg-gray-50/80 backdrop-blur-sm -mb-4">
+        <header className={`flex items-center justify-between px-4 py-4 md:px-8 max-w-5xl mx-auto w-full gap-4 sticky top-0 z-10 transition-all duration-500 ${isShadowing ? 'bg-emerald-500/15' : 'bg-white/[0.03]'} backdrop-blur-sm -mb-4`}>
           <button 
             onClick={onBack} 
             className="text-gray-400 hover:text-teal-600 transition-colors p-2 bg-white rounded-full shadow-sm"

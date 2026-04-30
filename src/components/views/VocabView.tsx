@@ -11,9 +11,10 @@ interface VocabViewProps {
   onBack: () => void;
   sessionStats: SessionStats;
   setSessionStats: React.Dispatch<React.SetStateAction<SessionStats>>;
+  isShadowing?: boolean;
 }
 
-const VocabView: React.FC<VocabViewProps> = ({ unit: selectedUnit, onBack, sessionStats, setSessionStats }) => {
+const VocabView: React.FC<VocabViewProps> = ({ unit: selectedUnit, onBack, sessionStats, setSessionStats, isShadowing }) => {
   const [isFlipped, setIsFlipped] = useState(false);
   const [masteredIndices, setMasteredIndices] = useState<number[]>([]);
   const [remainingIndices, setRemainingIndices] = useState<number[]>([]);
@@ -150,7 +151,7 @@ const VocabView: React.FC<VocabViewProps> = ({ unit: selectedUnit, onBack, sessi
 
   return (
     <div className="flex-1 bg-transparent text-slate-800 flex flex-col overflow-hidden font-sans">
-      <header className="bg-white/5 backdrop-blur-md border-b border-white/10 p-4 sticky top-0 z-[100] shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07)]">
+      <header className={`transition-all duration-500 ${isShadowing ? 'bg-emerald-500/15' : 'bg-white/[0.03]'} backdrop-blur-sm border-b border-white/10 p-4 sticky top-0 z-[100] shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07)]`}>
         <div className={`${isReviewMode ? 'max-w-6xl' : 'max-w-2xl'} mx-auto flex items-center justify-between transition-all duration-300`}>
           <div className="flex items-center gap-4">
             <button onClick={onBack} className="w-10 h-10 flex items-center justify-center bg-white hover:bg-slate-50 border-2 border-slate-200 hover:text-slate-900 rounded-[1.2rem] text-slate-500 transition-all active:scale-95 group/btn shadow-sm">

@@ -34,6 +34,7 @@ interface TaskWorksheetViewProps {
   showCalculator: boolean;
   setShowCalculator: (v: boolean) => void;
   studentName?: string;
+  isShadowing?: boolean;
 }
 
 import { rubrics } from '../../data/markschemes';
@@ -68,19 +69,9 @@ const QuestionTextWithCommandTerms = ({ text, className }: { text: string, class
           return (
             <span 
               key={i} 
-              className="relative inline-block group cursor-help"
+              className={`font-black border-b-2 transition-all ${className ? 'text-white border-white/40' : 'text-orange-500 border-orange-200'}`}
             >
-              <span className={`font-black border-b-2 transition-all ${className ? 'text-white border-white/40 group-hover:border-white' : 'text-orange-500 border-orange-200 group-hover:border-orange-500 group-hover:text-orange-600'}`}>
-                {part}
-              </span>
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-64 pointer-events-none z-[100] transition-all duration-200 opacity-0 group-hover:opacity-100 group-hover:translate-y-0 translate-y-1">
-                <div className="bg-orange-600 text-white p-3 rounded-2xl shadow-xl text-center relative">
-                  <p className="text-[10px] font-helvetica font-bold leading-relaxed">
-                    {COMMAND_TERMS[lowerPart]}
-                  </p>
-                  <div className="absolute top-full left-1/2 -translate-x-1/2 w-3 h-3 bg-orange-600 rotate-45 -mt-1.5" />
-                </div>
-              </div>
+              {part}
             </span>
           );
         }
@@ -129,9 +120,55 @@ const TypewriterRubric = ({ text, isActive, isPast }: { text: string, isActive: 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY as string });
 
 const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({ 
-  task, onBack, onComplete, onProgress, initialResponses, initialFeedback, initialGeneralFeedback, readOnly, isAdmin, isBatchMode, batchQueue, currentBatchIndex, showCalculator, setShowCalculator, studentName
+  task, onBack, onComplete, onProgress, initialResponses, initialFeedback, initialGeneralFeedback, readOnly, isAdmin, isBatchMode, batchQueue, currentBatchIndex, showCalculator, setShowCalculator, studentName, isShadowing
 }) => {
+  const [uploadingQuestions, setUploadingQuestions] = useState<Record<string, boolean>>({});
   const studentCardRefs = useRef<Record<number, HTMLDivElement | null>>({});
+
+  const handleDragOver = (e: React.DragEvent) => {
+    if (!isAdmin) return;
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = async (e: React.DragEvent, questionId: string) => {
+    if (!isAdmin) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    const files = Array.from(e.dataTransfer.files) as File[];
+    const imageFiles = files.filter(f => f.type.startsWith('image/'));
+
+    if (imageFiles.length === 0) return;
+
+    setUploadingQuestions(prev => ({ ...prev, [questionId]: true }));
+    try {
+      const { upload } = await import('@vercel/blob/client');
+      
+      const file = imageFiles[0];
+      const extension = (file.name.split('.').pop() || 'png').toLowerCase();
+      const qNumber = questionId.replace(/\D/g, '');
+      const filename = `ATTACHMENT/${task.title}_Q${qNumber}.${extension}`;
+
+      const { url } = await upload(filename, file, {
+        access: 'public',
+        handleUploadUrl: '/api/upload',
+      });
+
+      // Update task in Firestore
+      const taskRef = doc(db, 'tasks', task.id);
+      await updateDoc(taskRef, {
+        [`attachments.${questionId}`]: url
+      });
+
+      alert(`Image uploaded for ${questionId}`);
+    } catch (err) {
+      console.error("Upload failed:", err);
+      alert("Upload failed. Check console for details.");
+    } finally {
+      setUploadingQuestions(prev => ({ ...prev, [questionId]: false }));
+    }
+  };
 
   useEffect(() => {
     if (isBatchMode && currentBatchIndex !== undefined && studentCardRefs.current[currentBatchIndex]) {
@@ -763,7 +800,7 @@ OUTPUT: Plain text paragraph.`;
   return (
     <div className="fixed inset-0 bg-gray-50 z-[200] flex flex-col overflow-hidden font-sans">
       {/* Dynamic Header */}
-      <header className="bg-white/5 backdrop-blur-md border-b border-white/10 p-4 shrink-0 sticky top-0 z-[100] shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07)]">
+      <header className={`transition-all duration-500 ${isShadowing ? 'bg-emerald-500/15' : 'bg-white/[0.03]'} backdrop-blur-sm border-b border-white/10 p-4 shrink-0 sticky top-0 z-[100] shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07)]`}>
         <div className="max-w-screen-2xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-5">
             <button 
@@ -1263,13 +1300,23 @@ OUTPUT: Plain text paragraph.`;
                         )}
                         <motion.div 
                           id={`q-container-${typedQ.id}`}
+                          onDragOver={handleDragOver}
+                          onDrop={(e) => handleDrop(e, typedQ.id)}
                           initial={{ opacity: 0, scale: 0.95 }}
                           whileInView={{ opacity: 1, scale: 1 }}
                           viewport={{ once: true }}
                           className={`rounded-[3rem] transition-all duration-500 relative group overflow-hidden flex flex-col shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 hover:shadow-xl hover:-translate-y-1 ${
                             isProcessing ? 'ring-8 ring-emerald-500/10' : ''
-                          }`}
+                          } ${isAdmin ? 'cursor-copy group/admin' : ''}`}
                         >
+                          {uploadingQuestions[typedQ.id] && (
+                            <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-50 flex items-center justify-center rounded-[3rem]">
+                              <div className="flex flex-col items-center gap-4">
+                                <RefreshCw className="text-emerald-500 animate-spin" size={32} />
+                                <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Uploading Asset...</p>
+                              </div>
+                            </div>
+                          )}
                           <div className={`px-6 py-4 sm:px-8 sm:py-5 ${task.type === 'test' ? 'bg-red-600' : 'bg-emerald-600'}`}>
                             <div className="flex flex-col gap-2">
                               <div className="flex items-center justify-between">
@@ -1280,6 +1327,36 @@ OUTPUT: Plain text paragraph.`;
                               </div>
                               <div className="text-white pt-1">
                                 <QuestionTextWithCommandTerms text={typedQ.question} className="text-white drop-shadow-sm" />
+                                {task.attachments?.[typedQ.id] && (
+                                  <div className="mt-4 rounded-2xl overflow-hidden border border-white/20 bg-white/10 backdrop-blur-md shadow-2xl max-w-2xl relative group/img">
+                                    <img 
+                                      src={task.attachments[typedQ.id]} 
+                                      alt={`Figure for Q${idx + 1}`} 
+                                      className="w-full h-auto object-contain max-h-[400px]"
+                                    />
+                                    {isAdmin && (
+                                      <div className="absolute top-2 right-2 flex gap-2">
+                                        <div className="px-2 py-1 bg-white/20 backdrop-blur-md border border-white/20 rounded-lg text-[8px] font-black text-white uppercase tracking-widest">
+                                          ASSET
+                                        </div>
+                                        <button 
+                                          onClick={async (e) => {
+                                            e.stopPropagation();
+                                            if (confirm("Remove this attachment?")) {
+                                              const taskRef = doc(db, 'tasks', task.id);
+                                              const newAttachments = { ...task.attachments };
+                                              delete newAttachments[typedQ.id];
+                                              await updateDoc(taskRef, { attachments: newAttachments });
+                                            }
+                                          }}
+                                          className="w-6 h-6 bg-rose-500 text-white rounded-lg flex items-center justify-center hover:bg-rose-600 transition-colors shadow-lg"
+                                        >
+                                          <Trash2 size={12} />
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </div>
