@@ -1,10 +1,41 @@
 import * as React from 'react';
 import { motion } from 'motion/react';
-import { GraduationCap, Github, ExternalLink, Zap, RefreshCw, Info, Sparkles } from 'lucide-react';
+import { GraduationCap, Github, ExternalLink, Zap, RefreshCw, Info, Sparkles, Terminal, GitCommit } from 'lucide-react';
+
+interface Commit {
+  sha: string;
+  commit: {
+    message: string;
+    author: {
+      name: string;
+      date: string;
+    }
+  };
+  html_url: string;
+}
 
 const AboutView: React.FC = () => {
   const revisionNumber = "6.0.0";
   const [clickCount, setClickCount] = React.useState(0);
+  const [changelog, setChangelog] = React.useState<Commit[]>([]);
+  const [isLoadingLog, setIsLoadingLog] = React.useState(true);
+  const [logError, setLogError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    const fetchChangelog = async () => {
+      try {
+        const response = await fetch("https://api.github.com/repos/Tomanlam/Y8-Revision/commits");
+        if (!response.ok) throw new Error("Failed to fetch changelog");
+        const data = await response.json();
+        setChangelog(data.slice(0, 5));
+      } catch (err) {
+        setLogError("Could not load recent updates.");
+      } finally {
+        setIsLoadingLog(false);
+      }
+    };
+    fetchChangelog();
+  }, []);
   
   const handleCreatorClick = () => {
     setClickCount(prev => prev + 1);
@@ -199,7 +230,84 @@ const AboutView: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Changelog Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.25 }}
+        className="w-full mt-6"
+      >
+        <div className="bg-slate-900 rounded-[2rem] p-6 sm:p-8 border-2 border-slate-800 shadow-inner flex flex-col gap-6">
+          <div className="flex items-center gap-4 border-b border-white/10 pb-4">
+            <div className="bg-emerald-500/20 text-emerald-400 p-2.5 rounded-2xl border border-emerald-500/30">
+              <Terminal size={28} />
+            </div>
+            <div>
+              <h2 className="text-xl font-black text-white uppercase tracking-tight">Update Log</h2>
+              <p className="text-emerald-500 font-bold text-[10px] uppercase tracking-widest mt-1">Live from repository</p>
+            </div>
+          </div>
+          
+          <div className="font-mono text-sm leading-relaxed whitespace-pre-wrap flex flex-col gap-2">
+            {isLoadingLog ? (
+              <div className="text-emerald-400 animate-pulse">
+                {"{ \"status\": \"fetching_updates...\" }"}
+              </div>
+            ) : logError ? (
+              <div className="text-red-400">
+                 {"{ \"error\": \"" + logError + "\" }"}
+              </div>
+            ) : (
+              <div className="relative">
+                <span className="text-emerald-400">{"["}</span>
+                {changelog.map((entry, idx) => (
+                  <TypewriterEntry key={entry.sha} entry={entry} isLast={idx === changelog.length - 1} delay={idx * 0.2} />
+                ))}
+                <span className="text-emerald-400">{"]"}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </motion.div>
     </div>
+  );
+};
+
+const TypewriterEntry: React.FC<{ entry: Commit; isLast: boolean; delay: number }> = ({ entry, isLast, delay }) => {
+  const [visible, setVisible] = React.useState(false);
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => setVisible(true), delay * 1000);
+    return () => clearTimeout(timer);
+  }, [delay]);
+
+  if (!visible) return null;
+
+  const date = new Date(entry.commit.author.date).toLocaleDateString();
+  const sha = entry.sha.substring(0, 7);
+  const msg = entry.commit.message.split('\n')[0].replace(/"/g, '\\"');
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, x: -10 }}
+      animate={{ opacity: 1, x: 0 }}
+      className="ml-4 my-3 group"
+    >
+      <span className="text-emerald-400">{"{"}</span>
+      <div className="ml-4 border-l border-emerald-500/20 pl-4 py-1">
+        <div>
+          <span className="text-emerald-300/60">"date"</span>: <span className="text-indigo-300 font-bold">"{date}"</span>,
+        </div>
+        <div>
+          <span className="text-emerald-300/60">"commit"</span>: <a href={entry.html_url} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 underline underline-offset-4 decoration-blue-500/30">"{sha}"</a>,
+        </div>
+        <div className="relative">
+          <span className="text-emerald-300/60">"message"</span>: <span className="text-yellow-200 group-hover:text-emerald-300 group-hover:drop-shadow-[0_0_8px_rgba(52,211,153,0.6)] transition-all duration-500">"{msg}"</span>
+        </div>
+      </div>
+      <span className="text-emerald-400">{"}"}</span>{!isLast && <span className="text-emerald-400">,</span>}
+    </motion.div>
   );
 };
 

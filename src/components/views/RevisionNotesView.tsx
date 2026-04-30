@@ -8,7 +8,7 @@ import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 import { db, auth } from '../../firebase';
-import { doc, getDoc, setDoc, collection, query, where, onSnapshot, addDoc, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, query, where, onSnapshot, addDoc, deleteDoc } from '../../lib/firestoreTracker';
 
 // PDF worker setup
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;

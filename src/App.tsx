@@ -11,8 +11,8 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { 
   collection, doc, setDoc, deleteDoc, onSnapshot, 
-  query, orderBy, getDocFromServer, getDoc, updateDoc, where
-} from 'firebase/firestore';
+  query, orderBy, getDocFromServer, getDoc, updateDoc, where, limit
+} from './lib/firestoreTracker';
 import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut, User as FirebaseUser } from 'firebase/auth';
 import { db, auth } from './firebase';
 
@@ -388,6 +388,8 @@ function AppContent() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [mySubmissions, setMySubmissions] = useState<TaskSubmission[]>([]);
   const [allSubmissions, setAllSubmissions] = useState<TaskSubmission[]>([]);
+  const [rawMySubmissions, setRawMySubmissions] = useState<TaskSubmission[]>([]);
+  const [rawAllSubmissions, setRawAllSubmissions] = useState<TaskSubmission[]>([]);
   const [editingRecord, setEditingRecord] = useState<ChallengeRecord | null>(null);
   const [isEventMode, setIsEventMode] = useState(false);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
@@ -532,10 +534,20 @@ function AppContent() {
     return () => clearTimeout(syncTimer);
   }, [sessionStats, currentUser, userProfile]);
 
-  // Fetch all users for Admin and Parents
+  // Fetch users for Admin (all) or Parents (only their kids)
   useEffect(() => {
     if (!isAdminLoggedIn && !userProfile?.isParent) return;
-    const q = query(collection(db, 'users'), orderBy('lastSeen', 'desc'));
+    
+    let q;
+    if (isAdminLoggedIn) {
+      q = query(collection(db, 'users'), orderBy('lastSeen', 'desc'), limit(1500));
+    } else {
+      if (!userProfile?.childEmails || userProfile.childEmails.length === 0) return;
+      // 'in' clause is limited to 30 elements, valid for parents having <= 30 kids
+      const emails = userProfile.childEmails.slice(0, 30);
+      q = query(collection(db, 'users'), where('email', 'in', emails));
+    }
+    
     return onSnapshot(q, (snap) => {
       setAllUsers(snap.docs.map(d => d.data() as UserProfile));
     });
@@ -543,7 +555,7 @@ function AppContent() {
 
   useEffect(() => {
     if (!isAdminLoggedIn) return;
-    const q = query(collection(db, 'challengeRecords'), orderBy('timestamp', 'desc'));
+    const q = query(collection(db, 'challengeRecords'), orderBy('timestamp', 'desc'), limit(500));
     return onSnapshot(q, (snap) => {
       setChallengeRecords(snap.docs.map(d => ({ id: d.id, ...d.data() }) as ChallengeRecord));
     });
@@ -584,23 +596,16 @@ function AppContent() {
     const targetUserId = diagnosticsTarget?.userId || (!isAdminLoggedIn && !userProfile?.isParent ? currentUser.uid : null);
     
     if (!targetUserId) {
-      setMySubmissions([]);
+      setRawMySubmissions([]);
       return;
     }
 
     const q = query(collection(db, 'submissions'), where('userId', '==', targetUserId));
     return onSnapshot(q, (snap) => {
       const subs = snap.docs.map(d => ({ id: d.id, ...d.data() } as TaskSubmission));
-      const fixedSubs = subs.map(sub => {
-        const task = tasks.find(t => t.id === sub.taskId || (t as any).originalId === sub.taskId);
-        if (task && task.id !== sub.taskId) {
-           return { ...sub, taskId: task.id };
-        }
-        return sub;
-      });
-      setMySubmissions(fixedSubs);
+      setRawMySubmissions(subs);
     });
-  }, [currentUser, isAdminLoggedIn, tasks, userProfile, diagnosticsTarget]);
+  }, [currentUser, diagnosticsTarget?.userId, isAdminLoggedIn, userProfile?.isParent]);
 
   // Fetch Messages for unread count
   useEffect(() => {
@@ -609,13 +614,13 @@ function AppContent() {
       return;
     }
 
-    let q;
-    if (isAdminLoggedIn) {
-      q = query(collection(db, 'messages'));
-    } else {
-      if (!currentUser?.uid) return;
-      q = query(collection(db, 'messages'), where('participants', 'array-contains', currentUser.uid));
-    }
+    if (!currentUser?.uid) return;
+    const q = query(
+      collection(db, 'messages'), 
+      where('participants', 'array-contains', currentUser.uid),
+      orderBy('timestamp', 'desc'),
+      limit(200)
+    );
 
     return onSnapshot(q, (snap) => {
       const msgs = snap.docs.map(d => ({ id: d.id, ...d.data() } as Message));
@@ -629,45 +634,65 @@ function AppContent() {
     });
   }, [currentUser, isAdminLoggedIn]);
 
-  useEffect(() => {
-    if (userProfile?.isParent && allUsers.length > 0 && allSubmissions.length > 0) {
-      const childEmails = userProfile.childEmails || [];
-      const childNames = userProfile.childName?.split(' & ') || [];
-      
-      const childUserIds = allUsers.filter(u => childEmails.includes(u.email)).map(u => u.userId);
-      
-      setMySubmissions(allSubmissions.filter(s => {
-        if (childUserIds.includes(s.userId)) return true;
-        // Fallback to name matching if id isn't bound properly
-        const submissionName = (s.studentName || '').toLowerCase();
-        return childNames.some(name => submissionName.includes(name.toLowerCase().replace('y8 ', '')));
-      }));
-    }
-  }, [userProfile, allSubmissions, allUsers]);
 
-  // Fetch all Submissions (Enabled for all to support class rank)
+
+  // Fetch all Submissions (Enabled for admin, parents, and self)
   useEffect(() => {
     if (!currentUser) return;
     const baseQuery = collection(db, 'submissions');
-    const q = isAdminLoggedIn 
-      ? query(baseQuery, orderBy('completedAt', 'desc'))
-      : query(baseQuery, where('userId', '==', currentUser.uid));
+    
+    let q;
+    if (isAdminLoggedIn) {
+       // For admins, we limit the query to avoid downloading >50k docs on every load
+       q = query(baseQuery, orderBy('completedAt', 'desc'), limit(1500));
+    } else if (userProfile?.isParent) {
+       // For parents, query children's submissions directly if we know their userIds
+       if (!userProfile.childEmails || userProfile.childEmails.length === 0) {
+         setRawAllSubmissions([]);
+         return;
+       }
+       // We need childUserIds which are derived from allUsers
+       const childEmails = userProfile.childEmails || [];
+       const childUserIds = allUsers.filter(u => childEmails.includes(u.email)).map(u => u.userId);
+       
+       if (childUserIds.length === 0) {
+         setRawAllSubmissions([]);
+         return;
+       }
+       
+       q = query(baseQuery, where('userId', 'in', childUserIds.slice(0, 30)));
+    } else {
+       // For single users, just their own
+       q = query(baseQuery, where('userId', '==', currentUser.uid));
+    }
 
     return onSnapshot(q, (snap) => {
         const subs = snap.docs.map(d => ({ id: d.id, ...d.data() } as TaskSubmission));
-        // Fix up task IDs that might be using original/legacy IDs
-        const fixedSubs = subs.map(sub => {
-          const task = tasks.find(t => t.id === sub.taskId || (t as any).originalId === sub.taskId);
-          if (task && task.id !== sub.taskId) {
-            return { ...sub, taskId: task.id };
-          }
-          return sub;
-        });
-        setAllSubmissions(fixedSubs);
+        setRawAllSubmissions(subs);
     }, (error) => {
       console.error("Submissions fetch failed:", error);
     });
-  }, [currentUser, tasks]);
+  }, [currentUser, isAdminLoggedIn, userProfile, allUsers]);
+
+  // Fix up Task IDs for both mySubmissions and allSubmissions
+  useEffect(() => {
+    const fixup = (rawList: TaskSubmission[]) => rawList.map(sub => {
+      const task = tasks.find(t => t.id === sub.taskId || (t as any).originalId === sub.taskId);
+      return (task && task.id !== sub.taskId) ? { ...sub, taskId: task.id } : sub;
+    });
+    
+    // For non-parent/non-admin, allSubmissions is same as mySubmissions
+    const processedAllSubmissions = fixup(rawAllSubmissions);
+    
+    if (userProfile?.isParent) {
+       // Parents use their children's submissions as their "mySubmissions"
+       setMySubmissions(processedAllSubmissions);
+       setAllSubmissions(processedAllSubmissions);
+    } else {
+       setMySubmissions(fixup(rawMySubmissions));
+       setAllSubmissions(isAdminLoggedIn ? processedAllSubmissions : fixup(rawMySubmissions));
+    }
+  }, [rawMySubmissions, rawAllSubmissions, tasks, isAdminLoggedIn, userProfile]);
 
   const loginWithGoogle = async () => {
     const provider = new GoogleAuthProvider();

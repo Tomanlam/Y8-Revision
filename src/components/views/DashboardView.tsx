@@ -6,8 +6,10 @@ import {
   CheckCircle2, XCircle, Trophy, Trash2, Lock, FileText, 
   Download, Star, Zap, Chrome, LayoutGrid, Info, ArrowRight, RefreshCw,
   QrCode, Edit, Database, LogOut, User, Users, Calendar as CalendarIcon, ChevronRight as ChevronRightIcon, Target,
-  Crown, Calculator, Clock, Flame, Sparkles, ShieldCheck
+  Crown, Calculator, Clock, Flame, Sparkles, ShieldCheck, Activity, BarChart3, ArrowRightLeft
 } from 'lucide-react';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useUsageTracker } from '../../lib/UsageTracker';
 import { Unit, ChallengeRecord, ChallengeResponse, Question, UserProfile, Task, TaskSubmission } from '../../types';
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, parseISO, startOfDay } from 'date-fns';
 import { User as FirebaseUser } from 'firebase/auth';
@@ -194,6 +196,107 @@ const CalendarWidget = ({ tasks, mySubmissions }: { tasks: Task[], mySubmissions
       </div>
     </motion.div>
 
+  );
+};
+
+const FirebaseUsageCard = () => {
+  const stats = useUsageTracker();
+  
+  return (
+    <motion.div 
+      whileHover={{ scale: 1.005 }}
+      className="sm:col-span-2 bg-slate-900 rounded-[2.5rem] p-6 shadow-2xl border-2 border-slate-800 text-white flex flex-col relative overflow-hidden"
+    >
+      <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-[100px] -mr-32 -mt-32" />
+      
+      <div className="flex items-center justify-between mb-6 relative z-10">
+        <div className="flex items-center gap-4">
+          <div className="bg-emerald-500/20 p-3 rounded-2xl backdrop-blur-sm border border-emerald-500/30 text-emerald-400">
+            <Database size={24} />
+          </div>
+          <div>
+            <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest leading-none mb-1">Infrastructure Monitor</p>
+            <h3 className="text-xl font-black uppercase tracking-tight leading-none">Firebase Console Dashboard</h3>
+          </div>
+        </div>
+        <div className="bg-emerald-500/10 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border border-emerald-500/20 text-emerald-400 animate-pulse">
+           Live Metrics
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-6 mb-6 relative z-10">
+        <div className="flex flex-col">
+          <div className="flex items-center gap-1.5 opacity-60 mb-1">
+            <Activity size={10} className="text-blue-400" />
+            <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">Reads</span>
+          </div>
+          <div className="text-2xl font-black text-white tabular-nums drop-shadow-[0_0_15px_rgba(59,130,246,0.3)]">{stats.reads.toLocaleString()}</div>
+        </div>
+        <div className="flex flex-col">
+          <div className="flex items-center gap-1.5 opacity-60 mb-1">
+            <Zap size={10} className="text-amber-400" />
+            <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">Writes</span>
+          </div>
+          <div className="text-2xl font-black text-white tabular-nums drop-shadow-[0_0_15px_rgba(251,191,36,0.3)]">{stats.writes.toLocaleString()}</div>
+        </div>
+        <div className="flex flex-col">
+          <div className="flex items-center gap-1.5 opacity-60 mb-1">
+            <ArrowRightLeft size={10} className="text-purple-400" />
+            <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">Active</span>
+          </div>
+          <div className="text-2xl font-black text-white tabular-nums drop-shadow-[0_0_15px_rgba(167,139,250,0.3)]">{stats.listeners.toLocaleString()}</div>
+        </div>
+      </div>
+
+      <div className="flex-1 min-h-[160px] relative z-10 -mx-2">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={stats.history}>
+            <defs>
+              <linearGradient id="colorReads" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+              </linearGradient>
+            </defs>
+            <Tooltip 
+              contentStyle={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: '1rem', fontSize: '10px' }}
+              itemStyle={{ color: '#ecfeff', fontWeight: 'bold' }}
+            />
+            <Area 
+              type="monotone" 
+              dataKey="reads" 
+              stroke="#10b981" 
+              strokeWidth={3}
+              fillOpacity={1} 
+              fill="url(#colorReads)" 
+              animationDuration={800}
+            />
+            <Area 
+              type="monotone" 
+              dataKey="writes" 
+              stroke="#f59e0b" 
+              strokeWidth={2}
+              fillOpacity={0}
+              animationDuration={1200}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+
+      <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between text-[8px] font-black uppercase tracking-widest text-slate-500">
+        <div className="flex items-center gap-2">
+           <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+           Reads
+        </div>
+        <div className="flex items-center gap-2">
+           <div className="w-1.5 h-1.5 rounded-full bg-amber-500"></div>
+           Writes
+        </div>
+        <div className="flex items-center gap-2">
+           <Clock size={10} />
+           Real-time Snapshot
+        </div>
+      </div>
+    </motion.div>
   );
 };
 
@@ -559,23 +662,7 @@ const DashboardView: React.FC<DashboardViewProps> = (props) => {
                         </div>
                       </motion.div>
 
-                      <motion.div 
-                        whileHover={{ scale: 1.02 }}
-                        className="sm:col-span-2 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-[2.5rem] p-5 shadow-lg text-white flex items-center justify-between"
-                      >
-                        <div className="flex items-center gap-4">
-                          <div className="bg-white/20 p-3 rounded-2xl backdrop-blur-sm border border-white/10">
-                            <Sparkles size={24} />
-                          </div>
-                          <div>
-                            <p className="text-[10px] font-bold text-purple-100 uppercase tracking-widest opacity-80 leading-none mb-1">Large Language Model (LLM) Deployed</p>
-                            <h3 className="text-lg font-black uppercase tracking-tight leading-none">Gemini 3.1 Flash Lite</h3>
-                          </div>
-                        </div>
-                        <div className="bg-white/10 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border border-white/10">
-                          Active
-                        </div>
-                      </motion.div>
+                      <FirebaseUsageCard />
                     </div>
                   ) : (
                     <CalendarWidget tasks={tasks} mySubmissions={mySubmissions} />

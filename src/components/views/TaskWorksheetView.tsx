@@ -11,7 +11,7 @@ import 'react-pdf/dist/Page/TextLayer.css';
 import { Task, Question } from '../../types';
 import { GoogleGenAI, Type } from "@google/genai";
 import { db } from '../../firebase';
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc } from '../../lib/firestoreTracker';
 import Sketchpad from '../Sketchpad';
 import { FileUpload } from '../FileUpload';
 

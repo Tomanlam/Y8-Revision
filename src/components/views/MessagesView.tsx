@@ -7,8 +7,8 @@ import {
 } from 'lucide-react';
 import { 
   collection, addDoc, query, where, onSnapshot, 
-  orderBy, Timestamp, updateDoc, doc, getDocs
-} from 'firebase/firestore';
+  orderBy, Timestamp, updateDoc, doc, getDocs, limit
+} from '../../lib/firestoreTracker';
 import { db, auth } from '../../firebase';
 import { UserProfile, Message } from '../../types';
 
@@ -83,14 +83,16 @@ const MessagesView: React.FC<MessagesViewProps> = ({ currentUser, allUsers, isAd
     if (isAdmin) {
       q = query(
         collection(db, 'messages'),
-        orderBy('timestamp', 'desc')
+        orderBy('timestamp', 'desc'),
+        limit(500)
       );
     } else {
       if (!currentUser?.userId) return;
       q = query(
         collection(db, 'messages'),
         where('participants', 'array-contains', currentUser.userId),
-        orderBy('timestamp', 'desc')
+        orderBy('timestamp', 'desc'),
+        limit(200)
       );
     }
 

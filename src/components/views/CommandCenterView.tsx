@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ListChecks, Users, Plus, Trash2, ShieldCheck, Clock, Sparkles, Send, X, Edit, Eye, ArrowRight, BarChart3, List, FileText, Download, Copy, RefreshCw, Layers, CheckCircle2, HelpCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { db } from '../../firebase';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc } from '../../lib/firestoreTracker';
 import { Task, TaskSubmission, Unit, AppMode } from '../../types';
 import { GOLDEN_STANDARD_WORKSHEET, GOLDEN_STANDARD_TEST } from '../../constants/goldenStandard';
 import Analytics from './Analytics';
