@@ -117,8 +117,6 @@ const TypewriterRubric = ({ text, isActive, isPast }: { text: string, isActive: 
   );
 };
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY as string });
-
 const TaskWorksheetView: React.FC<TaskWorksheetViewProps> = ({ 
   task, onBack, onComplete, onProgress, initialResponses, initialFeedback, initialGeneralFeedback, readOnly, isAdmin, isBatchMode, batchQueue, currentBatchIndex, showCalculator, setShowCalculator, studentName, isShadowing
 }) => {
@@ -486,7 +484,7 @@ ${JSON.stringify(cleanQuestions.map(q => ({ id: q.id, type: q.type, text: q.prom
 JSON OUTPUT: { "q_id": { "rubric": "...", "correct_answer": "...", "marks": number, "explanation": "..." } }`;
 
       addLog("Sending extraction request to Gemini...");
-      const response = await ai.models.generateContent({
+      const response = await new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY as string }).models.generateContent({
         model: "gemini-3.1-flash-lite-preview",
         contents: extractionPrompt,
         config: { responseMimeType: "application/json" }
@@ -682,7 +680,7 @@ JSON OUTPUT: { "earned_marks": float, "total_marks": float, "feedback": "string"
          const typingDurationMs = (extractedRubrics[q.id]?.length || 0) * 8;
          const typingPromise = new Promise(r => setTimeout(r, typingDurationMs + 500));
 
-         const responsePromise = ai.models.generateContent({
+         const responsePromise = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY as string }).models.generateContent({
             model: "gemini-3.1-flash-lite-preview",
             contents: { role: 'user', parts },
             config: {
@@ -743,7 +741,7 @@ JSON OUTPUT: { "earned_marks": float, "total_marks": float, "feedback": "string"
 DATA: ${JSON.stringify(currentFeedback)}
 ---
 OUTPUT: Plain text paragraph.`;
-      const overallResponse = await ai.models.generateContent({
+      const overallResponse = await new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY as string }).models.generateContent({
          model: "gemini-3.1-flash-lite-preview",
          contents: overallPrompt
       });

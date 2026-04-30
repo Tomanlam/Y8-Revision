@@ -5,8 +5,6 @@ import { X, FileText, Download, RefreshCw, Upload, Save, CheckCircle2, Copy, Shi
 import { GoogleGenAI, Schema } from '@google/genai';
 import autoTable from 'jspdf-autotable';
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY as string });
-
 interface PdfJsonConverterProps {
   onClose: () => void;
   onAppendToWorksheet: (questions: any[], markscheme: any) => void;
@@ -130,6 +128,7 @@ export default function PdfJsonConverter({ onClose, onAppendToWorksheet, onAppen
         setProgress(30);
         
         try {
+          const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY as string });
           const result = await ai.models.generateContent({
              model: 'gemini-3.1-flash-lite-preview',
              contents: [

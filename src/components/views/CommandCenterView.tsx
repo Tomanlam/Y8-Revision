@@ -5,12 +5,9 @@ import { format } from 'date-fns';
 import { db } from '../../firebase';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { Task, TaskSubmission, Unit, AppMode } from '../../types';
-import { GoogleGenAI, Type } from "@google/genai";
 import { GOLDEN_STANDARD_WORKSHEET, GOLDEN_STANDARD_TEST } from '../../constants/goldenStandard';
 import Analytics from './Analytics';
 import PdfJsonConverter from './PdfJsonConverter';
-
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY as string });
 
 interface CommandCenterViewProps {
   tasks: Task[];
