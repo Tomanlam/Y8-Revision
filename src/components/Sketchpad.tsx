@@ -8,9 +8,11 @@ interface SketchpadProps {
   onClose: () => void;
   onSave?: (url: string, filename: string) => void;
   uploadPaths?: string[];
+  inline?: boolean;
+  backgroundImageUrl?: string;
 }
 
-const Sketchpad: React.FC<SketchpadProps> = ({ onClose, onSave, uploadPaths }) => {
+const Sketchpad: React.FC<SketchpadProps> = ({ onClose, onSave, uploadPaths, inline, backgroundImageUrl }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -48,6 +50,34 @@ const Sketchpad: React.FC<SketchpadProps> = ({ onClose, onSave, uploadPaths }) =
     // Save initial state
     setHistory([JSON.stringify(canvas.toJSON())]);
     setHistoryIndex(0);
+    
+    if (backgroundImageUrl) {
+      fabric.Image.fromURL(backgroundImageUrl, (img) => {
+        if (!img) return;
+        
+        let scale = 1;
+        if (canvas.width && canvas.height && img.width && img.height) {
+          scale = Math.min(canvas.width / img.width, canvas.height / img.height);
+          if (scale > 1) scale = 1;
+          img.scale(scale * 0.9);
+        }
+        
+        canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas), {
+          originX: 'center',
+          originY: 'center',
+          left: canvas.width ? canvas.width / 2 : 100,
+          top: canvas.height ? canvas.height / 2 : 100,
+          scaleX: scale * 0.9,
+          scaleY: scale * 0.9
+        });
+        
+        // Save state again after image load
+        setTimeout(() => {
+          setHistory([JSON.stringify(canvas.toJSON())]);
+          setHistoryIndex(0);
+        }, 100);
+      }, { crossOrigin: 'anonymous' });
+    }
     
     const saveHistory = () => {
       // Avoid saving history when we are undoing/redoing
@@ -349,6 +379,69 @@ const Sketchpad: React.FC<SketchpadProps> = ({ onClose, onSave, uploadPaths }) =
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   });
+
+  if (inline) {
+    return (
+      <div ref={boundsRef} className="flex flex-col border-2 border-slate-200 bg-white rounded-[2rem] overflow-hidden w-full h-[600px] shadow-sm relative z-0">
+        <header className="bg-slate-50 p-3 border-b border-slate-200 flex flex-wrap items-center gap-4 relative z-10">
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={onClose} 
+              className="w-4 h-4 rounded-full bg-[#ff5f56] border border-[#e0443e] hover:bg-[#ff5f56]/80 flex items-center justify-center group" 
+              title="Reset / Cancel"
+              disabled={isUploading}
+            >
+              <X size={10} className="text-black/50 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </button>
+          </div>
+
+          <div className="flex items-center bg-white rounded-xl shadow-sm border border-slate-200 p-1 flex-wrap gap-1">
+            <button onClick={() => { setActiveMode('draw'); fabricCanvas!.isDrawingMode = true; }} className={`p-2 rounded-lg transition-colors ${activeMode === 'draw' ? 'bg-indigo-50 text-indigo-600' : 'hover:bg-slate-50 text-slate-600'}`} title="Draw"><Pen size={18} /></button>
+            <button onClick={() => { setActiveMode('select'); fabricCanvas!.isDrawingMode = false; }} className={`p-2 rounded-lg transition-colors ${activeMode === 'select' ? 'bg-indigo-50 text-indigo-600' : 'hover:bg-slate-50 text-slate-600'}`} title="Select"><MousePointer2 size={18} /></button>
+            <div className="w-px h-6 bg-slate-200 mx-1" />
+            <button onClick={() => addShape('rect')} className="p-2 rounded-lg hover:bg-slate-50 text-slate-600 transition-colors" title="Rectangle"><Square size={18} /></button>
+            <button onClick={() => addShape('circle')} className="p-2 rounded-lg hover:bg-slate-50 text-slate-600 transition-colors" title="Circle"><Circle size={18} /></button>
+            <button onClick={() => addShape('triangle')} className="p-2 rounded-lg hover:bg-slate-50 text-slate-600 transition-colors" title="Triangle"><Triangle size={18} /></button>
+            <button onClick={() => addShape('arrow')} className="p-2 rounded-lg hover:bg-slate-50 text-slate-600 transition-colors" title="Arrow"><ArrowRight size={18} /></button>
+            <button onClick={() => addText()} className="p-2 rounded-lg hover:bg-slate-50 text-slate-600 transition-colors" title="Text"><Type size={18} /></button>
+            <div className="w-px h-6 bg-slate-200 mx-1" />
+          
+            <div className="flex items-center gap-1 px-2">
+              {['#000000', '#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6'].map(c => (
+                <button key={c} onClick={() => changeColor(c)} className={`w-6 h-6 rounded-full border-2 transition-transform ${color === c ? 'border-gray-400 scale-110 shadow-sm' : 'border-transparent hover:scale-110'}`} style={{ backgroundColor: c }} />
+              ))}
+              <input type="color" value={color} onChange={(e) => changeColor(e.target.value)} className="w-7 h-7 ml-1 rounded cursor-pointer border-0 p-0" />
+            </div>
+
+            <div className="w-px h-6 bg-slate-200 mx-1" />
+            <input type="range" min="1" max="20" value={lineWidth} onChange={(e) => changeWidth(parseInt(e.target.value))} className="w-24 accent-indigo-600" title="Brush Size" />
+          </div>
+
+          <div className="flex items-center bg-white rounded-xl shadow-sm border border-slate-200 p-1 gap-1">
+            <button onClick={undo} disabled={historyIndex <= 0} className="p-2 rounded-lg hover:bg-slate-50 text-slate-600 transition-colors disabled:opacity-50 disabled:hover:bg-transparent" title="Undo"><Undo size={18} /></button>
+            <button onClick={redo} disabled={historyIndex >= history.length - 1} className="p-2 rounded-lg hover:bg-slate-50 text-slate-600 transition-colors disabled:opacity-50 disabled:hover:bg-transparent" title="Redo"><Redo size={18} /></button>
+            <div className="w-px h-6 bg-slate-200 mx-1" />
+            <button onClick={() => fileInputRef.current?.click()} className="p-2 rounded-lg hover:bg-slate-50 text-slate-600 transition-colors" title="Import Image"><ImageIcon size={18} /></button>
+            <button onClick={clearValues} className="p-2 rounded-lg hover:bg-red-50 text-red-600 transition-colors" title="Clear All"><Trash2 size={18} /></button>
+          </div>
+
+          <div className="ml-auto flex items-center gap-2">
+            <button onClick={saveAndUploadCanvas} disabled={isUploading} className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors font-medium text-sm disabled:opacity-75 relative overflow-hidden">
+              {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              {isUploading ? 'Submitting...' : 'Submit Annotation'}
+            </button>
+          </div>
+        </header>
+
+        <section className="flex-1 bg-slate-50/50 flex items-center justify-center relative overflow-hidden" ref={containerRef}>
+          <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, black 1px, transparent 0)', backgroundSize: '24px 24px' }}></div>
+          <canvas ref={canvasRef} className="shadow-sm border border-slate-200 rounded-lg absolute z-10" />
+        </section>
+        
+        <input type="file" ref={fileInputRef} onChange={importImage} accept="image/*" className="hidden" />
+      </div>
+    );
+  }
 
   return (
     <div ref={boundsRef} className="fixed inset-0 z-[1000] pointer-events-none flex items-center justify-center p-4">

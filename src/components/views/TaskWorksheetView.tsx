@@ -653,7 +653,7 @@ JSON OUTPUT: { "earned_marks": float, "total_marks": float, "feedback": "string"
          addLog(`Requesting grade for ${q.id} from Gemini...`);
          const parts: any[] = [{ text: promptText }];
          
-         if (q.type === 'file-upload' && Array.isArray(responses[q.id])) {
+         if ((q.type === 'file-upload' || q.type === 'annotate') && Array.isArray(responses[q.id])) {
             const files = responses[q.id];
             for (const f of files) {
                try {
@@ -1520,6 +1520,62 @@ OUTPUT: Plain text paragraph.`;
                                               }}
                                               className="absolute top-3 right-3 w-8 h-8 bg-red-500 text-white rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-md hover:scale-110 hover:bg-red-600"
                                               title="Remove file"
+                                            >
+                                              <X size={16} />
+                                            </button>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {typedQ.type === 'annotate' && (
+                              <div className="bg-slate-50 border-2 border-slate-100 rounded-[2rem] p-8 flex flex-col gap-6 w-full">
+                                <div>
+                                  <h4 className="text-sm font-black text-slate-800 uppercase tracking-tight mb-2">Diagram Annotation</h4>
+                                  <p className="text-xs text-slate-500 font-medium">Use the tools below to annotate the diagram. Your annotation will be automatically saved.</p>
+                                </div>
+                                
+                                {!readOnly && !submitted && (
+                                  <Sketchpad
+                                    inline={true}
+                                    backgroundImageUrl={task.attachments?.[typedQ.id]}
+                                    uploadPaths={getUploadPaths(typedQ.id)}
+                                    onClose={() => {}}
+                                    onSave={(url, name) => {
+                                      handleResponse(typedQ.id, [{ url, name }]);
+                                    }}
+                                  />
+                                )}
+
+                                {responses[typedQ.id]?.length > 0 && (
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                    {responses[typedQ.id].map((file: any, i: number) => {
+                                      const isImage = file.name.match(/\.(jpeg|jpg|gif|png|webp|svg)$/i) || file.url.match(/\.(jpeg|jpg|gif|png|webp|svg)/i) || file.name.startsWith('sketch_');
+                                      return (
+                                        <div key={i} className="flex flex-col rounded-[1.5rem] border border-slate-200 bg-white overflow-hidden shadow-sm relative group w-full">
+                                          {isImage && (
+                                            <div className="h-64 bg-slate-100 flex items-center justify-center overflow-hidden border-b border-slate-200 w-full relative">
+                                              <img src={file.url} alt={file.name} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" />
+                                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
+                                            </div>
+                                          )}
+                                          <a href={file.url} target="_blank" rel="noopener noreferrer" className="flex flex-col gap-1 p-4 hover:bg-slate-50 transition-colors flex-grow">
+                                            <span className="text-[10px] uppercase font-black tracking-widest text-emerald-600">Final Submission</span>
+                                          </a>
+                                          {!readOnly && !submitted && (
+                                            <button 
+                                              onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                const updated = responses[typedQ.id].filter((_: any, idx: number) => idx !== i);
+                                                handleResponse(typedQ.id, updated);
+                                              }}
+                                              className="absolute top-3 right-3 w-8 h-8 bg-red-500 text-white rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-md hover:scale-110 hover:bg-red-600"
+                                              title="Remove attachment"
                                             >
                                               <X size={16} />
                                             </button>
