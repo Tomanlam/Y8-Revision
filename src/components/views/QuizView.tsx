@@ -98,7 +98,7 @@ const QuizView: React.FC<QuizViewProps> = ({ unit, onBack, sessionStats, setSess
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 font-sans selection:bg-teal-100">
       {!showResults && (
-        <header className={`flex items-center justify-between px-4 py-4 md:px-8 max-w-5xl mx-auto w-full gap-4 sticky top-0 z-10 transition-all duration-500 ${isShadowing ? 'bg-emerald-500/15' : 'bg-white/[0.03]'} backdrop-blur-sm -mb-4`}>
+        <header className={`flex items-center justify-between px-4 py-4 md:px-8 max-w-5xl mx-auto w-full gap-4 sticky top-0 z-10 transition-all duration-500 ${isShadowing ? 'bg-emerald-500/25' : 'bg-white/[0.03]'} backdrop-blur-sm -mb-4`}>
           <button 
             onClick={onBack} 
             className="text-gray-400 hover:text-teal-600 transition-colors p-2 bg-white rounded-full shadow-sm"

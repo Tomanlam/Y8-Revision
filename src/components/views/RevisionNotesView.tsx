@@ -289,7 +289,7 @@ Return ONLY the JSON array.`;
   return (
     <div className="flex-1 bg-transparent flex flex-col font-sans selection:bg-emerald-200">
       {/* Header */}
-      <header className={`transition-all duration-500 ${isShadowing ? 'bg-emerald-500/15' : 'bg-white/[0.03]'} backdrop-blur-sm border-b border-white/10 p-4 shrink-0 sticky top-0 z-[100] shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07)]`}>
+      <header className={`transition-all duration-500 ${isShadowing ? 'bg-emerald-500/25' : 'bg-white/[0.03]'} backdrop-blur-sm border-b border-white/10 p-4 shrink-0 sticky top-0 z-[100] shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07)]`}>
         <div className="max-w-screen-2xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-5">
             <button 

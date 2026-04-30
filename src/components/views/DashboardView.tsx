@@ -242,7 +242,7 @@ const DashboardView: React.FC<DashboardViewProps> = (props) => {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
-      <header className={`transition-all duration-500 ${props.isShadowing ? 'bg-emerald-500/15' : 'bg-white/[0.03]'} backdrop-blur-sm border-b border-white/10 p-4 sticky top-0 z-[100] shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07)]`}>
+      <header className={`transition-all duration-500 ${props.isShadowing ? 'bg-emerald-500/25' : 'bg-white/[0.03]'} backdrop-blur-sm border-b border-white/10 p-4 sticky top-0 z-[100] shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07)]`}>
         <div className="max-w-7xl mx-auto flex justify-between items-center px-4">
           <div className="flex flex-col">
             <h1 className="font-black tracking-tighter leading-none flex items-baseline gap-2">

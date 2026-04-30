@@ -559,12 +559,186 @@ const TasksView = ({
       });
     }
 
-    // Start table on new page
+    const getImageUrlFromResponse = (resp: any) => {
+      if (typeof resp === 'string') {
+        if (resp.startsWith('data:image') || resp.match(/\.(jpeg|jpg|gif|png|webp|svg)/i) != null) return resp;
+      } else if (Array.isArray(resp)) {
+        const found = resp.find((f: any) => f.url && (f.url.startsWith('data:image') || f.url.match(/\.(jpeg|jpg|gif|png|webp|svg)/i)));
+        if (found) return found.url;
+      } else if (typeof resp === 'object' && resp !== null) {
+        if (resp.url && (resp.url.startsWith('data:image') || resp.url.match(/\.(jpeg|jpg|gif|png|webp|svg)/i))) return resp.url;
+      }
+      return null;
+    };
+
+    // Pre-load all images to get dimensions and ensure they are ready for jspdf
+    const imageCache: Record<string, HTMLImageElement> = {};
+    const imageUrlsToLoad = new Set<string>();
+    
+    (task.worksheetQuestions || []).forEach((q: any) => {
+      if (task.attachments?.[q.id]) imageUrlsToLoad.add(task.attachments[q.id]);
+      const resUrl = getImageUrlFromResponse(sub.responses?.[q.id]);
+      if (resUrl) imageUrlsToLoad.add(resUrl);
+    });
+
+    await Promise.all(Array.from(imageUrlsToLoad).map(url => {
+      return new Promise<void>((resolve) => {
+        const img = new Image();
+        img.crossOrigin = 'Anonymous';
+        img.onload = () => {
+          imageCache[url] = img;
+          resolve();
+        };
+        img.onerror = () => {
+          console.warn("Failed to load image for PDF:", url);
+          resolve();
+        };
+        img.src = url;
+      });
+    }));
+
+    const drawnImages = new Set<string>();
+
     doc.addPage();
     y = 20;
 
     const tableHeaders = isRaw ? ['Question Stem', 'Student Response'] : ['Question Stem', 'Student Response', 'Targeted Feedback'];
-    const tableData = (task.worksheetQuestions || []).map((q: any) => {
+    
+    let currentTableRows: any[] = [];
+    
+    const drawCurrentTable = () => {
+      if (currentTableRows.length > 0) {
+        autoTable(doc, {
+          startY: y,
+          head: [tableHeaders],
+          body: currentTableRows,
+          theme: 'grid',
+          margin: { left: 12, right: 12, bottom: 20 },
+          styles: {
+            overflow: 'linebreak',
+            cellPadding: 8,
+            valign: 'middle',
+            halign: 'left',
+            fontSize: 8.5,
+            lineColor: [226, 232, 240],
+            lineWidth: 0.1,
+            minCellHeight: 30
+          },
+          headStyles: {
+            fillColor: undefined,
+            textColor: [30, 41, 59],
+            fontSize: 9,
+            fontStyle: 'bold',
+            cellPadding: 4,
+            minCellHeight: 0,
+            halign: 'center'
+          },
+          columnStyles: isRaw ? {
+            0: { cellWidth: (pageWidth - 24) * 0.5, fontStyle: 'bold', fillColor: [239, 246, 255], textColor: [29, 78, 216] },
+            1: { cellWidth: (pageWidth - 24) * 0.5, fillColor: [255, 255, 255], textColor: [30, 41, 59] }
+          } : {
+            0: { cellWidth: (pageWidth - 24) * 0.3, fontStyle: 'bold', fillColor: [239, 246, 255], textColor: [29, 78, 216] },
+            1: { cellWidth: (pageWidth - 24) * 0.3, fillColor: [255, 255, 255], textColor: [30, 41, 59] },
+            2: { cellWidth: (pageWidth - 24) * 0.4, fillColor: [248, 250, 252], textColor: [30, 41, 59] }
+          },
+          didParseCell: (data) => {
+            if (data.section === 'body') {
+              const raw = data.cell.raw as any;
+              if (data.column.index === 0) {
+                data.cell.styles.fillColor = [239, 246, 255];
+                data.cell.styles.textColor = [29, 78, 216];
+                if (raw) data.cell.text = [raw.content || ''];
+              } else if (data.column.index === 1) {
+                data.cell.styles.fillColor = [255, 255, 255];
+                data.cell.styles.textColor = [30, 41, 59];
+                if (raw && raw.image && imageCache[raw.image]) {
+                  data.cell.styles.valign = 'top';
+                  let content = raw.content || '';
+                  if (content === 'Image' || typeof raw.content === 'undefined' || content === '[object Object]') content = '';
+                  const padding = (data.cell.styles.cellPadding as number) || 8;
+                  const textLines = content ? doc.splitTextToSize(content, data.cell.width - padding * 2) : [];
+                  const textHeight = textLines.length > 0 ? textLines.length * (data.cell.styles.fontSize * 0.352778 * 1.2) : 0;
+                  data.cell.styles.minCellHeight = textHeight + 50; 
+                  data.cell.text = [content]; 
+                } else if (raw) {
+                  let content = typeof raw === 'object' ? (raw.content || '') : raw;
+                  if (content === 'Image' || typeof content === 'undefined' || content === '[object Object]') content = '';
+                  data.cell.text = [content];
+                }
+              } else if (!isRaw && data.column.index === 2) {
+                data.cell.styles.fillColor = [248, 250, 252];
+                data.cell.styles.textColor = [30, 41, 59];
+                if (raw) {
+                  data.cell.text = [raw.content || ''];
+                  if (raw.isCorrect) { data.cell.styles.fillColor = [240, 253, 244]; data.cell.styles.textColor = [21, 128, 61]; }
+                  else if (raw.isPartial) { data.cell.styles.fillColor = [255, 251, 235]; data.cell.styles.textColor = [180, 83, 9]; }
+                  else if (raw.isIncorrect) { data.cell.styles.fillColor = [254, 242, 242]; data.cell.styles.textColor = [185, 28, 28]; }
+                }
+              }
+            }
+          },
+          didDrawCell: (data) => {
+            if (data.section === 'body' && data.column.index === 1) {
+              const raw = data.cell.raw as any;
+              const imgKey = `tbl-${y}-row-${data.row.index}-col-${data.column.index}`;
+              if (raw && raw.image && imageCache[raw.image] && !drawnImages.has(imgKey)) {
+                const img = imageCache[raw.image];
+                const padding = (data.cell.styles.cellPadding as number) || 8;
+                const maxW = data.cell.width - padding * 2;
+                const maxH = 45;
+  
+                const imgRatio = img.width / img.height;
+                const containerRatio = maxW / maxH;
+                let renderW = maxW, renderH = maxW / imgRatio;
+                if (imgRatio > containerRatio) { renderW = maxW; renderH = maxW / imgRatio; } 
+                else { renderH = maxH; renderW = maxH * imgRatio; }
+  
+                const posX = data.cell.x + (data.cell.width - renderW) / 2;
+                const posY = data.cell.y + data.cell.height - renderH - padding;
+  
+                try {
+                  if (data.cell.height >= renderH + padding) {
+                    doc.addImage(img, 'PNG', posX, posY, renderW, renderH);
+                    drawnImages.add(imgKey);
+                  }
+                } catch (e) { console.error("PDF Img err", e); }
+              }
+            }
+          }
+        });
+        y = (doc as any).lastAutoTable.finalY + 10;
+        currentTableRows = [];
+      }
+    };
+
+    (task.worksheetQuestions || []).forEach((q: any) => {
+      const attachmentUrl = task.attachments?.[q.id];
+      if (attachmentUrl && imageCache[attachmentUrl]) {
+        drawCurrentTable();
+
+        const img = imageCache[attachmentUrl];
+        const padding = 12;
+        const maxW = pageWidth - padding * 2;
+        const maxH = 100;
+        
+        const imgRatio = img.width / img.height;
+        const containerRatio = maxW / maxH;
+        let renderW = maxW, renderH = maxW / imgRatio;
+        if (imgRatio > containerRatio) { renderW = maxW; renderH = maxW / imgRatio; } 
+        else { renderH = maxH; renderW = maxH * imgRatio; }
+
+        if (y + renderH + 10 > doc.internal.pageSize.getHeight() - 20) {
+           doc.addPage();
+           y = 20;
+        }
+
+        const posX = (pageWidth - renderW) / 2;
+        try {
+          doc.addImage(img, 'PNG', posX, y, renderW, renderH);
+          y += renderH + 10;
+        } catch (e) { console.error("PDF Q Img err", e); }
+      }
+
       const f = sub.results?.feedback?.[q.id];
       let scoreStr = (f?.score || "0").toString();
       if (!scoreStr.includes('of')) {
@@ -576,17 +750,26 @@ const TasksView = ({
       const isIncorrect = feedbackTextRaw.trim().toLowerCase().startsWith('incorrect') || feedbackTextRaw.trim().toLowerCase().startsWith('no response');
       const isPartial = feedbackTextRaw.trim().toLowerCase().startsWith('partially');
       
-      let response = sub.responses?.[q.id] || "No response";
-      if (typeof response === 'string') {
-        response = response.replace(/→/g, '->').replace(/←/g, '<-').replace(/↑/g, '(up)').replace(/↓/g, '(down)');
+      let rawResponse = sub.responses?.[q.id] || "No response";
+      let responseText = "";
+      const responseImageUrl = getImageUrlFromResponse(rawResponse);
+
+      if (Array.isArray(rawResponse)) {
+        responseText = rawResponse.map((f: any) => f.name || (typeof f === 'string' ? f : 'File')).join(', ');
+      } else if (typeof rawResponse === 'object' && rawResponse !== null) {
+        responseText = (rawResponse as any).name || (responseImageUrl ? 'Image' : 'Response');
+      } else {
+        responseText = String(rawResponse).replace(/→/g, '->').replace(/←/g, '<-').replace(/↑/g, '(up)').replace(/↓/g, '(down)');
       }
       
       const row = [
         {
-          content: q.question || q.id,
-          attachment: task.attachments?.[q.id]
+          content: q.question || q.id
         } as any,
-        response
+        {
+          content: responseImageUrl ? (responseText === 'Image' ? '' : responseText) : responseText,
+          image: responseImageUrl
+        } as any
       ];
       
       if (!isRaw) {
@@ -598,167 +781,10 @@ const TasksView = ({
         } as any);
       }
       
-      return row;
+      currentTableRows.push(row);
     });
 
-    autoTable(doc, {
-      startY: y,
-      head: [tableHeaders],
-      body: tableData,
-      theme: 'grid',
-      margin: { left: 12, right: 12, bottom: 20 },
-      styles: {
-        overflow: 'linebreak',
-        cellPadding: 8,
-        valign: 'middle',
-        halign: 'left',
-        fontSize: 8.5,
-        lineColor: [226, 232, 240],
-        lineWidth: 0.1,
-        minCellHeight: 30
-      },
-      headStyles: {
-        fillColor: undefined,
-        textColor: [30, 41, 59],
-        fontSize: 9,
-        fontStyle: 'bold',
-        cellPadding: 4,
-        minCellHeight: 0,
-        halign: 'center'
-      },
-      columnStyles: isRaw ? {
-        0: { cellWidth: (pageWidth - 24) * 0.5, fontStyle: 'bold' },
-        1: { cellWidth: (pageWidth - 24) * 0.5 }
-      } : {
-        0: { cellWidth: (pageWidth - 24) * 0.3, fontStyle: 'bold' },
-        1: { cellWidth: (pageWidth - 24) * 0.3 },
-        2: { cellWidth: (pageWidth - 24) * 0.4 }
-      },
-      didParseCell: (data) => {
-        if (data.section === 'body') {
-          if (data.column.index === 0) {
-            const raw = data.cell.raw as any;
-            if (raw && raw.attachment) {
-               data.cell.text = [raw.content];
-               data.cell.styles.minCellHeight = 60;
-            } else if (raw) {
-               data.cell.text = [raw.content];
-            }
-          }
-          if (data.column.index === 1) {
-            const val = data.cell.raw as string;
-            if (typeof val === 'string' && (val.startsWith('data:image') || val.match(/\.(jpeg|jpg|gif|png)$/) != null)) {
-              data.cell.text = ['']; 
-              data.cell.styles.minCellHeight = 55;
-            }
-          }
-          if (!isRaw && data.column.index === 2) {
-            const raw = data.cell.raw as any;
-            if (raw) data.cell.text = [raw.content];
-          }
-        }
-      },
-      didDrawCell: (data) => {
-        if (data.section === 'body') {
-          const cell = data.cell;
-          let fill: [number, number, number] = [248, 250, 252];
-          let textColor: [number, number, number] = [30, 41, 59];
-          
-          if (data.column.index === 0) {
-            fill = [239, 246, 255];
-            textColor = [29, 78, 216];
-            
-            const raw = cell.raw as any;
-            if (raw && raw.attachment) {
-              const padding = 6;
-              const imgW = Math.min(cell.width - padding * 2, 40);
-              const imgH = 30;
-              const posX = cell.x + (cell.width - imgW) / 2;
-              const posY = cell.y + cell.height - imgH - padding;
-              try {
-                doc.addImage(raw.attachment, 'PNG', posX, posY, imgW, imgH);
-              } catch (e) {
-                console.error("PDF Q Img err", e);
-              }
-            }
-          } else if (data.column.index === 1) {
-            fill = [255, 255, 255]; // White for response
-            textColor = [30, 41, 59];
-          } else if (!isRaw && data.column.index === 2) {
-            const raw = cell.raw as any;
-            if (raw) {
-              if (raw.isCorrect) { fill = [240, 253, 244]; textColor = [21, 128, 61]; }
-              else if (raw.isPartial) { fill = [255, 251, 235]; textColor = [180, 83, 9]; }
-              else if (raw.isIncorrect) { fill = [254, 242, 242]; textColor = [185, 28, 28]; }
-            }
-          }
-
-          doc.setFillColor(fill[0], fill[1], fill[2]);
-          doc.rect(cell.x + 0.2, cell.y + 0.2, cell.width - 0.4, cell.height - 0.4, 'F');
-
-          if (data.column.index === 1) {
-            const val = cell.raw as string;
-            if (typeof val === 'string' && (val.startsWith('data:image') || val.match(/\.(jpeg|jpg|gif|png)$/) != null)) {
-              const padding = 6;
-              const imgW = Math.min(cell.width - padding * 2, 50);
-              const imgH = Math.min(cell.height - padding * 2, 40);
-              const posX = cell.x + (cell.width - imgW) / 2;
-              const posY = cell.y + (cell.height - imgH) / 2;
-              try {
-                doc.addImage(val, 'PNG', posX, posY, imgW, imgH);
-              } catch (e) {
-                console.error("PDF Img err", e);
-              }
-              return;
-            }
-          }
-
-          // Render text with proper alignment and vertical centering
-          doc.setTextColor(textColor[0], textColor[1], textColor[2]);
-          doc.setFontSize(cell.styles.fontSize);
-          
-          const textLines: string[] = doc.splitTextToSize(cell.text.join('\n'), cell.width - (cell.styles.cellPadding as number) * 2);
-          const lineHeight = cell.styles.fontSize * 0.352778 * 1.2;
-          const textHeight = textLines.length * lineHeight; 
-          const startXPos = cell.x + (cell.styles.cellPadding as number);
-          let startYPos = cell.y + (cell.height - textHeight) / 2 + (cell.styles.fontSize * 0.352778);
-
-          let feedbackSentenceBolded = false;
-
-          textLines.forEach((line: string) => {
-            doc.setFont("Helvetica", "normal");
-            
-            if (!isRaw && data.column.index === 2 && !line.startsWith('[Points:')) {
-              if (!feedbackSentenceBolded) {
-                const firstPeriodIndex = line.indexOf('.');
-                if (firstPeriodIndex !== -1) {
-                  const boldPart = line.substring(0, firstPeriodIndex + 1);
-                  const normalPart = line.substring(firstPeriodIndex + 1);
-                  
-                  doc.setFont("Helvetica", "bold");
-                  doc.text(boldPart, startXPos, startYPos);
-                  
-                  if (normalPart.length > 0) {
-                    const boldWidth = doc.getTextWidth(boldPart);
-                    doc.setFont("Helvetica", "normal");
-                    doc.text(normalPart, startXPos + boldWidth, startYPos);
-                  }
-                  feedbackSentenceBolded = true;
-                } else {
-                  doc.setFont("Helvetica", "bold");
-                  doc.text(line, startXPos, startYPos);
-                }
-              } else {
-                doc.text(line, startXPos, startYPos);
-              }
-            } else {
-              doc.text(line, startXPos, startYPos);
-            }
-            startYPos += lineHeight;
-          });
-        }
-      }
-    });
+    drawCurrentTable();
 
     if (returnBlob) {
       return doc.output('blob');

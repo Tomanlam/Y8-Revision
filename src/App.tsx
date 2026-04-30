@@ -153,7 +153,7 @@ const Sidebar = ({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       animate={{ width: isHovered ? 280 : 88 }}
-      className={`fixed left-0 top-0 bottom-0 ${diagnosticsTarget ? 'bg-emerald-500/15' : 'bg-white/[0.03]'} backdrop-blur-sm border-r border-white/10 z-[150] hidden md:flex flex-col py-8 transition-all duration-500 ease-in-out shadow-[0_0_50px_-12px_rgba(0,0,0,0.08)]`}
+      className={`fixed left-0 top-0 bottom-0 ${diagnosticsTarget ? 'bg-emerald-500/40' : 'bg-white/[0.03]'} backdrop-blur-sm border-r border-white/10 z-[150] hidden md:flex flex-col py-8 transition-all duration-500 ease-in-out shadow-[0_0_50px_-12px_rgba(0,0,0,0.08)]`}
     >
       <div className="px-4 mb-4 flex flex-col gap-3">
         <button 
@@ -395,6 +395,11 @@ function AppContent() {
   const [randomConcept, setRandomConcept] = useState(facts[0]);
   const [chineseType, setChineseType] = useState<'traditional' | 'simplified'>('traditional');
   const [activeTask, setActiveTask] = useState<Task | null>(null);
+  const liveActiveTask = useMemo(() => {
+    if (!activeTask) return null;
+    return tasks.find(t => t.id === activeTask.id) || activeTask;
+  }, [tasks, activeTask]);
+
   const [viewedSubmission, setViewedSubmission] = useState<TaskSubmission | null>(null);
   const [gradingQueue, setGradingQueue] = useState<{submission: TaskSubmission, task: Task}[]>([]);
   const [batchStudents, setBatchStudents] = useState<any[]>([]);
@@ -1094,10 +1099,10 @@ function AppContent() {
             onDeleteSubmission={handleDeleteSubmission}
             onWipeCleanSlate={handleWipeCleanSlate}
           />}
-          {mode === 'worksheet' && activeTask && (
+          {mode === 'worksheet' && liveActiveTask && (
             <TaskWorksheetView 
-              key={`worksheet_${activeTask.id}_${viewedSubmission?.id || 'submit'}`}
-              task={activeTask}
+              key={`worksheet_${liveActiveTask.id}_${viewedSubmission?.id || 'submit'}`}
+              task={liveActiveTask}
               isShadowing={!!diagnosticsTarget}
               onBack={() => {
                 setMode('tasks');
@@ -1106,10 +1111,10 @@ function AppContent() {
                 setIsBatchGrading(false);
                 setGradingQueue([]);
               }}
-              initialResponses={viewedSubmission ? viewedSubmission.responses : mySubmissions.find(s => s.taskId === activeTask.id)?.responses}
-              initialFeedback={viewedSubmission ? viewedSubmission.feedback : mySubmissions.find(s => s.taskId === activeTask.id)?.feedback}
-              initialGeneralFeedback={viewedSubmission ? viewedSubmission.generalFeedback : mySubmissions.find(s => s.taskId === activeTask.id)?.generalFeedback}
-              readOnly={!!viewedSubmission || (!effectiveIsAdmin && mySubmissions.some(s => s.taskId === activeTask.id)) || !!effectiveProfile?.isParent}
+              initialResponses={viewedSubmission ? viewedSubmission.responses : mySubmissions.find(s => s.taskId === liveActiveTask.id)?.responses}
+              initialFeedback={viewedSubmission ? viewedSubmission.feedback : mySubmissions.find(s => s.taskId === liveActiveTask.id)?.feedback}
+              initialGeneralFeedback={viewedSubmission ? viewedSubmission.generalFeedback : mySubmissions.find(s => s.taskId === liveActiveTask.id)?.generalFeedback}
+              readOnly={!!viewedSubmission || (!effectiveIsAdmin && mySubmissions.some(s => s.taskId === liveActiveTask.id)) || !!effectiveProfile?.isParent}
               isAdmin={effectiveIsAdmin}
               isBatchMode={isBatchGrading}
               batchQueue={batchStudents}
@@ -1218,10 +1223,10 @@ function AppContent() {
             />
           )}
 
-          {mode === 'test' && activeTask && (
+          {mode === 'test' && liveActiveTask && (
             <TaskTestView 
-              key={`test_${activeTask.id}_${viewedSubmission?.id || 'submit'}`}
-              task={activeTask}
+              key={`test_${liveActiveTask.id}_${viewedSubmission?.id || 'submit'}`}
+              task={liveActiveTask}
               isShadowing={!!diagnosticsTarget}
               onBack={() => {
                 setMode('tasks');
@@ -1230,11 +1235,11 @@ function AppContent() {
                 setIsBatchGrading(false);
                 setGradingQueue([]);
               }}
-              initialResponses={viewedSubmission ? viewedSubmission.responses : mySubmissions.find(s => s.taskId === activeTask.id)?.responses}
-              initialFeedback={viewedSubmission ? viewedSubmission.feedback : mySubmissions.find(s => s.taskId === activeTask.id)?.feedback}
-              initialGeneralFeedback={viewedSubmission ? viewedSubmission.generalFeedback : mySubmissions.find(s => s.taskId === activeTask.id)?.generalFeedback}
-              initialCheatLogs={viewedSubmission ? viewedSubmission.results?.cheatLogs : mySubmissions.find(s => s.taskId === activeTask.id)?.results?.cheatLogs}
-              readOnly={!!viewedSubmission || (!effectiveIsAdmin && mySubmissions.some(s => s.taskId === activeTask.id)) || !!effectiveProfile?.isParent}
+              initialResponses={viewedSubmission ? viewedSubmission.responses : mySubmissions.find(s => s.taskId === liveActiveTask.id)?.responses}
+              initialFeedback={viewedSubmission ? viewedSubmission.feedback : mySubmissions.find(s => s.taskId === liveActiveTask.id)?.feedback}
+              initialGeneralFeedback={viewedSubmission ? viewedSubmission.generalFeedback : mySubmissions.find(s => s.taskId === liveActiveTask.id)?.generalFeedback}
+              initialCheatLogs={viewedSubmission ? viewedSubmission.results?.cheatLogs : mySubmissions.find(s => s.taskId === liveActiveTask.id)?.results?.cheatLogs}
+              readOnly={!!viewedSubmission || (!effectiveIsAdmin && mySubmissions.some(s => s.taskId === liveActiveTask.id)) || !!effectiveProfile?.isParent}
               isAdmin={effectiveIsAdmin}
               isBatchMode={isBatchGrading}
               batchQueue={batchStudents}
@@ -1299,10 +1304,10 @@ function AppContent() {
                 }
 
                 try {
-                  const submissionId = `${activeTask.id}_${currentUser.uid}`.replace(/[^a-zA-Z0-9_\-]/g, '_');
+                  const submissionId = `${liveActiveTask.id}_${currentUser.uid}`.replace(/[^a-zA-Z0-9_\-]/g, '_');
                   const submissionToSave: any = {
                     id: submissionId,
-                    taskId: activeTask.id,
+                    taskId: liveActiveTask.id,
                     userId: currentUser.uid,
                     studentName: currentUser.displayName || 'Student',
                     completedAt: new Date().toISOString(),
@@ -1314,8 +1319,8 @@ function AppContent() {
                   } else {
                     submissionToSave.results = { 
                       score: 0, 
-                      total: activeTask.worksheetQuestions?.length || 0, 
-                      unitId: (activeTask.units && activeTask.units.length > 0) ? activeTask.units[0] : 0,
+                      total: liveActiveTask.worksheetQuestions?.length || 0, 
+                      unitId: (liveActiveTask.units && liveActiveTask.units.length > 0) ? liveActiveTask.units[0] : 0,
                       tabSwitches: 0
                     };
                   }
@@ -1584,7 +1589,7 @@ function AppContent() {
 
       {/* Mobile Nav */}
       {['dashboard', 'user-stats', 'about', 'quick-facts', 'tasks', 'achievement', 'command-center', 'messages', 'diagnostics'].includes(mode) && (
-        <nav className={`fixed bottom-6 left-4 right-4 ${diagnosticsTarget ? 'bg-emerald-500/15' : 'bg-white/[0.03]'} backdrop-blur-sm border border-white/10 p-2 z-[150] md:hidden rounded-[2rem] shadow-[0_20px_50px_-15px_rgba(0,0,0,0.15)]`}>
+        <nav className={`fixed bottom-6 left-4 right-4 ${diagnosticsTarget ? 'bg-emerald-500/40' : 'bg-white/[0.03]'} backdrop-blur-sm border border-white/10 p-2 z-[150] md:hidden rounded-[2rem] shadow-[0_20px_50px_-15px_rgba(0,0,0,0.15)]`}>
           <div className={`grid gap-1.5 ${isAdminLoggedIn ? 'grid-cols-7' : 'grid-cols-5'}`}>
             {getAppNavItems(isAdminLoggedIn).map((item) => {
               const Icon = item.icon;

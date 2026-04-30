@@ -307,7 +307,7 @@ const TaskTestView: React.FC<TaskTestViewProps> = ({
   };
 
   useEffect(() => {
-    if (readOnly || submitted) return;
+    if (readOnly || submitted || isAdmin) return;
 
     const logCheat = (category: string) => {
       setCheatLogs(prev => ({ ...prev, [category]: (prev[category] || 0) + 1 }));
@@ -380,7 +380,7 @@ const TaskTestView: React.FC<TaskTestViewProps> = ({
       window.removeEventListener('beforeprint', handleBeforePrint);
       stopSiren();
     };
-  }, [readOnly, submitted]);
+  }, [readOnly, submitted, isAdmin]);
 
   useEffect(() => {
     if (timeLeft !== null && timeLeft > 0 && !submitted && !readOnly) {
@@ -935,7 +935,7 @@ OUTPUT: Plain text paragraph.`;
   return (
     <div className="fixed inset-0 bg-white z-[200] flex flex-col overflow-hidden font-sans">
       <AnimatePresence>
-        {cheatDetected && !submitted && !readOnly && (
+        {cheatDetected && !submitted && !readOnly && !isAdmin && (
           <motion.div 
             initial={{ opacity: 0 }} 
             animate={{ opacity: 1 }} 
@@ -970,7 +970,7 @@ OUTPUT: Plain text paragraph.`;
         )}
       </AnimatePresence>
 
-      <header className={`transition-all duration-500 ${isShadowing ? 'bg-emerald-500/15' : 'bg-white/[0.03]'} backdrop-blur-sm border-b border-white/10 p-4 shrink-0 sticky top-0 z-[100] shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07)]`}>
+      <header className={`transition-all duration-500 ${isShadowing ? 'bg-emerald-500/25' : 'bg-white/[0.03]'} backdrop-blur-sm border-b border-white/10 p-4 shrink-0 sticky top-0 z-[100] shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07)]`}>
         <div className="max-w-screen-2xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-5">
             <button 
@@ -1444,11 +1444,11 @@ OUTPUT: Plain text paragraph.`;
                             <div className="text-white pt-1">
                               <QuestionTextWithCommandTerms text={typedQ.question} className="text-white drop-shadow-sm" />
                               {task.attachments?.[typedQ.id] && (
-                                <div className="mt-4 rounded-2xl overflow-hidden border border-white/20 bg-white/10 backdrop-blur-md shadow-2xl max-w-2xl relative group/img">
+                                <div className="mt-4 rounded-2xl overflow-hidden border border-white/20 bg-white/10 backdrop-blur-md shadow-2xl max-w-2xl mx-auto relative group/img">
                                   <img 
                                     src={task.attachments[typedQ.id]} 
                                     alt={`Figure for Q${idx + 1}`} 
-                                    className="w-full h-auto object-contain max-h-[400px]"
+                                    className="w-full h-auto object-contain max-h-[500px]"
                                   />
                                   {isAdmin && (
                                     <div className="absolute top-2 right-2 flex gap-2">
