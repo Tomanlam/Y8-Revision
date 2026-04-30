@@ -408,13 +408,13 @@ const Sketchpad: React.FC<SketchpadProps> = ({ onClose, onSave, uploadPaths, inl
           
             <div className="flex items-center gap-1 px-2">
               {['#000000', '#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6'].map(c => (
-                <button key={c} onClick={() => changeColor(c)} className={`w-6 h-6 rounded-full border-2 transition-transform ${color === c ? 'border-gray-400 scale-110 shadow-sm' : 'border-transparent hover:scale-110'}`} style={{ backgroundColor: c }} />
+                <button key={c} onClick={() => setColor(c)} className={`w-6 h-6 rounded-full border-2 transition-transform ${color === c ? 'border-gray-400 scale-110 shadow-sm' : 'border-transparent hover:scale-110'}`} style={{ backgroundColor: c }} />
               ))}
-              <input type="color" value={color} onChange={(e) => changeColor(e.target.value)} className="w-7 h-7 ml-1 rounded cursor-pointer border-0 p-0" />
+              <input type="color" value={color} onChange={(e) => setColor(e.target.value)} className="w-7 h-7 ml-1 rounded cursor-pointer border-0 p-0" />
             </div>
 
             <div className="w-px h-6 bg-slate-200 mx-1" />
-            <input type="range" min="1" max="20" value={lineWidth} onChange={(e) => changeWidth(parseInt(e.target.value))} className="w-24 accent-indigo-600" title="Brush Size" />
+            <input type="range" min="1" max="20" value={lineWidth} onChange={(e) => setLineWidth(parseInt(e.target.value))} className="w-24 accent-indigo-600" title="Brush Size" />
           </div>
 
           <div className="flex items-center bg-white rounded-xl shadow-sm border border-slate-200 p-1 gap-1">

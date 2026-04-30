@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ListChecks, Users, Plus, Trash2, ShieldCheck, Clock, Sparkles, Send, X, Edit, Eye, ArrowRight, BarChart3, List, FileText, Download, Copy, RefreshCw, Layers, CheckCircle2 } from 'lucide-react';
+import { ListChecks, Users, Plus, Trash2, ShieldCheck, Clock, Sparkles, Send, X, Edit, Eye, ArrowRight, BarChart3, List, FileText, Download, Copy, RefreshCw, Layers, CheckCircle2, HelpCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { db } from '../../firebase';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
@@ -8,6 +8,7 @@ import { Task, TaskSubmission, Unit, AppMode } from '../../types';
 import { GoogleGenAI, Type } from "@google/genai";
 import { GOLDEN_STANDARD_WORKSHEET, GOLDEN_STANDARD_TEST } from '../../constants/goldenStandard';
 import Analytics from './Analytics';
+import PdfJsonConverter from './PdfJsonConverter';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY as string });
 
@@ -44,6 +45,8 @@ const CommandCenterView = ({
   const [isLoadingRubric, setIsLoadingRubric] = React.useState(false);
   const [isCreatorOpen, setIsCreatorOpen] = React.useState(false);
   const [isTestCreatorOpen, setIsTestCreatorOpen] = React.useState(false);
+  const [isQuestionTypesOpen, setIsQuestionTypesOpen] = React.useState(false);
+  const [isPdfConverterOpen, setIsPdfConverterOpen] = React.useState(false);
   const [submissionFilter, setSubmissionFilter] = React.useState('');
   const [editingTask, setEditingTask] = React.useState<Task | null>(null);
   const [worksheetQuestionsJson, setWorksheetQuestionsJson] = React.useState('');
@@ -856,6 +859,50 @@ const CommandCenterView = ({
             <button onClick={() => setIsTestCreatorOpen(true)} className="px-6 py-4 bg-rose-500 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] flex items-center gap-2">
               <ShieldCheck size={18} /> New Secure Test
             </button>
+            <button onClick={() => setIsPdfConverterOpen(true)} className="px-6 py-4 bg-indigo-500 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] flex items-center gap-2">
+              <RefreshCw size={18} /> PDF Converter
+            </button>
+            <button
+              onClick={() => {
+                const randomIdContext = Math.random().toString(36).substring(2, 6);
+                const gemPrompt = `Please generate an assessment containing questions and mark schemes based on the provided material. Output two separate JSON blocks. 
+
+1. Question JSON array:
+Generate an array of JSON objects for the questions.
+Use these supported question types: 'mcq' (requires 'options' array), 'short-response', 'table' (requires 'tableData' 2D array of strings for initial state), 'tick-cross' (True/False), 'reorder' (requires 'items' array of strings to order), 'file-upload', 'annotate' (annotate a diagram).
+Generate random unique IDs for each question using prefix "${randomIdContext}_" to avoid collision.
+
+Example format:
+\`\`\`json
+[
+  { "id": "${randomIdContext}_q1", "type": "mcq", "question": "What is the capital of France?", "options": ["Paris", "London", "Berlin", "Madrid"] },
+  { "id": "${randomIdContext}_q2", "type": "annotate", "question": "Annotate the provided diagram of a cell.", "options": [] }
+]
+\`\`\`
+
+2. Mark Scheme JSON object:
+Generate an object mapping the generated question IDs to their grading rubrics.
+Example format:
+\`\`\`json
+{
+  "${randomIdContext}_q1": { "rubric": "Correct answer is Paris", "correct_answer": "Paris", "marks": 1, "explanation": "Paris is the capital of France." },
+  "${randomIdContext}_q2": { "rubric": "1 mark for identifying the nucleus. 1 mark for the cell wall.", "marks": 2 }
+}
+\`\`\`
+`.trim();
+                navigator.clipboard.writeText(gemPrompt);
+                alert("GEM prompt copied to clipboard!");
+              }}
+              className="px-6 py-4 bg-fuchsia-500 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] flex items-center gap-2"
+            >
+              <Copy size={18} /> GEM Prompt
+            </button>
+            <button 
+              onClick={() => setIsQuestionTypesOpen(true)}
+              className="px-6 py-4 bg-sky-500 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] flex items-center gap-2"
+            >
+              <HelpCircle size={18} /> Supported Question Types
+            </button>
             <button 
               onClick={handleWipe} 
               className={`px-6 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] flex items-center gap-2 ml-auto transition-all ${
@@ -1079,6 +1126,136 @@ const CommandCenterView = ({
                        <p className="text-slate-400 font-bold text-sm tracking-tight">No Markscheme Associated With Operation</p>
                      </div>
                    )}
+                </div>
+              </motion.div>
+           </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {isPdfConverterOpen && (
+           <PdfJsonConverter
+              onClose={() => setIsPdfConverterOpen(false)}
+              onAppendToWorksheet={(q, m) => {
+                 setWorksheetQuestionsJson(JSON.stringify(q, null, 2));
+                 setMarkschemeContent(typeof m === 'string' ? m : "```json\n" + JSON.stringify(m, null, 2) + "\n```");
+                 setIsCreatorOpen(true);
+              }}
+              onAppendToSecureTest={(q, m) => {
+                 setWorksheetQuestionsJson(JSON.stringify(q, null, 2));
+                 setMarkschemeContent(typeof m === 'string' ? m : "```json\n" + JSON.stringify(m, null, 2) + "\n```");
+                 setIsTestCreatorOpen(true);
+              }}
+           />
+        )}
+      </AnimatePresence>
+
+      {/* Supported Question Types Modal */}
+      <AnimatePresence>
+        {isQuestionTypesOpen && (
+           <div className="fixed inset-0 z-[220] flex items-center justify-center p-6">
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsQuestionTypesOpen(false)} className="absolute inset-0 bg-slate-950/40 backdrop-blur-md" />
+              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative bg-white w-full max-w-4xl max-h-[90vh] rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col">
+                <div className="p-8 border-b border-slate-100 flex items-center justify-between">
+                   <div>
+                     <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Supported Question Types</h3>
+                     <p className="text-slate-400 font-bold text-[9px] uppercase tracking-widest mt-1">Reference for generating JSON</p>
+                   </div>
+                   <button onClick={() => setIsQuestionTypesOpen(false)} className="p-3 bg-slate-100 rounded-xl text-slate-400 hover:text-slate-900 transition-all"><X size={20} /></button>
+                </div>
+                <div className="flex-1 overflow-y-auto p-8 space-y-8">
+                   
+                   <div className="space-y-4">
+                     <h4 className="text-lg font-black text-indigo-600 uppercase tracking-tight">1. Multiple Choice Question (mcq)</h4>
+                     <p className="text-sm text-slate-600">Standard multiple choice where user selects one option.</p>
+                     <pre className="bg-slate-900 text-emerald-400 p-4 rounded-xl text-xs overflow-x-auto">
+{`{
+  "id": "q1",
+  "type": "mcq",
+  "question": "Which of these is a mammal?",
+  "options": ["Shark", "Dolphin", "Crocodile"]
+}`}
+                     </pre>
+                   </div>
+
+                   <div className="space-y-4">
+                     <h4 className="text-lg font-black text-indigo-600 uppercase tracking-tight">2. Short Response (short-response)</h4>
+                     <p className="text-sm text-slate-600">A question requiring a short text response.</p>
+                     <pre className="bg-slate-900 text-emerald-400 p-4 rounded-xl text-xs overflow-x-auto">
+{`{
+  "id": "q2",
+  "type": "short-response",
+  "question": "What is the powerhouse of the cell?"
+}`}
+                     </pre>
+                   </div>
+                   
+                   <div className="space-y-4">
+                     <h4 className="text-lg font-black text-indigo-600 uppercase tracking-tight">3. Table Filling (table)</h4>
+                     <p className="text-sm text-slate-600">A question providing a table structure to be filled out.</p>
+                     <pre className="bg-slate-900 text-emerald-400 p-4 rounded-xl text-xs overflow-x-auto">
+{`{
+  "id": "q3",
+  "type": "table",
+  "question": "Fill out the capitals.",
+  "tableData": [
+    ["Country", "Capital"],
+    ["France", ""],
+    ["Japan", ""]
+  ]
+}`}
+                     </pre>
+                   </div>
+
+                   <div className="space-y-4">
+                     <h4 className="text-lg font-black text-indigo-600 uppercase tracking-tight">4. True/False (tick-cross)</h4>
+                     <p className="text-sm text-slate-600">A question requiring students to tick or cross.</p>
+                     <pre className="bg-slate-900 text-emerald-400 p-4 rounded-xl text-xs overflow-x-auto">
+{`{
+  "id": "q4",
+  "type": "tick-cross",
+  "question": "The earth is flat."
+}`}
+                     </pre>
+                   </div>
+
+                   <div className="space-y-4">
+                     <h4 className="text-lg font-black text-indigo-600 uppercase tracking-tight">5. Reorder (reorder)</h4>
+                     <p className="text-sm text-slate-600">A question requiring placing items in the correct order.</p>
+                     <pre className="bg-slate-900 text-emerald-400 p-4 rounded-xl text-xs overflow-x-auto">
+{`{
+  "id": "q5",
+  "type": "reorder",
+  "question": "Order the following lifecycle stages.",
+  "items": ["Adult", "Egg", "Larva", "Pupa"]
+}`}
+                     </pre>
+                   </div>
+
+                   <div className="space-y-4">
+                     <h4 className="text-lg font-black text-indigo-600 uppercase tracking-tight">6. File Upload (file-upload)</h4>
+                     <p className="text-sm text-slate-600">A question requiring a student to upload a file or draw on a blank sketchpad.</p>
+                     <pre className="bg-slate-900 text-emerald-400 p-4 rounded-xl text-xs overflow-x-auto">
+{`{
+  "id": "q6",
+  "type": "file-upload",
+  "question": "Draw a dog."
+}`}
+                     </pre>
+                   </div>
+
+                   <div className="space-y-4">
+                     <h4 className="text-lg font-black text-indigo-600 uppercase tracking-tight">7. Diagram Annotation (annotate)</h4>
+                     <p className="text-sm text-slate-600">A question requiring the student to annotate an existing diagram. The teacher must attach an image using the attachment drag-and-drop corresponding to this question ID after saving.</p>
+                     <pre className="bg-slate-900 text-emerald-400 p-4 rounded-xl text-xs overflow-x-auto">
+{`{
+  "id": "q7",
+  "type": "annotate",
+  "question": "Annotate the parts of the flower shown."
+}`}
+                     </pre>
+                   </div>
+
                 </div>
               </motion.div>
            </div>
