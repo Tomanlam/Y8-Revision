@@ -1080,7 +1080,7 @@ function AppContent() {
                 return;
               }
               const mapped = subs.map(s => ({ submission: s, task }));
-              setBatchStudents(subs.map(s => ({ id: s.id, studentName: s.studentName || 'Unknown Student' })));
+              setBatchStudents(subs.map(s => ({ id: s.id, studentName: s.studentName || 'Unknown Student', score: s.results?.score, total: s.results?.total })));
               setCurrentBatchIndex(0);
               const [first, ...rest] = mapped;
               setGradingQueue(rest);
@@ -1156,6 +1156,17 @@ function AppContent() {
 
                   await updateDoc(doc(db, 'submissions', viewedSubmission.id), updateData);
                   
+                  if (isBatchGrading && results) {
+                    setBatchStudents(prev => {
+                      const next = [...prev];
+                      if (currentBatchIndex < next.length) {
+                        next[currentBatchIndex].score = results.score;
+                        next[currentBatchIndex].total = results.total;
+                      }
+                      return next;
+                    });
+                  }
+
                   setViewedSubmission({
                     ...viewedSubmission,
                     results: updateData.results || viewedSubmission.results,
@@ -1281,6 +1292,17 @@ function AppContent() {
 
                   await updateDoc(doc(db, 'submissions', viewedSubmission.id), updateData);
                   
+                  if (isBatchGrading && results) {
+                    setBatchStudents(prev => {
+                      const next = [...prev];
+                      if (currentBatchIndex < next.length) {
+                        next[currentBatchIndex].score = results.score;
+                        next[currentBatchIndex].total = results.total;
+                      }
+                      return next;
+                    });
+                  }
+
                   setViewedSubmission({
                     ...viewedSubmission,
                     results: updateData.results || viewedSubmission.results,

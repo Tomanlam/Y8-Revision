@@ -30,7 +30,7 @@ interface TaskTestViewProps {
   readOnly?: boolean;
   isAdmin?: boolean;
   isBatchMode?: boolean;
-  batchQueue?: { id: string, studentName: string }[];
+  batchQueue?: { id: string, studentName: string, score?: number, total?: number }[];
   currentBatchIndex?: number;
   showCalculator: boolean;
   setShowCalculator: (v: boolean) => void;
@@ -111,9 +111,9 @@ const TypewriterRubric = ({ text, isActive, isPast }: { text: string, isActive: 
   if (!isActive && !isPast) return <span className="text-slate-600">Waiting for processing...</span>;
 
   return (
-    <span className={`${isActive ? 'text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.8)]' : 'text-emerald-500'}`}>
+    <span className={`transition-all duration-300 ${isActive ? 'text-red-300 drop-shadow-[0_0_15px_rgba(239,68,68,1)] font-bold' : 'text-red-500'}`}>
       {displayedText}
-      {isActive && displayedText.length < text.length && <span className="animate-pulse">_</span>}
+      {isActive && displayedText.length < text.length && <span className="animate-[ping_0.5s_infinite] font-black ml-1 text-red-300 drop-shadow-[0_0_10px_rgba(239,68,68,1)]">_</span>}
     </span>
   );
 };
@@ -1189,7 +1189,7 @@ OUTPUT: Plain text paragraph.`;
 
       <main className="flex-1 flex overflow-hidden bg-gray-50">
         {/* Left Side: PDF Viewer OR Grading Queue */}
-        <div ref={pdfContainerRef} className={`${isGradingWorkflow ? (isGradingConsoleExpanded ? 'w-0 opacity-0 pointer-events-none p-0 overflow-hidden' : 'w-[20%]') : (isBatchMode ? 'w-[40%]' : 'w-[50%]')} overflow-y-auto custom-scrollbar p-10 flex flex-col items-center bg-gray-200/40 transition-all duration-700 ease-in-out relative`}>
+        <div ref={pdfContainerRef} className={`${isGradingWorkflow ? (isGradingConsoleExpanded ? 'w-0 opacity-0 pointer-events-none p-0 overflow-hidden' : 'w-[15%]') : (isBatchMode ? 'w-[40%]' : 'w-[50%]')} overflow-y-auto custom-scrollbar p-10 flex flex-col items-center bg-gray-200/40 transition-all duration-700 ease-in-out relative`}>
           {isBatchMode ? (
             <div className="w-full h-full flex flex-col gap-8 max-w-2xl mx-auto">
                <div className="flex items-center gap-4 mb-2">
@@ -1209,13 +1209,13 @@ OUTPUT: Plain text paragraph.`;
                         initial={false}
                         animate={{
                           scale: isActive ? 1.02 : 1,
-                          opacity: isGraded ? 0.8 : (isPending ? 0.6 : 1),
+                          opacity: isGraded ? 1 : (isPending ? 0.6 : 1),
                           y: isActive ? 0 : (isGraded ? -10 : 10)
                         }}
                         className={`p-8 rounded-[2rem] border-2 transition-all duration-500 relative overflow-hidden ${
                           isActive 
                             ? 'bg-white border-rose-500 shadow-2xl shadow-rose-500/20' 
-                            : 'bg-white/50 border-gray-100'
+                            : (isGraded ? 'bg-emerald-50 border-emerald-200 shadow-sm' : 'bg-white/50 border-gray-100')
                         }`}
                       >
                         {isActive && (
@@ -1237,13 +1237,13 @@ OUTPUT: Plain text paragraph.`;
                              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center font-black text-xl transition-all duration-500 ${
                                isActive 
                                 ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/30' 
-                                : (isGraded ? 'bg-rose-50/50 text-rose-300' : 'bg-gray-100 text-gray-400')
+                                : (isGraded ? 'bg-emerald-500 text-white shadow-sm' : 'bg-gray-100 text-gray-400')
                              }`}>
                                {idx + 1}
                              </div>
                              <div>
                                <h4 className={`text-xl font-black uppercase tracking-tight transition-all duration-500 ${
-                                 isActive ? 'text-gray-900 translate-x-2' : (isGraded ? 'text-gray-400' : 'text-gray-500')
+                                 isActive ? 'text-gray-900 translate-x-2' : (isGraded ? 'text-emerald-900' : 'text-gray-500')
                                }`}>
                                  {student.studentName}
                                </h4>
@@ -1256,10 +1256,14 @@ OUTPUT: Plain text paragraph.`;
                             <motion.div 
                               initial={{ scale: 0, opacity: 0 }}
                               animate={{ scale: 1, opacity: 1 }}
-                              className="flex items-center gap-2 px-4 py-1.5 bg-rose-50 text-rose-600 rounded-full border border-rose-100"
+                              className="flex flex-col items-center justify-center gap-0.5 px-4 py-2 bg-emerald-500 text-white rounded-2xl border border-emerald-400 shadow-md min-w-[70px]"
                             >
-                               <CheckCircle2 size={12} className="fill-rose-600 text-white" />
-                               <span className="text-[10px] font-black uppercase tracking-widest">Graded</span>
+                               <span className="text-xl font-black leading-none drop-shadow-sm">
+                                 {student.score !== undefined ? student.score : '-'}
+                               </span>
+                               <span className="text-[8px] font-black uppercase tracking-widest text-emerald-100 leading-none">
+                                 OF {student.total !== undefined ? student.total : '-'}
+                               </span>
                             </motion.div>
                           )}
                         </div>
@@ -1319,7 +1323,7 @@ OUTPUT: Plain text paragraph.`;
           </>)}
         </div>
 
-        <div ref={rightPaneRef} className={`${isGradingWorkflow ? (isGradingConsoleExpanded ? 'w-[40%]' : 'w-[40%]') : 'w-[50%]'} border-l border-red-50 bg-gray-50/50 overflow-y-auto custom-scrollbar p-10 transition-all duration-500`}>
+        <div ref={rightPaneRef} className={`${isGradingWorkflow ? (isGradingConsoleExpanded ? 'w-[45%]' : 'w-[45%]') : 'w-[50%]'} border-l border-red-50 bg-gray-50/50 overflow-y-auto custom-scrollbar p-10 transition-all duration-500`}>
           <div className="max-w-6xl mx-auto space-y-12 pb-32">
             <div className="space-y-6 border-b border-red-100 pb-12">
               <div className="space-y-2">
@@ -1897,7 +1901,7 @@ OUTPUT: Plain text paragraph.`;
         </div>
       
       {isGradingWorkflow && (
-        <div className={`${isGradingConsoleExpanded ? 'w-[60%]' : 'w-[40%]'} bg-gray-50 overflow-hidden flex flex-col z-10 transition-all duration-500 border-l border-gray-100`}>
+        <div className={`${isGradingConsoleExpanded ? 'w-[55%]' : 'w-[40%]'} bg-gray-50 overflow-hidden flex flex-col z-10 transition-all duration-500 border-l border-gray-100`}>
           <div className="flex-1 overflow-y-auto custom-scrollbar scroll-smooth relative">
             {/* Sticky Header with Gradient Background */}
             <div className="sticky top-0 z-30 p-5 flex items-center justify-between gap-6 bg-gradient-to-b from-gray-200/95 via-gray-200/50 to-transparent backdrop-blur-md border-b border-gray-200/30 shadow-sm relative">
@@ -1942,7 +1946,7 @@ OUTPUT: Plain text paragraph.`;
                    id={`test-rubric-container-${q.id}`}
                    className={`p-6 rounded-[2rem] border-2 transition-all duration-500 scroll-mt-24 relative overflow-hidden ${
                      currentlyProcessingId === q.id 
-                       ? 'bg-white border-red-500 shadow-2xl scale-[1.02] ring-8 ring-red-500/5' 
+                       ? 'bg-white border-red-500 shadow-2xl shadow-red-500/40 scale-[1.02] ring-[12px] ring-red-500/20' 
                        : 'bg-white border-gray-100 shadow-sm opacity-60'
                    }`}
                  >
@@ -1956,7 +1960,7 @@ OUTPUT: Plain text paragraph.`;
                          duration: 1.5,
                          ease: "linear"
                        }}
-                       className="absolute inset-0 z-0 bg-gradient-to-r from-transparent via-red-500/10 to-transparent pointer-events-none"
+                       className="absolute inset-0 z-0 bg-gradient-to-r from-transparent via-red-500/40 to-transparent pointer-events-none"
                      />
                    )}
                    
@@ -1966,10 +1970,10 @@ OUTPUT: Plain text paragraph.`;
                         <span className="w-10 h-10 rounded-xl bg-gray-900 text-white flex items-center justify-center font-black text-xs">
                           Q{idx + 1}
                         </span>
-                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Marking Criteria</span>
+                        <span className="text-[10px] font-black text-red-600 uppercase tracking-widest drop-shadow-sm">Marking Criteria</span>
                       </div>
                       {currentlyProcessingId === q.id && (
-                         <div className="px-3 py-1 bg-red-600 text-white rounded-full text-[8px] font-black uppercase tracking-widest animate-pulse">
+                         <div className="px-3 py-1 bg-red-600 text-white rounded-full text-[8px] font-black uppercase tracking-widest animate-[pulse_0.8s_infinite] shadow-lg shadow-red-500/40">
                             Analyzing
                          </div>
                       )}
